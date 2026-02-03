@@ -129,7 +129,6 @@
       "otherArguments" : [
         "-target",
         "arm64-apple-macosx10.13",
-        "-v",
         "-incremental",
         "-enable-batch-mode",
         "-serialize-diagnostics",
@@ -303,7 +302,6 @@
       "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/Modules",
       "-target",
       "arm64-apple-macosx10.13",
-      "-v",
       "-incremental",
       "-enable-batch-mode",
       "-serialize-diagnostics",

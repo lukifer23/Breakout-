@@ -56,17 +56,18 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     }
 
     private fun showPause(show: Boolean) {
-        binding.pauseOverlay.visibility = if (show) View.VISIBLE else View.GONE
         if (show) {
+            showOverlay(binding.pauseOverlay)
             binding.gameSurface.pauseGame()
         } else {
+            hideOverlay(binding.pauseOverlay)
             binding.gameSurface.resumeGame()
         }
     }
 
     private fun restartGame() {
-        binding.endOverlay.visibility = View.GONE
-        binding.pauseOverlay.visibility = View.GONE
+        hideOverlay(binding.endOverlay)
+        hideOverlay(binding.pauseOverlay)
         binding.gameSurface.restartGame()
     }
 
@@ -162,7 +163,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             binding.endTitle.text = getString(R.string.label_game_over)
             binding.endStats.text = "Score ${summary.score} • Level ${summary.level}"
             binding.buttonEndPrimary.text = getString(R.string.label_restart)
-            binding.endOverlay.visibility = View.VISIBLE
+            showOverlay(binding.endOverlay)
         }
     }
 
@@ -171,20 +172,47 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             binding.endTitle.text = getString(R.string.label_level_complete)
             binding.endStats.text = "Score ${summary.score} • Level ${summary.level}"
             binding.buttonEndPrimary.text = getString(R.string.label_next_level)
-            binding.endOverlay.visibility = View.VISIBLE
+            showOverlay(binding.endOverlay)
         }
     }
 
     private fun showTooltip() {
-        binding.tooltipOverlay.visibility = View.VISIBLE
-        binding.tooltipOverlay.alpha = 0f
-        binding.tooltipOverlay.animate().alpha(1f).setDuration(300).start()
+        showOverlay(binding.tooltipOverlay)
     }
 
     private fun hideTooltip() {
-        binding.tooltipOverlay.animate().alpha(0f).setDuration(200).withEndAction {
-            binding.tooltipOverlay.visibility = View.GONE
-        }.start()
+        hideOverlay(binding.tooltipOverlay)
+    }
+
+    private fun showOverlay(view: View) {
+        view.visibility = View.VISIBLE
+        view.alpha = 0f
+        view.scaleX = 0.96f
+        view.scaleY = 0.96f
+        view.animate()
+            .alpha(1f)
+            .scaleX(1f)
+            .scaleY(1f)
+            .setDuration(200)
+            .setInterpolator(android.view.animation.DecelerateInterpolator())
+            .start()
+    }
+
+    private fun hideOverlay(view: View) {
+        if (view.visibility != View.VISIBLE) return
+        view.animate()
+            .alpha(0f)
+            .scaleX(0.98f)
+            .scaleY(0.98f)
+            .setDuration(180)
+            .setInterpolator(android.view.animation.DecelerateInterpolator())
+            .withEndAction {
+                view.visibility = View.GONE
+                view.alpha = 1f
+                view.scaleX = 1f
+                view.scaleY = 1f
+            }
+            .start()
     }
 
     companion object {
