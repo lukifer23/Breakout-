@@ -79,7 +79,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     private fun handleEndPrimary() {
         when (binding.endTitle.text.toString()) {
             getString(R.string.label_level_complete) -> {
-                binding.endOverlay.visibility = View.GONE
+                hideOverlay(binding.endOverlay)
                 // Add brief celebration delay before next level
                 android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
                     binding.gameSurface.nextLevel()

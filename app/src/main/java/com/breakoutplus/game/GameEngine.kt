@@ -35,6 +35,7 @@ class GameEngine(
     private var basePaddleWidth = paddle.width
 
     private var state = GameState.READY
+    private var stateBeforePause = state
     private var score = 0
     private var levelIndex = 0
     private var lives = config.mode.baseLives
@@ -456,11 +457,12 @@ class GameEngine(
     }
 
     fun pause() {
+        stateBeforePause = state
         state = GameState.PAUSED
     }
 
     fun resume() {
-        if (state == GameState.PAUSED) state = GameState.RUNNING
+        if (state == GameState.PAUSED) state = stateBeforePause
     }
 
     fun nextLevel() {

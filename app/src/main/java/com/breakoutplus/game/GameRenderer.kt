@@ -32,7 +32,6 @@ class GameRenderer(
 
     override fun onDrawFrame(unused: javax.microedition.khronos.opengles.GL10?) {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
-        if (paused) return
 
         val frameStart = System.nanoTime()
         val now = frameStart
@@ -43,13 +42,17 @@ class GameRenderer(
         lastTimeNs = now
         if (delta > 0.05f) delta = 0.05f
 
-        engine.update(delta)
+        if (!paused) {
+            engine.update(delta)
+        }
         engine.render(renderer2D)
 
         // Performance logging
-        val frameTime = (System.nanoTime() - frameStart) / 1_000_000f // Convert to milliseconds
-        val fps = if (delta > 0f) (1f / delta).toInt() else 0
-        logger?.logPerformanceMetric(fps.toFloat(), frameTime, engine.getObjectCount())
+        if (!paused) {
+            val frameTime = (System.nanoTime() - frameStart) / 1_000_000f // Convert to milliseconds
+            val fps = if (delta > 0f) (1f / delta).toInt() else 0
+            logger?.logPerformanceMetric(fps.toFloat(), frameTime, engine.getObjectCount())
+        }
     }
 
     fun handleTouch(event: MotionEvent, viewWidth: Float, viewHeight: Float) {
@@ -66,10 +69,11 @@ class GameRenderer(
         paused = false
         engine.resume()
         audioManager.startMusic()
+        lastTimeNs = 0L
     }
 
     fun restart() {
-        engine = GameEngine(config, listener, audioManager)
+        engine = GameEngine(config, listener, audioManager, logger)
         lastTimeNs = 0L
     }
 
@@ -79,7 +83,7 @@ class GameRenderer(
 
     fun reset(newConfig: GameConfig) {
         config = newConfig
-        engine = GameEngine(config, listener, audioManager)
+        engine = GameEngine(config, listener, audioManager, logger)
     }
 
     fun release() {
