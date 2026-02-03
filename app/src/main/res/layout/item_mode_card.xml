@@ -3,8 +3,8 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="16dp"
-    app:cardCornerRadius="18dp"
-    app:cardElevation="4dp"
+    app:cardCornerRadius="20dp"
+    app:cardElevation="6dp"
     app:strokeColor="#344869"
     app:strokeWidth="1dp"
     app:cardBackgroundColor="#1B2A45">
@@ -19,9 +19,10 @@
             android:id="@+id/modeCardTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-medium"
             android:text="Classic"
             android:textColor="@color/bp_white"
-            android:textSize="20sp"
+            android:textSize="@dimen/bp_body_text_size"
             android:textStyle="bold" />
 
         <TextView
@@ -29,18 +30,20 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
+            android:fontFamily="sans-serif"
             android:text="Standard breakout with powerups."
             android:textColor="@color/bp_gray"
-            android:textSize="14sp" />
+            android:textSize="@dimen/bp_small_text_size" />
 
         <TextView
             android:id="@+id/modeCardMeta"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
+            android:fontFamily="sans-serif-medium"
             android:text="Lives 3 • No timer • Balanced"
             android:textColor="#B5C0D4"
-            android:textSize="12sp" />
+            android:textSize="@dimen/bp_caption_text_size" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/modeCardStart"

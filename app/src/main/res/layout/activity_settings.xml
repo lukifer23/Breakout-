@@ -7,12 +7,10 @@
 
     <TextView
         android:id="@+id/settingsTitle"
+        style="@style/Text.BreakoutPlus.ScreenTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Settings"
-        android:textColor="@color/bp_white"
-        android:textSize="@dimen/bp_screen_title_size"
-        android:textStyle="bold"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -27,6 +25,7 @@
         app:layout_constraintTop_toBottomOf="@id/settingsTitle">
 
         <LinearLayout
+            android:id="@+id/settingsList"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
@@ -35,43 +34,60 @@
                 android:id="@+id/switchSound"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-medium"
                 android:text="@string/label_toggle_sound"
-                android:textColor="@color/bp_white" />
+                android:textColor="@color/bp_white"
+                android:textSize="@dimen/bp_body_text_size" />
 
             <com.google.android.material.switchmaterial.SwitchMaterial
                 android:id="@+id/switchMusic"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-medium"
                 android:text="@string/label_toggle_music"
-                android:textColor="@color/bp_white" />
+                android:textColor="@color/bp_white"
+                android:textSize="@dimen/bp_body_text_size" />
 
             <com.google.android.material.switchmaterial.SwitchMaterial
                 android:id="@+id/switchVibration"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-medium"
                 android:text="@string/label_toggle_vibration"
-                android:textColor="@color/bp_white" />
+                android:textColor="@color/bp_white"
+                android:textSize="@dimen/bp_body_text_size" />
 
             <com.google.android.material.switchmaterial.SwitchMaterial
                 android:id="@+id/switchTips"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-medium"
                 android:text="@string/label_toggle_tips"
-                android:textColor="@color/bp_white" />
+                android:textColor="@color/bp_white"
+                android:textSize="@dimen/bp_body_text_size" />
 
             <com.google.android.material.switchmaterial.SwitchMaterial
                 android:id="@+id/switchLeftHanded"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-medium"
                 android:text="@string/label_left_handed"
+                android:textColor="@color/bp_white"
+                android:textSize="@dimen/bp_body_text_size" />
+
+            <com.google.android.material.switchmaterial.SwitchMaterial
+                android:id="@+id/switchLogging"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Enable Game Logging"
                 android:textColor="@color/bp_white" />
 
             <TextView
+                style="@style/Text.BreakoutPlus.Caption"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:text="@string/label_sensitivity"
-                android:textColor="@color/bp_gray" />
+                android:text="@string/label_sensitivity" />
 
             <SeekBar
                 android:id="@+id/seekSensitivity"

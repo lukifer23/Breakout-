@@ -4,6 +4,7 @@
 - High-contrast neon palette against deep navy backgrounds.
 - Chunky button styles for touch accuracy on large screens.
 - HUD chips for readable in-game stats.
+- Typography: serif title treatment with sans-serif UI labels for a sharper, premium feel.
 
 ## Screens
 - **Splash**: branded intro.
@@ -21,3 +22,4 @@
 ## Interaction Notes
 - One-handed use supported with left-handed toggle (pause button shifts left).
 - HUD tip bubble used for quick contextual guidance.
+- Screen entry animations: titles and lists ease in to reduce visual abruptness.

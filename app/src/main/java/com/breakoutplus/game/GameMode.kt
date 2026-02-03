@@ -23,7 +23,7 @@ enum class GameMode(
         endless = false,
         godMode = false,
         rush = false,
-        launchSpeed = 35f
+        launchSpeed = 37f
     ),
     TIMED(
         displayName = "Timed Challenge",
@@ -34,7 +34,7 @@ enum class GameMode(
         endless = false,
         godMode = false,
         rush = false,
-        launchSpeed = 40f
+        launchSpeed = 42f
     ),
     ENDLESS(
         displayName = "Endless",
@@ -45,7 +45,7 @@ enum class GameMode(
         endless = true,
         godMode = false,
         rush = false,
-        launchSpeed = 37f
+        launchSpeed = 39f
     ),
     GOD(
         displayName = "God Mode",
@@ -56,7 +56,7 @@ enum class GameMode(
         endless = false,
         godMode = true,
         rush = false,
-        launchSpeed = 31f
+        launchSpeed = 33f
     ),
     RUSH(
         displayName = "Level Rush",
@@ -67,6 +67,6 @@ enum class GameMode(
         endless = false,
         godMode = false,
         rush = true,
-        launchSpeed = 42f
+        launchSpeed = 44f
     );
 }

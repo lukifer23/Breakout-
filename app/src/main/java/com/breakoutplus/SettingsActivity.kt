@@ -25,6 +25,7 @@ class SettingsActivity : FoldAwareActivity() {
         binding.seekMasterVolume.progress = (settings.masterVolume * 100).toInt()
         binding.seekEffectsVolume.progress = (settings.effectsVolume * 100).toInt()
         binding.seekMusicVolume.progress = (settings.musicVolume * 100).toInt()
+        binding.switchLogging.isChecked = settings.loggingEnabled
 
         val saveSettings = {
             SettingsManager.save(
@@ -38,7 +39,8 @@ class SettingsActivity : FoldAwareActivity() {
                     sensitivity = binding.seekSensitivity.progress / 100f,
                     masterVolume = binding.seekMasterVolume.progress / 100f,
                     effectsVolume = binding.seekEffectsVolume.progress / 100f,
-                    musicVolume = binding.seekMusicVolume.progress / 100f
+                    musicVolume = binding.seekMusicVolume.progress / 100f,
+                    loggingEnabled = binding.switchLogging.isChecked
                 )
             )
         }
@@ -48,6 +50,7 @@ class SettingsActivity : FoldAwareActivity() {
         binding.switchVibration.setOnCheckedChangeListener { _, _ -> saveSettings() }
         binding.switchTips.setOnCheckedChangeListener { _, _ -> saveSettings() }
         binding.switchLeftHanded.setOnCheckedChangeListener { _, _ -> saveSettings() }
+        binding.switchLogging.setOnCheckedChangeListener { _, _ -> saveSettings() }
         binding.seekSensitivity.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 if (fromUser) saveSettings()
@@ -93,6 +96,42 @@ class SettingsActivity : FoldAwareActivity() {
                 }
                 .setNegativeButton("Cancel", null)
                 .show()
+        }
+
+        animateEntry()
+    }
+
+    private fun animateEntry() {
+        val views = listOf(binding.settingsTitle, binding.settingsScroll, binding.settingsFooter)
+        views.forEachIndexed { index, view ->
+            view.alpha = 0f
+            view.translationY = 18f
+            view.animate()
+                .alpha(1f)
+                .translationY(0f)
+                .setStartDelay(80L * index)
+                .setDuration(350L)
+                .setInterpolator(android.view.animation.DecelerateInterpolator())
+                .start()
+        }
+
+        binding.settingsList.post {
+            animateStagger(binding.settingsList)
+        }
+    }
+
+    private fun animateStagger(container: android.view.ViewGroup) {
+        for (i in 0 until container.childCount) {
+            val child = container.getChildAt(i)
+            child.alpha = 0f
+            child.translationY = 14f
+            child.animate()
+                .alpha(1f)
+                .translationY(0f)
+                .setStartDelay(60L * i)
+                .setDuration(260L)
+                .setInterpolator(android.view.animation.DecelerateInterpolator())
+                .start()
         }
     }
 }

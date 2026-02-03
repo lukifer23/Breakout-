@@ -23,3 +23,13 @@
 ```bash
 ./gradlew assembleDebug
 ```
+
+## Unit Tests (JVM)
+```bash
+./gradlew testDebugUnitTest
+```
+
+## What We Cover
+- Level patterns include advanced brick types (moving/spawning/phase/boss).
+- Difficulty scaling increases hit points.
+- Mode launch speeds are positive and balanced.

@@ -16,6 +16,7 @@ class ScoreboardActivity : FoldAwareActivity() {
 
         binding.buttonScoreBack.setOnClickListener { finish() }
         renderScores()
+        animateEntry()
     }
 
     private fun renderScores() {
@@ -39,9 +40,13 @@ class ScoreboardActivity : FoldAwareActivity() {
             val rowView = row.root
             rowView.alpha = 0f
             rowView.translationX = -50f
+            rowView.scaleX = 0.98f
+            rowView.scaleY = 0.98f
             rowView.animate()
                 .alpha(1f)
                 .translationX(0f)
+                .scaleX(1f)
+                .scaleY(1f)
                 .setDuration(300)
                 .setStartDelay(index * 50L)
                 .setInterpolator(android.view.animation.DecelerateInterpolator())
@@ -55,5 +60,20 @@ class ScoreboardActivity : FoldAwareActivity() {
         val minutes = seconds / 60
         val remaining = seconds % 60
         return String.format("%02d:%02d", minutes, remaining)
+    }
+
+    private fun animateEntry() {
+        val views = listOf(binding.scoreTitle, binding.scoreScroll, binding.scoreFooter)
+        views.forEachIndexed { index, view ->
+            view.alpha = 0f
+            view.translationY = 18f
+            view.animate()
+                .alpha(1f)
+                .translationY(0f)
+                .setStartDelay(80L * index)
+                .setDuration(350L)
+                .setInterpolator(android.view.animation.DecelerateInterpolator())
+                .start()
+        }
     }
 }

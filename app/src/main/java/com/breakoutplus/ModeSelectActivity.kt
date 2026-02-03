@@ -19,6 +19,7 @@ class ModeSelectActivity : FoldAwareActivity() {
         binding.buttonModeBack.setOnClickListener { finish() }
 
         renderModes()
+        animateEntry()
     }
 
     private fun renderModes() {
@@ -43,15 +44,34 @@ class ModeSelectActivity : FoldAwareActivity() {
             val cardView = cardBinding.root
             cardView.alpha = 0f
             cardView.translationY = 30f
+            cardView.scaleX = 0.98f
+            cardView.scaleY = 0.98f
             cardView.animate()
                 .alpha(1f)
                 .translationY(0f)
+                .scaleX(1f)
+                .scaleY(1f)
                 .setDuration(400)
                 .setStartDelay(100L + index * 80L)
                 .setInterpolator(android.view.animation.DecelerateInterpolator())
                 .start()
 
             binding.modeList.addView(cardView)
+        }
+    }
+
+    private fun animateEntry() {
+        val views = listOf(binding.modeTitle, binding.modeFooter)
+        views.forEachIndexed { index, view ->
+            view.alpha = 0f
+            view.translationY = 16f
+            view.animate()
+                .alpha(1f)
+                .translationY(0f)
+                .setStartDelay(60L * index)
+                .setDuration(320L)
+                .setInterpolator(android.view.animation.DecelerateInterpolator())
+                .start()
         }
     }
 }

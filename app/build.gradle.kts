@@ -61,4 +61,6 @@ dependencies {
     implementation("androidx.activity:activity-ktx:1.9.3")
     implementation("androidx.window:window:1.2.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
+
+    testImplementation("junit:junit:4.13.2")
 }

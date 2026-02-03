@@ -27,6 +27,8 @@
         <item name="android:textAllCaps">true</item>
         <item name="android:textColor">@color/bp_navy</item>
         <item name="android:textSize">@dimen/bp_body_text_size</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:letterSpacing">0.08</item>
         <item name="backgroundTint">@color/bp_cyan</item>
         <item name="cornerRadius">16dp</item>
     </style>
@@ -43,15 +45,45 @@
         <item name="android:textAllCaps">false</item>
         <item name="android:textColor">@color/bp_navy</item>
         <item name="android:textSize">12sp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:letterSpacing">0.06</item>
         <item name="backgroundTint">@color/bp_magenta</item>
         <item name="cornerRadius">12dp</item>
         <item name="iconPadding">4dp</item>
         <item name="iconTint">@color/bp_navy</item>
     </style>
 
+    <style name="Text.BreakoutPlus.Title" parent="Widget.MaterialComponents.TextView">
+        <item name="android:textColor">@color/bp_white</item>
+        <item name="android:textSize">@dimen/bp_title_size</item>
+        <item name="android:fontFamily">serif</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">0.02</item>
+    </style>
+
     <style name="Text.BreakoutPlus.ScreenTitle" parent="Widget.MaterialComponents.TextView">
         <item name="android:textColor">@color/bp_white</item>
         <item name="android:textSize">@dimen/bp_screen_title_size</item>
+        <item name="android:fontFamily">serif</item>
         <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">0.01</item>
+    </style>
+
+    <style name="Text.BreakoutPlus.Subtitle" parent="Widget.MaterialComponents.TextView">
+        <item name="android:textColor">@color/bp_gray</item>
+        <item name="android:textSize">@dimen/bp_subtitle_size</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <style name="Text.BreakoutPlus.Body" parent="Widget.MaterialComponents.TextView">
+        <item name="android:textColor">@color/bp_white</item>
+        <item name="android:textSize">@dimen/bp_body_text_size</item>
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+
+    <style name="Text.BreakoutPlus.Caption" parent="Widget.MaterialComponents.TextView">
+        <item name="android:textColor">@color/bp_gray</item>
+        <item name="android:textSize">@dimen/bp_caption_text_size</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
     </style>
 </resources>

@@ -7,23 +7,20 @@
 
     <TextView
         android:id="@+id/titleText"
+        style="@style/Text.BreakoutPlus.Title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Breakout+"
-        android:textColor="@color/bp_white"
-        android:textSize="@dimen/bp_title_size"
-        android:textStyle="bold"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
         android:id="@+id/titleSubtitle"
+        style="@style/Text.BreakoutPlus.Subtitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="High velocity brickbreaker"
-        android:textColor="@color/bp_gray"
-        android:textSize="@dimen/bp_subtitle_size"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/titleText" />
@@ -86,11 +83,10 @@
 
     <TextView
         android:id="@+id/deviceHint"
+        style="@style/Text.BreakoutPlus.Caption"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/label_device_hint"
-        android:textColor="@color/bp_gray"
-        android:textSize="12sp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />

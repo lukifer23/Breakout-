@@ -7,12 +7,10 @@
 
     <TextView
         android:id="@+id/howtoTitle"
+        style="@style/Text.BreakoutPlus.ScreenTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="How To Play"
-        android:textColor="@color/bp_white"
-        android:textSize="@dimen/bp_screen_title_size"
-        android:textStyle="bold"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -27,16 +25,17 @@
         app:layout_constraintTop_toBottomOf="@id/howtoTitle">
 
         <LinearLayout
+            android:id="@+id/howtoList"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
             <TextView
+                style="@style/Text.BreakoutPlus.Body"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Swipe anywhere to move the paddle. Tap to launch. Collect powerups to stack abilities. Use the HUD to monitor score, lives, and timers."
-                android:textColor="@color/bp_white"
-                android:textSize="@dimen/bp_body_text_size" />
+                />
 
             <TextView
                 android:id="@+id/powerupsHeader"

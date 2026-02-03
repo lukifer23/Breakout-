@@ -16,7 +16,8 @@ import kotlin.random.Random
 class GameEngine(
     private val config: GameConfig,
     private val listener: GameEventListener,
-    private val audio: GameAudioManager
+    private val audio: GameAudioManager,
+    private val logger: GameLogger? = null
 ) {
     private val random = Random(System.nanoTime())
     private val balls = mutableListOf<Ball>()
@@ -60,6 +61,7 @@ class GameEngine(
     private var screenFlash = 0f
 
     init {
+        logger?.logSessionStart(config.mode)
         listener.onModeUpdated(config.mode)
         resetLevel(first = true)
         listener.onLivesUpdated(lives)
@@ -174,7 +176,9 @@ class GameEngine(
         }
 
         if (guardrailActive) {
-            renderer.drawRect(0f, 2f, worldWidth, 0.6f, theme.accent)
+            val pulse = (kotlin.math.sin(time * 3f) * 0.5f + 0.5f)
+            val guardColor = floatArrayOf(theme.accent[0], theme.accent[1], theme.accent[2], 0.5f + pulse * 0.4f)
+            renderer.drawRect(0f, 2f, worldWidth, 0.6f, guardColor)
         }
 
         bricks.filter { it.alive }.forEach { brick ->
@@ -269,25 +273,45 @@ class GameEngine(
             renderer.drawCircle(particle.x, particle.y, particle.radius, particle.color)
         }
 
+        if (activeEffects.containsKey(PowerUpType.LASER) || shieldCharges > 0) {
+            val glowAlpha = if (activeEffects.containsKey(PowerUpType.LASER)) 0.55f else 0.35f
+            val glowColor = floatArrayOf(theme.accent[0], theme.accent[1], theme.accent[2], glowAlpha)
+            renderer.drawRect(
+                paddle.x - paddle.width / 2f - 1.2f,
+                paddle.y - paddle.height / 2f - 0.6f,
+                paddle.width + 2.4f,
+                paddle.height + 1.2f,
+                glowColor
+            )
+        }
         renderer.drawRect(paddle.x - paddle.width / 2f, paddle.y - paddle.height / 2f, paddle.width, paddle.height, theme.paddle)
 
         balls.forEach { ball ->
+            val speed = kotlin.math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy)
+            val glowStrength = (speed / 70f).coerceIn(0.2f, 0.55f)
+            val glowBase = when {
+                ball.isFireball -> PowerUpType.FIREBALL.color
+                pierceActive -> PowerUpType.PIERCE.color
+                else -> theme.accent
+            }
+            val glowColor = floatArrayOf(glowBase[0], glowBase[1], glowBase[2], glowStrength)
+            renderer.drawCircle(ball.x, ball.y, ball.radius * 1.8f, glowColor)
             renderer.drawCircle(ball.x, ball.y, ball.radius, ball.color)
         }
     }
 
     private fun renderPowerup(renderer: Renderer2D, power: PowerUp) {
-        val size = power.size
         val time = System.nanoTime() / 1_000_000_000f
-        val pulse = (kotlin.math.sin(time * 3f) * 0.5f + 0.5f) * 0.2f + 0.8f
+        val pulse = (kotlin.math.sin(time * 3f) * 0.5f + 0.5f)
+        val size = power.size * (0.9f + pulse * 0.12f)
 
         // Enhanced outer glow effect
-        val glowColor = adjustColor(power.type.color, 0.3f * pulse, 0.6f)
+        val glowColor = adjustColor(power.type.color, 0.25f + pulse * 0.2f, 0.6f)
         renderer.drawRect(power.x - size * 0.6f, power.y - size * 0.6f, size * 1.2f, size * 1.2f, glowColor)
 
         // Main powerup body with gradient
         val outer = adjustColor(power.type.color, 0.7f, 1f)
-        val inner = adjustColor(power.type.color, 1.1f, 1f)
+        val inner = adjustColor(power.type.color, 1.1f + pulse * 0.05f, 1f)
 
         // Draw with rounded appearance using multiple rects
         val cornerInset = size * 0.1f
@@ -388,9 +412,22 @@ class GameEngine(
         )
     }
 
+    fun getObjectCount(): Int = balls.size + bricks.size + powerups.size + beams.size + particles.size + waves.size
+
     fun handleTouch(event: MotionEvent, viewWidth: Float, viewHeight: Float) {
         if (state == GameState.PAUSED || state == GameState.GAME_OVER) return
         val x = event.x / viewWidth * worldWidth
+        val y = event.y / viewHeight * worldHeight
+
+        // Log touch input
+        val actionString = when (event.actionMasked) {
+            MotionEvent.ACTION_DOWN -> "down"
+            MotionEvent.ACTION_MOVE -> "move"
+            MotionEvent.ACTION_UP -> "up"
+            else -> "other"
+        }
+        logger?.logTouchInput(actionString, x, y, event.pressure)
+
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 touchDownTime = System.currentTimeMillis()
@@ -473,6 +510,7 @@ class GameEngine(
         listener.onPowerupStatus("Powerups: none")
         lastPowerupStatus = "Powerups: none"
         listener.onTip(level.tip)
+        logger?.logLevelStart(levelIndex, theme.name)
     }
 
     private fun buildBricks(layout: LevelFactory.LevelLayout) {
@@ -631,14 +669,10 @@ class GameEngine(
             if (ball.vx == 0f && ball.vy == 0f) {
                 val angle = random.nextFloat() * 0.6f + 0.3f
                 val dir = if (random.nextBoolean()) 1f else -1f
-                // Adjust ball speed based on game mode for balance
-                val speedMultiplier = when {
-                    config.mode.rush -> 1.5f  // 50% faster for Level Rush
-                    config.mode == GameMode.TIMED -> 1.3f  // Slightly faster for Timed Challenge
-                    else -> 1.0f
-                }
-                ball.vx = 30f * speedMultiplier * kotlin.math.cos(angle) * dir
-                ball.vy = 38f * speedMultiplier * kotlin.math.sin(angle)
+                val levelBoost = (1f + levelIndex * 0.015f).coerceAtMost(1.35f)
+                val speed = config.mode.launchSpeed * levelBoost
+                ball.vx = speed * kotlin.math.cos(angle) * dir
+                ball.vy = speed * kotlin.math.sin(angle)
             }
         }
     }
@@ -684,6 +718,7 @@ class GameEngine(
                 if (guardrailActive) {
                     ball.y = ball.radius + 2f
                     ball.vy = abs(ball.vy)
+                    logger?.logBallLost(balls.size, Pair(ball.x, ball.y), lives)
                     audio.play(GameSound.BOUNCE, 0.6f)
                 } else if (shieldCharges > 0) {
                     shieldCharges -= 1
@@ -763,8 +798,12 @@ class GameEngine(
 
                 // Show combo feedback if significant
                 if (combo >= 3) {
+                    logger?.logComboAchieved(combo, multiplier, (brick.scoreValue * multiplier).toInt())
                     listener.onTip("Combo x${combo}!")
                 }
+
+                // Log brick destruction
+                logger?.logBrickDestroyed(brick.type, Pair(brick.centerX, brick.centerY), combo)
 
                 // Play appropriate sound for brick type
                 val brickSound = when (brick.type) {
@@ -879,6 +918,7 @@ class GameEngine(
                 continue
             }
             if (powerIntersectsPaddle(power)) {
+                logger?.logPowerupCollected(power.type, Pair(power.x, power.y))
                 applyPowerup(power.type)
                 audio.play(GameSound.POWERUP, 0.8f)
                 iterator.remove()
@@ -1078,6 +1118,7 @@ class GameEngine(
     private fun checkLevelCompletion() {
         val remaining = bricks.count { it.alive && it.type != BrickType.UNBREAKABLE }
         if (remaining == 0) {
+            logger?.logLevelComplete(levelIndex, score, elapsedSeconds, remaining)
             val summary = GameSummary(score, levelIndex + 1, elapsedSeconds.toInt())
             listener.onLevelComplete(summary)
             state = GameState.PAUSED
@@ -1099,6 +1140,7 @@ class GameEngine(
         audio.play(GameSound.LIFE, 0.9f)
         audio.haptic(GameHaptic.HEAVY)
         if (lives <= 0) {
+            logger?.logGameOver(score, levelIndex + 1, "lives_depleted")
             triggerGameOver()
         } else {
             spawnBall()
@@ -1379,33 +1421,50 @@ data class Brick(
         val base = theme.brickPalette[type] ?: theme.accent
         val ratio = if (type == BrickType.UNBREAKABLE) 1f else (hitPoints.toFloat() / maxHitPoints.toFloat()).coerceIn(0.4f, 1f)
 
-        // Subtle variance for individual brick distinction within themes
-        val positionVariance = (gridX * 0.02f + gridY * 0.015f) % 0.1f - 0.05f
+        // Significant variance for huge color variety between bricks
+        val gridSeed = (gridX * 7 + gridY * 11 + type.ordinal * 17) % 100  // Unique seed per brick position and type
+        val random = java.util.Random(gridSeed.toLong())
+        val positionVarianceR = (random.nextFloat() - 0.5f) * 0.5f  // ±0.25f variance
+        val positionVarianceG = (random.nextFloat() - 0.5f) * 0.5f  // ±0.25f variance
+        val positionVarianceB = (random.nextFloat() - 0.5f) * 0.5f  // ±0.25f variance
 
-        // Theme-specific brightness adjustment
-        val themeBrightness = when (theme.name) {
-            "Neon" -> 1.1f
-            "Sunset" -> 0.95f
-            "Cobalt" -> 0.9f
-            "Aurora" -> 1.05f
-            "Forest" -> 0.85f
-            "Lava" -> 1.0f
-            else -> 1.0f
+        // Additional type-based color shifts for even more variety
+        val typeShift = when (type) {
+            BrickType.NORMAL -> floatArrayOf(0f, 0f, 0f)
+            BrickType.REINFORCED -> floatArrayOf(0.1f, -0.05f, 0.05f)
+            BrickType.ARMORED -> floatArrayOf(-0.05f, 0.1f, -0.05f)
+            BrickType.EXPLOSIVE -> floatArrayOf(0.15f, -0.1f, -0.1f)
+            BrickType.UNBREAKABLE -> floatArrayOf(-0.1f, -0.1f, 0.1f)
+            BrickType.MOVING -> floatArrayOf(-0.05f, 0.15f, 0.05f)
+            BrickType.SPAWNING -> floatArrayOf(0.05f, 0f, 0.15f)
+            BrickType.PHASE -> floatArrayOf(0.2f, 0.1f, -0.1f)
+            BrickType.BOSS -> floatArrayOf(0.3f, -0.2f, -0.2f)
+        }
+
+        // Strong theme-specific color adjustments for maximum variety
+        val themeHueShift = when (theme.name) {
+            "Neon" -> floatArrayOf(0.1f, 0.2f, 0.3f)      // Boost cyan/blue
+            "Sunset" -> floatArrayOf(0.3f, -0.1f, -0.2f)   // Boost red, reduce blue
+            "Cobalt" -> floatArrayOf(-0.1f, 0.1f, 0.4f)    // Boost blue, reduce red
+            "Aurora" -> floatArrayOf(0f, 0.3f, 0.1f)       // Boost green
+            "Forest" -> floatArrayOf(-0.2f, 0.2f, -0.1f)   // Boost green, reduce red
+            "Lava" -> floatArrayOf(0.4f, -0.2f, -0.3f)     // Boost red, reduce blue/green
+            else -> floatArrayOf(0f, 0f, 0f)
         }
 
         val finalColor = floatArrayOf(
-            (base[0] * ratio * themeBrightness + positionVariance).coerceIn(0.05f, 0.98f),
-            (base[1] * ratio * themeBrightness + positionVariance * 0.8f).coerceIn(0.05f, 0.98f),
-            (base[2] * ratio * themeBrightness + positionVariance * 1.2f).coerceIn(0.05f, 0.98f),
+            (base[0] * ratio + positionVarianceR + themeHueShift[0] + typeShift[0]).coerceIn(0.05f, 0.98f),
+            (base[1] * ratio + positionVarianceG + themeHueShift[1] + typeShift[1]).coerceIn(0.05f, 0.98f),
+            (base[2] * ratio + positionVarianceB + themeHueShift[2] + typeShift[2]).coerceIn(0.05f, 0.98f),
             1f
         )
 
         if (hitFlash <= 0f) return finalColor
         hitFlash = max(0f, hitFlash - 0.03f)
         return floatArrayOf(
-            min(1f, finalColor[0] + 0.3f),
-            min(1f, finalColor[1] + 0.3f),
-            min(1f, finalColor[2] + 0.3f),
+            min(1f, finalColor[0] + 0.4f),
+            min(1f, finalColor[1] + 0.4f),
+            min(1f, finalColor[2] + 0.4f),
             1f
         )
     }

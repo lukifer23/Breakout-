@@ -14,6 +14,7 @@ object SettingsManager {
     private const val KEY_MASTER_VOLUME = "master_volume"
     private const val KEY_EFFECTS_VOLUME = "effects_volume"
     private const val KEY_MUSIC_VOLUME = "music_volume"
+    private const val KEY_LOGGING_ENABLED = "logging_enabled"
 
     data class Settings(
         val soundEnabled: Boolean,
@@ -24,7 +25,8 @@ object SettingsManager {
         val sensitivity: Float,
         val masterVolume: Float = 1.0f,
         val effectsVolume: Float = 0.8f,
-        val musicVolume: Float = 0.6f
+        val musicVolume: Float = 0.6f,
+        val loggingEnabled: Boolean = false
     )
 
     private fun prefs(context: Context): SharedPreferences =
@@ -41,7 +43,8 @@ object SettingsManager {
             sensitivity = prefs.getFloat(KEY_SENSITIVITY, 0.7f),
             masterVolume = prefs.getFloat(KEY_MASTER_VOLUME, 1.0f),
             effectsVolume = prefs.getFloat(KEY_EFFECTS_VOLUME, 0.8f),
-            musicVolume = prefs.getFloat(KEY_MUSIC_VOLUME, 0.6f)
+            musicVolume = prefs.getFloat(KEY_MUSIC_VOLUME, 0.6f),
+            loggingEnabled = prefs.getBoolean(KEY_LOGGING_ENABLED, false)
         )
     }
 
@@ -56,6 +59,7 @@ object SettingsManager {
             .putFloat(KEY_MASTER_VOLUME, settings.masterVolume)
             .putFloat(KEY_EFFECTS_VOLUME, settings.effectsVolume)
             .putFloat(KEY_MUSIC_VOLUME, settings.musicVolume)
+            .putBoolean(KEY_LOGGING_ENABLED, settings.loggingEnabled)
             .apply()
     }
 }

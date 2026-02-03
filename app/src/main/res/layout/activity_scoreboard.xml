@@ -7,12 +7,10 @@
 
     <TextView
         android:id="@+id/scoreTitle"
+        style="@style/Text.BreakoutPlus.ScreenTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Scoreboard"
-        android:textColor="@color/bp_white"
-        android:textSize="@dimen/bp_screen_title_size"
-        android:textStyle="bold"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -35,10 +33,10 @@
 
     <TextView
         android:id="@+id/scoreEmpty"
+        style="@style/Text.BreakoutPlus.Caption"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/label_no_scores"
-        android:textColor="@color/bp_gray"
         android:visibility="gone"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/scoreTitle" />

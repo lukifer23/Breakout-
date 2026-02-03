@@ -32,32 +32,40 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
+                android:fontFamily="sans-serif-medium"
                 android:text="Score 0"
                 android:textColor="@color/bp_white"
+                android:textSize="@dimen/bp_body_text_size"
                 android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/hudLives"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-medium"
                 android:text="Lives 3"
-                android:textColor="@color/bp_white" />
+                android:textColor="@color/bp_white"
+                android:textSize="@dimen/bp_body_text_size" />
 
             <TextView
                 android:id="@+id/hudTime"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="20dp"
+                android:fontFamily="sans-serif-medium"
                 android:text="Time 02:00"
-                android:textColor="@color/bp_white" />
+                android:textColor="@color/bp_white"
+                android:textSize="@dimen/bp_body_text_size" />
 
             <TextView
                 android:id="@+id/hudLevel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="20dp"
+                android:fontFamily="sans-serif-medium"
                 android:text="Level 1"
-                android:textColor="@color/bp_white" />
+                android:textColor="@color/bp_white"
+                android:textSize="@dimen/bp_body_text_size" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/buttonPause"
@@ -75,8 +83,10 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
+            android:fontFamily="sans-serif-medium"
             android:text="Classic"
             android:textColor="@color/bp_gray"
+            android:textSize="@dimen/bp_caption_text_size"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/hudRow" />
 
@@ -93,9 +103,10 @@
                 android:id="@+id/hudPowerupText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:fontFamily="sans-serif"
                 android:text="Powerups: none"
                 android:textColor="@color/bp_gray"
-                android:textSize="12sp" />
+                android:textSize="@dimen/bp_caption_text_size" />
         </LinearLayout>
 
         <LinearLayout

@@ -1,8 +1,22 @@
 # Breakout+
 
-## Goal
+A premium brickbreaker game designed specifically for foldable devices like the Samsung Galaxy Z Fold 7. Features advanced physics, multiple game modes, dynamic brick behaviors, and comprehensive powerup systems with GPU-accelerated rendering at 60+ FPS.
 
-Breakout+ is a premium brickbreaker game designed specifically for foldable devices, with the Samsung Galaxy Z Fold 7 as the primary target. The game delivers a complete, polished experience with no placeholders, stubs, or mocks—everything is fully implemented and optimized for foldable form factors.
+## About
+
+Breakout+ elevates the classic brickbreaker genre with modern mobile optimizations and innovative gameplay mechanics. Built from the ground up for foldable devices, it leverages the unique form factor for enhanced gameplay experiences across folded and unfolded states.
+
+### Key Features
+- **Foldable-First Design**: Optimized layouts for Samsung Galaxy Z Fold 7 (folded 7.6" and unfolded 12.4" displays)
+- **GPU Acceleration**: OpenGL ES 2.0 rendering for smooth 60+ FPS gameplay
+- **Advanced Physics**: Accurate collision detection with momentum preservation
+- **Multiple Game Modes**: Classic, Timed Challenge, Endless, God Mode, and Level Rush
+- **Dynamic Brick System**: 9 brick types with unique behaviors (moving, spawning, phase, boss)
+- **Comprehensive Powerups**: 13 distinct powerups with visual effects and timers
+- **Combo System**: Score multipliers for consecutive brick destruction
+- **6 Visual Themes**: Unique color palettes and animated backgrounds
+- **Audio System**: Procedural sound generation with individual volume controls
+- **Data Logging**: Built-in analytics for debugging and potential AI training
 
 Key principles:
 - **Foldable-first design**: Optimized layouts and hinge-aware UI for seamless folded/unfolded transitions
@@ -188,6 +202,14 @@ The current icon is a vector adaptive icon with brick and ball motifs. If you wa
 - **Neon Orbit**: Dark background, cyan orbit ring, hot pink ball.
 - **Folded Edge**: Split gradient background suggesting the hinge.
 - **Minimal Plus**: Large “+” with a single brick row.
+Icon foregrounds live in `app/src/main/res/drawable/` as:
+- `ic_launcher_foreground_neon.xml`
+- `ic_launcher_foreground_fold.xml`
+- `ic_launcher_foreground_minimal.xml`
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Notes
 - The HUD timer counts down in timed modes and counts up otherwise.

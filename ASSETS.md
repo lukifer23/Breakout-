@@ -17,6 +17,10 @@
   - `app/src/main/res/drawable/ic_launcher_foreground.xml`
   - `app/src/main/res/drawable/ic_launcher_background.xml`
   - `app/src/main/res/mipmap-anydpi-v26/`
+- Variant foregrounds available:
+  - `app/src/main/res/drawable/ic_launcher_foreground_neon.xml` (orbit ring)
+  - `app/src/main/res/drawable/ic_launcher_foreground_fold.xml` (folded hinge)
+  - `app/src/main/res/drawable/ic_launcher_foreground_minimal.xml` (minimal plus)
 
 ## Visuals
 - All UI colors defined in `app/src/main/res/values/colors.xml`.

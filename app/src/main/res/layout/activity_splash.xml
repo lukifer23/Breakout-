@@ -7,12 +7,10 @@
 
     <TextView
         android:id="@+id/splashTitle"
+        style="@style/Text.BreakoutPlus.Title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Breakout+"
-        android:textColor="@color/bp_white"
-        android:textSize="@dimen/bp_title_size"
-        android:textStyle="bold"
         app:layout_constraintBottom_toTopOf="@id/splashSubtitle"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -21,11 +19,10 @@
 
     <TextView
         android:id="@+id/splashSubtitle"
+        style="@style/Text.BreakoutPlus.Subtitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Foldable-ready brickbreaker"
-        android:textColor="@color/bp_gray"
-        android:textSize="@dimen/bp_subtitle_size"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"

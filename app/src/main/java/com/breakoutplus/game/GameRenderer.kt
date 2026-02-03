@@ -13,7 +13,8 @@ class GameRenderer(
 
     private val renderer2D = Renderer2D()
     private val audioManager = GameAudioManager(context, config.settings)
-    private var engine = GameEngine(config, listener, audioManager)
+    private val logger = if (config.settings.loggingEnabled) GameLogger(context, true) else null
+    private var engine = GameEngine(config, listener, audioManager, logger)
     private var lastTimeNs: Long = 0L
     private var paused = false
 
@@ -33,7 +34,8 @@ class GameRenderer(
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
         if (paused) return
 
-        val now = System.nanoTime()
+        val frameStart = System.nanoTime()
+        val now = frameStart
         if (lastTimeNs == 0L) {
             lastTimeNs = now
         }
@@ -43,6 +45,11 @@ class GameRenderer(
 
         engine.update(delta)
         engine.render(renderer2D)
+
+        // Performance logging
+        val frameTime = (System.nanoTime() - frameStart) / 1_000_000f // Convert to milliseconds
+        val fps = if (delta > 0f) (1f / delta).toInt() else 0
+        logger?.logPerformanceMetric(fps.toFloat(), frameTime, engine.getObjectCount())
     }
 
     fun handleTouch(event: MotionEvent, viewWidth: Float, viewHeight: Float) {
