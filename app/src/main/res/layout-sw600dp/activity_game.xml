@@ -1,0 +1,212 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bp_navy">
+
+    <com.breakoutplus.game.GameGLSurfaceView
+        android:id="@+id/gameSurface"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/hudOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="20dp">
+
+        <LinearLayout
+            android:id="@+id/hudRow"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:background="@drawable/hud_chip"
+            android:padding="14dp"
+            android:orientation="horizontal"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <TextView
+                android:id="@+id/hudScore"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Score 0"
+                android:textColor="@color/bp_white"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/hudLives"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Lives 3"
+                android:textColor="@color/bp_white" />
+
+            <TextView
+                android:id="@+id/hudTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="20dp"
+                android:text="Time 02:00"
+                android:textColor="@color/bp_white" />
+
+            <TextView
+                android:id="@+id/hudLevel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="20dp"
+                android:text="Level 1"
+                android:textColor="@color/bp_white" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/hudMode"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="Classic"
+            android:textColor="@color/bp_gray"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/hudRow" />
+
+        <LinearLayout
+            android:id="@+id/hudPowerups"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:orientation="horizontal"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/hudMode">
+
+            <TextView
+                android:id="@+id/hudPowerupText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Powerups: none"
+                android:textColor="@color/bp_gray"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonPause"
+            style="@style/Widget.BreakoutPlus.Button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/label_pause"
+            android:backgroundTint="@color/bp_magenta"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <LinearLayout
+            android:id="@+id/pauseOverlay"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:background="#B3000000"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Paused"
+                android:textColor="@color/bp_white"
+                android:textSize="28sp"
+                android:textStyle="bold" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonResume"
+                style="@style/Widget.BreakoutPlus.Button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/label_resume" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonRestart"
+                style="@style/Widget.BreakoutPlus.Button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/label_restart"
+                android:backgroundTint="@color/bp_gold" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonExit"
+                style="@style/Widget.BreakoutPlus.Button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/label_main_menu"
+                android:backgroundTint="@color/bp_gray" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/endOverlay"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:background="#CC0B1220"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <TextView
+                android:id="@+id/endTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Game Over"
+                android:textColor="@color/bp_white"
+                android:textSize="28sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/endStats"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Score 0"
+                android:textColor="@color/bp_gray" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonEndPrimary"
+                style="@style/Widget.BreakoutPlus.Button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/label_restart" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonEndSecondary"
+                style="@style/Widget.BreakoutPlus.Button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/label_main_menu"
+                android:backgroundTint="@color/bp_gray" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/hudTip"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="20dp"
+            android:background="@drawable/hud_chip"
+            android:padding="10dp"
+            android:text="Tip"
+            android:textColor="@color/bp_white"
+            android:textSize="13sp"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</FrameLayout>

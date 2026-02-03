@@ -1,0 +1,81 @@
+package com.breakoutplus.game
+
+import android.content.Context
+import android.opengl.GLES20
+import android.opengl.GLSurfaceView
+import android.view.MotionEvent
+
+class GameRenderer(
+    private val context: Context,
+    private var config: GameConfig,
+    private val listener: GameEventListener
+) : GLSurfaceView.Renderer {
+
+    private val renderer2D = Renderer2D()
+    private val audioManager = GameAudioManager(context, config.settings)
+    private var engine = GameEngine(config, listener, audioManager)
+    private var lastTimeNs: Long = 0L
+    private var paused = false
+
+    override fun onSurfaceCreated(unused: javax.microedition.khronos.opengles.GL10?, config: javax.microedition.khronos.egl.EGLConfig?) {
+        GLES20.glClearColor(0.04f, 0.07f, 0.13f, 1f)
+        renderer2D.init()
+        audioManager.startMusic()
+    }
+
+    override fun onSurfaceChanged(unused: javax.microedition.khronos.opengles.GL10?, width: Int, height: Int) {
+        GLES20.glViewport(0, 0, width, height)
+        renderer2D.setViewport(width, height)
+        engine.onResize(width, height)
+    }
+
+    override fun onDrawFrame(unused: javax.microedition.khronos.opengles.GL10?) {
+        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
+        if (paused) return
+
+        val now = System.nanoTime()
+        if (lastTimeNs == 0L) {
+            lastTimeNs = now
+        }
+        var delta = (now - lastTimeNs) / 1_000_000_000f
+        lastTimeNs = now
+        if (delta > 0.05f) delta = 0.05f
+
+        engine.update(delta)
+        engine.render(renderer2D)
+    }
+
+    fun handleTouch(event: MotionEvent, viewWidth: Float, viewHeight: Float) {
+        engine.handleTouch(event, viewWidth, viewHeight)
+    }
+
+    fun pause() {
+        paused = true
+        engine.pause()
+        audioManager.stopMusic()
+    }
+
+    fun resume() {
+        paused = false
+        engine.resume()
+        audioManager.startMusic()
+    }
+
+    fun restart() {
+        engine = GameEngine(config, listener, audioManager)
+        lastTimeNs = 0L
+    }
+
+    fun nextLevel() {
+        engine.nextLevel()
+    }
+
+    fun reset(newConfig: GameConfig) {
+        config = newConfig
+        engine = GameEngine(config, listener, audioManager)
+    }
+
+    fun release() {
+        audioManager.release()
+    }
+}

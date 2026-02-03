@@ -1,0 +1,12 @@
+<resources>
+    <color name="bp_navy">#0B1220</color>
+    <color name="bp_ink">#111B2E</color>
+    <color name="bp_cyan">#31E1F7</color>
+    <color name="bp_magenta">#FF4FD8</color>
+    <color name="bp_gold">#FFC857</color>
+    <color name="bp_green">#2CEAA3</color>
+    <color name="bp_red">#FF5D5D</color>
+    <color name="bp_white">#F7F8FF</color>
+    <color name="bp_gray">#9AA4B2</color>
+    <color name="bp_shadow">#2B3347</color>
+</resources>

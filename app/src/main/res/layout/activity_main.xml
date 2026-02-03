@@ -1,0 +1,98 @@
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/menu_background"
+    android:padding="@dimen/bp_margin">
+
+    <TextView
+        android:id="@+id/titleText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Breakout+"
+        android:textColor="@color/bp_white"
+        android:textSize="@dimen/bp_title_size"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/titleSubtitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="High velocity brickbreaker"
+        android:textColor="@color/bp_gray"
+        android:textSize="@dimen/bp_subtitle_size"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/titleText" />
+
+    <LinearLayout
+        android:id="@+id/mainButtonColumn"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:gravity="center"
+        android:orientation="vertical"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/titleSubtitle">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonPlay"
+            style="@style/Widget.BreakoutPlus.Button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/title_play" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonModes"
+            style="@style/Widget.BreakoutPlus.Button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/bp_button_gap"
+            android:text="@string/title_modes"
+            android:backgroundTint="@color/bp_gold" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonScoreboard"
+            style="@style/Widget.BreakoutPlus.Button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/bp_button_gap"
+            android:text="@string/title_scoreboard"
+            android:backgroundTint="@color/bp_green" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonSettings"
+            style="@style/Widget.BreakoutPlus.Button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/bp_button_gap"
+            android:text="@string/title_settings"
+            android:backgroundTint="@color/bp_magenta" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonHowTo"
+            style="@style/Widget.BreakoutPlus.Button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/bp_button_gap"
+            android:text="@string/title_howto"
+            android:backgroundTint="@color/bp_cyan" />
+
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/deviceHint"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/label_device_hint"
+        android:textColor="@color/bp_gray"
+        android:textSize="12sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

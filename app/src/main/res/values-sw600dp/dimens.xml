@@ -1,0 +1,7 @@
+<resources>
+    <dimen name="bp_margin">24dp</dimen>
+    <dimen name="bp_margin_large">32dp</dimen>
+    <dimen name="bp_title_size">44sp</dimen>
+    <dimen name="bp_subtitle_size">18sp</dimen>
+    <dimen name="bp_button_gap">16dp</dimen>
+</resources>

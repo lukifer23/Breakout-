@@ -1,0 +1,68 @@
+package com.breakoutplus
+
+import android.content.Context
+import org.json.JSONArray
+import org.json.JSONObject
+
+object ScoreboardManager {
+    private const val PREFS_NAME = "breakout_plus_scores"
+    private const val KEY_SCORES = "scores"
+    private const val MAX_SCORES = 20
+
+    data class ScoreEntry(
+        val score: Int,
+        val mode: String,
+        val level: Int,
+        val durationSeconds: Int,
+        val timestamp: Long
+    )
+
+    private fun prefs(context: Context) =
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+
+    fun loadScores(context: Context): List<ScoreEntry> {
+        val raw = prefs(context).getString(KEY_SCORES, "[]") ?: "[]"
+        val json = JSONArray(raw)
+        return buildList {
+            for (i in 0 until json.length()) {
+                val obj = json.optJSONObject(i) ?: continue
+                add(
+                    ScoreEntry(
+                        score = obj.optInt("score"),
+                        mode = obj.optString("mode"),
+                        level = obj.optInt("level"),
+                        durationSeconds = obj.optInt("duration"),
+                        timestamp = obj.optLong("timestamp")
+                    )
+                )
+            }
+        }
+    }
+
+    fun addScore(context: Context, entry: ScoreEntry): List<ScoreEntry> {
+        val scores = loadScores(context).toMutableList()
+        scores.add(entry)
+        val sorted = scores.sortedWith(compareByDescending<ScoreEntry> { it.score }.thenBy { it.durationSeconds })
+        val trimmed = sorted.take(MAX_SCORES)
+        saveScores(context, trimmed)
+        return trimmed
+    }
+
+    fun reset(context: Context) {
+        prefs(context).edit().putString(KEY_SCORES, "[]").apply()
+    }
+
+    private fun saveScores(context: Context, scores: List<ScoreEntry>) {
+        val json = JSONArray()
+        scores.forEach { entry ->
+            val obj = JSONObject()
+            obj.put("score", entry.score)
+            obj.put("mode", entry.mode)
+            obj.put("level", entry.level)
+            obj.put("duration", entry.durationSeconds)
+            obj.put("timestamp", entry.timestamp)
+            json.put(obj)
+        }
+        prefs(context).edit().putString(KEY_SCORES, json.toString()).apply()
+    }
+}

@@ -1,0 +1,33 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <style name="Theme.BreakoutPlus" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/bp_cyan</item>
+        <item name="colorPrimaryVariant">@color/bp_magenta</item>
+        <item name="colorOnPrimary">@color/bp_navy</item>
+        <item name="colorSecondary">@color/bp_gold</item>
+        <item name="colorSecondaryVariant">@color/bp_green</item>
+        <item name="colorOnSecondary">@color/bp_navy</item>
+        <item name="android:statusBarColor">@color/bp_navy</item>
+        <item name="android:navigationBarColor">@color/bp_navy</item>
+        <item name="android:windowBackground">@color/bp_navy</item>
+        <item name="android:forceDarkAllowed" tools:targetApi="q">false</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+
+    <style name="Theme.BreakoutPlus.Splash" parent="Theme.BreakoutPlus">
+        <item name="android:windowBackground">@drawable/splash_background</item>
+    </style>
+
+    <style name="Widget.BreakoutPlus.Button" parent="Widget.MaterialComponents.Button">
+        <item name="android:insetLeft">0dp</item>
+        <item name="android:insetRight">0dp</item>
+        <item name="android:paddingLeft">24dp</item>
+        <item name="android:paddingRight">24dp</item>
+        <item name="android:paddingTop">14dp</item>
+        <item name="android:paddingBottom">14dp</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:textColor">@color/bp_navy</item>
+        <item name="android:textSize">16sp</item>
+        <item name="backgroundTint">@color/bp_cyan</item>
+        <item name="cornerRadius">16dp</item>
+    </style>
+</resources>

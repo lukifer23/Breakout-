@@ -1,0 +1,13 @@
+package com.breakoutplus.game
+
+interface GameEventListener {
+    fun onScoreUpdated(score: Int)
+    fun onLivesUpdated(lives: Int)
+    fun onTimeUpdated(secondsRemaining: Int)
+    fun onLevelUpdated(level: Int)
+    fun onModeUpdated(mode: GameMode)
+    fun onPowerupStatus(status: String)
+    fun onTip(message: String)
+    fun onGameOver(summary: GameSummary)
+    fun onLevelComplete(summary: GameSummary)
+}
