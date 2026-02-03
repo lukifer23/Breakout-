@@ -11,7 +11,7 @@
         android:layout_height="wrap_content"
         android:text="Scoreboard"
         android:textColor="@color/bp_white"
-        android:textSize="28sp"
+        android:textSize="@dimen/bp_screen_title_size"
         android:textStyle="bold"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />

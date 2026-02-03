@@ -1,5 +1,9 @@
 package com.breakoutplus.game
 
+/**
+ * Callback interface for game engine events.
+ * Used by GameEngine to communicate state changes to UI layer.
+ */
 interface GameEventListener {
     fun onScoreUpdated(score: Int)
     fun onLivesUpdated(lives: Int)

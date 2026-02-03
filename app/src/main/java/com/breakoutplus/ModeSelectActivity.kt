@@ -30,7 +30,7 @@ class ModeSelectActivity : FoldAwareActivity() {
             GameMode.GOD,
             GameMode.RUSH
         )
-        modes.forEach { mode ->
+        modes.forEachIndexed { index, mode ->
             val cardBinding = ItemModeCardBinding.inflate(inflater, binding.modeList, false)
             cardBinding.modeCardTitle.text = mode.displayName
             cardBinding.modeCardDescription.text = mode.description
@@ -38,7 +38,20 @@ class ModeSelectActivity : FoldAwareActivity() {
             cardBinding.modeCardStart.setOnClickListener {
                 startActivity(Intent(this, GameActivity::class.java).putExtra(GameActivity.EXTRA_MODE, mode.name))
             }
-            binding.modeList.addView(cardBinding.root)
+
+            // Add entrance animation
+            val cardView = cardBinding.root
+            cardView.alpha = 0f
+            cardView.translationY = 30f
+            cardView.animate()
+                .alpha(1f)
+                .translationY(0f)
+                .setDuration(400)
+                .setStartDelay(100L + index * 80L)
+                .setInterpolator(android.view.animation.DecelerateInterpolator())
+                .start()
+
+            binding.modeList.addView(cardView)
         }
     }
 }

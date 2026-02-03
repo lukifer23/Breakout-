@@ -1,0 +1,22 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Dark background circle -->
+    <path
+        android:fillColor="#0B1220"
+        android:pathData="M54,54 m-45,0 a45,45 0 1,1 90,0 a45,45 0 1,1 -90,0" />
+    <!-- Cyan orbit ring -->
+    <path
+        android:fillColor="#31E1F7"
+        android:pathData="M54,54 m-40,0 a40,40 0 1,1 80,0 a40,40 0 1,1 -80,0 M54,54 m-35,0 a35,35 0 1,1 70,0 a35,35 0 1,1 -70,0" />
+    <!-- Hot pink ball -->
+    <path
+        android:fillColor="#FF4FD8"
+        android:pathData="M54,35 A8,8 0 1,0 54,51 A8,8 0 1,0 54,35 Z" />
+    <!-- Cyan accent dots -->
+    <path
+        android:fillColor="#31E1F7"
+        android:pathData="M35,54 A3,3 0 1,0 35,60 A3,3 0 1,0 35,54 Z M73,54 A3,3 0 1,0 73,60 A3,3 0 1,0 73,54 Z" />
+</vector>

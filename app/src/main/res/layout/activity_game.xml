@@ -20,6 +20,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:background="@drawable/hud_chip"
+            android:gravity="center_vertical"
             android:padding="10dp"
             android:orientation="horizontal"
             app:layout_constraintEnd_toEndOf="parent"
@@ -57,6 +58,16 @@
                 android:layout_marginStart="16dp"
                 android:text="Level 1"
                 android:textColor="@color/bp_white" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonPause"
+                style="@style/Widget.BreakoutPlus.PauseButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:text="@string/label_pause"
+                app:icon="@drawable/ic_pause"
+                app:iconGravity="textStart" />
         </LinearLayout>
 
         <TextView
@@ -86,16 +97,6 @@
                 android:textColor="@color/bp_gray"
                 android:textSize="12sp" />
         </LinearLayout>
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/buttonPause"
-            style="@style/Widget.BreakoutPlus.Button"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/label_pause"
-            android:backgroundTint="@color/bp_magenta"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
 
         <LinearLayout
             android:id="@+id/pauseOverlay"
@@ -207,6 +208,44 @@
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent" />
+
+        <LinearLayout
+            android:id="@+id/tooltipOverlay"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:background="#CC000000"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Welcome to Breakout+!"
+                android:textColor="@color/bp_white"
+                android:textSize="24sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="• Drag to move the paddle\n• Tap to launch the ball\n• Collect powerups for special abilities\n• Two-finger tap fires lasers when available"
+                android:textColor="@color/bp_gray"
+                android:textSize="@dimen/bp_body_text_size" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonTooltipDismiss"
+                style="@style/Widget.BreakoutPlus.Button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:text="Got it!" />
+        </LinearLayout>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </FrameLayout>

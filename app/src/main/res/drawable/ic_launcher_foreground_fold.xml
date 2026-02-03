@@ -1,0 +1,29 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Split gradient background suggesting hinge -->
+    <path
+        android:fillColor="#1B2A45"
+        android:pathData="M0,0 L54,0 L54,108 L0,108 Z" />
+    <path
+        android:fillColor="#111B2E"
+        android:pathData="M54,0 L108,0 L108,108 L54,108 Z" />
+    <!-- Hinge line -->
+    <path
+        android:fillColor="#31E1F7"
+        android:pathData="M52,20 L56,20 L56,88 L52,88 Z" />
+    <!-- Left side ball -->
+    <path
+        android:fillColor="#FFC857"
+        android:pathData="M27,45 A6,6 0 1,0 27,57 A6,6 0 1,0 27,45 Z" />
+    <!-- Right side paddle -->
+    <path
+        android:fillColor="#2CEAA3"
+        android:pathData="M70,50 L90,50 L90,58 L70,58 Z" />
+    <!-- Connecting elements -->
+    <path
+        android:fillColor="#FF4FD8"
+        android:pathData="M45,52 L48,52 L48,56 L45,56 Z M60,52 L63,52 L63,56 L60,56 Z" />
+</vector>

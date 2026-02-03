@@ -21,6 +21,37 @@
    - `render(renderer2D)` with `Renderer2D`
 4. `GameEngine` emits events through `GameEventListener` to update HUD and end screens.
 
+```mermaid
+flowchart TD
+    subgraph UI [UI Layer]
+        GameActivity[GameActivity]
+        GLSurfaceView[GameGLSurfaceView]
+        HUD[HUD Views]
+    end
+
+    subgraph Game [Game Layer]
+        GameRenderer[GameRenderer]
+        GameEngine[GameEngine]
+        Renderer2D[Renderer2D]
+    end
+
+    subgraph Data [Data Layer]
+        SettingsManager[SettingsManager]
+        ScoreboardManager[ScoreboardManager]
+        LevelFactory[LevelFactory]
+    end
+
+    GameActivity --> GameConfig[GameConfig]
+    GameConfig --> GLSurfaceView
+    GLSurfaceView --> GameRenderer
+    GameRenderer --> GameEngine
+    GameEngine --> Renderer2D
+    GameEngine --> LevelFactory
+    GameActivity --> SettingsManager
+    GameActivity --> ScoreboardManager
+    GameEngine -.-> GameEventListener[GameEventListener] -.-> HUD
+```
+
 ## State Management
 - `GameState`: READY, RUNNING, PAUSED, GAME_OVER.
 - `GameMode`: controls base lives, timer, and special rules.

@@ -22,6 +22,9 @@ class SettingsActivity : FoldAwareActivity() {
         binding.switchTips.isChecked = settings.tipsEnabled
         binding.switchLeftHanded.isChecked = settings.leftHanded
         binding.seekSensitivity.progress = (settings.sensitivity * 100).toInt()
+        binding.seekMasterVolume.progress = (settings.masterVolume * 100).toInt()
+        binding.seekEffectsVolume.progress = (settings.effectsVolume * 100).toInt()
+        binding.seekMusicVolume.progress = (settings.musicVolume * 100).toInt()
 
         val saveSettings = {
             SettingsManager.save(
@@ -32,7 +35,10 @@ class SettingsActivity : FoldAwareActivity() {
                     vibrationEnabled = binding.switchVibration.isChecked,
                     tipsEnabled = binding.switchTips.isChecked,
                     leftHanded = binding.switchLeftHanded.isChecked,
-                    sensitivity = binding.seekSensitivity.progress / 100f
+                    sensitivity = binding.seekSensitivity.progress / 100f,
+                    masterVolume = binding.seekMasterVolume.progress / 100f,
+                    effectsVolume = binding.seekEffectsVolume.progress / 100f,
+                    musicVolume = binding.seekMusicVolume.progress / 100f
                 )
             )
         }
@@ -51,8 +57,42 @@ class SettingsActivity : FoldAwareActivity() {
             override fun onStopTrackingTouch(seekBar: SeekBar?) = Unit
         })
 
+        binding.seekMasterVolume.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                if (fromUser) saveSettings()
+            }
+
+            override fun onStartTrackingTouch(seekBar: SeekBar?) = Unit
+            override fun onStopTrackingTouch(seekBar: SeekBar?) = Unit
+        })
+
+        binding.seekEffectsVolume.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                if (fromUser) saveSettings()
+            }
+
+            override fun onStartTrackingTouch(seekBar: SeekBar?) = Unit
+            override fun onStopTrackingTouch(seekBar: SeekBar?) = Unit
+        })
+
+        binding.seekMusicVolume.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                if (fromUser) saveSettings()
+            }
+
+            override fun onStartTrackingTouch(seekBar: SeekBar?) = Unit
+            override fun onStopTrackingTouch(seekBar: SeekBar?) = Unit
+        })
+
         binding.buttonResetScores.setOnClickListener {
-            ScoreboardManager.reset(this)
+            androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Reset Scores")
+                .setMessage("This will permanently delete all saved scores. Are you sure?")
+                .setPositiveButton("Reset") { _, _ ->
+                    ScoreboardManager.reset(this)
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
         }
     }
 }

@@ -8,6 +8,11 @@ import kotlin.math.min
 import kotlin.math.sqrt
 import kotlin.random.Random
 
+/**
+ * Core game engine handling physics, collisions, powerups, and level progression.
+ * Manages game state, entities (balls, bricks, powerups), and renders via Renderer2D.
+ * World coordinates: 100 units wide, height scales to aspect ratio.
+ */
 class GameEngine(
     private val config: GameConfig,
     private val listener: GameEventListener,
@@ -36,14 +41,23 @@ class GameEngine(
     private var lastReportedSecond = -1
     private var elapsedSeconds = 0f
     private var combo = 0
+    private var comboTimer = 0f
     private var guardrailActive = false
     private var shieldCharges = 0
     private var laserCooldown = 0f
     private var speedMultiplier = 1f
     private var fireballActive = false
+    private var magnetActive = false
+    private var gravityWellActive = false
+    private var freezeActive = false
+    private var pierceActive = false
+    private var lastPowerupStatus = ""
 
     private var theme: LevelTheme = LevelThemes.DEFAULT
     private var currentLayout: LevelFactory.LevelLayout? = null
+    private var touchDownTime = 0L
+    private var paddlePositioned = false
+    private var screenFlash = 0f
 
     init {
         listener.onModeUpdated(config.mode)
@@ -52,6 +66,7 @@ class GameEngine(
         listener.onScoreUpdated(score)
         listener.onLevelUpdated(levelIndex + 1)
         listener.onPowerupStatus("Powerups: none")
+        lastPowerupStatus = "Powerups: none"
         if (config.mode.timeLimitSeconds > 0) {
             listener.onTimeUpdated(timeRemaining.toInt())
         } else {
@@ -74,9 +89,10 @@ class GameEngine(
         if (state == GameState.PAUSED || state == GameState.GAME_OVER) {
             return
         }
-        updateTimers(dt)
-        updatePaddle(dt)
-        updateEffects(dt)
+        updateTimers(delta)
+        updatePaddle(delta)
+        updateBricks(dt)
+        updateEffects(delta)
 
         if (state == GameState.READY) {
             attachBallToPaddle()
@@ -94,7 +110,68 @@ class GameEngine(
 
     fun render(renderer: Renderer2D) {
         renderer.setWorldSize(worldWidth, worldHeight)
-        renderer.drawRect(0f, 0f, worldWidth, worldHeight, theme.background)
+        // Enhanced background with subtle gradient and flash effect
+        val bgTop = if (screenFlash > 0f) {
+            adjustColor(theme.background, 1.1f + screenFlash, 1f)
+        } else {
+            adjustColor(theme.background, 1.1f, 1f)
+        }
+        val bgBottom = if (screenFlash > 0f) {
+            adjustColor(theme.background, 0.9f + screenFlash, 1f)
+        } else {
+            adjustColor(theme.background, 0.9f, 1f)
+        }
+
+        // Draw gradient background (top to bottom)
+        val gradientSteps = 20
+        val stepHeight = worldHeight / gradientSteps
+        for (i in 0 until gradientSteps) {
+            val y = i * stepHeight
+            val ratio = i.toFloat() / gradientSteps.toFloat()
+            val gradientColor = floatArrayOf(
+                bgTop[0] * (1f - ratio) + bgBottom[0] * ratio,
+                bgTop[1] * (1f - ratio) + bgBottom[1] * ratio,
+                bgTop[2] * (1f - ratio) + bgBottom[2] * ratio,
+                1f
+            )
+            renderer.drawRect(0f, y, worldWidth, stepHeight, gradientColor)
+        }
+
+        // Add theme-specific background effects
+        val time = System.nanoTime() / 1_000_000_000f
+        when (theme.name) {
+            "Neon" -> {
+                // Animated grid pattern
+                val gridSize = 8f
+                for (x in 0 until (worldWidth / gridSize).toInt()) {
+                    for (y in 0 until (worldHeight / gridSize).toInt()) {
+                        if ((x + y) % 2 == 0) {
+                            val alpha = (kotlin.math.sin(time * 2f + x * 0.5f + y * 0.3f) * 0.5f + 0.5f) * 0.1f
+                            renderer.drawRect(x * gridSize, y * gridSize, gridSize, gridSize,
+                                            floatArrayOf(0.3f, 0.9f, 1f, alpha))
+                        }
+                    }
+                }
+            }
+            "Sunset" -> {
+                // Floating particles
+                for (i in 0 until 15) {
+                    val x = (kotlin.math.sin(time * 0.5f + i) * 0.5f + 0.5f) * worldWidth
+                    val y = (kotlin.math.cos(time * 0.3f + i * 0.7f) * 0.5f + 0.5f) * worldHeight
+                    val size = 1f + kotlin.math.sin(time * 2f + i) * 0.5f
+                    renderer.drawCircle(x, y, size, floatArrayOf(1f, 0.6f, 0.3f, 0.3f))
+                }
+            }
+            "Aurora" -> {
+                // Wave patterns
+                for (i in 0 until 8) {
+                    val waveY = worldHeight * 0.3f + kotlin.math.sin(time + i * 0.8f) * worldHeight * 0.2f
+                    val alpha = (kotlin.math.sin(time * 1.5f + i) * 0.5f + 0.5f) * 0.15f
+                    renderer.drawRect(0f, waveY, worldWidth, 2f,
+                                    floatArrayOf(0.3f, 0.8f, 0.5f, alpha))
+                }
+            }
+        }
 
         if (guardrailActive) {
             renderer.drawRect(0f, 2f, worldWidth, 0.6f, theme.accent)
@@ -102,18 +179,77 @@ class GameEngine(
 
         bricks.filter { it.alive }.forEach { brick ->
             val color = brick.currentColor(theme)
+
+            // 3D depth effect: base shadow
+            val shadowOffset = brick.width * 0.02f
+            val shadowColor = adjustColor(color, 0.4f, 0.3f)
+            renderer.drawRect(brick.x + shadowOffset, brick.y + shadowOffset, brick.width, brick.height, shadowColor)
+
+            // Main brick body
             renderer.drawRect(brick.x, brick.y, brick.width, brick.height, color)
-            val highlight = adjustColor(color, 1.15f, 1f)
-            val shadow = adjustColor(color, 0.75f, 1f)
-            val highlightHeight = brick.height * 0.14f
-            val shadowHeight = brick.height * 0.12f
-            renderer.drawRect(brick.x, brick.y + brick.height - highlightHeight, brick.width, highlightHeight, highlight)
-            renderer.drawRect(brick.x, brick.y, brick.width, shadowHeight, shadow)
+
+            // 3D highlights and bevels
+            val highlight = adjustColor(color, 1.3f, 1f)
+            val midtone = adjustColor(color, 0.9f, 1f)
+            val lowlight = adjustColor(color, 0.6f, 1f)
+
+            // Top bevel (highlight)
+            val topBevelHeight = brick.height * 0.08f
+            renderer.drawRect(brick.x, brick.y, brick.width, topBevelHeight, highlight)
+
+            // Left bevel (highlight)
+            val leftBevelWidth = brick.width * 0.06f
+            renderer.drawRect(brick.x, brick.y, leftBevelWidth, brick.height, midtone)
+
+            // Bottom bevel (lowlight/shadow)
+            val bottomBevelHeight = brick.height * 0.1f
+            renderer.drawRect(brick.x, brick.y + brick.height - bottomBevelHeight, brick.width, bottomBevelHeight, lowlight)
+
+            // Right bevel (lowlight/shadow)
+            val rightBevelWidth = brick.width * 0.08f
+            renderer.drawRect(brick.x + brick.width - rightBevelWidth, brick.y, rightBevelWidth, brick.height, lowlight)
 
             when (brick.type) {
                 BrickType.REINFORCED -> drawStripe(renderer, brick, adjustColor(color, 0.85f, 1f), 1)
                 BrickType.ARMORED -> drawStripe(renderer, brick, adjustColor(color, 0.78f, 1f), 2)
                 BrickType.UNBREAKABLE -> drawStripe(renderer, brick, adjustColor(color, 0.7f, 1f), 3)
+                BrickType.MOVING -> {
+                    // Add movement indicator
+                    val indicatorColor = adjustColor(color, 1.3f, 0.8f)
+                    renderer.drawRect(brick.x + brick.width * 0.1f, brick.y + brick.height * 0.1f,
+                                    brick.width * 0.8f, brick.height * 0.05f, indicatorColor)
+                }
+                BrickType.SPAWNING -> {
+                    // Add spawn indicator (dots)
+                    val dotColor = adjustColor(color, 1.2f, 0.9f)
+                    val dotSize = brick.width * 0.08f
+                    for (i in 0 until brick.spawnCount) {
+                        val dotX = brick.x + brick.width * 0.2f + i * brick.width * 0.15f
+                        val dotY = brick.y + brick.height * 0.85f
+                        renderer.drawCircle(dotX, dotY, dotSize, dotColor)
+                    }
+                }
+                BrickType.PHASE -> {
+                    // Phase indicator (colored bars)
+                    val phaseColor = when (brick.phase) {
+                        0 -> floatArrayOf(0f, 1f, 0f, 0.8f) // Green
+                        1 -> floatArrayOf(1f, 1f, 0f, 0.8f) // Yellow
+                        else -> floatArrayOf(1f, 0f, 0f, 0.8f) // Red
+                    }
+                    val barHeight = brick.height * 0.1f
+                    val barY = brick.y + brick.height - barHeight
+                    renderer.drawRect(brick.x, barY, brick.width, barHeight, phaseColor)
+                }
+                BrickType.BOSS -> {
+                    // Boss indicator (pulsing border)
+                    val time = System.nanoTime() / 1_000_000_000f
+                    val pulse = (kotlin.math.sin(time * 4f) * 0.5f + 0.5f) * 0.3f + 0.7f
+                    val bossColor = adjustColor(color, pulse, 1f)
+                    val borderWidth = brick.width * 0.05f
+                    // Draw border by drawing slightly larger rect underneath
+                    renderer.drawRect(brick.x - borderWidth, brick.y - borderWidth,
+                                    brick.width + borderWidth * 2, brick.height + borderWidth * 2, bossColor)
+                }
                 else -> Unit
             }
         }
@@ -142,12 +278,23 @@ class GameEngine(
 
     private fun renderPowerup(renderer: Renderer2D, power: PowerUp) {
         val size = power.size
-        val outer = adjustColor(power.type.color, 0.6f, 1f)
-        val inner = power.type.color
+        val time = System.nanoTime() / 1_000_000_000f
+        val pulse = (kotlin.math.sin(time * 3f) * 0.5f + 0.5f) * 0.2f + 0.8f
+
+        // Enhanced outer glow effect
+        val glowColor = adjustColor(power.type.color, 0.3f * pulse, 0.6f)
+        renderer.drawRect(power.x - size * 0.6f, power.y - size * 0.6f, size * 1.2f, size * 1.2f, glowColor)
+
+        // Main powerup body with gradient
+        val outer = adjustColor(power.type.color, 0.7f, 1f)
+        val inner = adjustColor(power.type.color, 1.1f, 1f)
+
+        // Draw with rounded appearance using multiple rects
+        val cornerInset = size * 0.1f
         val x = power.x - size / 2f
         val y = power.y - size / 2f
         renderer.drawRect(x, y, size, size, outer)
-        renderer.drawRect(x + size * 0.12f, y + size * 0.12f, size * 0.76f, size * 0.76f, inner)
+        renderer.drawRect(x + cornerInset, y + cornerInset, size - cornerInset * 2f, size - cornerInset * 2f, inner)
 
         val glyph = floatArrayOf(0.95f, 0.96f, 1f, 1f)
         when (power.type) {
@@ -181,6 +328,44 @@ class GameEngine(
                 renderer.drawRect(power.x - size * 0.08f, power.y - size * 0.22f, size * 0.16f, size * 0.44f, glyph)
                 renderer.drawRect(power.x - size * 0.22f, power.y - size * 0.08f, size * 0.44f, size * 0.16f, glyph)
             }
+            PowerUpType.MAGNET -> {
+                // Horseshoe magnet shape
+                renderer.drawRect(power.x - size * 0.15f, power.y - size * 0.1f, size * 0.3f, size * 0.2f, glyph)
+                renderer.drawRect(power.x - size * 0.25f, power.y - size * 0.05f, size * 0.1f, size * 0.1f, glyph)
+                renderer.drawRect(power.x + size * 0.15f, power.y - size * 0.05f, size * 0.1f, size * 0.1f, glyph)
+            }
+            PowerUpType.GRAVITY_WELL -> {
+                // Spiral or vortex shape
+                val centerX = power.x
+                val centerY = power.y
+                val radius = size * 0.2f
+                for (i in 0..3) {
+                    val angle = i * Math.PI.toFloat() / 2f
+                    val x = centerX + kotlin.math.cos(angle) * radius
+                    val y = centerY + kotlin.math.sin(angle) * radius
+                    renderer.drawCircle(x, y, size * 0.08f, glyph)
+                }
+            }
+            PowerUpType.BALL_SPLITTER -> {
+                // Three balls in triangle
+                renderer.drawCircle(power.x, power.y - size * 0.12f, size * 0.12f, glyph)
+                renderer.drawCircle(power.x - size * 0.1f, power.y + size * 0.08f, size * 0.12f, glyph)
+                renderer.drawCircle(power.x + size * 0.1f, power.y + size * 0.08f, size * 0.12f, glyph)
+            }
+            PowerUpType.FREEZE -> {
+                // Snowflake pattern
+                renderer.drawRect(power.x - size * 0.02f, power.y - size * 0.2f, size * 0.04f, size * 0.4f, glyph)
+                renderer.drawRect(power.x - size * 0.2f, power.y - size * 0.02f, size * 0.4f, size * 0.04f, glyph)
+                renderer.drawRect(power.x - size * 0.15f, power.y - size * 0.15f, size * 0.3f, size * 0.04f, glyph)
+                renderer.drawRect(power.x - size * 0.15f, power.y + size * 0.11f, size * 0.3f, size * 0.04f, glyph)
+            }
+            PowerUpType.PIERCE -> {
+                // Arrow through brick
+                renderer.drawRect(power.x - size * 0.15f, power.y - size * 0.08f, size * 0.3f, size * 0.16f, glyph)
+                renderer.drawRect(power.x - size * 0.02f, power.y - size * 0.2f, size * 0.04f, size * 0.4f, glyph)
+                renderer.drawRect(power.x - size * 0.08f, power.y - size * 0.12f, size * 0.04f, size * 0.04f, glyph)
+                renderer.drawRect(power.x + size * 0.04f, power.y - size * 0.12f, size * 0.04f, size * 0.04f, glyph)
+            }
         }
     }
 
@@ -207,17 +392,29 @@ class GameEngine(
         if (state == GameState.PAUSED || state == GameState.GAME_OVER) return
         val x = event.x / viewWidth * worldWidth
         when (event.actionMasked) {
-            MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE -> {
+            MotionEvent.ACTION_DOWN -> {
+                touchDownTime = System.currentTimeMillis()
+                paddlePositioned = false
+                paddle.targetX = x
+            }
+            MotionEvent.ACTION_MOVE -> {
                 paddle.targetX = x
                 if (state == GameState.READY) {
+                    paddlePositioned = true
+                }
+            }
+            MotionEvent.ACTION_UP -> {
+                val touchDuration = System.currentTimeMillis() - touchDownTime
+                if (state == GameState.READY && (paddlePositioned || touchDuration < 300)) {
+                    // Launch ball on release if paddle was moved or quick tap
                     launchBall()
                     state = GameState.RUNNING
                     listener.onTip("Tap with two fingers to fire when laser is active")
                 }
-                if (event.pointerCount > 1 && activeEffects.containsKey(PowerUpType.LASER)) {
-                    shootLaser()
-                }
             }
+        }
+        if (event.pointerCount > 1 && activeEffects.containsKey(PowerUpType.LASER)) {
+            shootLaser()
         }
     }
 
@@ -240,15 +437,22 @@ class GameEngine(
         guardrailActive = false
         shieldCharges = 0
         fireballActive = false
+        magnetActive = false
+        gravityWellActive = false
+        freezeActive = false
+        pierceActive = false
         speedMultiplier = 1f
         activeEffects.clear()
+        touchDownTime = 0L
+        paddlePositioned = false
         balls.clear()
         beams.clear()
         powerups.clear()
         particles.clear()
+        waves.clear()
 
         val difficulty = 1f + levelIndex * 0.08f
-        val level = buildLevel(levelIndex, difficulty)
+        val level = buildLevel(levelIndex, difficulty, config.mode.endless)
         currentLayout = level
         theme = level.theme
         buildBricks(level)
@@ -267,6 +471,7 @@ class GameEngine(
         spawnBall()
         listener.onLevelUpdated(levelIndex + 1)
         listener.onPowerupStatus("Powerups: none")
+        lastPowerupStatus = "Powerups: none"
         listener.onTip(level.tip)
     }
 
@@ -274,7 +479,7 @@ class GameEngine(
         bricks.clear()
         val rows = layout.rows
         val cols = layout.cols
-        val spacing = 0.6f
+        val spacing = 0.45f
         val areaTop = worldHeight * 0.88f
         val areaBottom = worldHeight * 0.55f
         val areaHeight = areaTop - areaBottom
@@ -283,19 +488,38 @@ class GameEngine(
         layout.bricks.forEach { spec ->
             val x = spacing + spec.col * (brickWidth + spacing)
             val y = areaBottom + (rows - 1 - spec.row) * (brickHeight + spacing * 0.5f)
-            bricks.add(
-                Brick(
-                    gridX = spec.col,
-                    gridY = spec.row,
-                    x = x,
-                    y = y,
-                    width = brickWidth,
-                    height = brickHeight,
-                    hitPoints = spec.hitPoints,
-                    maxHitPoints = spec.hitPoints,
-                    type = spec.type
-                )
+            val brick = Brick(
+                gridX = spec.col,
+                gridY = spec.row,
+                x = x,
+                y = y,
+                width = brickWidth,
+                height = brickHeight,
+                hitPoints = spec.hitPoints,
+                maxHitPoints = spec.hitPoints,
+                type = spec.type
             )
+
+            // Set up special properties for dynamic bricks
+            when (spec.type) {
+                BrickType.MOVING -> {
+                    // Velocity will be initialized in updateBricks
+                }
+                BrickType.PHASE -> {
+                    brick.maxPhase = 2 + (levelIndex / 3).coerceAtMost(2) // 2-4 phases
+                    brick.phase = 0
+                }
+                BrickType.BOSS -> {
+                    brick.maxPhase = 3 + (levelIndex / 5).coerceAtMost(2) // 3-5 phases
+                    brick.phase = 0
+                }
+                BrickType.SPAWNING -> {
+                    brick.spawnCount = 2 + kotlin.random.Random(spec.col * 7 + spec.row * 11).nextInt(2)
+                }
+                else -> {}
+            }
+
+            bricks.add(brick)
         }
     }
 
@@ -304,13 +528,14 @@ class GameEngine(
         if (bricks.isEmpty()) return
         val rows = layout.rows
         val cols = layout.cols
-        val spacing = 0.6f
+        val spacing = 0.45f
         val areaTop = worldHeight * 0.88f
         val areaBottom = worldHeight * 0.55f
         val areaHeight = areaTop - areaBottom
         val brickHeight = (areaHeight - spacing * (rows - 1)) / rows
         val brickWidth = (worldWidth - spacing * (cols + 1)) / cols
         bricks.forEach { brick ->
+            if (brick.gridX < 0 || brick.gridY < 0) return@forEach
             val x = spacing + brick.gridX * (brickWidth + spacing)
             val y = areaBottom + (rows - 1 - brick.gridY) * (brickHeight + spacing * 0.5f)
             brick.x = x
@@ -323,6 +548,15 @@ class GameEngine(
     private fun updateTimers(dt: Float) {
         if (state != GameState.RUNNING) return
         elapsedSeconds += dt
+
+        // Update combo timer
+        if (comboTimer > 0f) {
+            comboTimer -= dt
+            if (comboTimer <= 0f) {
+                combo = 0  // Reset combo when timer expires
+            }
+        }
+
         if (config.mode.timeLimitSeconds > 0) {
             timeRemaining -= dt
             if (timeRemaining <= 0f) {
@@ -354,6 +588,35 @@ class GameEngine(
         paddle.x = paddle.x.coerceIn(paddle.width / 2f, worldWidth - paddle.width / 2f)
     }
 
+    private fun updateBricks(dt: Float) {
+        bricks.forEach { brick ->
+            when (brick.type) {
+                BrickType.MOVING -> {
+                    // Initialize velocity if not set
+                    if (brick.vx == 0f) {
+                        brick.vx = (kotlin.random.Random(brick.gridX * 31 + brick.gridY * 17).nextFloat() - 0.5f) * 20f
+                    }
+                    // Move horizontally and bounce off edges
+                    brick.x += brick.vx * dt
+                    if (brick.x <= 0.6f || brick.x + brick.width >= worldWidth - 0.6f) {
+                        brick.vx = -brick.vx
+                        brick.x = brick.x.coerceIn(0.6f, worldWidth - brick.width - 0.6f)
+                    }
+                }
+                BrickType.PHASE -> {
+                    // Phase bricks pulse or change appearance based on phase
+                    // Visual effect handled in rendering
+                }
+                BrickType.BOSS -> {
+                    // Boss bricks stay static but use enhanced visuals
+                }
+                else -> {
+                    // Static bricks, no movement
+                }
+            }
+        }
+    }
+
     private fun attachBallToPaddle() {
         balls.firstOrNull()?.let { ball ->
             ball.x = paddle.x
@@ -368,17 +631,25 @@ class GameEngine(
             if (ball.vx == 0f && ball.vy == 0f) {
                 val angle = random.nextFloat() * 0.6f + 0.3f
                 val dir = if (random.nextBoolean()) 1f else -1f
-                ball.vx = 26f * kotlin.math.cos(angle) * dir
-                ball.vy = 32f * kotlin.math.sin(angle)
+                // Adjust ball speed based on game mode for balance
+                val speedMultiplier = when {
+                    config.mode.rush -> 1.5f  // 50% faster for Level Rush
+                    config.mode == GameMode.TIMED -> 1.3f  // Slightly faster for Timed Challenge
+                    else -> 1.0f
+                }
+                ball.vx = 30f * speedMultiplier * kotlin.math.cos(angle) * dir
+                ball.vy = 38f * speedMultiplier * kotlin.math.sin(angle)
             }
         }
     }
 
     private fun spawnBall() {
-        val ball = Ball(paddle.x, paddle.y + 5f, 1.2f, 0f, 0f)
+        val ball = Ball(paddle.x, paddle.y + 5f, 1.0f, 0f, 0f)
         if (fireballActive) {
             ball.isFireball = true
             ball.color = PowerUpType.FIREBALL.color
+        } else if (pierceActive) {
+            ball.color = PowerUpType.PIERCE.color
         }
         balls.add(ball)
     }
@@ -387,6 +658,9 @@ class GameEngine(
         val iterator = balls.iterator()
         while (iterator.hasNext()) {
             val ball = iterator.next()
+            if (gravityWellActive) {
+                applyGravityWell(ball, dt)
+            }
             ball.x += ball.vx * dt
             ball.y += ball.vy * dt
 
@@ -433,6 +707,18 @@ class GameEngine(
         }
     }
 
+    private fun applyGravityWell(ball: Ball, dt: Float) {
+        val centerX = worldWidth * 0.5f
+        val centerY = worldHeight * 0.62f
+        val dx = centerX - ball.x
+        val dy = centerY - ball.y
+        val distSq = dx * dx + dy * dy
+        if (distSq < 0.1f) return
+        val pull = 120f / (distSq + 200f)
+        ball.vx += dx * pull * dt
+        ball.vy += dy * pull * dt
+    }
+
     private fun handlePaddleCollision(ball: Ball) {
         if (ball.y - ball.radius > paddle.y + paddle.height / 2f) return
         if (ball.y + ball.radius < paddle.y - paddle.height / 2f) return
@@ -453,22 +739,57 @@ class GameEngine(
             if (!brick.alive) continue
             if (!circleIntersectsRect(ball, brick)) continue
 
-            val destroyed = brick.applyHit(fireballActive)
-            if (!fireballActive) {
+            val destroyed = brick.applyHit(fireballActive || pierceActive)
+            if (!fireballActive && !pierceActive) {
                 bounceBallFromBrick(ball, brick)
             }
 
             if (destroyed) {
+                // Combo system: consecutive breaks within 2 seconds get multipliers
+                comboTimer = 2f  // Reset combo timer
                 combo += 1
-                score += brick.scoreValue * combo
-                audio.play(GameSound.BRICK, 0.7f)
+
+                // Calculate multiplier based on combo
+                val multiplier = when {
+                    combo >= 10 -> 5f
+                    combo >= 7 -> 3f
+                    combo >= 4 -> 2f
+                    combo >= 2 -> 1.5f
+                    else -> 1f
+                }
+
+                val baseScore = brick.scoreValue * multiplier
+                score += baseScore.toInt()
+
+                // Show combo feedback if significant
+                if (combo >= 3) {
+                    listener.onTip("Combo x${combo}!")
+                }
+
+                // Play appropriate sound for brick type
+                val brickSound = when (brick.type) {
+                    BrickType.NORMAL -> GameSound.BRICK_NORMAL
+                    BrickType.REINFORCED -> GameSound.BRICK_REINFORCED
+                    BrickType.ARMORED -> GameSound.BRICK_ARMORED
+                    BrickType.EXPLOSIVE -> GameSound.BRICK_EXPLOSIVE
+                    BrickType.UNBREAKABLE -> GameSound.BRICK_UNBREAKABLE
+                    BrickType.MOVING -> GameSound.BRICK_MOVING
+                    BrickType.SPAWNING -> GameSound.BRICK_SPAWNING
+                    BrickType.PHASE -> GameSound.BRICK_PHASE
+                    BrickType.BOSS -> GameSound.BRICK_BOSS
+                }
+                audio.play(brickSound, 0.7f)
                 audio.haptic(GameHaptic.LIGHT)
                 maybeSpawnPowerup(brick)
                 if (brick.type == BrickType.EXPLOSIVE) {
                     triggerExplosion(brick)
                 }
+                if (brick.type == BrickType.SPAWNING) {
+                    spawnChildBricks(brick)
+                }
             } else {
                 combo = 0
+                comboTimer = 0f
                 audio.play(GameSound.BOUNCE, 0.5f)
             }
 
@@ -484,6 +805,19 @@ class GameEngine(
             val destroyed = brick.applyHit(true)
             if (destroyed) {
                 score += brick.scoreValue
+                // Play appropriate sound for brick type (softer for beam hits)
+                val brickSound = when (brick.type) {
+                    BrickType.NORMAL -> GameSound.BRICK_NORMAL
+                    BrickType.REINFORCED -> GameSound.BRICK_REINFORCED
+                    BrickType.ARMORED -> GameSound.BRICK_ARMORED
+                    BrickType.EXPLOSIVE -> GameSound.BRICK_EXPLOSIVE
+                    BrickType.UNBREAKABLE -> GameSound.BRICK_UNBREAKABLE
+                    BrickType.MOVING -> GameSound.BRICK_MOVING
+                    BrickType.SPAWNING -> GameSound.BRICK_SPAWNING
+                    BrickType.PHASE -> GameSound.BRICK_PHASE
+                    BrickType.BOSS -> GameSound.BRICK_BOSS
+                }
+                audio.play(brickSound, 0.4f) // Softer for beam hits
                 maybeSpawnPowerup(brick)
                 if (brick.type == BrickType.EXPLOSIVE) {
                     triggerExplosion(brick)
@@ -523,7 +857,23 @@ class GameEngine(
         val iterator = powerups.iterator()
         while (iterator.hasNext()) {
             val power = iterator.next()
-            power.y -= power.speed * dt
+
+            // Apply magnet attraction if active
+            if (magnetActive) {
+                val dx = paddle.x - power.x
+                val dy = paddle.y - power.y
+                val distance = kotlin.math.sqrt(dx * dx + dy * dy)
+                if (distance > 1f) {
+                    val attractSpeed = 80f / (distance + 1f) // Stronger when closer
+                    val attractX = dx / distance * attractSpeed * dt
+                    val attractY = dy / distance * attractSpeed * dt
+                    power.x += attractX
+                    power.y += attractY
+                }
+            } else {
+                power.y -= power.speed * dt
+            }
+
             if (power.y < -4f) {
                 iterator.remove()
                 continue
@@ -567,19 +917,29 @@ class GameEngine(
 
     private fun updateEffects(dt: Float) {
         val iterator = activeEffects.entries.iterator()
+        var ballStyleDirty = false
         while (iterator.hasNext()) {
             val entry = iterator.next()
             val remaining = entry.value - dt
             if (remaining <= 0f) {
                 when (entry.key) {
                     PowerUpType.WIDE_PADDLE -> paddle.width = basePaddleWidth
-                    PowerUpType.SLOW -> speedMultiplier = 1f
+                    PowerUpType.SLOW -> Unit
                     PowerUpType.GUARDRAIL -> guardrailActive = false
                     PowerUpType.LASER -> Unit
-                    PowerUpType.SHIELD -> Unit
+                    PowerUpType.SHIELD -> shieldCharges = 0
                     PowerUpType.FIREBALL -> {
                         fireballActive = false
-                        balls.forEach { it.isFireball = false; it.color = it.defaultColor }
+                        ballStyleDirty = true
+                    }
+                    PowerUpType.MAGNET -> magnetActive = false
+                    PowerUpType.GRAVITY_WELL -> gravityWellActive = false
+                    PowerUpType.FREEZE -> {
+                        freezeActive = false
+                    }
+                    PowerUpType.PIERCE -> {
+                        pierceActive = false
+                        ballStyleDirty = true
                     }
                     else -> Unit
                 }
@@ -588,6 +948,16 @@ class GameEngine(
                 entry.setValue(remaining)
             }
         }
+        speedMultiplier = when {
+            activeEffects.containsKey(PowerUpType.FREEZE) -> 0.1f
+            activeEffects.containsKey(PowerUpType.SLOW) -> 0.8f
+            else -> 1f
+        }
+        if (ballStyleDirty) {
+            syncBallStyles()
+        }
+        // Update screen flash
+        screenFlash = max(0f, screenFlash - dt * 3f)
         updatePowerupStatus()
     }
 
@@ -599,6 +969,8 @@ class GameEngine(
                     if (fireballActive) {
                         extra.isFireball = true
                         extra.color = PowerUpType.FIREBALL.color
+                    } else if (pierceActive) {
+                        extra.color = PowerUpType.PIERCE.color
                     }
                     extra
                 }
@@ -631,21 +1003,76 @@ class GameEngine(
             }
             PowerUpType.FIREBALL -> {
                 fireballActive = true
-                balls.forEach { it.isFireball = true; it.color = PowerUpType.FIREBALL.color }
                 activeEffects[type] = 10f
+                syncBallStyles()
+            }
+            PowerUpType.MAGNET -> {
+                magnetActive = true
+                activeEffects[type] = 15f
+            }
+            PowerUpType.GRAVITY_WELL -> {
+                gravityWellActive = true
+                activeEffects[type] = 8f
+            }
+            PowerUpType.BALL_SPLITTER -> {
+                val newBalls = balls.flatMap { ball ->
+                    listOf(
+                        Ball(ball.x, ball.y, ball.radius, ball.vx * 0.7f, ball.vy * 0.7f),
+                        Ball(ball.x, ball.y, ball.radius, -ball.vx * 0.7f, ball.vy * 0.7f)
+                    ).map { newBall ->
+                        if (fireballActive) {
+                            newBall.isFireball = true
+                            newBall.color = PowerUpType.FIREBALL.color
+                        }
+                        if (pierceActive) {
+                            newBall.color = PowerUpType.PIERCE.color
+                        }
+                        newBall
+                    }
+                }
+                balls.addAll(newBalls.take(4)) // Limit to 4 new balls max
+            }
+            PowerUpType.FREEZE -> {
+                freezeActive = true
+                speedMultiplier = 0.1f // Almost frozen
+                activeEffects[type] = 5f
+            }
+            PowerUpType.PIERCE -> {
+                pierceActive = true
+                activeEffects[type] = 12f
+                syncBallStyles()
             }
         }
         audio.haptic(GameHaptic.MEDIUM)
         updatePowerupStatus()
     }
 
-    private fun updatePowerupStatus() {
-        if (activeEffects.isEmpty()) {
-            listener.onPowerupStatus("Powerups: none")
-            return
+    private fun syncBallStyles() {
+        val useFire = fireballActive
+        val usePierce = pierceActive
+        balls.forEach { ball ->
+            ball.isFireball = useFire
+            ball.color = when {
+                useFire -> PowerUpType.FIREBALL.color
+                usePierce -> PowerUpType.PIERCE.color
+                else -> ball.defaultColor
+            }
         }
-        val list = activeEffects.keys.joinToString(" • ") { it.displayName }
-        listener.onPowerupStatus("Powerups: $list")
+    }
+
+    private fun updatePowerupStatus() {
+        val status = if (activeEffects.isEmpty()) {
+            "Powerups: none"
+        } else {
+            val list = activeEffects.entries.joinToString(" • ") { (type, time) ->
+                "${type.displayName} ${time.toInt()}s"
+            }
+            "Powerups: $list"
+        }
+        if (status != lastPowerupStatus) {
+            lastPowerupStatus = status
+            listener.onPowerupStatus(status)
+        }
     }
 
     private fun checkLevelCompletion() {
@@ -658,6 +1085,10 @@ class GameEngine(
     }
 
     private fun loseLife() {
+        // Reset combo on life loss
+        combo = 0
+        comboTimer = 0f
+
         if (config.mode.godMode) {
             spawnBall()
             state = GameState.READY
@@ -694,9 +1125,12 @@ class GameEngine(
 
     private fun maybeSpawnPowerup(brick: Brick) {
         val dropChance = when (brick.type) {
-            BrickType.EXPLOSIVE -> 0.3f
-            BrickType.REINFORCED, BrickType.ARMORED -> 0.25f
-            else -> 0.18f
+            BrickType.EXPLOSIVE -> 0.25f
+            BrickType.REINFORCED, BrickType.ARMORED -> 0.15f
+            BrickType.BOSS, BrickType.PHASE -> 0.20f
+            BrickType.SPAWNING -> 0.12f
+            BrickType.MOVING -> 0.10f
+            else -> 0.08f
         }
         if (random.nextFloat() < dropChance) {
             val type = PowerUpType.values()[random.nextInt(PowerUpType.values().size)]
@@ -706,6 +1140,8 @@ class GameEngine(
 
     private fun triggerExplosion(brick: Brick) {
         audio.play(GameSound.EXPLOSION, 0.8f)
+        audio.haptic(GameHaptic.HEAVY)
+        screenFlash = 0.3f
         val radius = 1
         bricks.filter { it.alive && it.isNeighbor(brick, radius) }.forEach { neighbor ->
             if (neighbor == brick) return@forEach
@@ -716,6 +1152,20 @@ class GameEngine(
             }
         }
         listener.onScoreUpdated(score)
+
+        // Add expanding shockwave
+        waves.add(
+            ExplosionWave(
+                x = brick.centerX,
+                y = brick.centerY,
+                radius = 1f,
+                color = brick.currentColor(theme).copyOf(),
+                life = 0.8f,
+                maxLife = 0.8f,
+                speed = 15f
+            )
+        )
+
         repeat(8) {
             val angle = random.nextFloat() * Math.PI.toFloat() * 2f
             val speed = random.nextFloat() * 18f + 8f
@@ -730,6 +1180,36 @@ class GameEngine(
                     color = brick.currentColor(theme)
                 )
             )
+        }
+    }
+
+    private fun spawnChildBricks(parentBrick: Brick) {
+        // Spawn 2-3 smaller bricks around the destroyed spawning brick
+        val spawnCount = 2 + kotlin.random.Random(parentBrick.gridX * 13 + parentBrick.gridY * 19).nextInt(2)
+        val childSize = parentBrick.width * 0.6f
+        val childHeight = parentBrick.height * 0.6f
+
+        for (i in 0 until spawnCount) {
+            val offsetX = (kotlin.random.Random(i * 7).nextFloat() - 0.5f) * parentBrick.width
+            val offsetY = (kotlin.random.Random(i * 11).nextFloat() - 0.5f) * parentBrick.height
+
+            val childX = (parentBrick.x + parentBrick.width / 2f + offsetX - childSize / 2f)
+                .coerceIn(0.6f, worldWidth - childSize - 0.6f)
+            val childY = (parentBrick.y + parentBrick.height / 2f + offsetY - childHeight / 2f)
+                .coerceIn(worldHeight * 0.55f, worldHeight * 0.88f - childHeight)
+
+            val childBrick = Brick(
+                gridX = -1, // Not on grid
+                gridY = -1,
+                x = childX,
+                y = childY,
+                width = childSize,
+                height = childHeight,
+                hitPoints = 1,
+                maxHitPoints = 1,
+                type = BrickType.NORMAL
+            )
+            bricks.add(childBrick)
         }
     }
 
@@ -812,12 +1292,23 @@ data class Brick(
     var alive: Boolean = true
 ) {
     var hitFlash = 0f
+    // Dynamic brick properties
+    var vx: Float = 0f  // Horizontal velocity for moving bricks
+    var vy: Float = 0f  // Vertical velocity
+    var phase: Int = 0  // Current phase for phase bricks
+    var maxPhase: Int = 1  // Total phases for phase bricks
+    var spawnCount: Int = 0  // Number of spawns left for spawning bricks
+    var lastHitTime: Float = 0f  // Timestamp of last hit for special effects
     val scoreValue: Int = when (type) {
         BrickType.NORMAL -> 50
         BrickType.REINFORCED -> 80
         BrickType.ARMORED -> 120
         BrickType.EXPLOSIVE -> 150
         BrickType.UNBREAKABLE -> 200
+        BrickType.MOVING -> 75
+        BrickType.SPAWNING -> 100
+        BrickType.PHASE -> 180
+        BrickType.BOSS -> 300
     }
 
     val centerX: Float
@@ -830,11 +1321,56 @@ data class Brick(
             hitFlash = 0.2f
             return false
         }
-        hitPoints -= if (forceBreak && type == BrickType.UNBREAKABLE) 2 else 1
+
+        val damage = if (forceBreak && type == BrickType.UNBREAKABLE) 2 else 1
+        hitPoints -= damage
         hitFlash = 0.2f
-        if (hitPoints <= 0) {
-            alive = false
-            return true
+        lastHitTime = System.nanoTime() / 1_000_000_000f  // Current time in seconds
+
+        // Special brick behaviors
+        when (type) {
+            BrickType.PHASE -> {
+                if (hitPoints <= 0) {
+                    phase++
+                    if (phase >= maxPhase) {
+                        alive = false
+                        return true
+                    } else {
+                        // Reset hitpoints for next phase
+                        hitPoints = maxHitPoints / (phase + 1)
+                        hitFlash = 0.5f  // Longer flash for phase change
+                        return false
+                    }
+                }
+            }
+            BrickType.BOSS -> {
+                if (hitPoints <= 0) {
+                    phase++
+                    if (phase >= maxPhase) {
+                        alive = false
+                        return true
+                    } else {
+                        // Boss gets stronger in later phases
+                        hitPoints = maxHitPoints * (phase + 1) / phase
+                        hitFlash = 0.8f  // Dramatic flash for boss phase
+                        // Could add screen shake or special effects here
+                        return false
+                    }
+                }
+            }
+            BrickType.SPAWNING -> {
+                if (hitPoints <= 0) {
+                    alive = false
+                    // Spawning logic will be handled externally when brick is destroyed
+                    return true
+                }
+            }
+            else -> {
+                if (hitPoints <= 0) {
+                    alive = false
+                    return true
+                }
+            }
         }
         return false
     }
@@ -842,19 +1378,34 @@ data class Brick(
     fun currentColor(theme: LevelTheme): FloatArray {
         val base = theme.brickPalette[type] ?: theme.accent
         val ratio = if (type == BrickType.UNBREAKABLE) 1f else (hitPoints.toFloat() / maxHitPoints.toFloat()).coerceIn(0.4f, 1f)
-        val variance = ((gridX + gridY) % 3) * 0.04f
-        val scaled = floatArrayOf(
-            (base[0] * ratio + variance).coerceIn(0f, 1f),
-            (base[1] * ratio + variance).coerceIn(0f, 1f),
-            (base[2] * ratio + variance).coerceIn(0f, 1f),
+
+        // Subtle variance for individual brick distinction within themes
+        val positionVariance = (gridX * 0.02f + gridY * 0.015f) % 0.1f - 0.05f
+
+        // Theme-specific brightness adjustment
+        val themeBrightness = when (theme.name) {
+            "Neon" -> 1.1f
+            "Sunset" -> 0.95f
+            "Cobalt" -> 0.9f
+            "Aurora" -> 1.05f
+            "Forest" -> 0.85f
+            "Lava" -> 1.0f
+            else -> 1.0f
+        }
+
+        val finalColor = floatArrayOf(
+            (base[0] * ratio * themeBrightness + positionVariance).coerceIn(0.05f, 0.98f),
+            (base[1] * ratio * themeBrightness + positionVariance * 0.8f).coerceIn(0.05f, 0.98f),
+            (base[2] * ratio * themeBrightness + positionVariance * 1.2f).coerceIn(0.05f, 0.98f),
             1f
         )
-        if (hitFlash <= 0f) return scaled
+
+        if (hitFlash <= 0f) return finalColor
         hitFlash = max(0f, hitFlash - 0.03f)
         return floatArrayOf(
-            min(1f, scaled[0] + 0.25f),
-            min(1f, scaled[1] + 0.25f),
-            min(1f, scaled[2] + 0.25f),
+            min(1f, finalColor[0] + 0.3f),
+            min(1f, finalColor[1] + 0.3f),
+            min(1f, finalColor[2] + 0.3f),
             1f
         )
     }
@@ -864,7 +1415,7 @@ data class Brick(
     }
 }
 
-enum class BrickType { NORMAL, REINFORCED, ARMORED, EXPLOSIVE, UNBREAKABLE }
+enum class BrickType { NORMAL, REINFORCED, ARMORED, EXPLOSIVE, UNBREAKABLE, MOVING, SPAWNING, PHASE, BOSS }
 
 data class PowerUp(
     var x: Float,
@@ -882,7 +1433,12 @@ enum class PowerUpType(val displayName: String, val color: FloatArray) {
     SHIELD("Shield", floatArrayOf(0.52f, 0.61f, 1f, 1f)),
     WIDE_PADDLE("Wide Paddle", floatArrayOf(0.98f, 0.62f, 0.2f, 1f)),
     SLOW("Slow", floatArrayOf(0.63f, 0.76f, 1f, 1f)),
-    FIREBALL("Fireball", floatArrayOf(1f, 0.36f, 0.27f, 1f))
+    FIREBALL("Fireball", floatArrayOf(1f, 0.36f, 0.27f, 1f)),
+    MAGNET("Magnet", floatArrayOf(0.8f, 0.4f, 1f, 1f)),
+    GRAVITY_WELL("Gravity Well", floatArrayOf(0.4f, 0.6f, 1f, 1f)),
+    BALL_SPLITTER("Ball Splitter", floatArrayOf(1f, 0.8f, 0.2f, 1f)),
+    FREEZE("Freeze", floatArrayOf(0.3f, 0.8f, 1f, 1f)),
+    PIERCE("Pierce", floatArrayOf(0.9f, 0.5f, 0.1f, 1f))
 }
 
 data class Beam(
@@ -902,4 +1458,14 @@ data class Particle(
     val radius: Float,
     var life: Float,
     val color: FloatArray
+)
+
+data class ExplosionWave(
+    var x: Float,
+    var y: Float,
+    var radius: Float,
+    val color: FloatArray,
+    var life: Float,
+    val maxLife: Float,
+    val speed: Float
 )

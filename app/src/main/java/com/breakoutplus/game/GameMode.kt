@@ -1,5 +1,8 @@
 package com.breakoutplus.game
 
+/**
+ * Game mode configurations controlling lives, timers, and special rules.
+ */
 enum class GameMode(
     val displayName: String,
     val description: String,

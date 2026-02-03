@@ -33,11 +33,20 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         binding.buttonExit.setOnClickListener { exitToMenu() }
         binding.buttonEndSecondary.setOnClickListener { exitToMenu() }
         binding.buttonEndPrimary.setOnClickListener { handleEndPrimary() }
+        binding.buttonTooltipDismiss.setOnClickListener { hideTooltip() }
+
+        // Show first-run tooltip if tips enabled
+        if (settings.tipsEnabled) {
+            showTooltip()
+        }
     }
 
     override fun onResume() {
         super.onResume()
         binding.gameSurface.onResume()
+        if (binding.pauseOverlay.visibility != View.VISIBLE) {
+            binding.gameSurface.resumeGame()
+        }
     }
 
     override fun onPause() {
@@ -70,25 +79,30 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         when (binding.endTitle.text.toString()) {
             getString(R.string.label_level_complete) -> {
                 binding.endOverlay.visibility = View.GONE
-                binding.gameSurface.nextLevel()
+                // Add brief celebration delay before next level
+                android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                    binding.gameSurface.nextLevel()
+                }, 800)
             }
             else -> restartGame()
         }
     }
 
     private fun applyHandedness(leftHanded: Boolean) {
-        if (!leftHanded) return
-        val set = androidx.constraintlayout.widget.ConstraintSet()
-        set.clone(binding.hudOverlay)
-        set.clear(binding.buttonPause.id, androidx.constraintlayout.widget.ConstraintSet.END)
-        set.connect(
-            binding.buttonPause.id,
-            androidx.constraintlayout.widget.ConstraintSet.START,
-            binding.hudOverlay.id,
-            androidx.constraintlayout.widget.ConstraintSet.START,
-            0
-        )
-        set.applyTo(binding.hudOverlay)
+        val row = binding.hudRow
+        val params = binding.buttonPause.layoutParams as android.widget.LinearLayout.LayoutParams
+        val spacing = maxOf(params.marginStart, params.marginEnd, params.leftMargin, params.rightMargin)
+
+        row.removeView(binding.buttonPause)
+        if (leftHanded) {
+            params.marginStart = 0
+            params.marginEnd = spacing
+            row.addView(binding.buttonPause, 0, params)
+        } else {
+            params.marginStart = spacing
+            params.marginEnd = 0
+            row.addView(binding.buttonPause, params)
+        }
     }
 
     override fun onScoreUpdated(score: Int) {
@@ -159,6 +173,18 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             binding.buttonEndPrimary.text = getString(R.string.label_next_level)
             binding.endOverlay.visibility = View.VISIBLE
         }
+    }
+
+    private fun showTooltip() {
+        binding.tooltipOverlay.visibility = View.VISIBLE
+        binding.tooltipOverlay.alpha = 0f
+        binding.tooltipOverlay.animate().alpha(1f).setDuration(300).start()
+    }
+
+    private fun hideTooltip() {
+        binding.tooltipOverlay.animate().alpha(0f).setDuration(200).withEndAction {
+            binding.tooltipOverlay.visibility = View.GONE
+        }.start()
     }
 
     companion object {

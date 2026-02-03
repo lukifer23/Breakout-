@@ -18,6 +18,10 @@
 - Armored: 3 hits.
 - Explosive: damages neighbors when destroyed.
 - Unbreakable: only breakable with fireball or sustained lasers.
+- Moving: slides horizontally.
+- Spawning: breaks into child bricks.
+- Phase: cycles through multiple HP phases.
+- Boss: multi-phase heavyweight brick.
 
 ## Powerups
 - Multi-ball: adds two balls.
@@ -28,6 +32,11 @@
 - Wide paddle: easier control.
 - Slow: temporary speed reduction.
 - Fireball: pierces bricks.
+- Magnet: pulls powerups toward the paddle.
+- Gravity Well: bends ball paths toward center.
+- Ball Splitter: splits balls into more.
+- Freeze: nearly stops time briefly.
+- Pierce: balls pass through bricks.
 
 ## Scoring
 - Base score per brick type, with combo multiplier.

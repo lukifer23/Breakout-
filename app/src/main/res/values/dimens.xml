@@ -4,4 +4,8 @@
     <dimen name="bp_title_size">36sp</dimen>
     <dimen name="bp_subtitle_size">16sp</dimen>
     <dimen name="bp_button_gap">12dp</dimen>
+    <dimen name="bp_screen_title_size">28sp</dimen>
+    <dimen name="bp_body_text_size">16sp</dimen>
+    <dimen name="bp_caption_text_size">12sp</dimen>
+    <dimen name="bp_small_text_size">14sp</dimen>
 </resources>

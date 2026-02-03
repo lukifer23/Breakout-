@@ -1,23 +1,86 @@
 # Breakout+
 
-This project was entirely vibecoded as an experiment to test out new model abilities.
+## Goal
+
+Breakout+ is a premium brickbreaker game designed specifically for foldable devices, with the Samsung Galaxy Z Fold 7 as the primary target. The game delivers a complete, polished experience with no placeholders, stubs, or mocks—everything is fully implemented and optimized for foldable form factors.
+
+Key principles:
+- **Foldable-first design**: Optimized layouts and hinge-aware UI for seamless folded/unfolded transitions
+- **Hardware acceleration**: OpenGL ES rendering for smooth 60 FPS gameplay
+- **Complete feature set**: Multiple game modes, powerups, brick variations, and full audio
+- **CLI-only development**: No Android Studio dependency, pure command-line workflow
+- **Production-ready**: All assets generated locally, no external dependencies
+
+## Target Device: Samsung Galaxy Z Fold 7
+
+### Setup Instructions
+1. Enable USB debugging in Developer Options
+2. Connect device via USB
+3. Verify connection: `adb devices`
+4. Install APK: `adb install -r app/build/outputs/apk/debug/app-debug.apk`
+5. Launch: `adb shell am start -n com.breakoutplus.debug/com.breakoutplus.SplashActivity`
 
 Breakout+ is a GPU-accelerated brickbreaker built for foldables, tuned for the Samsung Galaxy Z Fold 7. It uses OpenGL ES for the game loop, fold-aware UI layout, and a full set of modes, powerups, audio, and multi-hit bricks.
 
 ## Highlights
 - OpenGL ES 2.0 rendering via `GLSurfaceView` for hardware acceleration.
-- 60 FPS continuous render loop with stable delta time.
-- Foldable-optimized layouts (`sw600dp`) plus hinge-aware padding using Jetpack WindowManager.
-- Multiple modes: Classic, Timed Challenge, Endless, God Mode, Level Rush.
-- Powerups: Multi-ball, Laser paddle, Guardrail, Shield, Extra life, Wide paddle, Slow motion, Fireball.
-- Brick variations: Standard, Reinforced, Armored, Explosive, Unbreakable.
-- In-game HUD with score, lives, timer, level, and powerup status.
-- Full set of screens: Splash, Title, Mode Select, Settings, Scoreboard, How-To, Game.
+- 60 FPS target with continuous render loop and stable delta time clamping (50ms max).
+- Optimized for modern mobile GPUs with simple geometry (rects/circles) for consistent performance.
+- Foldable-optimized layouts (`sw600dp`, `sw720dp`) plus hinge-aware padding using Jetpack WindowManager.
+- Multiple modes: Classic, Timed Challenge, Endless, God Mode, Level Rush (45s with speed boost).
+- Powerups: Multi-ball, Laser, Guardrail, Shield, Extra life, Wide paddle, Slow motion, Fireball, Magnet, Gravity Well, Ball Splitter, Freeze, Pierce.
+- Brick variations: Standard, Reinforced, Armored, Explosive, Unbreakable, Moving, Spawning, Phase, Boss.
+- Combo system: Score multipliers (x1.5-5x) for consecutive brick breaks within 2 seconds.
+- Visual themes: 6 distinct themes (Neon, Sunset, Cobalt, Aurora, Forest, Lava) with unique color palettes and animated backgrounds.
+- In-game HUD with score, lives, timer, level, combo indicators, and powerup status with countdown timers.
+- Advanced audio: Individual volume controls (Master/Effects/Music), context-aware sounds per brick type.
+- Enhanced visuals: Unique brick colors per theme, 3D bevel effects, animated powerups, particle systems.
+- Full set of screens: Splash (animated), Title, Mode Select, Settings (volume controls), Scoreboard, How-To (expandable), Game.
 - Sound effects and music generated programmatically (no placeholders).
+
+## Features
+
+### Game Modes
+- **Classic**: Standard breakout progression with escalating difficulty
+- **Timed Challenge**: Score as high as possible in 2:30 (30% faster ball speed)
+- **Endless**: Infinite procedurally generated levels with scaling difficulty
+- **God Mode**: Practice mode with infinite lives, no penalties
+- **Level Rush**: Beat each stage before 45-second timer expires (50% faster ball speed)
+
+### Powerups (13 Total)
+- **Core**: Multi-ball, Laser, Guardrail, Shield, Extra life, Wide paddle, Slow motion, Fireball
+- **Advanced**: Magnet (attracts powerups), Gravity Well (attractive force), Ball Splitter (creates extra balls), Freeze (time stop), Pierce (through bricks)
+
+### Brick Types (9 Total)
+- **Standard**: Normal (1 hit), Reinforced (2 hits), Armored (3 hits), Explosive (chain damage), Unbreakable (requires special attacks)
+- **Dynamic**: Moving (slides horizontally), Spawning (creates child bricks), Phase (multi-stage destruction), Boss (powerful multi-phase)
+
+### Gameplay Systems
+- **Combo System**: x1.5-5x score multipliers for consecutive brick breaks within 2 seconds
+- **Dynamic Physics**: Mode-specific ball speeds, collision detection, momentum preservation
+- **Progressive Difficulty**: Scaling brick counts, hit points, and spawn rates per level
+- **Visual Themes**: 6 unique themes with distinct color palettes and animated backgrounds
+
+### Audio System
+- **Procedural Generation**: All SFX and music generated algorithmically
+- **Individual Controls**: Separate volume sliders for Master/Effects/Music
+- **Context-Aware**: Different sounds for each brick type and impact type
+- **Haptic Feedback**: Vibration for significant game events
+
+### Audio & Controls
+- Individual volume controls: Master, Effects, Music (independent of system volume)
+- Context-aware sound effects: Different sounds for each brick type and impact
+- Enhanced audio feedback: Haptic vibration, screen flash effects
+
+### Gameplay Balance
+- Optimized ball speed and physics for better gameplay feel
+- Increased powerup drop rates for more frequent special abilities
+- Fine-tuned ball and brick sizing for denser, more challenging layouts
+- Enhanced visual variety with improved brick color gradients
 
 ## Controls
 - Drag anywhere to move the paddle.
-- Tap to launch the ball when ready.
+- Release drag or tap to launch the ball.
 - Two-finger tap fires lasers when Laser powerup is active.
 
 ## Modes
@@ -33,6 +96,10 @@ Breakout+ is a GPU-accelerated brickbreaker built for foldables, tuned for the S
 - **Armored**: Three hits.
 - **Explosive**: Damages surrounding bricks on destruction.
 - **Unbreakable**: Requires Fireball or Laser barrages to break.
+- **Moving**: Slides horizontally while you play.
+- **Spawning**: Breaks into child bricks.
+- **Phase**: Changes phases with new HP totals.
+- **Boss**: Multi-phase heavyweight brick.
 
 ## Powerups
 - **Multi-ball**: Adds two extra balls.
@@ -43,24 +110,42 @@ Breakout+ is a GPU-accelerated brickbreaker built for foldables, tuned for the S
 - **Wide Paddle**: Expands paddle.
 - **Slow**: Slows time briefly.
 - **Fireball**: Ball pierces bricks.
+- **Magnet**: Pulls powerups toward the paddle.
+- **Gravity Well**: Bends ball paths toward center.
+- **Ball Splitter**: Splits balls into more.
+- **Freeze**: Nearly stops time for a moment.
+- **Pierce**: Balls pass through bricks.
 
 ## Build & Run (CLI only)
+
+### Prerequisites
+- JDK 17
+- Android SDK (API 35 installed)
+- Python 3 (for audio generation)
+- ADB in PATH
+
+### Build APK
 ```bash
 ./gradlew assembleDebug
 ```
 
-Install to device (USB debugging enabled):
+### Install to Device
 ```bash
 adb devices
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 adb shell am start -n com.breakoutplus.debug/com.breakoutplus.SplashActivity
 ```
 
-## Regenerate Audio
-All audio is generated locally from `tools/generate_sfx.py`.
+### Regenerate Audio
+All sound effects are procedurally generated:
 ```bash
 python3 tools/generate_sfx.py
 ```
+
+### Troubleshooting
+- **SDK missing**: Install platform 35 via `sdkmanager "platforms;android-35"`
+- **ADB not found**: Device not connected or USB debugging disabled
+- **Build fails**: Ensure JDK 17 and correct Android SDK path
 
 ## Foldable Optimization
 - `layout-sw600dp/` layouts increase spacing and scale on the Z Fold 7 open state.
@@ -98,7 +183,7 @@ app/src/main/java/com/breakoutplus/game
 - Assets: `ASSETS.md`
 - Roadmap: `ROADMAP.md`
 
-## Icon Ideas
+## Icon Variants
 The current icon is a vector adaptive icon with brick and ball motifs. If you want alternates, easy variants:
 - **Neon Orbit**: Dark background, cyan orbit ring, hot pink ball.
 - **Folded Edge**: Split gradient background suggesting the hinge.

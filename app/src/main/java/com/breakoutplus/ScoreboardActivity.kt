@@ -34,7 +34,20 @@ class ScoreboardActivity : FoldAwareActivity() {
             val timeText = if (entry.durationSeconds > 0) formatDuration(entry.durationSeconds) else "--"
             row.scoreMeta.text = "Level ${entry.level} • $timeText"
             row.scoreValue.text = "%d".format(entry.score)
-            binding.scoreList.addView(row.root)
+
+            // Add entrance animation
+            val rowView = row.root
+            rowView.alpha = 0f
+            rowView.translationX = -50f
+            rowView.animate()
+                .alpha(1f)
+                .translationX(0f)
+                .setDuration(300)
+                .setStartDelay(index * 50L)
+                .setInterpolator(android.view.animation.DecelerateInterpolator())
+                .start()
+
+            binding.scoreList.addView(rowView)
         }
     }
 

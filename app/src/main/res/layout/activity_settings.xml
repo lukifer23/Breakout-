@@ -11,7 +11,7 @@
         android:layout_height="wrap_content"
         android:text="Settings"
         android:textColor="@color/bp_white"
-        android:textSize="28sp"
+        android:textSize="@dimen/bp_screen_title_size"
         android:textStyle="bold"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
@@ -75,6 +75,45 @@
 
             <SeekBar
                 android:id="@+id/seekSensitivity"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="100" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Master Volume"
+                android:textColor="@color/bp_gray" />
+
+            <SeekBar
+                android:id="@+id/seekMasterVolume"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="100" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="Effects Volume"
+                android:textColor="@color/bp_gray" />
+
+            <SeekBar
+                android:id="@+id/seekEffectsVolume"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="100" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="Music Volume"
+                android:textColor="@color/bp_gray" />
+
+            <SeekBar
+                android:id="@+id/seekMusicVolume"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:max="100" />

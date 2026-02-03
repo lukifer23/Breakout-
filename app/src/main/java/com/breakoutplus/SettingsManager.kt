@@ -11,6 +11,9 @@ object SettingsManager {
     private const val KEY_TIPS = "tips_enabled"
     private const val KEY_LEFT_HANDED = "left_handed"
     private const val KEY_SENSITIVITY = "sensitivity"
+    private const val KEY_MASTER_VOLUME = "master_volume"
+    private const val KEY_EFFECTS_VOLUME = "effects_volume"
+    private const val KEY_MUSIC_VOLUME = "music_volume"
 
     data class Settings(
         val soundEnabled: Boolean,
@@ -18,7 +21,10 @@ object SettingsManager {
         val vibrationEnabled: Boolean,
         val tipsEnabled: Boolean,
         val leftHanded: Boolean,
-        val sensitivity: Float
+        val sensitivity: Float,
+        val masterVolume: Float = 1.0f,
+        val effectsVolume: Float = 0.8f,
+        val musicVolume: Float = 0.6f
     )
 
     private fun prefs(context: Context): SharedPreferences =
@@ -32,7 +38,10 @@ object SettingsManager {
             vibrationEnabled = prefs.getBoolean(KEY_VIBRATION, true),
             tipsEnabled = prefs.getBoolean(KEY_TIPS, true),
             leftHanded = prefs.getBoolean(KEY_LEFT_HANDED, false),
-            sensitivity = prefs.getFloat(KEY_SENSITIVITY, 0.7f)
+            sensitivity = prefs.getFloat(KEY_SENSITIVITY, 0.7f),
+            masterVolume = prefs.getFloat(KEY_MASTER_VOLUME, 1.0f),
+            effectsVolume = prefs.getFloat(KEY_EFFECTS_VOLUME, 0.8f),
+            musicVolume = prefs.getFloat(KEY_MUSIC_VOLUME, 0.6f)
         )
     }
 
@@ -44,6 +53,9 @@ object SettingsManager {
             .putBoolean(KEY_TIPS, settings.tipsEnabled)
             .putBoolean(KEY_LEFT_HANDED, settings.leftHanded)
             .putFloat(KEY_SENSITIVITY, settings.sensitivity)
+            .putFloat(KEY_MASTER_VOLUME, settings.masterVolume)
+            .putFloat(KEY_EFFECTS_VOLUME, settings.effectsVolume)
+            .putFloat(KEY_MUSIC_VOLUME, settings.musicVolume)
             .apply()
     }
 }

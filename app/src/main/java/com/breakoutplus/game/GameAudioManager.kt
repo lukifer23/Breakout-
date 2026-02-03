@@ -24,8 +24,17 @@ class GameAudioManager(private val context: Context, private val settings: Setti
             .setAudioAttributes(attrs)
             .setMaxStreams(6)
             .build()
+        // Load all sound effects (using existing files as fallbacks for new ones)
         soundMap[GameSound.BOUNCE] = soundPool.load(context, R.raw.sfx_bounce, 1)
-        soundMap[GameSound.BRICK] = soundPool.load(context, R.raw.sfx_brick, 1)
+        soundMap[GameSound.BRICK_NORMAL] = soundPool.load(context, R.raw.sfx_brick, 1)
+        soundMap[GameSound.BRICK_REINFORCED] = soundPool.load(context, R.raw.sfx_brick, 1) // Uses standard brick impact
+        soundMap[GameSound.BRICK_ARMORED] = soundPool.load(context, R.raw.sfx_brick, 1) // Uses standard brick impact
+        soundMap[GameSound.BRICK_EXPLOSIVE] = soundPool.load(context, R.raw.sfx_explosion, 1)
+        soundMap[GameSound.BRICK_UNBREAKABLE] = soundPool.load(context, R.raw.sfx_bounce, 1) // Metallic bounce
+        soundMap[GameSound.BRICK_MOVING] = soundPool.load(context, R.raw.sfx_brick, 1) // Uses standard brick impact
+        soundMap[GameSound.BRICK_SPAWNING] = soundPool.load(context, R.raw.sfx_powerup, 1)
+        soundMap[GameSound.BRICK_PHASE] = soundPool.load(context, R.raw.sfx_brick, 1) // Uses standard brick impact
+        soundMap[GameSound.BRICK_BOSS] = soundPool.load(context, R.raw.sfx_explosion, 1)
         soundMap[GameSound.POWERUP] = soundPool.load(context, R.raw.sfx_powerup, 1)
         soundMap[GameSound.LIFE] = soundPool.load(context, R.raw.sfx_life, 1)
         soundMap[GameSound.EXPLOSION] = soundPool.load(context, R.raw.sfx_explosion, 1)
@@ -36,7 +45,18 @@ class GameAudioManager(private val context: Context, private val settings: Setti
     fun play(sound: GameSound, volume: Float = 1f) {
         if (!settings.soundEnabled) return
         val id = soundMap[sound] ?: return
-        soundPool.play(id, volume, volume, 1, 0, 1f)
+
+        // Apply volume settings based on sound type
+        val finalVolume = when {
+            sound == GameSound.BOUNCE -> volume * settings.effectsVolume * settings.masterVolume
+            sound.name.startsWith("BRICK_") -> volume * settings.effectsVolume * settings.masterVolume
+            sound == GameSound.POWERUP || sound == GameSound.LIFE ||
+            sound == GameSound.EXPLOSION || sound == GameSound.LASER -> volume * settings.effectsVolume * settings.masterVolume
+            sound == GameSound.GAME_OVER -> volume * settings.effectsVolume * settings.masterVolume
+            else -> volume * settings.effectsVolume * settings.masterVolume
+        }
+
+        soundPool.play(id, finalVolume, finalVolume, 1, 0, 1f)
     }
 
     fun startMusic() {
@@ -44,7 +64,8 @@ class GameAudioManager(private val context: Context, private val settings: Setti
         if (mediaPlayer == null) {
             mediaPlayer = MediaPlayer.create(context, R.raw.music_loop)
             mediaPlayer?.isLooping = true
-            mediaPlayer?.setVolume(0.35f, 0.35f)
+            val musicVol = settings.musicVolume * settings.masterVolume
+            mediaPlayer?.setVolume(musicVol, musicVol)
         }
         mediaPlayer?.start()
     }
@@ -72,7 +93,15 @@ class GameAudioManager(private val context: Context, private val settings: Setti
 
 enum class GameSound {
     BOUNCE,
-    BRICK,
+    BRICK_NORMAL,
+    BRICK_REINFORCED,
+    BRICK_ARMORED,
+    BRICK_EXPLOSIVE,
+    BRICK_UNBREAKABLE,
+    BRICK_MOVING,
+    BRICK_SPAWNING,
+    BRICK_PHASE,
+    BRICK_BOSS,
     POWERUP,
     LIFE,
     EXPLOSION,

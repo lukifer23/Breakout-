@@ -11,7 +11,7 @@
         android:layout_height="wrap_content"
         android:text="How To Play"
         android:textColor="@color/bp_white"
-        android:textSize="28sp"
+        android:textSize="@dimen/bp_screen_title_size"
         android:textStyle="bold"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
@@ -36,55 +36,76 @@
                 android:layout_height="wrap_content"
                 android:text="Swipe anywhere to move the paddle. Tap to launch. Collect powerups to stack abilities. Use the HUD to monitor score, lives, and timers."
                 android:textColor="@color/bp_white"
-                android:textSize="16sp" />
+                android:textSize="@dimen/bp_body_text_size" />
 
             <TextView
+                android:id="@+id/powerupsHeader"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:text="Powerups"
+                android:layout_marginTop="16dp"
+                android:background="?android:attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
+                android:padding="8dp"
+                android:text="▼ Powerups"
                 android:textColor="@color/bp_gold"
-                android:textSize="18sp"
+                android:textSize="@dimen/bp_body_text_size"
                 android:textStyle="bold" />
 
             <TextView
+                android:id="@+id/powerupsContent"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
-                android:text="• Multi-ball: Adds two extra balls\n• Laser paddle: Tap with a second finger to fire beams\n• Guardrail: Temporary safety net at the bottom\n• Shield: Absorbs a hit without losing a life\n• Wide paddle: Expands the paddle\n• Slow motion: Reduces ball speed briefly"
-                android:textColor="@color/bp_gray" />
+                android:text="• Multi-ball: Adds extra balls\n• Laser: Fires beams at bricks (two-finger tap)\n• Guardrail: Safety net below paddle\n• Shield: Absorbs a miss\n• Extra life: Gain one additional life\n• Wide paddle: Expands paddle size\n• Slow: Slows gameplay briefly\n• Fireball: Pierces through bricks\n• Magnet: Pulls powerups toward the paddle\n• Gravity Well: Bends ball paths toward center\n• Ball Splitter: Splits balls into more\n• Freeze: Nearly stops time for a moment\n• Pierce: Balls pass through bricks"
+                android:textColor="@color/bp_gray"
+                android:textSize="@dimen/bp_small_text_size" />
 
             <TextView
+                android:id="@+id/bricksHeader"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:text="Brick Types"
+                android:layout_marginTop="16dp"
+                android:background="?android:attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
+                android:padding="8dp"
+                android:text="▼ Brick Types"
                 android:textColor="@color/bp_gold"
-                android:textSize="18sp"
+                android:textSize="@dimen/bp_body_text_size"
                 android:textStyle="bold" />
 
             <TextView
+                android:id="@+id/bricksContent"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
-                android:text="• Standard: one hit\n• Reinforced: two or three hits\n• Explosive: damages neighbors\n• Unbreakable: requires fireball or laser barrage"
-                android:textColor="@color/bp_gray" />
+                android:text="• Standard: one hit\n• Reinforced: two hits\n• Armored: three hits\n• Explosive: damages surrounding bricks\n• Unbreakable: requires fireball/laser\n• Moving: slides horizontally\n• Spawning: breaks into child bricks\n• Phase: changes phases with new HP\n• Boss: multi-phase heavyweight brick"
+                android:textColor="@color/bp_gray"
+                android:textSize="@dimen/bp_small_text_size" />
 
             <TextView
+                android:id="@+id/modesHeader"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:text="Modes"
+                android:layout_marginTop="16dp"
+                android:background="?android:attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
+                android:padding="8dp"
+                android:text="▼ Game Modes"
                 android:textColor="@color/bp_gold"
-                android:textSize="18sp"
+                android:textSize="@dimen/bp_body_text_size"
                 android:textStyle="bold" />
 
             <TextView
+                android:id="@+id/modesContent"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
-                android:text="Classic: Standard breakout loop.\nTimed: Beat the clock.\nEndless: Infinite levels with scaling difficulty.\nGod Mode: Practice without losing lives.\nLevel Rush: Speed-run each stage."
-                android:textColor="@color/bp_gray" />
+                android:text="Classic: Standard breakout progression.\nTimed Challenge: Score high in 2:30.\nEndless: Infinite levels with scaling difficulty.\nGod Mode: Practice without losing lives.\nLevel Rush: Beat each stage before time expires."
+                android:textColor="@color/bp_gray"
+                android:textSize="@dimen/bp_small_text_size" />
         </LinearLayout>
     </ScrollView>
 

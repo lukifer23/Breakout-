@@ -13,7 +13,7 @@
         android:id="@+id/hudOverlay"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:padding="20dp">
+        android:padding="24dp">
 
         <LinearLayout
             android:id="@+id/hudRow"
@@ -21,7 +21,7 @@
             android:layout_height="wrap_content"
             android:background="@drawable/hud_chip"
             android:gravity="center_vertical"
-            android:padding="14dp"
+            android:padding="16dp"
             android:orientation="horizontal"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
@@ -47,7 +47,7 @@
                 android:id="@+id/hudTime"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="20dp"
+                android:layout_marginStart="24dp"
                 android:text="Time 02:00"
                 android:textColor="@color/bp_white" />
 
@@ -55,7 +55,7 @@
                 android:id="@+id/hudLevel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="20dp"
+                android:layout_marginStart="24dp"
                 android:text="Level 1"
                 android:textColor="@color/bp_white" />
 
@@ -64,7 +64,7 @@
                 style="@style/Widget.BreakoutPlus.PauseButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="14dp"
+                android:layout_marginStart="16dp"
                 android:text="@string/label_pause"
                 app:icon="@drawable/ic_pause"
                 app:iconGravity="textStart" />
@@ -74,7 +74,7 @@
             android:id="@+id/hudMode"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="12dp"
             android:text="Classic"
             android:textColor="@color/bp_gray"
             app:layout_constraintStart_toStartOf="parent"
@@ -84,7 +84,7 @@
             android:id="@+id/hudPowerups"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="10dp"
             android:orientation="horizontal"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/hudMode">
@@ -95,7 +95,7 @@
                 android:layout_height="wrap_content"
                 android:text="Powerups: none"
                 android:textColor="@color/bp_gray"
-                android:textSize="12sp" />
+                android:textSize="@dimen/bp_caption_text_size" />
         </LinearLayout>
 
         <LinearLayout
@@ -116,7 +116,7 @@
                 android:layout_height="wrap_content"
                 android:text="Paused"
                 android:textColor="@color/bp_white"
-                android:textSize="28sp"
+                android:textSize="32sp"
                 android:textStyle="bold" />
 
             <com.google.android.material.button.MaterialButton
@@ -124,7 +124,7 @@
                 style="@style/Widget.BreakoutPlus.Button"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="20dp"
                 android:text="@string/label_resume" />
 
             <com.google.android.material.button.MaterialButton
@@ -132,7 +132,7 @@
                 style="@style/Widget.BreakoutPlus.Button"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="10dp"
                 android:text="@string/label_restart"
                 android:backgroundTint="@color/bp_gold" />
 
@@ -141,7 +141,7 @@
                 style="@style/Widget.BreakoutPlus.Button"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="10dp"
                 android:text="@string/label_main_menu"
                 android:backgroundTint="@color/bp_gray" />
         </LinearLayout>
@@ -165,14 +165,14 @@
                 android:layout_height="wrap_content"
                 android:text="Game Over"
                 android:textColor="@color/bp_white"
-                android:textSize="28sp"
+                android:textSize="32sp"
                 android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/endStats"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="10dp"
                 android:text="Score 0"
                 android:textColor="@color/bp_gray" />
 
@@ -181,7 +181,7 @@
                 style="@style/Widget.BreakoutPlus.Button"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="20dp"
                 android:text="@string/label_restart" />
 
             <com.google.android.material.button.MaterialButton
@@ -189,7 +189,7 @@
                 style="@style/Widget.BreakoutPlus.Button"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="10dp"
                 android:text="@string/label_main_menu"
                 android:backgroundTint="@color/bp_gray" />
         </LinearLayout>
@@ -198,12 +198,12 @@
             android:id="@+id/hudTip"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="20dp"
+            android:layout_marginBottom="24dp"
             android:background="@drawable/hud_chip"
-            android:padding="10dp"
+            android:padding="12dp"
             android:text="Tip"
             android:textColor="@color/bp_white"
-            android:textSize="13sp"
+            android:textSize="@dimen/bp_small_text_size"
             android:visibility="gone"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
@@ -227,7 +227,7 @@
                 android:layout_height="wrap_content"
                 android:text="Welcome to Breakout+!"
                 android:textColor="@color/bp_white"
-                android:textSize="28sp"
+                android:textSize="32sp"
                 android:textStyle="bold" />
 
             <TextView
