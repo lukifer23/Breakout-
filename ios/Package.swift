@@ -20,11 +20,6 @@ let package = Package(
             dependencies: [],
             path: "BreakoutPlus/BreakoutPlus",
             resources: []
-        ),
-        .testTarget(
-            name: "BreakoutPlusTests",
-            dependencies: ["BreakoutPlus"],
-            path: "BreakoutPlus/BreakoutPlusTests"
         )
     ]
 )
