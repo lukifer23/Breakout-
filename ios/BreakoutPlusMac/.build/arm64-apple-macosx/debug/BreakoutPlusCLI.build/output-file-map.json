@@ -1,0 +1,12 @@
+{
+  "": {
+    "swift-dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/master.swiftdeps"
+  },
+  "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/BreakoutPlusMac/main-cli.swift": {
+    "dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/main-cli.d",
+    "object": "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/main-cli.swift.o",
+    "swiftmodule": "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/main-cli~partial.swiftmodule",
+    "swift-dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/main-cli.swiftdeps",
+    "diagnostics": "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/main-cli.dia"
+  }
+}
