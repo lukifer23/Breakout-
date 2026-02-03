@@ -1,14 +1,19 @@
 # Breakout+
 
-A premium brickbreaker game designed specifically for foldable devices like the Samsung Galaxy Z Fold 7. Features advanced physics, multiple game modes, dynamic brick behaviors, and comprehensive powerup systems with GPU-accelerated rendering at 60+ FPS.
+A premium brickbreaker game designed specifically for foldable devices like the Samsung Galaxy Z Fold 7, with a native iOS port for cross-platform gaming. Features advanced physics, multiple game modes, dynamic brick behaviors, and comprehensive powerup systems with GPU-accelerated rendering at 60+ FPS.
+
+## Platforms
+
+- **Android**: Production-ready (v1.1.2) with foldable device optimization
+- **iOS**: In development - Foundation complete, playable MVP achieved
 
 ## About
 
 Breakout+ elevates the classic brickbreaker genre with modern mobile optimizations and innovative gameplay mechanics. Built from the ground up for foldable devices, it leverages the unique form factor for enhanced gameplay experiences across folded and unfolded states.
 
 ### Key Features
-- **Foldable-First Design**: Optimized layouts for Samsung Galaxy Z Fold 7 (folded 7.6" and unfolded 12.4" displays)
-- **GPU Acceleration**: OpenGL ES 2.0 rendering for smooth 60+ FPS gameplay
+- **Cross-Platform**: Native Android (production-ready) and iOS (in development) implementations
+- **GPU Acceleration**: OpenGL ES 2.0 (Android) / Metal (iOS) rendering at 60+ FPS
 - **Advanced Physics**: Accurate collision detection with momentum preservation
 - **Multiple Game Modes**: Classic, Timed Challenge, Endless, God Mode, and Level Rush
 - **Dynamic Brick System**: 9 brick types with unique behaviors (moving, spawning, phase, boss)
@@ -17,6 +22,7 @@ Breakout+ elevates the classic brickbreaker genre with modern mobile optimizatio
 - **6 Visual Themes**: Unique color palettes and animated backgrounds
 - **Audio System**: Procedural sound generation with individual volume controls
 - **Data Logging**: Built-in analytics for debugging and potential AI training
+- **Foldable Optimization**: Android version optimized for Samsung Galaxy Z Fold 7
 
 Key principles:
 - **Foldable-first design**: Optimized layouts and hinge-aware UI for seamless folded/unfolded transitions
@@ -25,13 +31,27 @@ Key principles:
 - **CLI-only development**: No Android Studio dependency, pure command-line workflow
 - **Production-ready**: All assets generated locally, no external dependencies
 
-## Target Device: Samsung Galaxy Z Fold 7
+## Platforms
 
-### Setup Instructions
+### Android: Samsung Galaxy Z Fold 7
+**Status**: Production-ready (v1.1.2)
+
+#### Setup Instructions
 1. Enable USB debugging in Developer Options
 2. Connect device via USB
 3. Verify connection: `adb devices`
 4. Install APK: `adb install -r app/build/outputs/apk/debug/app-debug.apk`
+
+### iOS: iPhone & iPad
+**Status**: In development - Foundation complete, playable MVP
+
+#### Development Setup
+1. Open `ios/BreakoutPlus/BreakoutPlus.xcodeproj` in Xcode 15+
+2. Select iOS Simulator or device (iOS 15+)
+3. Build and run (⌘+R)
+4. Enjoy Breakout+ on iOS!
+
+**Current iOS Features**: Core gameplay, ball physics, brick destruction, powerups, all game modes
 5. Launch: `adb shell am start -n com.breakoutplus.debug/com.breakoutplus.SplashActivity`
 
 Breakout+ is a GPU-accelerated brickbreaker built for foldables, tuned for the Samsung Galaxy Z Fold 7. It uses OpenGL ES for the game loop, fold-aware UI layout, and a full set of modes, powerups, audio, and multi-hit bricks.
@@ -130,23 +150,40 @@ Breakout+ is a GPU-accelerated brickbreaker built for foldables, tuned for the S
 - **Freeze**: Nearly stops time for a moment.
 - **Pierce**: Balls pass through bricks.
 
-## Build & Run (CLI only)
+## Build & Run
 
-### Prerequisites
-- JDK 17
-- Android SDK (API 35 installed)
-- Python 3 (for audio generation)
-- ADB in PATH
+### Android (CLI only)
 
-### Build APK
+#### Prerequisites
+- JDK 17, Android SDK (API 35 installed), Python 3, ADB in PATH
+
+#### Build APK
 ```bash
 ./gradlew assembleDebug
 ```
 
-### Install to Device
+#### Install to Device
 ```bash
 adb devices
 adb install -r app/build/outputs/apk/debug/app-debug.apk
+adb shell am start -n com.breakoutplus.debug/com.breakoutplus.SplashActivity
+```
+
+### iOS (Xcode)
+
+#### Prerequisites
+- Xcode 15+, iOS 15+, Swift 5.9+, macOS
+
+#### Build and Run
+1. Open `ios/BreakoutPlus/BreakoutPlus.xcodeproj` in Xcode
+2. Select iOS Simulator or device
+3. Build: ⌘+B, Run: ⌘+R
+
+#### Alternative: Swift Package Manager
+```bash
+cd ios
+swift build
+```
 adb shell am start -n com.breakoutplus.debug/com.breakoutplus.SplashActivity
 ```
 
@@ -167,35 +204,41 @@ python3 tools/generate_sfx.py
 - Game world scales to the available aspect ratio.
 
 ## Project Layout
+
+### Android (Kotlin)
 ```
 app/src/main/java/com/breakoutplus
-  MainActivity.kt
-  GameActivity.kt
-  SettingsActivity.kt
-  ScoreboardActivity.kt
-  ModeSelectActivity.kt
-  HowToActivity.kt
-  FoldAwareActivity.kt
-  SettingsManager.kt
-  ScoreboardManager.kt
-app/src/main/java/com/breakoutplus/game
-  GameGLSurfaceView.kt
-  GameRenderer.kt
-  GameEngine.kt
-  LevelFactory.kt
-  Renderer2D.kt
-  GameAudioManager.kt
+├── MainActivity.kt, GameActivity.kt, SettingsActivity.kt
+├── ScoreboardActivity.kt, ModeSelectActivity.kt, HowToActivity.kt
+├── FoldAwareActivity.kt, SettingsManager.kt, ScoreboardManager.kt
+└── game/
+    ├── GameGLSurfaceView.kt, GameRenderer.kt, GameEngine.kt
+    ├── LevelFactory.kt, Renderer2D.kt, GameAudioManager.kt
+    ├── GameMode.kt, BrickType.kt, PowerUpType.kt
+    └── GameLogger.kt
+```
+
+### iOS (Swift)
+```
+ios/BreakoutPlus/BreakoutPlus/
+├── BreakoutPlusApp.swift, ContentView.swift
+├── ViewModels/GameViewModel.swift
+├── Views/ (SplashView, MenuView, GameView, etc.)
+├── Core/GameEngine.swift
+├── Core/Models/ (Ball, Brick, Paddle, PowerUp, LevelTheme)
+└── Models/ (GameMode, BrickType, PowerUpType)
 ```
 
 ## Docs Index
-- Requirements: `REQUIREMENTS.md`
-- Architecture: `ARCHITECTURE.md`
-- Design/UX: `DESIGN.md`
-- Gameplay: `GAMEPLAY.md`
-- Build/Run: `BUILD.md`
-- Testing: `TESTING.md`
-- Assets: `ASSETS.md`
-- Roadmap: `ROADMAP.md`
+- **Requirements**: `REQUIREMENTS.md`
+- **Architecture**: `ARCHITECTURE.md`
+- **Design/UX**: `DESIGN.md`
+- **Gameplay**: `GAMEPLAY.md`
+- **Build/Run**: `BUILD.md`
+- **Testing**: `TESTING.md`
+- **Assets**: `ASSETS.md`
+- **Roadmap**: `ROADMAP.md`
+- **iOS Port**: `ios/README.md`, `ios/ARCHITECTURE.md`, `ios/ROADMAP.md`
 
 ## Icon Variants
 The current icon is a vector adaptive icon with brick and ball motifs. If you want alternates, easy variants:
