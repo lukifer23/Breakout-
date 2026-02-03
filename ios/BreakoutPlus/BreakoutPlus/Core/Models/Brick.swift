@@ -65,6 +65,17 @@ struct Brick: Identifiable, Equatable {
         }
     }
 
+    static func == (lhs: Brick, rhs: Brick) -> Bool {
+        return lhs.id == rhs.id &&
+               lhs.x == rhs.x &&
+               lhs.y == rhs.y &&
+               lhs.width == rhs.width &&
+               lhs.height == rhs.height &&
+               lhs.type == rhs.type &&
+               lhs.hitPoints == rhs.hitPoints &&
+               lhs.alive == rhs.alive
+    }
+
     func currentColor(theme: LevelTheme) -> (red: Float, green: Float, blue: Float) {
         // Simplified color calculation - full implementation would match Android version
         let baseColor = theme.brickPalette[type] ?? (0.5, 0.5, 0.5)

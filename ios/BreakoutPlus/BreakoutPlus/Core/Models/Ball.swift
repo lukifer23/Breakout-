@@ -35,4 +35,13 @@ struct Ball: Identifiable, Equatable {
     func intersects(_ paddle: Paddle) -> Bool {
         intersects(paddle.bounds)
     }
+
+    static func == (lhs: Ball, rhs: Ball) -> Bool {
+        return lhs.id == rhs.id &&
+               lhs.x == rhs.x &&
+               lhs.y == rhs.y &&
+               lhs.vx == rhs.vx &&
+               lhs.vy == rhs.vy &&
+               lhs.radius == rhs.radius
+    }
 }

@@ -31,4 +31,13 @@ struct PowerUp: Identifiable, Equatable {
     func intersects(_ paddle: Paddle) -> Bool {
         bounds.intersects(paddle.bounds)
     }
+
+    static func == (lhs: PowerUp, rhs: PowerUp) -> Bool {
+        return lhs.id == rhs.id &&
+               lhs.x == rhs.x &&
+               lhs.y == rhs.y &&
+               lhs.type == rhs.type &&
+               lhs.vx == rhs.vx &&
+               lhs.vy == rhs.vy
+    }
 }

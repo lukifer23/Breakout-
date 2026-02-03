@@ -39,4 +39,11 @@ struct Paddle: Equatable {
     var bottom: Float {
         y + height/2
     }
+
+    static func == (lhs: Paddle, rhs: Paddle) -> Bool {
+        return lhs.x == rhs.x &&
+               lhs.y == rhs.y &&
+               lhs.width == rhs.width &&
+               lhs.height == rhs.height
+    }
 }
