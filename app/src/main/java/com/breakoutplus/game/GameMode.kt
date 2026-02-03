@@ -11,7 +11,8 @@ enum class GameMode(
     val timeLimitSeconds: Int,
     val endless: Boolean,
     val godMode: Boolean,
-    val rush: Boolean
+    val rush: Boolean,
+    val launchSpeed: Float
 ) {
     CLASSIC(
         displayName = "Classic",
@@ -21,7 +22,8 @@ enum class GameMode(
         timeLimitSeconds = 0,
         endless = false,
         godMode = false,
-        rush = false
+        rush = false,
+        launchSpeed = 35f
     ),
     TIMED(
         displayName = "Timed Challenge",
@@ -31,7 +33,8 @@ enum class GameMode(
         timeLimitSeconds = 150,
         endless = false,
         godMode = false,
-        rush = false
+        rush = false,
+        launchSpeed = 40f
     ),
     ENDLESS(
         displayName = "Endless",
@@ -41,7 +44,8 @@ enum class GameMode(
         timeLimitSeconds = 0,
         endless = true,
         godMode = false,
-        rush = false
+        rush = false,
+        launchSpeed = 37f
     ),
     GOD(
         displayName = "God Mode",
@@ -51,7 +55,8 @@ enum class GameMode(
         timeLimitSeconds = 0,
         endless = false,
         godMode = true,
-        rush = false
+        rush = false,
+        launchSpeed = 31f
     ),
     RUSH(
         displayName = "Level Rush",
@@ -61,6 +66,7 @@ enum class GameMode(
         timeLimitSeconds = 45,
         endless = false,
         godMode = false,
-        rush = true
+        rush = true,
+        launchSpeed = 42f
     );
 }
