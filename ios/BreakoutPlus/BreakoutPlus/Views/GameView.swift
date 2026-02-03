@@ -160,9 +160,9 @@ class GameScene: SKScene, GameEngineDelegate {
 
     private func updateVisuals() {
         // Update paddle
-        let paddleX = CGFloat(gameEngine.paddle.x / 100.0 * size.width)
+        let paddleX = CGFloat(gameEngine.paddle.x / 100.0) * size.width
         paddleNode.position.x = paddleX
-        paddleNode.size.width = CGFloat(gameEngine.paddle.width / 100.0 * size.width)
+        paddleNode.size.width = CGFloat(gameEngine.paddle.width / 100.0) * size.width
 
         // Update balls
         while ballNodes.count < gameEngine.balls.count {
@@ -178,8 +178,8 @@ class GameScene: SKScene, GameEngineDelegate {
 
         for (index, ball) in gameEngine.balls.enumerated() {
             if index < ballNodes.count {
-                let ballX = CGFloat(ball.x / 100.0 * size.width)
-                let ballY = size.height - CGFloat(ball.y / 160.0 * size.height)
+                let ballX = CGFloat(ball.x / 100.0) * size.width
+                let ballY = size.height - CGFloat(ball.y / 160.0) * size.height
                 ballNodes[index].position = CGPoint(x: ballX, y: ballY)
             }
         }
@@ -194,12 +194,12 @@ class GameScene: SKScene, GameEngineDelegate {
         for (index, brick) in gameEngine.bricks.enumerated() {
             if index < brickNodes.count {
                 let brickNode = brickNodes[index]
-                let brickX = CGFloat(brick.x / 100.0 * size.width)
-                let brickY = size.height - CGFloat(brick.y / 160.0 * size.height)
+                let brickX = CGFloat(brick.x / 100.0) * size.width
+                let brickY = size.height - CGFloat(brick.y / 160.0) * size.height
 
                 brickNode.position = CGPoint(x: brickX, y: brickY)
-                brickNode.size = CGSize(width: CGFloat(brick.width / 100.0 * size.width),
-                                      height: CGFloat(brick.height / 160.0 * size.height))
+                brickNode.size = CGSize(width: CGFloat(brick.width / 100.0) * size.width,
+                                      height: CGFloat(brick.height / 160.0) * size.height)
 
                 if brick.alive {
                     let color = brick.currentColor(theme: .neon)
@@ -227,8 +227,8 @@ class GameScene: SKScene, GameEngineDelegate {
 
         for (index, powerup) in gameEngine.powerups.enumerated() {
             if index < powerupNodes.count {
-                let powerupX = CGFloat(powerup.x / 100.0 * size.width)
-                let powerupY = size.height - CGFloat(powerup.y / 160.0 * size.height)
+                let powerupX = CGFloat(powerup.x / 100.0) * size.width
+                let powerupY = size.height - CGFloat(powerup.y / 160.0) * size.height
                 powerupNodes[index].position = CGPoint(x: powerupX, y: powerupY)
             }
         }

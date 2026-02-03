@@ -3,11 +3,11 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 56;
+	objectVersion = 60;
 	objects = {
 
 /* Begin PBXBuildFile section */
-		1A2B3C4D5E6F7890AB123456 /* BreakoutPlusApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB123457 /* BreakoutPlusApp.swift */; };
+		1A2B3C4D5E6F7890AB12347A /* BreakoutPlusApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB123457 /* BreakoutPlusApp.swift */; };
 		1A2B3C4D5E6F7890AB123458 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB123459 /* ContentView.swift */; };
 		1A2B3C4D5E6F7890AB12345A /* GameViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB12345B /* GameViewModel.swift */; };
 		1A2B3C4D5E6F7890AB12345C /* GameMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB12345D /* GameMode.swift */; };
@@ -47,7 +47,6 @@
 		1A2B3C4D5E6F7890AB123475 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Views/SettingsView.swift; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F7890AB123477 /* ScoreboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Views/ScoreboardView.swift; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F7890AB123479 /* HowToView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Views/HowToView.swift; sourceTree = SOURCE_ROOT; };
-		1A2B3C4D5E6F7890AB12347A /* BreakoutPlus */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = BreakoutPlus; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -158,7 +157,7 @@
 			dependencies = (
 			);
 			name = BreakoutPlus;
-			productName = BreakoutPlus;
+			productName = "$(TARGET_NAME)";
 			productReference = 1A2B3C4D5E6F7890AB123456 /* BreakoutPlus.app */;
 			productType = "com.apple.product-type.application";
 		};
@@ -187,6 +186,7 @@
 			);
 			mainGroup = 1A2B3C4D5E6F7890AB12347C;
 			productRefGroup = 1A2B3C4D5E6F7890AB12347E /* Products */;
+			productDirPath = "";
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -210,7 +210,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				1A2B3C4D5E6F7890AB123456 /* BreakoutPlusApp.swift in Sources */,
+				1A2B3C4D5E6F7890AB12347A /* BreakoutPlusApp.swift in Sources */,
 				1A2B3C4D5E6F7890AB123458 /* ContentView.swift in Sources */,
 				1A2B3C4D5E6F7890AB12345A /* GameViewModel.swift in Sources */,
 				1A2B3C4D5E6F7890AB12345C /* GameMode.swift in Sources */,
@@ -310,6 +310,7 @@
 				CLANG_WARN_COMMA = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
 				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
 				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
@@ -345,7 +346,6 @@
 				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
-				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
 		};

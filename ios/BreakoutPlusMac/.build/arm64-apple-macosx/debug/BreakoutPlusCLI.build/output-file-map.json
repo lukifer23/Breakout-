@@ -2,6 +2,69 @@
   "": {
     "swift-dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/master.swiftdeps"
   },
+  "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/BreakoutPlusMac/Core/GameEngine.swift": {
+    "dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/GameEngine.d",
+    "object": "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/GameEngine.swift.o",
+    "swiftmodule": "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/GameEngine~partial.swiftmodule",
+    "swift-dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/GameEngine.swiftdeps",
+    "diagnostics": "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/GameEngine.dia"
+  },
+  "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/BreakoutPlusMac/Core/Models/Ball.swift": {
+    "dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/Ball.d",
+    "object": "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/Ball.swift.o",
+    "swiftmodule": "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/Ball~partial.swiftmodule",
+    "swift-dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/Ball.swiftdeps",
+    "diagnostics": "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/Ball.dia"
+  },
+  "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/BreakoutPlusMac/Core/Models/Brick.swift": {
+    "dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/Brick.d",
+    "object": "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/Brick.swift.o",
+    "swiftmodule": "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/Brick~partial.swiftmodule",
+    "swift-dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/Brick.swiftdeps",
+    "diagnostics": "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/Brick.dia"
+  },
+  "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/BreakoutPlusMac/Core/Models/LevelTheme.swift": {
+    "dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/LevelTheme.d",
+    "object": "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/LevelTheme.swift.o",
+    "swiftmodule": "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/LevelTheme~partial.swiftmodule",
+    "swift-dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/LevelTheme.swiftdeps",
+    "diagnostics": "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/LevelTheme.dia"
+  },
+  "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/BreakoutPlusMac/Core/Models/Paddle.swift": {
+    "dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/Paddle.d",
+    "object": "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/Paddle.swift.o",
+    "swiftmodule": "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/Paddle~partial.swiftmodule",
+    "swift-dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/Paddle.swiftdeps",
+    "diagnostics": "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/Paddle.dia"
+  },
+  "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/BreakoutPlusMac/Core/Models/PowerUp.swift": {
+    "dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/PowerUp.d",
+    "object": "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/PowerUp.swift.o",
+    "swiftmodule": "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/PowerUp~partial.swiftmodule",
+    "swift-dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/PowerUp.swiftdeps",
+    "diagnostics": "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/PowerUp.dia"
+  },
+  "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/BreakoutPlusMac/Models/BrickType.swift": {
+    "dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/BrickType.d",
+    "object": "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/BrickType.swift.o",
+    "swiftmodule": "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/BrickType~partial.swiftmodule",
+    "swift-dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/BrickType.swiftdeps",
+    "diagnostics": "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/BrickType.dia"
+  },
+  "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/BreakoutPlusMac/Models/GameMode.swift": {
+    "dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/GameMode.d",
+    "object": "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/GameMode.swift.o",
+    "swiftmodule": "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/GameMode~partial.swiftmodule",
+    "swift-dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/GameMode.swiftdeps",
+    "diagnostics": "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/GameMode.dia"
+  },
+  "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/BreakoutPlusMac/Models/PowerUpType.swift": {
+    "dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/PowerUpType.d",
+    "object": "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/PowerUpType.swift.o",
+    "swiftmodule": "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/PowerUpType~partial.swiftmodule",
+    "swift-dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/PowerUpType.swiftdeps",
+    "diagnostics": "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/PowerUpType.dia"
+  },
   "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/BreakoutPlusMac/main-cli.swift": {
     "dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/main-cli.d",
     "object": "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/main-cli.swift.o",

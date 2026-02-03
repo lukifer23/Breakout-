@@ -107,7 +107,8 @@ class GameEngine {
     }
 
     private func updateBalls(_ deltaTime: TimeInterval) {
-        for ball in balls {
+        for i in 0..<balls.count {
+            var ball = balls[i]
             // Update position
             ball.x += ball.vx * Float(deltaTime)
             ball.y += ball.vy * Float(deltaTime)
@@ -126,11 +127,13 @@ class GameEngine {
                 ball.vy = -ball.vy
                 ball.y = ball.radius
             }
+            balls[i] = ball
         }
     }
 
     private func updateBricks(_ deltaTime: TimeInterval) {
-        for brick in bricks where brick.alive {
+        for i in 0..<bricks.count where bricks[i].alive {
+            var brick = bricks[i]
             if brick.type == .moving {
                 // Horizontal movement
                 brick.x += brick.vx * Float(deltaTime)
@@ -140,19 +143,21 @@ class GameEngine {
                     brick.vx = -brick.vx
                 }
             }
+            bricks[i] = brick
         }
     }
 
     private func updatePowerups(_ deltaTime: TimeInterval) {
-        for powerup in powerups {
+        for i in 0..<powerups.count {
+            var powerup = powerups[i]
             powerup.y += powerup.vy * Float(deltaTime)
 
             // Remove if off screen
             if powerup.y > 160 {
-                if let index = powerups.firstIndex(of: powerup) {
-                    powerups.remove(at: index)
-                }
+                powerups.remove(at: i)
+                break
             }
+            powerups[i] = powerup
         }
     }
 
@@ -162,18 +167,24 @@ class GameEngine {
 
     private func handleCollisions() {
         // Ball-brick collisions
-        for ball in balls {
-            for brick in bricks where brick.alive {
+        for ballIndex in 0..<balls.count {
+            var ball = balls[ballIndex]
+            for brickIndex in 0..<bricks.count where bricks[brickIndex].alive {
+                var brick = bricks[brickIndex]
                 if ball.intersects(brick) {
-                    handleBrickCollision(ball, brick)
+                    handleBrickCollision(&ball, &brick)
+                    balls[ballIndex] = ball
+                    bricks[brickIndex] = brick
                 }
             }
         }
 
         // Ball-paddle collisions
-        for ball in balls {
+        for ballIndex in 0..<balls.count {
+            var ball = balls[ballIndex]
             if ball.intersects(paddle) {
-                handlePaddleCollision(ball)
+                handlePaddleCollision(&ball)
+                balls[ballIndex] = ball
             }
         }
 
@@ -185,7 +196,7 @@ class GameEngine {
         }
     }
 
-    private func handleBrickCollision(_ ball: Ball, _ brick: Brick) {
+    private func handleBrickCollision(_ ball: inout Ball, _ brick: inout Brick) {
         // Damage brick
         brick.hitPoints -= 1
 
@@ -200,7 +211,7 @@ class GameEngine {
 
             // Create powerup (10% chance)
             if Double.random(in: 0..<1) < 0.1 {
-                spawnPowerup(at: brick.position)
+                spawnPowerup(atX: brick.centerX, y: brick.centerY)
             }
         }
 
@@ -208,7 +219,7 @@ class GameEngine {
         ball.vy = -ball.vy
     }
 
-    private func handlePaddleCollision(_ ball: Ball) {
+    private func handlePaddleCollision(_ ball: inout Ball) {
         // Calculate bounce angle based on hit position
         let hitPos = (ball.x - paddle.x) / paddle.width
         let angle = hitPos * .pi / 3 // Max 60 degrees
@@ -261,9 +272,9 @@ class GameEngine {
         }
     }
 
-    private func spawnPowerup(at position: CGPoint) {
+    private func spawnPowerup(atX x: Float, y: Float) {
         let randomType = PowerUpType.allCases.randomElement()!
-        let powerup = PowerUp(x: position.x, y: position.y, type: randomType)
+        let powerup = PowerUp(x: x, y: y, type: randomType)
         powerups.append(powerup)
     }
 
@@ -299,12 +310,14 @@ class GameEngine {
     }
 
     func launchBall() {
-        guard let ball = balls.first, ball.vy == 0 else { return }
+        guard let index = balls.firstIndex(where: { $0.vy == 0 }), index < balls.count else { return }
 
-        let angle = Double.random(in: .pi/6...5*.pi/6) // 30-150 degrees
+        var ball = balls[index]
+        let angle = Double.random(in: .pi/6...(5 * .pi / 6)) // 30-150 degrees
         let speed = Double(gameMode.launchSpeed)
         ball.vx = Float(speed * cos(angle))
         ball.vy = Float(speed * -sin(angle)) // Negative for up
+        balls[index] = ball
     }
 
     func movePaddle(to x: Float) {

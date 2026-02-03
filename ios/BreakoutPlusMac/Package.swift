@@ -18,7 +18,18 @@ let package = Package(
             name: "BreakoutPlusCLI",
             dependencies: [],
             path: "BreakoutPlusMac",
-            sources: ["main-cli.swift"],
+            sources: [
+                "main-cli.swift",
+                "Models/GameMode.swift",
+                "Models/BrickType.swift",
+                "Models/PowerUpType.swift",
+                "Core/GameEngine.swift",
+                "Core/Models/Ball.swift",
+                "Core/Models/Brick.swift",
+                "Core/Models/Paddle.swift",
+                "Core/Models/PowerUp.swift",
+                "Core/Models/LevelTheme.swift"
+            ],
             resources: []
         )
     ]

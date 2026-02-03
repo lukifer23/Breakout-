@@ -18,17 +18,53 @@
   ],
   "swiftCommands" : {
     "C.BreakoutPlusCLI-arm64-apple-macosx26.0-debug.module" : {
-      "executable" : "/Library/Developer/CommandLineTools/usr/bin/swiftc",
+      "executable" : "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
       "fileList" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/sources",
       "importPath" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/Modules",
       "inputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/BreakoutPlusMac/Core/GameEngine.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/BreakoutPlusMac/Core/Models/Ball.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/BreakoutPlusMac/Core/Models/Brick.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/BreakoutPlusMac/Core/Models/LevelTheme.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/BreakoutPlusMac/Core/Models/Paddle.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/BreakoutPlusMac/Core/Models/PowerUp.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/BreakoutPlusMac/Models/BrickType.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/BreakoutPlusMac/Models/GameMode.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/BreakoutPlusMac/Models/PowerUpType.swift"
+        },
         {
           "kind" : "file",
           "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/BreakoutPlusMac/main-cli.swift"
         },
         {
           "kind" : "file",
-          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt"
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt"
         },
         {
           "kind" : "file",
@@ -39,6 +75,15 @@
       "moduleName" : "BreakoutPlusCLI",
       "moduleOutputPath" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/Modules/BreakoutPlusCLI.swiftmodule",
       "objects" : [
+        "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/GameEngine.swift.o",
+        "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/Ball.swift.o",
+        "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/Brick.swift.o",
+        "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/LevelTheme.swift.o",
+        "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/Paddle.swift.o",
+        "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/PowerUp.swift.o",
+        "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/BrickType.swift.o",
+        "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/GameMode.swift.o",
+        "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/PowerUpType.swift.o",
         "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/main-cli.swift.o"
       ],
       "otherArguments" : [
@@ -64,19 +109,31 @@
         "BreakoutPlusCLI_main",
         "-swift-version",
         "5",
-        "-I",
-        "/Library/Developer/CommandLineTools/Library/Developer/Frameworks",
-        "-L",
-        "/Library/Developer/CommandLineTools/Library/Developer/Frameworks",
         "-plugin-path",
-        "/Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/testing",
+        "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing",
         "-sdk",
-        "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk",
+        "-F",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-F",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+        "-I",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+        "-L",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
         "-g",
         "-Xcc",
         "-isysroot",
         "-Xcc",
-        "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk",
+        "-Xcc",
+        "-F",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-Xcc",
+        "-F",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
         "-Xcc",
         "-fPIC",
         "-Xcc",
@@ -84,6 +141,42 @@
       ],
       "outputFileMapPath" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/output-file-map.json",
       "outputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/GameEngine.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/Ball.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/Brick.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/LevelTheme.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/Paddle.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/PowerUp.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/BrickType.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/GameMode.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/PowerUpType.swift.o"
+        },
         {
           "kind" : "file",
           "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/main-cli.swift.o"
@@ -95,6 +188,15 @@
       ],
       "prepareForIndexing" : false,
       "sources" : [
+        "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/BreakoutPlusMac/Core/GameEngine.swift",
+        "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/BreakoutPlusMac/Core/Models/Ball.swift",
+        "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/BreakoutPlusMac/Core/Models/Brick.swift",
+        "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/BreakoutPlusMac/Core/Models/LevelTheme.swift",
+        "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/BreakoutPlusMac/Core/Models/Paddle.swift",
+        "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/BreakoutPlusMac/Core/Models/PowerUp.swift",
+        "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/BreakoutPlusMac/Models/BrickType.swift",
+        "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/BreakoutPlusMac/Models/GameMode.swift",
+        "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/BreakoutPlusMac/Models/PowerUpType.swift",
         "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/BreakoutPlusMac/main-cli.swift"
       ],
       "tempsPath" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build",
@@ -106,10 +208,19 @@
   },
   "swiftTargetScanArgs" : {
     "BreakoutPlusCLI" : [
-      "/Library/Developer/CommandLineTools/usr/bin/swiftc",
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
       "-module-name",
       "BreakoutPlusCLI",
       "-c",
+      "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/BreakoutPlusMac/Core/GameEngine.swift",
+      "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/BreakoutPlusMac/Core/Models/Ball.swift",
+      "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/BreakoutPlusMac/Core/Models/Brick.swift",
+      "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/BreakoutPlusMac/Core/Models/LevelTheme.swift",
+      "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/BreakoutPlusMac/Core/Models/Paddle.swift",
+      "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/BreakoutPlusMac/Core/Models/PowerUp.swift",
+      "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/BreakoutPlusMac/Models/BrickType.swift",
+      "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/BreakoutPlusMac/Models/GameMode.swift",
+      "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/BreakoutPlusMac/Models/PowerUpType.swift",
       "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/BreakoutPlusMac/main-cli.swift",
       "-I",
       "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/Modules",
@@ -135,25 +246,37 @@
       "BreakoutPlusCLI_main",
       "-swift-version",
       "5",
-      "-I",
-      "/Library/Developer/CommandLineTools/Library/Developer/Frameworks",
-      "-L",
-      "/Library/Developer/CommandLineTools/Library/Developer/Frameworks",
       "-plugin-path",
-      "/Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/testing",
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing",
       "-sdk",
-      "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk",
+      "-F",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-F",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+      "-I",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-L",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
       "-g",
       "-Xcc",
       "-isysroot",
       "-Xcc",
-      "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk",
+      "-Xcc",
+      "-F",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-Xcc",
+      "-F",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
       "-Xcc",
       "-fPIC",
       "-Xcc",
       "-g",
       "-driver-use-frontend-path",
-      "/Library/Developer/CommandLineTools/usr/bin/swiftc"
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc"
     ]
   },
   "targetDependencyMap" : {
@@ -196,6 +319,42 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/BreakoutPlusMac/Core/GameEngine.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/BreakoutPlusMac/Core/Models/Ball.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/BreakoutPlusMac/Core/Models/Brick.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/BreakoutPlusMac/Core/Models/LevelTheme.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/BreakoutPlusMac/Core/Models/Paddle.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/BreakoutPlusMac/Core/Models/PowerUp.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/BreakoutPlusMac/Models/BrickType.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/BreakoutPlusMac/Models/GameMode.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/BreakoutPlusMac/Models/PowerUpType.swift"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/BreakoutPlusMac/main-cli.swift"
         }
       ],
@@ -210,12 +369,48 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/Ball.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/Brick.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/BrickType.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/GameEngine.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/GameMode.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/LevelTheme.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/Paddle.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/PowerUp.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/PowerUpType.swift.o"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.build/main-cli.swift.o"
         }
       ],
       "outputFilePath" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/BreakoutPlusCLI.product/Objects.LinkFileList"
     },
-    "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt" : {
+    "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt" : {
       "alwaysOutOfDate" : true,
       "inputs" : [
         {
@@ -224,10 +419,10 @@
         },
         {
           "kind" : "file",
-          "name" : "/Library/Developer/CommandLineTools/usr/bin/swiftc"
+          "name" : "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc"
         }
       ],
-      "outputFilePath" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt"
+      "outputFilePath" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlusMac/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt"
     }
   }
 }
