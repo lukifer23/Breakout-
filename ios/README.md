@@ -49,6 +49,22 @@ xcodebuild -project ios/BreakoutPlus/BreakoutPlus.xcodeproj \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.2' build
 ```
 
+Alternative simple build:
+```bash
+cd ios/BreakoutPlus && xcodebuild -scheme BreakoutPlus -sdk iphonesimulator -configuration Debug build
+```
+
+### Install and Run on Simulator/Device
+1. Boot simulator: `xcrun simctl boot <device-id>`
+2. Install: `xcrun simctl install booted <path-to-app>`
+3. Launch: `xcrun simctl launch booted <bundle-id>`
+
+### Device Build Note
+For physical devices, use Xcode or export IPA via command line. Ensure provisioning profiles are set up for development.
+
+### Feature Parity Goal
+The iOS port aims for complete feature parity with Android: all 5 game modes (Classic, Timed, Endless, God, Rush), all 9 brick types (Normal, Reinforced, Armored, Explosive, Unbreakable, Moving, Spawning, Phase, Boss), all 13 powerups, and 6 visual themes. Current implementation includes core gameplay and most features; remaining work focuses on advanced brick behaviors and UI consistency.
+
 ### CLI Install + Launch (Booted Simulator)
 ```bash
 OUT=$(xcodebuild -project ios/BreakoutPlus/BreakoutPlus.xcodeproj -scheme BreakoutPlus -configuration Debug \

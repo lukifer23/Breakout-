@@ -88,6 +88,8 @@ class GameEngine {
     private var freezeActive = false
     private var pierceActive = false
     private var feedbackCooldown: TimeInterval = 0
+    private var paddleVelocity: Float = 0
+    private var lastPaddleX: Float? = nil
 
     weak var delegate: GameEngineDelegate?
 
@@ -173,6 +175,7 @@ class GameEngine {
             comboTimer -= deltaTime
             if comboTimer <= 0 {
                 comboCount = 0
+                delegate?.onComboAchieved(count: 0)
             }
         }
 
@@ -187,6 +190,12 @@ class GameEngine {
                     timeRemaining = newRemaining
                     delegate?.onTimeUpdated(seconds: timeRemaining)
                 }
+            }
+        } else if gameMode.timeLimitSeconds == 0 {
+            let elapsed = Int(elapsedSeconds)
+            if elapsed != timeRemaining {
+                timeRemaining = elapsed
+                delegate?.onTimeUpdated(seconds: timeRemaining)
             }
         }
     }
@@ -246,6 +255,7 @@ class GameEngine {
                 emit(.sound(.bounce, volume: 0.35))
             }
 
+            clampBallSpeed(&ball)
             balls[i] = ball
         }
 
@@ -256,6 +266,84 @@ class GameEngine {
                 }
             }
         }
+    }
+
+    private func clampBallSpeed(_ ball: inout Ball) {
+        let speed = sqrt(ball.vx * ball.vx + ball.vy * ball.vy)
+        if speed <= 0 { return }
+        let minSpeed = Float(gameMode.launchSpeed) * minSpeedFactor()
+        let maxSpeed = Float(gameMode.launchSpeed) * maxSpeedFactor()
+        let target: Float
+        if speed < minSpeed {
+            target = minSpeed
+        } else if speed > maxSpeed {
+            target = maxSpeed
+        } else {
+            target = speed
+        }
+        if target != speed {
+            let scale = target / speed
+            ball.vx *= scale
+            ball.vy *= scale
+        }
+    }
+
+    private func speedBoostSlope() -> Float {
+        switch gameMode {
+        case .classic: return 0.015
+        case .timed: return 0.020
+        case .endless: return 0.017
+        case .god: return 0.010
+        case .rush: return 0.023
+        }
+    }
+
+    private func speedBoostCap() -> Float {
+        switch gameMode {
+        case .classic: return 1.35
+        case .timed: return 1.45
+        case .endless: return 1.4
+        case .god: return 1.25
+        case .rush: return 1.5
+        }
+    }
+
+    private func minSpeedFactor() -> Float {
+        switch gameMode {
+        case .classic: return 0.6
+        case .timed: return 0.7
+        case .endless: return 0.65
+        case .god: return 0.5
+        case .rush: return 0.72
+        }
+    }
+
+    private func maxSpeedFactor() -> Float {
+        switch gameMode {
+        case .classic: return 1.6
+        case .timed: return 1.75
+        case .endless: return 1.7
+        case .god: return 1.45
+        case .rush: return 1.85
+        }
+    }
+
+    private func difficultyForMode() -> Float {
+        let base: Float
+        let slope: Float
+        switch gameMode {
+        case .classic:
+            base = 1.0; slope = 0.075
+        case .timed:
+            base = 1.05; slope = 0.095
+        case .endless:
+            base = 1.0; slope = 0.085
+        case .god:
+            base = 0.9; slope = 0.05
+        case .rush:
+            base = 1.1; slope = 0.11
+        }
+        return min(3.0, base + Float(levelIndex) * slope)
     }
 
     private func updateBricks(_ deltaTime: TimeInterval) {
@@ -308,7 +396,16 @@ class GameEngine {
     }
 
     private func updatePaddle(_ deltaTime: TimeInterval) {
-        // Paddle physics/constraints can be added here
+        guard deltaTime > 0 else {
+            paddleVelocity = 0
+            return
+        }
+        if let last = lastPaddleX {
+            paddleVelocity = (paddle.x - last) / Float(deltaTime)
+        } else {
+            paddleVelocity = 0
+        }
+        lastPaddleX = paddle.x
     }
 
     private func handleCollisions() {
@@ -393,8 +490,22 @@ class GameEngine {
             comboTimer = 2.0 // 2 seconds to maintain combo
             delegate?.onComboAchieved(count: comboCount)
 
-            // Create powerup (10% chance)
-            if Double.random(in: 0..<1) < 0.1 {
+            let dropChance: Double
+            switch brick.type {
+            case .explosive:
+                dropChance = 0.25
+            case .reinforced, .armored:
+                dropChance = 0.15
+            case .boss, .phase:
+                dropChance = 0.20
+            case .spawning:
+                dropChance = 0.12
+            case .moving:
+                dropChance = 0.10
+            default:
+                dropChance = 0.08
+            }
+            if Double.random(in: 0..<1) < dropChance {
                 spawnPowerup(atX: brick.centerX, y: brick.centerY)
             }
 
@@ -416,28 +527,43 @@ class GameEngine {
     }
 
     private func handlePaddleCollision(_ ball: inout Ball) {
+        if ball.vy > 0 { return }
         // Calculate bounce angle based on hit position
         let hitPos = (ball.x - paddle.x) / (paddle.width / 2) // -1..1 across paddle
-        let angle = hitPos * .pi / 3 // Max 60 degrees
+        let maxAngle: Float = .pi / 3
+        let spin = max(-0.35, min(0.35, paddleVelocity / 180))
+        let angle = max(-maxAngle, min(maxAngle, hitPos * maxAngle + spin))
 
-        let speed = sqrt(ball.vx * ball.vx + ball.vy * ball.vy)
+        let speed = max(28, sqrt(ball.vx * ball.vx + ball.vy * ball.vy))
         ball.vx = speed * sin(angle)
         ball.vy = abs(speed * cos(angle)) // Always bounce up (positive Y)
+        let minVy = speed * 0.35
+        if ball.vy < minVy {
+            ball.vy = minVy
+            let sign: Float = ball.vx >= 0 ? 1 : -1
+            let newVx = sqrt(max(0, speed * speed - minVy * minVy))
+            ball.vx = sign * newVx
+        }
 
         // Prevent the "stuck in paddle" case by placing the ball just above the paddle.
         ball.y = paddle.y + paddle.height / 2 + ball.radius + 0.05
+        clampBallSpeed(&ball)
         emit(.sound(.bounce, volume: 0.65))
         emit(.haptic(.light))
     }
 
     private func resolveBallBrickCollision(_ ball: inout Ball, _ brick: Brick) {
-        // Axis-aligned resolution using overlap against expanded brick bounds.
-        let bx0 = brick.x - brick.width / 2 - ball.radius
-        let bx1 = brick.x + brick.width / 2 + ball.radius
-        let by0 = brick.y - brick.height / 2 - ball.radius
-        let by1 = brick.y + brick.height / 2 + ball.radius
+        let left = brick.x - brick.width / 2
+        let right = brick.x + brick.width / 2
+        let bottom = brick.y - brick.height / 2
+        let top = brick.y + brick.height / 2
 
-        if ball.x < bx0 || ball.x > bx1 || ball.y < by0 || ball.y > by1 {
+        let overlapLeft = (ball.x + ball.radius) - left
+        let overlapRight = right - (ball.x - ball.radius)
+        let overlapBottom = (ball.y + ball.radius) - bottom
+        let overlapTop = top - (ball.y - ball.radius)
+
+        if overlapLeft <= 0 || overlapRight <= 0 || overlapBottom <= 0 || overlapTop <= 0 {
             return
         }
 
@@ -446,19 +572,27 @@ class GameEngine {
             return
         }
 
-        let leftPen = abs(ball.x - bx0)
-        let rightPen = abs(bx1 - ball.x)
-        let bottomPen = abs(ball.y - by0)
-        let topPen = abs(by1 - ball.y)
+        let minOverlapX = min(overlapLeft, overlapRight)
+        let minOverlapY = min(overlapBottom, overlapTop)
 
-        let minXPen = min(leftPen, rightPen)
-        let minYPen = min(bottomPen, topPen)
-
-        if minXPen < minYPen {
-            ball.vx = -ball.vx
+        if minOverlapX < minOverlapY {
+            if overlapLeft < overlapRight {
+                ball.x = left - ball.radius
+                ball.vx = -abs(ball.vx)
+            } else {
+                ball.x = right + ball.radius
+                ball.vx = abs(ball.vx)
+            }
         } else {
-            ball.vy = -ball.vy
+            if overlapBottom < overlapTop {
+                ball.y = bottom - ball.radius
+                ball.vy = -abs(ball.vy)
+            } else {
+                ball.y = top + ball.radius
+                ball.vy = abs(ball.vy)
+            }
         }
+        clampBallSpeed(&ball)
     }
 
     private func applyBrickOnDestroyEffects(_ destroyed: Brick) {
@@ -585,8 +719,6 @@ class GameEngine {
                 emit(.sound(.life, volume: 0.9))
                 emit(.haptic(.success))
             }
-        default:
-            break
         }
     }
 
@@ -618,9 +750,55 @@ class GameEngine {
     }
 
     private func spawnPowerup(atX x: Float, y: Float) {
-        guard let randomType = PowerUpType.allCases.randomElement() else { return }
-        let powerup = PowerUp(x: x, y: y, type: randomType)
+        let powerup = PowerUp(x: x, y: y, type: randomPowerupType())
         powerups.append(powerup)
+    }
+
+    private func randomPowerupType() -> PowerUpType {
+        var weights: [PowerUpType: Double] = [
+            .multiBall: 1.25,
+            .laser: 1.05,
+            .guardrail: 0.95,
+            .shield: 0.9,
+            .widePaddle: 0.95,
+            .slowMotion: 0.9,
+            .magnet: 0.85,
+            .extraLife: 0.55,
+            .fireball: 0.7,
+            .gravityWell: 0.7,
+            .ballSplitter: 0.7,
+            .freeze: 0.6,
+            .pierce: 0.7
+        ]
+        switch gameMode {
+        case .timed:
+            weights[.multiBall, default: 0] += 0.25
+            weights[.laser, default: 0] += 0.2
+            weights[.slowMotion, default: 0] += 0.15
+        case .rush:
+            weights[.guardrail, default: 0] += 0.35
+            weights[.shield, default: 0] += 0.25
+            weights[.slowMotion, default: 0] += 0.2
+            weights[.extraLife, default: 0] += 0.1
+        case .endless:
+            weights[.fireball, default: 0] += 0.2
+            weights[.pierce, default: 0] += 0.2
+            weights[.gravityWell, default: 0] += 0.15
+            weights[.ballSplitter, default: 0] += 0.1
+        case .god:
+            weights[.extraLife] = 0.15
+        default:
+            break
+        }
+
+        let total = max(0.01, weights.values.reduce(0.0, +))
+        let roll = Double.random(in: 0..<total)
+        var acc = 0.0
+        for (type, weight) in weights {
+            acc += weight
+            if roll <= acc { return type }
+        }
+        return .multiBall
     }
 
     private func checkLevelCompletion() {
@@ -657,12 +835,18 @@ class GameEngine {
     }
 
     private func spawnBall() {
-        let ball = Ball(
+        var ball = Ball(
             x: paddle.x,
             y: paddle.y + paddle.height / 2 + 1.0 + 1.0,
             vx: 0,
             vy: 0
         )
+        if activeEffects.keys.contains(.fireball) {
+            ball.isFireball = true
+        }
+        if activeEffects.keys.contains(.pierce) {
+            ball.isPiercing = true
+        }
         balls.append(ball)
     }
 
@@ -671,7 +855,8 @@ class GameEngine {
 
         var ball = balls[index]
         let angle = Double.random(in: .pi/6...(5 * .pi / 6)) // 30-150 degrees
-        let speed = Double(gameMode.launchSpeed)
+        let levelBoost = min(Double(speedBoostCap()), 1.0 + Double(levelIndex) * Double(speedBoostSlope()))
+        let speed = Double(gameMode.launchSpeed) * levelBoost
         ball.vx = Float(speed * cos(angle))
         ball.vy = Float(abs(speed * sin(angle))) // Always up
         balls[index] = ball
@@ -703,6 +888,8 @@ class GameEngine {
         freezeActive = false
         pierceActive = false
         state = .ready
+        paddleVelocity = 0
+        lastPaddleX = paddle.x
         if gameMode.rush {
             timeRemaining = gameMode.timeLimitSeconds
         }
@@ -723,7 +910,8 @@ class GameEngine {
             index: levelIndex,
             worldWidth: worldWidth,
             worldHeight: worldHeight,
-            endless: gameMode.endless
+            endless: gameMode.endless,
+            difficulty: difficultyForMode()
         )
         bricks = built.bricks
         currentTheme = built.theme

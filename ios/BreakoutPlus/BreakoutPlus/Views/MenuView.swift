@@ -31,6 +31,11 @@ struct MenuView: View {
                         .foregroundColor(Color(hex: "FFFFFF").opacity(0.7))
                 }
 
+                Text("Pick a mode tailored to your play style.")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.white.opacity(0.6))
+                    .padding(.top, 4)
+
                 Spacer()
 
                 // Game Mode Buttons
@@ -93,12 +98,28 @@ struct GameModeButton: View {
     let mode: GameMode
     let action: () -> Void
 
+    private var accent: Color {
+        switch mode {
+        case .classic: return Color(hex: "31E1F7")
+        case .timed: return Color(hex: "FFC857")
+        case .endless: return Color(hex: "2CEAA3")
+        case .god: return Color(hex: "FF4FD8")
+        case .rush: return Color(hex: "FF5D5D")
+        }
+    }
+
     var body: some View {
         Button(action: action) {
             VStack(spacing: 8) {
+                Rectangle()
+                    .fill(accent)
+                    .frame(width: 46, height: 4)
+                    .cornerRadius(2)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
                 Text(mode.displayName)
                     .font(.system(size: 20, weight: .bold))
-                    .foregroundColor(.white)
+                    .foregroundColor(accent)
 
                 Text(mode.meta)
                     .font(.system(size: 12))
@@ -106,7 +127,7 @@ struct GameModeButton: View {
 
                 Text(mode.description)
                     .font(.system(size: 14))
-                    .foregroundColor(Color(hex: "31E1F7"))
+                    .foregroundColor(.white.opacity(0.7))
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 10)
             }
@@ -117,7 +138,7 @@ struct GameModeButton: View {
                     .fill(Color(hex: "1A1F26"))
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color(hex: "31E1F7").opacity(0.3), lineWidth: 1)
+                            .stroke(accent.opacity(0.35), lineWidth: 1)
                     )
             )
         }

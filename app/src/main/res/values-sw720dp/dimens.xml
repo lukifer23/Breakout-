@@ -8,4 +8,5 @@
     <dimen name="bp_body_text_size">18sp</dimen>
     <dimen name="bp_caption_text_size">14sp</dimen>
     <dimen name="bp_small_text_size">16sp</dimen>
+    <dimen name="bp_touch_target_min">48dp</dimen>
 </resources>

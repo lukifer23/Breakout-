@@ -1,19 +1,18 @@
 # Testing
 
+## Unit Tests
+```bash
+./gradlew test
+```
+
 ## Manual Test Checklist
-- Launch app → Splash → Main menu appears.
-- Play Classic mode: paddle controls, ball launch, brick collision.
-- Timed Challenge: timer counts down, game ends at 0.
-- Endless: levels advance with difficulty scaling.
-- God Mode: no life loss on miss.
-- Level Rush: per-level timer resets.
-- Powerups drop and activate correctly.
-- Explosive bricks damage neighbors.
-- Unbreakable bricks require fireball/laser.
-- Scoreboard persists after game over.
-- Settings toggles persist between launches.
-- Left-handed mode moves pause button to left.
-- Fold/unfold device and confirm UI reflows + padding avoids hinge.
+- Launch app, complete splash, open each menu (Main, Modes, Scoreboard, Settings, How-To).
+- Start Classic and Rush modes: break bricks, collect powerups, pause, level complete, game over.
+- Confirm touch controls: drag paddle, launch ball, two-finger laser.
+- Verify HUD: score, lives, time, level, powerup status with combo.
+- Test all screens: mode selection, scoreboard display, settings toggles (sound/music/vibration/tips/left-handed/dark mode), how-to expandable sections.
+- Foldable (if device available): test folded and unfolded states, confirm layouts and hinge padding.
+- No placeholders or stub UI elements.
 
 ## Performance Targets
 - 60 FPS or higher during gameplay on Z Fold 7.

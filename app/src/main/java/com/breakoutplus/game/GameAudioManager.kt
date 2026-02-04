@@ -64,10 +64,12 @@ class GameAudioManager(private val context: Context, private val settings: Setti
         if (mediaPlayer == null) {
             mediaPlayer = MediaPlayer.create(context, R.raw.music_loop)
             mediaPlayer?.isLooping = true
+        }
+        if (mediaPlayer != null) {
             val musicVol = settings.musicVolume * settings.masterVolume
             mediaPlayer?.setVolume(musicVol, musicVol)
+            mediaPlayer?.start()
         }
-        mediaPlayer?.start()
     }
 
     fun haptic(type: GameHaptic) {
@@ -82,6 +84,10 @@ class GameAudioManager(private val context: Context, private val settings: Setti
 
     fun stopMusic() {
         mediaPlayer?.pause()
+    }
+
+    fun isMusicPlaying(): Boolean {
+        return mediaPlayer?.isPlaying == true
     }
 
     fun release() {

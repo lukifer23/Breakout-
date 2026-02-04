@@ -2,11 +2,15 @@ package com.breakoutplus
 
 import android.os.Bundle
 import android.view.LayoutInflater
+import androidx.core.content.ContextCompat
 import com.breakoutplus.databinding.ActivityScoreboardBinding
 import com.breakoutplus.databinding.ItemScoreRowBinding
+import com.breakoutplus.game.GameMode
 
 class ScoreboardActivity : FoldAwareActivity() {
     private lateinit var binding: ActivityScoreboardBinding
+    private var currentModeIndex = 0
+    private val modes = GameMode.values()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -15,14 +19,28 @@ class ScoreboardActivity : FoldAwareActivity() {
         setFoldAwareRoot(binding.root)
 
         binding.buttonScoreBack.setOnClickListener { finish() }
+        findViewById<com.google.android.material.button.MaterialButton>(R.id.buttonScorePrev)?.setOnClickListener { switchMode(-1) }
+        findViewById<com.google.android.material.button.MaterialButton>(R.id.buttonScoreNext)?.setOnClickListener { switchMode(1) }
+
         renderScores()
         animateEntry()
     }
 
+    private fun switchMode(direction: Int) {
+        currentModeIndex = (currentModeIndex + direction + modes.size) % modes.size
+        renderScores()
+    }
+
     private fun renderScores() {
-        val scores = ScoreboardManager.loadScores(this)
+        val currentMode = modes[currentModeIndex]
+        val scores = ScoreboardManager.getHighScoresForMode(this, currentMode.displayName)
         binding.scoreList.removeAllViews()
+
+        // Update mode title
+        binding.scoreTitle.text = "${currentMode.displayName} Leaderboard"
+
         if (scores.isEmpty()) {
+            binding.scoreEmpty.text = "No high scores yet for ${currentMode.displayName}.\nBe the first!"
             binding.scoreEmpty.visibility = android.view.View.VISIBLE
             return
         }
@@ -31,10 +49,17 @@ class ScoreboardActivity : FoldAwareActivity() {
         scores.forEachIndexed { index, entry ->
             val row = ItemScoreRowBinding.inflate(inflater, binding.scoreList, false)
             row.scoreRank.text = "#${index + 1}"
-            row.scoreMode.text = entry.mode
+            row.scoreMode.text = entry.name // Show player name instead of mode
             val timeText = if (entry.durationSeconds > 0) formatDuration(entry.durationSeconds) else "--"
             row.scoreMeta.text = "Level ${entry.level} • $timeText"
             row.scoreValue.text = "%d".format(entry.score)
+            val rankColor = when (index) {
+                0 -> R.color.bp_gold
+                1 -> R.color.bp_cyan
+                2 -> R.color.bp_magenta
+                else -> R.color.bp_gray
+            }
+            row.scoreRank.setTextColor(ContextCompat.getColor(this, rankColor))
 
             // Add entrance animation
             val rowView = row.root

@@ -14,6 +14,16 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <TextView
+        android:id="@+id/modeSubtitle"
+        style="@style/Text.BreakoutPlus.Caption"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:text="@string/label_mode_hint"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/modeTitle" />
+
     <ScrollView
         android:id="@+id/modeScroll"
         android:layout_width="0dp"
@@ -22,12 +32,13 @@
         app:layout_constraintBottom_toTopOf="@id/modeFooter"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/modeTitle">
+        app:layout_constraintTop_toBottomOf="@id/modeSubtitle">
 
         <LinearLayout
             android:id="@+id/modeList"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:paddingBottom="8dp"
             android:orientation="vertical" />
     </ScrollView>
 

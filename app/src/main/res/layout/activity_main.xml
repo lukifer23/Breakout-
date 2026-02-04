@@ -41,7 +41,8 @@
             style="@style/Widget.BreakoutPlus.Button"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/title_play" />
+            android:text="@string/title_play"
+            android:backgroundTint="@color/bp_cyan" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/buttonModes"
@@ -50,7 +51,8 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/bp_button_gap"
             android:text="@string/title_modes"
-            android:backgroundTint="@color/bp_gold" />
+            android:backgroundTint="@color/bp_gold"
+            android:visibility="gone" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/buttonScoreboard"

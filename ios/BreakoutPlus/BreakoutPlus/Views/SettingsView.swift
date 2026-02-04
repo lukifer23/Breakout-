@@ -40,17 +40,13 @@ struct SettingsView: View {
                     .cornerRadius(10)
                 }
 
-                VStack(spacing: 12) {
-                    ToggleRow(title: "Sound Effects", subtitle: "Bounce, brick, powerup cues", isOn: $soundEnabled)
-                    ToggleRow(title: "Music", subtitle: "Background loop", isOn: $musicEnabled)
-                    ToggleRow(title: "Vibration", subtitle: "Haptics on major impacts", isOn: $vibrationEnabled)
-                    ToggleRow(title: "Tips", subtitle: "Show quick in-game hints", isOn: $tipsEnabled)
-                }
-
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("Volume")
+                    Text("Audio")
                         .foregroundColor(.white.opacity(0.9))
                         .font(.system(size: 14, weight: .semibold))
+
+                    ToggleRow(title: "Sound Effects", subtitle: "Bounce, brick, powerup cues", isOn: $soundEnabled)
+                    ToggleRow(title: "Music", subtitle: "Background loop", isOn: $musicEnabled)
 
                     SliderRow(title: "Master", value: $masterVolume)
                     SliderRow(title: "Effects", value: $effectsVolume)
@@ -58,8 +54,26 @@ struct SettingsView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
 
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Controls")
+                        .foregroundColor(.white.opacity(0.9))
+                        .font(.system(size: 14, weight: .semibold))
+
+                    ToggleRow(title: "Tips", subtitle: "Show quick in-game hints", isOn: $tipsEnabled)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Accessibility")
+                        .foregroundColor(.white.opacity(0.9))
+                        .font(.system(size: 14, weight: .semibold))
+
+                    ToggleRow(title: "Vibration", subtitle: "Haptics on major impacts", isOn: $vibrationEnabled)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("Data")
+                    Text("Advanced")
                         .foregroundColor(.white.opacity(0.9))
                         .font(.system(size: 14, weight: .semibold))
 

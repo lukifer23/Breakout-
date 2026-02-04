@@ -3,6 +3,9 @@ package com.breakoutplus
 import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.content.res.ColorStateList
+import androidx.core.content.ContextCompat
+import com.google.android.material.card.MaterialCardView
 import com.breakoutplus.databinding.ActivityModeSelectBinding
 import com.breakoutplus.databinding.ItemModeCardBinding
 import com.breakoutplus.game.GameMode
@@ -36,6 +39,18 @@ class ModeSelectActivity : FoldAwareActivity() {
             cardBinding.modeCardTitle.text = mode.displayName
             cardBinding.modeCardDescription.text = mode.description
             cardBinding.modeCardMeta.text = mode.meta
+            val accentRes = when (mode) {
+                GameMode.CLASSIC -> R.color.bp_cyan
+                GameMode.TIMED -> R.color.bp_gold
+                GameMode.ENDLESS -> R.color.bp_green
+                GameMode.GOD -> R.color.bp_magenta
+                GameMode.RUSH -> R.color.bp_red
+            }
+            val accentColor = ContextCompat.getColor(this, accentRes)
+            (cardBinding.root as? MaterialCardView)?.strokeColor = accentColor
+            cardBinding.modeCardTitle.setTextColor(accentColor)
+            cardBinding.modeCardAccent.setBackgroundColor(accentColor)
+            cardBinding.modeCardStart.backgroundTintList = ColorStateList.valueOf(accentColor)
             cardBinding.modeCardStart.setOnClickListener {
                 startActivity(Intent(this, GameActivity::class.java).putExtra(GameActivity.EXTRA_MODE, mode.name))
             }

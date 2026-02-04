@@ -17,9 +17,14 @@ struct ScoreboardView: View {
 
             VStack(spacing: 16) {
                 HStack {
-                    Text("Scoreboard")
-                        .font(.system(size: 34, weight: .bold))
-                        .foregroundColor(.white)
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Scoreboard")
+                            .font(.system(size: 34, weight: .bold))
+                            .foregroundColor(.white)
+                        Text("Top runs across all modes.")
+                            .foregroundColor(.white.opacity(0.6))
+                            .font(.system(size: 14, weight: .medium))
+                    }
                     Spacer()
                     Button("Menu") {
                         gameViewModel.exitToMenu()
@@ -82,7 +87,7 @@ private struct ScoreRow: View {
     var body: some View {
         HStack(spacing: 12) {
             Text("#\(rank)")
-                .foregroundColor(Color(hex: "F6C045"))
+                .foregroundColor(rankColor)
                 .font(.system(size: 16, weight: .bold))
                 .frame(width: 44, alignment: .leading)
 
@@ -116,6 +121,15 @@ private struct ScoreRow: View {
         let m = seconds / 60
         let s = seconds % 60
         return String(format: "%02d:%02d", m, s)
+    }
+
+    private var rankColor: Color {
+        switch rank {
+        case 1: return Color(hex: "FFC857")
+        case 2: return Color(hex: "31E1F7")
+        case 3: return Color(hex: "FF4FD8")
+        default: return Color(hex: "9AA4B2")
+        }
     }
 }
 

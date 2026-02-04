@@ -24,6 +24,14 @@
     <string name="label_left_handed">Left Handed Mode</string>
     <string name="label_dark_mode">Dark Mode</string>
     <string name="label_confirm_reset">Reset Scores</string>
+    <string name="label_logging">Enable Game Logging</string>
+    <string name="label_section_audio">Audio</string>
+    <string name="label_section_controls">Controls</string>
+    <string name="label_section_accessibility">Accessibility</string>
+    <string name="label_section_advanced">Advanced</string>
+    <string name="label_mode_hint">Pick a mode tailored to your play style.</string>
+    <string name="label_scoreboard_hint">Top runs across all modes.</string>
+    <string name="label_howto_hint">Quick Start</string>
     <string name="label_mode_classic">Classic</string>
     <string name="label_mode_timed">Timed Challenge</string>
     <string name="label_mode_endless">Endless</string>
@@ -36,4 +44,5 @@
     <string name="label_no_scores">No scores yet. Break some bricks!</string>
     <string name="label_powerups">Powerups</string>
     <string name="label_device_hint">Optimized for foldable screens</string>
+    <string name="howto_controls">Drag to move the paddle. Tap or release to launch the ball. When Laser powerup is active, use two-finger tap to fire.</string>
 </resources>

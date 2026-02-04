@@ -3,42 +3,28 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Background circle for depth -->
+    <!-- Neon orbit ring -->
     <path
-        android:fillColor="#1A1A2E"
-        android:pathData="M54,54 m-48,0 a48,48 0 1,1 96,0 a48,48 0 1,1 -96,0" />
+        android:fillColor="#00000000"
+        android:strokeColor="#31E1F7"
+        android:strokeWidth="6"
+        android:pathData="M54,16 A38,38 0 1,1 53.99,16 Z" />
 
-    <!-- Bricks row -->
+    <!-- Plus mark -->
     <path
-        android:fillColor="#FF6B6B"
-        android:pathData="M20,25 L88,25 L88,35 L20,35 Z" />
+        android:fillColor="#31E1F7"
+        android:pathData="M52,34 H56 V74 H52 Z" />
     <path
-        android:fillColor="#4ECDC4"
-        android:pathData="M20,40 L88,40 L88,50 L20,50 Z" />
+        android:fillColor="#31E1F7"
+        android:pathData="M34,52 H74 V56 H34 Z" />
+
+    <!-- Ball -->
+    <path
+        android:fillColor="#FF4FD8"
+        android:pathData="M76,28 A8,8 0 1,0 76,44 A8,8 0 1,0 76,28 Z" />
 
     <!-- Paddle -->
     <path
-        android:fillColor="#FFE66D"
-        android:pathData="M42,75 L66,75 L66,82 L42,82 Z" />
-
-    <!-- Ball with motion trail -->
-    <path
-        android:fillColor="#A8E6CF"
-        android:pathData="M32,60 L38,60 L38,66 L32,66 Z" />
-    <path
-        android:fillColor="#A8E6CF"
-        android:fillAlpha="0.6"
-        android:pathData="M26,54 L32,54 L32,60 L26,60 Z" />
-    <path
-        android:fillColor="#A8E6CF"
-        android:fillAlpha="0.3"
-        android:pathData="M20,48 L26,48 L26,54 L20,54 Z" />
-
-    <!-- Plus symbol -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M50,15 L58,15 L58,23 L50,23 Z" />
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M53,12 L55,12 L55,26 L53,26 Z" />
+        android:fillColor="#FFC857"
+        android:pathData="M26,80 H82 V88 H26 Z" />
 </vector>

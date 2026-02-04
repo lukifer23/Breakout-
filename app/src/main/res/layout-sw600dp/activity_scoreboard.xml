@@ -3,7 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/menu_background"
-    android:padding="@dimen/bp_margin">
+    android:padding="@dimen/bp_margin_large">
 
     <TextView
         android:id="@+id/scoreTitle"
@@ -58,37 +58,18 @@
         android:id="@+id/scoreFooter"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
+        android:gravity="end"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/buttonScorePrev"
-            style="@style/Widget.BreakoutPlus.Button"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="◀"
-            android:backgroundTint="@color/bp_cyan" />
-
-        <com.google.android.material.button.MaterialButton
             android:id="@+id/buttonScoreBack"
             style="@style/Widget.BreakoutPlus.Button"
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
             android:text="@string/label_back"
             android:backgroundTint="@color/bp_gray" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/buttonScoreNext"
-            style="@style/Widget.BreakoutPlus.Button"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="▶"
-            android:backgroundTint="@color/bp_cyan" />
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

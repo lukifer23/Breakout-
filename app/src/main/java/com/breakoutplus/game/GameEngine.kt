@@ -3,6 +3,7 @@ package com.breakoutplus.game
 import android.view.MotionEvent
 import com.breakoutplus.game.LevelFactory.buildLevel
 import kotlin.math.abs
+import kotlin.math.ceil
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sqrt
@@ -35,6 +36,7 @@ class GameEngine(
 
     private var paddle = Paddle(x = worldWidth / 2f, y = 8f, width = 18f, height = 2.6f)
     private var basePaddleWidth = paddle.width
+    private var paddleVelocity = 0f
 
     private var state = GameState.READY
     private var stateBeforePause = state
@@ -55,6 +57,7 @@ class GameEngine(
     private var gravityWellActive = false
     private var freezeActive = false
     private var pierceActive = false
+    private var explosiveTipShown = false
     private var lastPowerupStatus = ""
 
     private var theme: LevelTheme = LevelThemes.DEFAULT
@@ -102,6 +105,11 @@ class GameEngine(
 
         if (state == GameState.READY) {
             attachBallToPaddle()
+            // Show explosive brick tip if not shown yet and explosive bricks exist
+            if (!explosiveTipShown && bricks.any { it.type == BrickType.EXPLOSIVE && it.alive }) {
+                listener.onTip("Explosive bricks damage neighbors when destroyed.")
+                explosiveTipShown = true
+            }
         }
 
         if (state == GameState.RUNNING) {
@@ -422,7 +430,7 @@ class GameEngine(
     fun handleTouch(event: MotionEvent, viewWidth: Float, viewHeight: Float) {
         if (state == GameState.PAUSED || state == GameState.GAME_OVER) return
         val x = event.x / viewWidth * worldWidth
-        val y = event.y / viewHeight * worldHeight
+        val y = worldHeight - (event.y / viewHeight * worldHeight) // Invert Y: Android screen (0,0)=top-left, world (0,0)=bottom-left
 
         // Log touch input
         val actionString = when (event.actionMasked) {
@@ -447,8 +455,8 @@ class GameEngine(
             }
             MotionEvent.ACTION_UP -> {
                 val touchDuration = System.currentTimeMillis() - touchDownTime
-                if (state == GameState.READY && (paddlePositioned || touchDuration < 300)) {
-                    // Launch ball on release if paddle was moved or quick tap
+                if (state == GameState.READY && paddlePositioned) {
+                    // Launch ball on release only if paddle was moved (reduces accidental launches)
                     launchBall()
                     state = GameState.RUNNING
                     listener.onTip("Tap with two fingers to fire when laser is active")
@@ -484,6 +492,7 @@ class GameEngine(
         gravityWellActive = false
         freezeActive = false
         pierceActive = false
+        explosiveTipShown = false
         speedMultiplier = 1f
         activeEffects.clear()
         touchDownTime = 0L
@@ -622,6 +631,7 @@ class GameEngine(
     }
 
     private fun updatePaddle(dt: Float) {
+        val previousX = paddle.x
         val target = paddle.targetX
         val speed = 60f + config.settings.sensitivity * 140f
         val delta = target - paddle.x
@@ -630,6 +640,7 @@ class GameEngine(
             paddle.x += delta.coerceIn(-maxMove, maxMove)
         }
         paddle.x = paddle.x.coerceIn(paddle.width / 2f, worldWidth - paddle.width / 2f)
+        paddleVelocity = if (dt > 0f) (paddle.x - previousX) / dt else 0f
     }
 
     private fun updateBricks(dt: Float) {
@@ -679,6 +690,8 @@ class GameEngine(
                 val speed = config.mode.launchSpeed * levelBoost
                 ball.vx = speed * kotlin.math.cos(angle) * dir
                 ball.vy = speed * kotlin.math.sin(angle)
+                // Start background music when gameplay begins
+                audio.startMusic()
             }
         }
     }
@@ -698,53 +711,67 @@ class GameEngine(
         val iterator = balls.iterator()
         while (iterator.hasNext()) {
             val ball = iterator.next()
-            if (gravityWellActive) {
-                applyGravityWell(ball, dt)
-            }
-            ball.x += ball.vx * dt
-            ball.y += ball.vy * dt
+            val speed = sqrt(ball.vx * ball.vx + ball.vy * ball.vy)
+            val maxStep = ball.radius * 0.75f
+            val steps = max(1, ceil((speed * dt) / maxStep).toInt())
+            val stepDt = dt / steps
+            var removed = false
 
-            if (ball.x - ball.radius < 0f) {
-                ball.x = ball.radius
-                ball.vx = abs(ball.vx)
-                audio.play(GameSound.BOUNCE, 0.6f)
-            } else if (ball.x + ball.radius > worldWidth) {
-                ball.x = worldWidth - ball.radius
-                ball.vx = -abs(ball.vx)
-                audio.play(GameSound.BOUNCE, 0.6f)
-            }
-
-            if (ball.y + ball.radius > worldHeight) {
-                ball.y = worldHeight - ball.radius
-                ball.vy = -abs(ball.vy)
-                audio.play(GameSound.BOUNCE, 0.6f)
-            }
-
-            if (ball.y - ball.radius < 0f) {
-                if (guardrailActive) {
-                    ball.y = ball.radius + 2f
-                    ball.vy = abs(ball.vy)
-                    logger?.logBallLost(balls.size, Pair(ball.x, ball.y), lives)
-                    audio.play(GameSound.BOUNCE, 0.6f)
-                } else if (shieldCharges > 0) {
-                    shieldCharges -= 1
-                    ball.y = ball.radius + 2f
-                    ball.vy = abs(ball.vy)
-                    audio.play(GameSound.POWERUP, 0.6f)
-                    if (shieldCharges == 0) {
-                        activeEffects.remove(PowerUpType.SHIELD)
-                    }
-                } else {
-                    iterator.remove()
-                    if (balls.isEmpty()) {
-                        loseLife()
-                    }
-                    continue
+            repeat(steps) {
+                if (removed) return@repeat
+                if (gravityWellActive) {
+                    applyGravityWell(ball, stepDt)
                 }
+                ball.x += ball.vx * stepDt
+                ball.y += ball.vy * stepDt
+
+                if (ball.x - ball.radius < 0f) {
+                    ball.x = ball.radius
+                    ball.vx = abs(ball.vx)
+                    audio.play(GameSound.BOUNCE, 0.6f)
+                } else if (ball.x + ball.radius > worldWidth) {
+                    ball.x = worldWidth - ball.radius
+                    ball.vx = -abs(ball.vx)
+                    audio.play(GameSound.BOUNCE, 0.6f)
+                }
+
+                if (ball.y + ball.radius > worldHeight) {
+                    ball.y = worldHeight - ball.radius
+                    ball.vy = -abs(ball.vy)
+                    audio.play(GameSound.BOUNCE, 0.6f)
+                }
+
+                if (ball.y - ball.radius < 0f) {
+                    if (guardrailActive) {
+                        ball.y = ball.radius + 2f
+                        ball.vy = abs(ball.vy)
+                        logger?.logBallLost(balls.size, Pair(ball.x, ball.y), lives)
+                        audio.play(GameSound.BOUNCE, 0.6f)
+                    } else if (shieldCharges > 0) {
+                        shieldCharges -= 1
+                        ball.y = ball.radius + 2f
+                        ball.vy = abs(ball.vy)
+                        audio.play(GameSound.POWERUP, 0.6f)
+                        if (shieldCharges == 0) {
+                            activeEffects.remove(PowerUpType.SHIELD)
+                        }
+                    } else {
+                        iterator.remove()
+                        if (balls.isEmpty()) {
+                            loseLife()
+                        }
+                        removed = true
+                        return@repeat
+                    }
+                }
+
+                handlePaddleCollision(ball)
+                handleBrickCollision(ball)
             }
 
-            handlePaddleCollision(ball)
-            handleBrickCollision(ball)
+            if (!removed) {
+                clampBallSpeed(ball)
+            }
         }
     }
 
@@ -761,16 +788,22 @@ class GameEngine(
     }
 
     private fun handlePaddleCollision(ball: Ball) {
+        if (ball.vy > 0f) return
         if (ball.y - ball.radius > paddle.y + paddle.height / 2f) return
         if (ball.y + ball.radius < paddle.y - paddle.height / 2f) return
         if (ball.x + ball.radius < paddle.x - paddle.width / 2f) return
         if (ball.x - ball.radius > paddle.x + paddle.width / 2f) return
 
         val hitPos = (ball.x - paddle.x) / (paddle.width / 2f)
-        val angle = hitPos * 1.1f
+        val spin = (paddleVelocity / 180f).coerceIn(-0.35f, 0.35f)
+        val angle = (hitPos * 1.1f + spin).coerceIn(-1.15f, 1.15f)
         val speed = sqrt(ball.vx * ball.vx + ball.vy * ball.vy).coerceAtLeast(28f)
         ball.vx = speed * angle
-        ball.vy = abs(speed * (1.2f - abs(angle)))
+        ball.vy = abs(speed * (1.22f - abs(angle)))
+        val minVy = speed * 0.35f
+        if (ball.vy < minVy) {
+            ball.vy = minVy
+        }
         ball.y = paddle.y + paddle.height / 2f + ball.radius
         audio.play(GameSound.BOUNCE, 0.8f)
     }
@@ -787,7 +820,7 @@ class GameEngine(
 
             if (destroyed) {
                 // Add particle burst for brick destruction
-                repeat(3) {
+                repeat(5) {
                     val angle = random.nextFloat() * Math.PI.toFloat() * 2f
                     val speed = random.nextFloat() * 12f + 4f
                     particles.add(
@@ -944,6 +977,7 @@ class GameEngine(
                     power.x += attractX
                     power.y += attractY
                 }
+                power.y -= power.speed * dt * 0.6f
             } else {
                 power.y -= power.speed * dt
             }
@@ -957,6 +991,7 @@ class GameEngine(
                 applyPowerup(power.type)
                 dailyChallenges?.let { DailyChallengeManager.updateChallengeProgress(it, ChallengeType.POWERUPS_COLLECTED) }
                 audio.play(GameSound.POWERUP, 0.8f)
+                spawnPowerupBurst(power)
                 iterator.remove()
             }
         }
@@ -1036,6 +1071,73 @@ class GameEngine(
         screenFlash = max(0f, screenFlash - dt * 3f)
         levelClearFlash = max(0f, levelClearFlash - dt * 1.5f)
         updatePowerupStatus()
+    }
+
+    private fun clampBallSpeed(ball: Ball) {
+        val speed = sqrt(ball.vx * ball.vx + ball.vy * ball.vy)
+        if (speed <= 0f) return
+        val minSpeed = config.mode.launchSpeed * minSpeedFactor()
+        val maxSpeed = config.mode.launchSpeed * maxSpeedFactor()
+        val target = when {
+            speed < minSpeed -> minSpeed
+            speed > maxSpeed -> maxSpeed
+            else -> speed
+        }
+        if (target != speed) {
+            val scale = target / speed
+            ball.vx *= scale
+            ball.vy *= scale
+        }
+    }
+
+    private fun speedBoostSlope(): Float = when (config.mode) {
+        GameMode.CLASSIC -> 0.015f
+        GameMode.TIMED -> 0.020f
+        GameMode.ENDLESS -> 0.017f
+        GameMode.GOD -> 0.010f
+        GameMode.RUSH -> 0.023f
+    }
+
+    private fun speedBoostCap(): Float = when (config.mode) {
+        GameMode.CLASSIC -> 1.35f
+        GameMode.TIMED -> 1.45f
+        GameMode.ENDLESS -> 1.4f
+        GameMode.GOD -> 1.25f
+        GameMode.RUSH -> 1.5f
+    }
+
+    private fun minSpeedFactor(): Float = when (config.mode) {
+        GameMode.CLASSIC -> 0.6f
+        GameMode.TIMED -> 0.7f
+        GameMode.ENDLESS -> 0.65f
+        GameMode.GOD -> 0.5f
+        GameMode.RUSH -> 0.72f
+    }
+
+    private fun maxSpeedFactor(): Float = when (config.mode) {
+        GameMode.CLASSIC -> 1.6f
+        GameMode.TIMED -> 1.75f
+        GameMode.ENDLESS -> 1.7f
+        GameMode.GOD -> 1.45f
+        GameMode.RUSH -> 1.85f
+    }
+
+    private fun difficultyForMode(): Float {
+        val base = when (config.mode) {
+            GameMode.CLASSIC -> 1.0f
+            GameMode.TIMED -> 1.05f
+            GameMode.ENDLESS -> 1.0f
+            GameMode.GOD -> 0.9f
+            GameMode.RUSH -> 1.1f
+        }
+        val slope = when (config.mode) {
+            GameMode.CLASSIC -> 0.075f
+            GameMode.TIMED -> 0.095f
+            GameMode.ENDLESS -> 0.085f
+            GameMode.GOD -> 0.05f
+            GameMode.RUSH -> 0.11f
+        }
+        return (base + levelIndex * slope).coerceAtMost(3.0f)
     }
 
     private fun applyPowerup(type: PowerUpType) {
@@ -1138,14 +1240,23 @@ class GameEngine(
     }
 
     private fun updatePowerupStatus() {
-        val status = if (activeEffects.isEmpty()) {
-            "Powerups: none"
+        val segments = mutableListOf<String>()
+        if (activeEffects.isEmpty()) {
+            segments.add("Powerups: none")
         } else {
             val list = activeEffects.entries.joinToString(" • ") { (type, time) ->
-                "${type.displayName} ${time.toInt()}s"
+                if (type == PowerUpType.SHIELD) {
+                    "${type.displayName} x$shieldCharges ${time.toInt()}s"
+                } else {
+                    "${type.displayName} ${time.toInt()}s"
+                }
             }
-            "Powerups: $list"
+            segments.add("Powerups: $list")
         }
+        if (combo >= 2) {
+            segments.add("Combo x$combo")
+        }
+        val status = segments.joinToString(" • ")
         if (status != lastPowerupStatus) {
             lastPowerupStatus = status
             listener.onPowerupStatus(status)
@@ -1190,6 +1301,7 @@ class GameEngine(
         val summary = GameSummary(score, levelIndex + 1, elapsedSeconds.toInt())
         audio.play(GameSound.GAME_OVER, 1f)
         audio.haptic(GameHaptic.HEAVY)
+        audio.stopMusic() // Stop background music on game over
         listener.onGameOver(summary)
         state = GameState.GAME_OVER
     }
@@ -1214,7 +1326,7 @@ class GameEngine(
             else -> 0.08f
         }
         if (random.nextFloat() < dropChance) {
-            val type = PowerUpType.values()[random.nextInt(PowerUpType.values().size)]
+            val type = randomPowerupType()
             powerups.add(PowerUp(brick.centerX, brick.centerY, type, 18f))
         }
     }
@@ -1223,6 +1335,7 @@ class GameEngine(
         audio.play(GameSound.EXPLOSION, 0.8f)
         audio.haptic(GameHaptic.HEAVY)
         screenFlash = 0.3f
+        renderer?.triggerScreenShake(2.8f, 0.18f)
         val radius = 1
         bricks.filter { it.alive && it.gridX >= 0 && it.gridY >= 0 && it.isNeighbor(brick, radius) }.forEach { neighbor ->
             if (neighbor == brick) return@forEach
@@ -1243,11 +1356,11 @@ class GameEngine(
                 color = brick.currentColor(theme).copyOf(),
                 life = 1.2f,
                 maxLife = 1.2f,
-                speed = 18f
+                speed = 20f
             )
         )
 
-        repeat(14) {
+        repeat(16) {
             val angle = random.nextFloat() * Math.PI.toFloat() * 2f
             val speed = random.nextFloat() * 22f + 6f
             particles.add(
@@ -1259,6 +1372,73 @@ class GameEngine(
                     radius = 0.5f + random.nextFloat() * 0.3f,
                     life = 0.7f + random.nextFloat() * 0.3f,
                     color = brick.currentColor(theme)
+                )
+            )
+        }
+    }
+
+    private fun randomPowerupType(): PowerUpType {
+        val weights = mutableMapOf(
+            PowerUpType.MULTI_BALL to 1.25f,
+            PowerUpType.LASER to 1.05f,
+            PowerUpType.GUARDRAIL to 0.95f,
+            PowerUpType.SHIELD to 0.9f,
+            PowerUpType.WIDE_PADDLE to 0.95f,
+            PowerUpType.SLOW to 0.9f,
+            PowerUpType.MAGNET to 0.85f,
+            PowerUpType.LIFE to 0.55f,
+            PowerUpType.FIREBALL to 0.7f,
+            PowerUpType.GRAVITY_WELL to 0.7f,
+            PowerUpType.BALL_SPLITTER to 0.7f,
+            PowerUpType.FREEZE to 0.6f,
+            PowerUpType.PIERCE to 0.7f
+        )
+        when (config.mode) {
+            GameMode.TIMED -> {
+                weights[PowerUpType.MULTI_BALL] = (weights[PowerUpType.MULTI_BALL] ?: 0f) + 0.25f
+                weights[PowerUpType.LASER] = (weights[PowerUpType.LASER] ?: 0f) + 0.2f
+                weights[PowerUpType.SLOW] = (weights[PowerUpType.SLOW] ?: 0f) + 0.15f
+            }
+            GameMode.RUSH -> {
+                weights[PowerUpType.GUARDRAIL] = (weights[PowerUpType.GUARDRAIL] ?: 0f) + 0.35f
+                weights[PowerUpType.SHIELD] = (weights[PowerUpType.SHIELD] ?: 0f) + 0.25f
+                weights[PowerUpType.SLOW] = (weights[PowerUpType.SLOW] ?: 0f) + 0.2f
+                weights[PowerUpType.LIFE] = (weights[PowerUpType.LIFE] ?: 0f) + 0.1f
+            }
+            GameMode.ENDLESS -> {
+                weights[PowerUpType.FIREBALL] = (weights[PowerUpType.FIREBALL] ?: 0f) + 0.2f
+                weights[PowerUpType.PIERCE] = (weights[PowerUpType.PIERCE] ?: 0f) + 0.2f
+                weights[PowerUpType.GRAVITY_WELL] = (weights[PowerUpType.GRAVITY_WELL] ?: 0f) + 0.15f
+                weights[PowerUpType.BALL_SPLITTER] = (weights[PowerUpType.BALL_SPLITTER] ?: 0f) + 0.1f
+            }
+            GameMode.GOD -> {
+                weights[PowerUpType.LIFE] = 0.15f
+            }
+            else -> Unit
+        }
+        val total = weights.values.sum().coerceAtLeast(0.01f)
+        val roll = random.nextFloat() * total
+        var acc = 0f
+        for ((type, weight) in weights) {
+            acc += weight
+            if (roll <= acc) return type
+        }
+        return PowerUpType.MULTI_BALL
+    }
+
+    private fun spawnPowerupBurst(power: PowerUp) {
+        repeat(8) { index ->
+            val angle = (index / 6f) * (Math.PI.toFloat() * 2f)
+            val speed = 14f + random.nextFloat() * 10f
+            particles.add(
+                Particle(
+                    x = power.x,
+                    y = power.y,
+                    vx = kotlin.math.cos(angle) * speed,
+                    vy = kotlin.math.sin(angle) * speed,
+                    radius = 0.5f,
+                    life = 0.45f,
+                    color = power.type.color
                 )
             )
         }
@@ -1295,8 +1475,16 @@ class GameEngine(
     }
 
     private fun powerIntersectsPaddle(power: PowerUp): Boolean {
-        return power.x in (paddle.x - paddle.width / 2f)..(paddle.x + paddle.width / 2f) &&
-            power.y in (paddle.y - paddle.height / 2f)..(paddle.y + paddle.height / 2f)
+        val halfSize = power.size * 0.5f
+        val powerLeft = power.x - halfSize
+        val powerRight = power.x + halfSize
+        val powerBottom = power.y - halfSize
+        val powerTop = power.y + halfSize
+        val paddleLeft = paddle.x - paddle.width / 2f
+        val paddleRight = paddle.x + paddle.width / 2f
+        val paddleBottom = paddle.y - paddle.height / 2f
+        val paddleTop = paddle.y + paddle.height / 2f
+        return powerRight > paddleLeft && powerLeft < paddleRight && powerTop > paddleBottom && powerBottom < paddleTop
     }
 
     private fun circleIntersectsRect(ball: Ball, brick: Brick): Boolean {
@@ -1317,9 +1505,21 @@ class GameEngine(
         val minOverlapY = min(overlapBottom, overlapTop)
 
         if (minOverlapX < minOverlapY) {
-            ball.vx = if (overlapLeft < overlapRight) -abs(ball.vx) else abs(ball.vx)
+            if (overlapLeft < overlapRight) {
+                ball.x = brick.x - ball.radius
+                ball.vx = -abs(ball.vx)
+            } else {
+                ball.x = brick.x + brick.width + ball.radius
+                ball.vx = abs(ball.vx)
+            }
         } else {
-            ball.vy = if (overlapBottom < overlapTop) -abs(ball.vy) else abs(ball.vy)
+            if (overlapBottom < overlapTop) {
+                ball.y = brick.y - ball.radius
+                ball.vy = -abs(ball.vy)
+            } else {
+                ball.y = brick.y + brick.height + ball.radius
+                ball.vy = abs(ball.vy)
+            }
         }
     }
 

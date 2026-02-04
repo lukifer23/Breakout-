@@ -113,10 +113,11 @@ enum LevelFactory {
         )
     ]
 
-    static func buildLevel(index: Int, worldWidth: Float, worldHeight: Float, endless: Bool) -> (bricks: [Brick], theme: LevelTheme, tip: String) {
+    static func buildLevel(index: Int, worldWidth: Float, worldHeight: Float, endless: Bool, difficulty: Float? = nil) -> (bricks: [Brick], theme: LevelTheme, tip: String) {
         if !endless {
             let layout = patterns[index % patterns.count]
-            let bricks = buildFrom(layout: layout, worldWidth: worldWidth, worldHeight: worldHeight, difficulty: difficultyFor(index: index))
+            let diff = difficulty ?? difficultyFor(index: index)
+            let bricks = buildFrom(layout: layout, worldWidth: worldWidth, worldHeight: worldHeight, difficulty: diff)
             return (bricks, layout.theme, layout.tip)
         }
 
@@ -124,7 +125,7 @@ enum LevelFactory {
         let cols = 12
         let rows = 8 + min(4, index / 4)
         let theme = [LevelTheme.neon, .sunset, .cobalt, .aurora, .forest, .lava][index % 6]
-        let diff = difficultyFor(index: index)
+        let diff = difficulty ?? difficultyFor(index: index)
         let brickWidth = worldWidth / Float(cols)
         let brickHeight: Float = 6.0
         let startY = worldHeight * 0.62
@@ -199,4 +200,3 @@ enum LevelFactory {
         return row < 2 ? .unbreakable : .boss
     }
 }
-

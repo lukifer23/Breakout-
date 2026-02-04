@@ -17,7 +17,7 @@ class MainActivity : FoldAwareActivity() {
         setFoldAwareRoot(binding.root)
 
         binding.buttonPlay.setOnClickListener {
-            startActivity(Intent(this, GameActivity::class.java).putExtra(GameActivity.EXTRA_MODE, GameMode.CLASSIC.name))
+            startActivity(Intent(this, ModeSelectActivity::class.java))
         }
         binding.buttonModes.setOnClickListener {
             startActivity(Intent(this, ModeSelectActivity::class.java))

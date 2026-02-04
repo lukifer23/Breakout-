@@ -245,8 +245,7 @@ ios/BreakoutPlus/BreakoutPlus/
 - **iOS Port**: `ios/README.md`, `ios/ARCHITECTURE.md`, `ios/ROADMAP.md`
 
 ## Icon Variants
-The current icon is a vector adaptive icon with brick and ball motifs. If you want alternates, easy variants:
-- **Neon Orbit**: Dark background, cyan orbit ring, hot pink ball.
+The current icon is a neon orbit vector adaptive icon (cyan ring, hot pink ball, plus mark). If you want alternates, easy variants:
 - **Folded Edge**: Split gradient background suggesting the hinge.
 - **Minimal Plus**: Large “+” with a single brick row.
 Icon foregrounds live in `app/src/main/res/drawable/` as:

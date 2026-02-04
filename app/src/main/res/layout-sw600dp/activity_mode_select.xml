@@ -3,92 +3,62 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/menu_background"
-    android:padding="@dimen/bp_margin">
+    android:padding="@dimen/bp_margin_large">
 
     <TextView
-        android:id="@+id/scoreTitle"
+        android:id="@+id/modeTitle"
         style="@style/Text.BreakoutPlus.ScreenTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Scoreboard"
+        android:text="Choose Mode"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
-        android:id="@+id/scoreSubtitle"
+        android:id="@+id/modeSubtitle"
         style="@style/Text.BreakoutPlus.Caption"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="6dp"
-        android:text="@string/label_scoreboard_hint"
+        android:text="@string/label_mode_hint"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/scoreTitle" />
+        app:layout_constraintTop_toBottomOf="@id/modeTitle" />
 
     <ScrollView
-        android:id="@+id/scoreScroll"
+        android:id="@+id/modeScroll"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_marginTop="16dp"
-        app:layout_constraintBottom_toTopOf="@id/scoreFooter"
+        app:layout_constraintBottom_toTopOf="@id/modeFooter"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/scoreSubtitle">
+        app:layout_constraintTop_toBottomOf="@id/modeSubtitle">
 
         <LinearLayout
-            android:id="@+id/scoreList"
+            android:id="@+id/modeList"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingBottom="8dp"
             android:orientation="vertical" />
     </ScrollView>
 
-    <TextView
-        android:id="@+id/scoreEmpty"
-        style="@style/Text.BreakoutPlus.Caption"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:text="@string/label_no_scores"
-        android:visibility="gone"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/scoreSubtitle" />
-
     <LinearLayout
-        android:id="@+id/scoreFooter"
+        android:id="@+id/modeFooter"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:gravity="end"
         android:orientation="horizontal"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/buttonScorePrev"
+            android:id="@+id/buttonModeBack"
             style="@style/Widget.BreakoutPlus.Button"
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="◀"
-            android:backgroundTint="@color/bp_cyan" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/buttonScoreBack"
-            style="@style/Widget.BreakoutPlus.Button"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
             android:text="@string/label_back"
             android:backgroundTint="@color/bp_gray" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/buttonScoreNext"
-            style="@style/Widget.BreakoutPlus.Button"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="▶"
-            android:backgroundTint="@color/bp_cyan" />
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

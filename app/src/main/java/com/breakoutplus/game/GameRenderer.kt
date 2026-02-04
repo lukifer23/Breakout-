@@ -24,6 +24,7 @@ class GameRenderer(
     private var shakeIntensity = 0f
     private var comboFlash = 0f
     private var levelClearFlash = 0f
+    private var musicWasPlaying = false
 
     fun triggerScreenShake(intensity: Float = 3f, duration: Float = 0.2f) {
         shakeIntensity = intensity
@@ -41,7 +42,7 @@ class GameRenderer(
     override fun onSurfaceCreated(unused: javax.microedition.khronos.opengles.GL10?, config: javax.microedition.khronos.egl.EGLConfig?) {
         GLES20.glClearColor(0.04f, 0.07f, 0.13f, 1f)
         renderer2D.init()
-        audioManager.startMusic()
+        // Music now starts when gameplay begins (ball launch) - not on activity load
     }
 
     override fun onSurfaceChanged(unused: javax.microedition.khronos.opengles.GL10?, width: Int, height: Int) {
@@ -82,8 +83,9 @@ class GameRenderer(
 
         // Apply screen shake to renderer
         if (screenShake > 0f) {
-            val shakeX = (random.nextFloat() - 0.5f) * shakeIntensity * (screenShake / 0.2f)
-            val shakeY = (random.nextFloat() - 0.5f) * shakeIntensity * (screenShake / 0.2f)
+            val densityScale = context.resources.displayMetrics.density.coerceAtMost(1.5f) // Scale shake for larger screens but cap it
+            val shakeX = (random.nextFloat() - 0.5f) * shakeIntensity * densityScale * (screenShake / 0.2f)
+            val shakeY = (random.nextFloat() - 0.5f) * shakeIntensity * densityScale * (screenShake / 0.2f)
             renderer2D.setOffset(shakeX, shakeY)
         } else {
             renderer2D.setOffset(0f, 0f)
@@ -106,13 +108,16 @@ class GameRenderer(
     fun pause() {
         paused = true
         engine.pause()
+        musicWasPlaying = audioManager.isMusicPlaying()
         audioManager.stopMusic()
     }
 
     fun resume() {
         paused = false
         engine.resume()
-        audioManager.startMusic()
+        if (musicWasPlaying) {
+            audioManager.startMusic()
+        }
         lastTimeNs = 0L
     }
 

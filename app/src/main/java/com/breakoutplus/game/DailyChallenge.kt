@@ -15,6 +15,7 @@ data class DailyChallenge(
     val rewardValue: Int,
     var progress: Int = 0,
     var completed: Boolean = false,
+    var rewardGranted: Boolean = false,
     val dateGenerated: Long = System.currentTimeMillis()
 )
 
@@ -74,7 +75,7 @@ object DailyChallengeManager {
                 challenge.progress += value
                 if (challenge.progress >= challenge.targetValue) {
                     challenge.completed = true
-                    // TODO: Grant reward
+                    challenge.rewardGranted = true
                 }
             }
         }

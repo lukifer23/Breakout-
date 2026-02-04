@@ -34,15 +34,14 @@ struct GameView: View {
 
                     Spacer()
 
-                    if gameViewModel.timeRemaining > 0 {
-                        Text(timeString(from: gameViewModel.timeRemaining))
-                            .font(.system(size: 18, weight: .bold))
-                            .foregroundColor(gameViewModel.timeRemaining <= 10 ? .red : .white)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
-                            .background(Color.black.opacity(0.5))
-                            .cornerRadius(8)
-                    }
+                    let isCountdown = gameViewModel.selectedGameMode.timeLimitSeconds > 0
+                    Text("\(isCountdown ? "Time" : "Elapsed") \(timeString(from: gameViewModel.timeRemaining))")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(isCountdown && gameViewModel.timeRemaining <= 10 ? .red : .white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(Color.black.opacity(0.5))
+                        .cornerRadius(8)
 
                     Text("Lives: \(gameViewModel.lives)")
                         .font(.system(size: 18, weight: .bold))

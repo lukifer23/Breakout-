@@ -38,7 +38,7 @@ object SettingsManager {
         val prefs = prefs(context)
         return Settings(
             soundEnabled = prefs.getBoolean(KEY_SOUND, true),
-            musicEnabled = prefs.getBoolean(KEY_MUSIC, true),
+            musicEnabled = prefs.getBoolean(KEY_MUSIC, false), // Disable music by default to prevent background hum
             vibrationEnabled = prefs.getBoolean(KEY_VIBRATION, true),
             tipsEnabled = prefs.getBoolean(KEY_TIPS, true),
             leftHanded = prefs.getBoolean(KEY_LEFT_HANDED, false),

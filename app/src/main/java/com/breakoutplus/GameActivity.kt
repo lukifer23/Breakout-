@@ -117,13 +117,16 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
 
     override fun onTimeUpdated(secondsRemaining: Int) {
         runOnUiThread {
-            if (config.mode.timeLimitSeconds == 0) {
-                binding.hudTime.visibility = android.view.View.GONE
+            val minutes = secondsRemaining / 60
+            val seconds = secondsRemaining % 60
+            val isCountdown = config.mode.timeLimitSeconds > 0
+            val label = if (isCountdown) "Time" else "Elapsed"
+            binding.hudTime.visibility = android.view.View.VISIBLE
+            binding.hudTime.text = "$label ${String.format("%02d:%02d", minutes, seconds)}"
+            if (isCountdown && secondsRemaining <= 10) {
+                binding.hudTime.setTextColor(androidx.core.content.ContextCompat.getColor(this, R.color.bp_red))
             } else {
-                binding.hudTime.visibility = android.view.View.VISIBLE
-                val minutes = secondsRemaining / 60
-                val seconds = secondsRemaining % 60
-                binding.hudTime.text = "Time ${String.format("%02d:%02d", minutes, seconds)}"
+                binding.hudTime.setTextColor(androidx.core.content.ContextCompat.getColor(this, R.color.bp_white))
             }
         }
     }
@@ -156,21 +159,58 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
 
     override fun onGameOver(summary: GameSummary) {
         runOnUiThread {
-            ScoreboardManager.addScore(
-                this,
-                ScoreboardManager.ScoreEntry(
-                    score = summary.score,
-                    mode = config.mode.displayName,
-                    level = summary.level,
-                    durationSeconds = summary.durationSeconds,
-                    timestamp = System.currentTimeMillis()
-                )
-            )
-            binding.endTitle.text = getString(R.string.label_game_over)
-            binding.endStats.text = "Score ${summary.score} • Level ${summary.level}"
-            binding.buttonEndPrimary.text = getString(R.string.label_restart)
-            showOverlay(binding.endOverlay)
+            // Check if this is a high score for the mode
+            if (ScoreboardManager.isHighScoreForMode(this, config.mode.displayName, summary.score)) {
+                // Show name input dialog
+                showNameInputDialog(summary)
+            } else {
+                // Not a high score, just show game over screen
+                binding.endTitle.text = getString(R.string.label_game_over)
+                binding.endStats.text = "Score ${summary.score} • Level ${summary.level}"
+                binding.buttonEndPrimary.text = getString(R.string.label_restart)
+                showOverlay(binding.endOverlay)
+            }
         }
+    }
+
+    private fun showNameInputDialog(summary: GameSummary) {
+        val input = android.widget.EditText(this)
+        input.hint = "Enter your name"
+        input.setText("Player") // Default name
+        input.setSelection(input.text.length)
+
+        android.app.AlertDialog.Builder(this)
+            .setTitle("New High Score!")
+            .setMessage("Score: ${summary.score} • Level: ${summary.level}\nMode: ${config.mode.displayName}")
+            .setView(input)
+            .setPositiveButton("Save") { _, _ ->
+                val playerName = input.text.toString().trim().ifEmpty { "Player" }
+                ScoreboardManager.addHighScore(
+                    this,
+                    ScoreboardManager.ScoreEntry(
+                        score = summary.score,
+                        mode = config.mode.displayName,
+                        name = playerName,
+                        level = summary.level,
+                        durationSeconds = summary.durationSeconds,
+                        timestamp = System.currentTimeMillis()
+                    )
+                )
+                // Now show the game over screen
+                binding.endTitle.text = getString(R.string.label_game_over)
+                binding.endStats.text = "Score ${summary.score} • Level ${summary.level}"
+                binding.buttonEndPrimary.text = getString(R.string.label_restart)
+                showOverlay(binding.endOverlay)
+            }
+            .setNegativeButton("Skip") { _, _ ->
+                // Don't save, just show game over screen
+                binding.endTitle.text = getString(R.string.label_game_over)
+                binding.endStats.text = "Score ${summary.score} • Level ${summary.level}"
+                binding.buttonEndPrimary.text = getString(R.string.label_restart)
+                showOverlay(binding.endOverlay)
+            }
+            .setCancelable(false)
+            .show()
     }
 
     override fun onLevelComplete(summary: GameSummary) {

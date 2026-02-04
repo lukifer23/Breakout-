@@ -33,6 +33,13 @@ struct HowToView: View {
 
                 ScrollView {
                     VStack(spacing: 14) {
+                        SectionCard(title: "Quick Start", lines: [
+                            "Swipe anywhere to move the paddle.",
+                            "Tap to launch the ball.",
+                            "Collect powerups to stack abilities.",
+                            "Watch the HUD for score, lives, and timers."
+                        ])
+
                         SectionCard(title: "Goal", lines: [
                             "Clear all breakable bricks to advance.",
                             "Keep the ball in play - lose all lives and the run ends.",
