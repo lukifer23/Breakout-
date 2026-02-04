@@ -64,8 +64,8 @@ Breakout+ is a GPU-accelerated brickbreaker built for foldables, tuned for the S
 
 ## Highlights
 - OpenGL ES 2.0 rendering via `GLSurfaceView` for hardware acceleration.
-- 60 FPS target with continuous render loop and stable delta time clamping (50ms max).
-- Optimized for modern mobile GPUs with simple geometry (rects/circles) for consistent performance.
+- Vsync-paced rendering using Choreographer-driven frame pacing with surface frame-rate hints.
+- Optimized for modern mobile GPUs with simple geometry (rects/circles) for consistent performance and frame pacing stability.
 - Foldable-optimized layouts (`sw600dp`, `sw720dp`) plus hinge-aware padding using Jetpack WindowManager.
 - Multiple modes: Classic, Timed Challenge, Endless, God Mode, Level Rush (45s with speed boost).
 - Powerups: Multi-ball, Laser, Guardrail, Shield, Extra life, Wide paddle, Slow motion, Fireball, Magnet, Gravity Well, Ball Splitter, Freeze, Pierce.

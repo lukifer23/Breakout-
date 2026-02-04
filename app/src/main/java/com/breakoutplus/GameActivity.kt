@@ -5,6 +5,9 @@ import android.os.Bundle
 import android.view.View
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.graphics.ColorUtils
+import android.os.Build
+import android.view.Display
+import android.view.WindowManager
 import com.breakoutplus.databinding.ActivityGameBinding
 import com.breakoutplus.game.GameConfig
 import com.breakoutplus.game.GameEventListener
@@ -29,6 +32,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         config = GameConfig(mode, settings)
 
         binding.gameSurface.start(config, this)
+        applyFrameRatePreference()
         applyHandedness(settings.leftHanded)
 
         binding.buttonPause.setOnClickListener { showPause(true) }
@@ -48,6 +52,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     override fun onResume() {
         super.onResume()
         refreshSettings()
+        applyFrameRatePreference()
         binding.gameSurface.onResume()
         if (binding.pauseOverlay.visibility != View.VISIBLE) {
             binding.gameSurface.resumeGame()
@@ -69,6 +74,39 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             binding.hudTip.visibility = View.GONE
             hideTooltip()
         }
+    }
+
+    private fun applyFrameRatePreference() {
+        val display = resolveDisplay() ?: return
+        val bestMode = selectBestMode(display)
+        val targetFps = bestMode?.refreshRate ?: display.refreshRate
+
+        val params = window.attributes
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && bestMode != null) {
+            params.preferredDisplayModeId = bestMode.modeId
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            params.preferredRefreshRate = targetFps
+        }
+        window.attributes = params
+        binding.gameSurface.setTargetFrameRate(targetFps)
+    }
+
+    private fun resolveDisplay(): Display? {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            display
+        } else {
+            @Suppress("DEPRECATION")
+            (getSystemService(WINDOW_SERVICE) as WindowManager).defaultDisplay
+        }
+    }
+
+    private fun selectBestMode(display: Display): Display.Mode? {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return null
+        val current = display.mode
+        val candidates = display.supportedModes.filter {
+            it.physicalWidth == current.physicalWidth && it.physicalHeight == current.physicalHeight
+        }
+        return candidates.maxByOrNull { it.refreshRate }
     }
 
     private fun showPause(show: Boolean) {

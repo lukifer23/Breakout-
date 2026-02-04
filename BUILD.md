@@ -31,7 +31,7 @@ adb shell am start -n com.breakoutplus.debug/com.breakoutplus.SplashActivity
 ```
 
 ## Performance
-Breakout+ targets 60 FPS gameplay with OpenGL ES 2.0 hardware acceleration. The game loop uses continuous rendering with delta time clamping at 50ms to prevent large jumps on frame drops. Vsync is handled by the Android system for smooth animation.
+Breakout+ targets 60+ FPS gameplay with OpenGL ES 2.0 hardware acceleration. Rendering is paced via Choreographer-driven frame scheduling and surface frame-rate hints, with delta time clamping at 50ms to prevent large jumps on frame drops. Vsync is handled by the Android system for smooth animation.
 
 ## iOS Build
 
