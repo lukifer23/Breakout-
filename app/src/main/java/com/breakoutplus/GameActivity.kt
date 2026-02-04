@@ -3,6 +3,7 @@ package com.breakoutplus
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
+import androidx.constraintlayout.widget.ConstraintLayout
 import com.breakoutplus.databinding.ActivityGameBinding
 import com.breakoutplus.game.GameConfig
 import com.breakoutplus.game.GameEventListener
@@ -90,20 +91,20 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     }
 
     private fun applyHandedness(leftHanded: Boolean) {
-        val row = binding.hudRow
-        val params = binding.buttonPause.layoutParams as android.widget.LinearLayout.LayoutParams
-        val spacing = maxOf(params.marginStart, params.marginEnd, params.leftMargin, params.rightMargin)
+        val params = binding.buttonPause.layoutParams as ConstraintLayout.LayoutParams
+        val isCentered =
+            params.startToStart == ConstraintLayout.LayoutParams.PARENT_ID &&
+                params.endToEnd == ConstraintLayout.LayoutParams.PARENT_ID
+        if (isCentered) return
 
-        row.removeView(binding.buttonPause)
         if (leftHanded) {
-            params.marginStart = 0
-            params.marginEnd = spacing
-            row.addView(binding.buttonPause, 0, params)
+            params.startToStart = ConstraintLayout.LayoutParams.PARENT_ID
+            params.endToEnd = ConstraintLayout.LayoutParams.UNSET
         } else {
-            params.marginStart = spacing
-            params.marginEnd = 0
-            row.addView(binding.buttonPause, params)
+            params.endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
+            params.startToStart = ConstraintLayout.LayoutParams.UNSET
         }
+        binding.buttonPause.layoutParams = params
     }
 
     override fun onScoreUpdated(score: Int) {

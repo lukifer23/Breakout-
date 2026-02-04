@@ -14,9 +14,24 @@ class GameRenderer(
     private val renderer2D = Renderer2D()
     private val audioManager = GameAudioManager(context, config.settings)
     private val logger = if (config.settings.loggingEnabled) GameLogger(context, true) else null
-    private var engine = GameEngine(config, listener, audioManager, logger)
+    private var engine = GameEngine(config, listener, audioManager, logger, null, this)
     private var lastTimeNs: Long = 0L
     private var paused = false
+    private val random = java.util.Random()
+
+    // Enhanced visual effects
+    private var screenShake = 0f
+    private var shakeIntensity = 0f
+    private var comboFlash = 0f
+
+    fun triggerScreenShake(intensity: Float = 3f, duration: Float = 0.2f) {
+        shakeIntensity = intensity
+        screenShake = duration
+    }
+
+    fun triggerComboFlash() {
+        comboFlash = 0.5f
+    }
 
     override fun onSurfaceCreated(unused: javax.microedition.khronos.opengles.GL10?, config: javax.microedition.khronos.egl.EGLConfig?) {
         GLES20.glClearColor(0.04f, 0.07f, 0.13f, 1f)
@@ -42,9 +57,29 @@ class GameRenderer(
         lastTimeNs = now
         if (delta > 0.05f) delta = 0.05f
 
+        // Update visual effects
+        if (screenShake > 0f) {
+            screenShake -= delta
+            if (screenShake < 0f) screenShake = 0f
+        }
+        if (comboFlash > 0f) {
+            comboFlash -= delta * 2f
+            if (comboFlash < 0f) comboFlash = 0f
+        }
+
         if (!paused) {
             engine.update(delta)
         }
+
+        // Apply screen shake to renderer
+        if (screenShake > 0f) {
+            val shakeX = (random.nextFloat() - 0.5f) * shakeIntensity * (screenShake / 0.2f)
+            val shakeY = (random.nextFloat() - 0.5f) * shakeIntensity * (screenShake / 0.2f)
+            renderer2D.setOffset(shakeX, shakeY)
+        } else {
+            renderer2D.setOffset(0f, 0f)
+        }
+
         engine.render(renderer2D)
 
         // Performance logging
@@ -73,7 +108,7 @@ class GameRenderer(
     }
 
     fun restart() {
-        engine = GameEngine(config, listener, audioManager, logger)
+        engine = GameEngine(config, listener, audioManager, logger, null, this)
         lastTimeNs = 0L
     }
 
@@ -83,7 +118,7 @@ class GameRenderer(
 
     fun reset(newConfig: GameConfig) {
         config = newConfig
-        engine = GameEngine(config, listener, audioManager, logger)
+        engine = GameEngine(config, listener, audioManager, logger, null, this)
     }
 
     fun release() {

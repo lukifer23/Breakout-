@@ -21,7 +21,18 @@
 		1A2B3C4D5E6F7890AB12346C /* LevelTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB12346D /* LevelTheme.swift */; };
 			1A2B3C4D5E6F7890AB12349D /* ScoreboardStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB12349C /* ScoreboardStore.swift */; };
 			1A2B3C4D5E6F7890AB12349F /* Beam.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB12349E /* Beam.swift */; };
-			1A2B3C4D5E6F7890AB1234A1 /* LevelFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB1234A0 /* LevelFactory.swift */; };
+				1A2B3C4D5E6F7890AB1234A1 /* LevelFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB1234A0 /* LevelFactory.swift */; };
+			1A2B3C4D5E6F7890AB1234A5 /* AudioManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB1234A3 /* AudioManager.swift */; };
+			1A2B3C4D5E6F7890AB1234A6 /* Haptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB1234A4 /* Haptics.swift */; };
+			1A2B3C4D5E6F7890AB1234AF /* music_loop.wav in Resources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB1234A7 /* music_loop.wav */; };
+			1A2B3C4D5E6F7890AB1234B0 /* sfx_bounce.wav in Resources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB1234A8 /* sfx_bounce.wav */; };
+			1A2B3C4D5E6F7890AB1234B1 /* sfx_brick.wav in Resources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB1234A9 /* sfx_brick.wav */; };
+			1A2B3C4D5E6F7890AB1234B2 /* sfx_explosion.wav in Resources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB1234AA /* sfx_explosion.wav */; };
+			1A2B3C4D5E6F7890AB1234B3 /* sfx_gameover.wav in Resources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB1234AB /* sfx_gameover.wav */; };
+			1A2B3C4D5E6F7890AB1234B4 /* sfx_laser.wav in Resources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB1234AC /* sfx_laser.wav */; };
+			1A2B3C4D5E6F7890AB1234B5 /* sfx_life.wav in Resources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB1234AD /* sfx_life.wav */; };
+			1A2B3C4D5E6F7890AB1234B6 /* sfx_powerup.wav in Resources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB1234AE /* sfx_powerup.wav */; };
+			1A2B3C4D5E6F7890AB1234C1 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB1234C0 /* Assets.xcassets */; };
 		1A2B3C4D5E6F7890AB12346E /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB12346F /* SplashView.swift */; };
 		1A2B3C4D5E6F7890AB123470 /* MenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB123471 /* MenuView.swift */; };
 		1A2B3C4D5E6F7890AB123472 /* GameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB123473 /* GameView.swift */; };
@@ -47,6 +58,17 @@
 			1A2B3C4D5E6F7890AB12349C /* ScoreboardStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Services/ScoreboardStore.swift; sourceTree = SOURCE_ROOT; };
 			1A2B3C4D5E6F7890AB12349E /* Beam.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Core/Models/Beam.swift; sourceTree = SOURCE_ROOT; };
 			1A2B3C4D5E6F7890AB1234A0 /* LevelFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Core/LevelFactory.swift; sourceTree = SOURCE_ROOT; };
+			1A2B3C4D5E6F7890AB1234A3 /* AudioManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Services/AudioManager.swift; sourceTree = SOURCE_ROOT; };
+			1A2B3C4D5E6F7890AB1234A4 /* Haptics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Services/Haptics.swift; sourceTree = SOURCE_ROOT; };
+			1A2B3C4D5E6F7890AB1234A7 /* music_loop.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = BreakoutPlus/Resources/Audio/music_loop.wav; sourceTree = SOURCE_ROOT; };
+			1A2B3C4D5E6F7890AB1234A8 /* sfx_bounce.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = BreakoutPlus/Resources/Audio/sfx_bounce.wav; sourceTree = SOURCE_ROOT; };
+			1A2B3C4D5E6F7890AB1234A9 /* sfx_brick.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = BreakoutPlus/Resources/Audio/sfx_brick.wav; sourceTree = SOURCE_ROOT; };
+			1A2B3C4D5E6F7890AB1234AA /* sfx_explosion.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = BreakoutPlus/Resources/Audio/sfx_explosion.wav; sourceTree = SOURCE_ROOT; };
+			1A2B3C4D5E6F7890AB1234AB /* sfx_gameover.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = BreakoutPlus/Resources/Audio/sfx_gameover.wav; sourceTree = SOURCE_ROOT; };
+			1A2B3C4D5E6F7890AB1234AC /* sfx_laser.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = BreakoutPlus/Resources/Audio/sfx_laser.wav; sourceTree = SOURCE_ROOT; };
+			1A2B3C4D5E6F7890AB1234AD /* sfx_life.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = BreakoutPlus/Resources/Audio/sfx_life.wav; sourceTree = SOURCE_ROOT; };
+			1A2B3C4D5E6F7890AB1234AE /* sfx_powerup.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = BreakoutPlus/Resources/Audio/sfx_powerup.wav; sourceTree = SOURCE_ROOT; };
+			1A2B3C4D5E6F7890AB1234C0 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = BreakoutPlus/Resources/Assets.xcassets; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F7890AB12346F /* SplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Views/SplashView.swift; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F7890AB123471 /* MenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Views/MenuView.swift; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F7890AB123473 /* GameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Views/GameView.swift; sourceTree = SOURCE_ROOT; };
@@ -76,15 +98,16 @@
 		};
 			1A2B3C4D5E6F7890AB12347D /* BreakoutPlus */ = {
 				isa = PBXGroup;
-				children = (
-					1A2B3C4D5E6F7890AB123457 /* BreakoutPlusApp.swift */,
-					1A2B3C4D5E6F7890AB123459 /* ContentView.swift */,
-					1A2B3C4D5E6F7890AB12347F /* ViewModels */,
-					1A2B3C4D5E6F7890AB123480 /* Models */,
-					1A2B3C4D5E6F7890AB1234A2 /* Services */,
-					1A2B3C4D5E6F7890AB123481 /* Core */,
-					1A2B3C4D5E6F7890AB123482 /* Views */,
-				);
+					children = (
+						1A2B3C4D5E6F7890AB123457 /* BreakoutPlusApp.swift */,
+						1A2B3C4D5E6F7890AB123459 /* ContentView.swift */,
+						1A2B3C4D5E6F7890AB12347F /* ViewModels */,
+						1A2B3C4D5E6F7890AB123480 /* Models */,
+						1A2B3C4D5E6F7890AB1234A2 /* Services */,
+						1A2B3C4D5E6F7890AB1234B7 /* Resources */,
+						1A2B3C4D5E6F7890AB123481 /* Core */,
+						1A2B3C4D5E6F7890AB123482 /* Views */,
+					);
 				path = BreakoutPlus;
 				sourceTree = "<group>";
 			};
@@ -114,12 +137,30 @@
 				path = Models;
 				sourceTree = "<group>";
 			};
-			1A2B3C4D5E6F7890AB1234A2 /* Services */ = {
-				isa = PBXGroup;
-				children = (
-					1A2B3C4D5E6F7890AB12349C /* ScoreboardStore.swift */,
+				1A2B3C4D5E6F7890AB1234A2 /* Services */ = {
+					isa = PBXGroup;
+					children = (
+						1A2B3C4D5E6F7890AB12349C /* ScoreboardStore.swift */,
+						1A2B3C4D5E6F7890AB1234A3 /* AudioManager.swift */,
+						1A2B3C4D5E6F7890AB1234A4 /* Haptics.swift */,
+					);
+					path = Services;
+					sourceTree = "<group>";
+				};
+				1A2B3C4D5E6F7890AB1234B7 /* Resources */ = {
+					isa = PBXGroup;
+					children = (
+						1A2B3C4D5E6F7890AB1234A7 /* music_loop.wav */,
+						1A2B3C4D5E6F7890AB1234A8 /* sfx_bounce.wav */,
+						1A2B3C4D5E6F7890AB1234A9 /* sfx_brick.wav */,
+						1A2B3C4D5E6F7890AB1234AA /* sfx_explosion.wav */,
+						1A2B3C4D5E6F7890AB1234AB /* sfx_gameover.wav */,
+					1A2B3C4D5E6F7890AB1234AC /* sfx_laser.wav */,
+					1A2B3C4D5E6F7890AB1234AD /* sfx_life.wav */,
+					1A2B3C4D5E6F7890AB1234AE /* sfx_powerup.wav */,
+					1A2B3C4D5E6F7890AB1234C0 /* Assets.xcassets */,
 				);
-				path = Services;
+				path = Resources;
 				sourceTree = "<group>";
 			};
 			1A2B3C4D5E6F7890AB123481 /* Core */ = {
@@ -213,13 +254,22 @@
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		1A2B3C4D5E6F7890AB123486 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
+			1A2B3C4D5E6F7890AB123486 /* Resources */ = {
+				isa = PBXResourcesBuildPhase;
+				buildActionMask = 2147483647;
+				files = (
+					1A2B3C4D5E6F7890AB1234AF /* music_loop.wav in Resources */,
+					1A2B3C4D5E6F7890AB1234B0 /* sfx_bounce.wav in Resources */,
+					1A2B3C4D5E6F7890AB1234B1 /* sfx_brick.wav in Resources */,
+					1A2B3C4D5E6F7890AB1234B2 /* sfx_explosion.wav in Resources */,
+					1A2B3C4D5E6F7890AB1234B3 /* sfx_gameover.wav in Resources */,
+					1A2B3C4D5E6F7890AB1234B4 /* sfx_laser.wav in Resources */,
+					1A2B3C4D5E6F7890AB1234B5 /* sfx_life.wav in Resources */,
+					1A2B3C4D5E6F7890AB1234B6 /* sfx_powerup.wav in Resources */,
+					1A2B3C4D5E6F7890AB1234C1 /* Assets.xcassets in Resources */,
+				);
+				runOnlyForDeploymentPostprocessing = 0;
+			};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -238,10 +288,12 @@
 				1A2B3C4D5E6F7890AB123466 /* Brick.swift in Sources */,
 				1A2B3C4D5E6F7890AB123468 /* Paddle.swift in Sources */,
 				1A2B3C4D5E6F7890AB12346A /* PowerUp.swift in Sources */,
-				1A2B3C4D5E6F7890AB12346C /* LevelTheme.swift in Sources */,
-					1A2B3C4D5E6F7890AB12349D /* ScoreboardStore.swift in Sources */,
-					1A2B3C4D5E6F7890AB12349F /* Beam.swift in Sources */,
-					1A2B3C4D5E6F7890AB1234A1 /* LevelFactory.swift in Sources */,
+					1A2B3C4D5E6F7890AB12346C /* LevelTheme.swift in Sources */,
+						1A2B3C4D5E6F7890AB12349D /* ScoreboardStore.swift in Sources */,
+						1A2B3C4D5E6F7890AB1234A5 /* AudioManager.swift in Sources */,
+						1A2B3C4D5E6F7890AB1234A6 /* Haptics.swift in Sources */,
+						1A2B3C4D5E6F7890AB12349F /* Beam.swift in Sources */,
+						1A2B3C4D5E6F7890AB1234A1 /* LevelFactory.swift in Sources */,
 					1A2B3C4D5E6F7890AB12346E /* SplashView.swift in Sources */,
 					1A2B3C4D5E6F7890AB123470 /* MenuView.swift in Sources */,
 					1A2B3C4D5E6F7890AB123472 /* GameView.swift in Sources */,

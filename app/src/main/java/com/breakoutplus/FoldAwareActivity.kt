@@ -1,9 +1,10 @@
 package com.breakoutplus
 
 import android.graphics.Rect
+import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.lifecycle.lifecycleScope
 import androidx.window.layout.FoldingFeature
 import androidx.window.layout.WindowInfoTracker
@@ -16,6 +17,15 @@ abstract class FoldAwareActivity : AppCompatActivity() {
     private var rootView: View? = null
     private var basePadding: Rect? = null
     private var layoutJob: Job? = null
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        // Apply night mode early so activities are created with the correct theme.
+        val settings = SettingsManager.load(this)
+        AppCompatDelegate.setDefaultNightMode(
+            if (settings.darkMode) AppCompatDelegate.MODE_NIGHT_YES else AppCompatDelegate.MODE_NIGHT_NO
+        )
+        super.onCreate(savedInstanceState)
+    }
 
     protected fun setFoldAwareRoot(view: View) {
         rootView = view
@@ -59,6 +69,6 @@ abstract class FoldAwareActivity : AppCompatActivity() {
         val newRight = padding.right + if (foldingFeature.orientation == FoldingFeature.Orientation.VERTICAL) extra else 0
         val newTop = padding.top + if (foldingFeature.orientation == FoldingFeature.Orientation.HORIZONTAL) extra else 0
         val newBottom = padding.bottom + if (foldingFeature.orientation == FoldingFeature.Orientation.HORIZONTAL) extra else 0
-        ViewCompat.setPaddingRelative(root, newLeft, newTop, newRight, newBottom)
+        root.setPaddingRelative(newLeft, newTop, newRight, newBottom)
     }
 }

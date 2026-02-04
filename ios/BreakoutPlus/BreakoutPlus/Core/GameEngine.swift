@@ -225,11 +225,15 @@ class GameEngine {
                 if guardrailActive {
                     ball.vy = abs(ball.vy)
                     ball.y = ball.radius + 0.1
+                    emit(.sound(.bounce, volume: 0.55))
+                    emit(.haptic(.light))
                 } else if shieldCharges > 0 {
                     shieldCharges -= 1
                     ball.vy = max(abs(ball.vy), Float(gameMode.launchSpeed * 0.8))
                     ball.y = paddle.y + paddle.height / 2 + ball.radius + 0.5
                     ball.x = paddle.x
+                    emit(.sound(.powerup, volume: 0.45))
+                    emit(.haptic(.medium))
                 } else {
                     toRemove.append(i)
                 }
@@ -623,6 +627,8 @@ class GameEngine {
         let remainingBricks = bricks.filter { $0.alive && $0.type != .unbreakable }.count
         if remainingBricks == 0 {
             state = .levelComplete
+            emit(.sound(.powerup, volume: 0.6))
+            emit(.haptic(.success))
             delegate?.onLevelComplete(summary: makeSummary())
         }
     }
@@ -636,11 +642,15 @@ class GameEngine {
         if balls.isEmpty && lives > 0 {
             lives -= 1
             delegate?.onLivesChanged(newLives: lives)
+            emit(.sound(.life, volume: 0.7))
+            emit(.haptic(.warning))
 
             if lives > 0 {
                 spawnBall()
             } else {
                 state = .gameOver
+                emit(.sound(.gameOver, volume: 0.9))
+                emit(.haptic(.error))
                 delegate?.onGameOver(summary: makeSummary())
             }
         }

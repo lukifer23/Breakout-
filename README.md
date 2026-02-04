@@ -70,7 +70,7 @@ Breakout+ is a GPU-accelerated brickbreaker built for foldables, tuned for the S
 - Advanced audio: Individual volume controls (Master/Effects/Music), context-aware sounds per brick type.
 - Enhanced visuals: Unique brick colors per theme, 3D bevel effects, animated powerups, particle systems.
 - Full set of screens: Splash (animated), Title, Mode Select, Settings (volume controls), Scoreboard, How-To (expandable), Game.
-- Sound effects and music generated programmatically (no placeholders).
+- Audio: Android generates SFX/music locally; iOS uses bundled WAV SFX + looping music (still local assets, no placeholders).
 
 ## Features
 

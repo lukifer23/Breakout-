@@ -15,6 +15,23 @@
         android:layout_height="match_parent"
         android:padding="20dp">
 
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonPause"
+            style="@style/Widget.BreakoutPlus.PauseButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:minWidth="44dp"
+            android:minHeight="44dp"
+            android:text=""
+            android:contentDescription="@string/label_pause"
+            app:icon="@drawable/ic_pause"
+            app:iconGravity="textStart"
+            app:iconPadding="0dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
         <LinearLayout
             android:id="@+id/hudRow"
             android:layout_width="0dp"
@@ -25,7 +42,8 @@
             android:orientation="horizontal"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent">
+            app:layout_constraintTop_toBottomOf="@id/buttonPause"
+            android:layout_marginTop="12dp">
 
             <TextView
                 android:id="@+id/hudScore"
@@ -66,16 +84,6 @@
                 android:text="Level 1"
                 android:textColor="@color/bp_white"
                 android:textSize="@dimen/bp_body_text_size" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/buttonPause"
-                style="@style/Widget.BreakoutPlus.PauseButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="14dp"
-                android:text="@string/label_pause"
-                app:icon="@drawable/ic_pause"
-                app:iconGravity="textStart" />
         </LinearLayout>
 
         <TextView

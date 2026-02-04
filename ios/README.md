@@ -99,9 +99,10 @@ cd ios/BreakoutPlus
 - ✅ Lives, pause, level complete, and game over logic
 
 ## Next Steps (Recommended)
-- **Audio + haptics parity**: match Android feedback (bounce/brick/explosion/powerup + haptics).
-- **Polish parity**: more brick impact FX, nicer transitions, and tighter collision response.
-- **Repo hygiene**: stop tracking SwiftPM build artifacts (`ios/.build/`), keep diffs clean.
+- **Tune feedback**: throttle/tune SFX + haptics intensity (bounces can be noisy) and verify pause/resume behavior.
+- **Visual polish**: richer brick hit states (boss/phase/moving), more distinct powerup visuals, and smoother transitions.
+- **Repo hygiene**: stop tracking SwiftPM build artifacts (`ios/.build/`) so diffs stay clean.
+- **Tests**: add lightweight engine behavior tests (life loss, scoring, powerups) without needing Xcode UI.
 
 ## Architecture Decisions
 

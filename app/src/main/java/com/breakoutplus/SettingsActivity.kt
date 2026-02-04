@@ -2,6 +2,7 @@ package com.breakoutplus
 
 import android.os.Bundle
 import android.widget.SeekBar
+import androidx.appcompat.app.AppCompatDelegate
 import com.breakoutplus.databinding.ActivitySettingsBinding
 
 class SettingsActivity : FoldAwareActivity() {
@@ -26,6 +27,7 @@ class SettingsActivity : FoldAwareActivity() {
         binding.seekEffectsVolume.progress = (settings.effectsVolume * 100).toInt()
         binding.seekMusicVolume.progress = (settings.musicVolume * 100).toInt()
         binding.switchLogging.isChecked = settings.loggingEnabled
+        binding.switchDarkMode.isChecked = settings.darkMode
 
         val saveSettings = {
             SettingsManager.save(
@@ -40,7 +42,8 @@ class SettingsActivity : FoldAwareActivity() {
                     masterVolume = binding.seekMasterVolume.progress / 100f,
                     effectsVolume = binding.seekEffectsVolume.progress / 100f,
                     musicVolume = binding.seekMusicVolume.progress / 100f,
-                    loggingEnabled = binding.switchLogging.isChecked
+                    loggingEnabled = binding.switchLogging.isChecked,
+                    darkMode = binding.switchDarkMode.isChecked
                 )
             )
         }
@@ -51,6 +54,12 @@ class SettingsActivity : FoldAwareActivity() {
         binding.switchTips.setOnCheckedChangeListener { _, _ -> saveSettings() }
         binding.switchLeftHanded.setOnCheckedChangeListener { _, _ -> saveSettings() }
         binding.switchLogging.setOnCheckedChangeListener { _, _ -> saveSettings() }
+        binding.switchDarkMode.setOnCheckedChangeListener { _, enabled ->
+            saveSettings()
+            AppCompatDelegate.setDefaultNightMode(
+                if (enabled) AppCompatDelegate.MODE_NIGHT_YES else AppCompatDelegate.MODE_NIGHT_NO
+            )
+        }
         binding.seekSensitivity.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 if (fromUser) saveSettings()

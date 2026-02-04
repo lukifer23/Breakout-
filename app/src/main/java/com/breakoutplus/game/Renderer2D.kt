@@ -14,6 +14,9 @@ class Renderer2D {
     private val rectMesh = RectMesh()
     private val circleMesh = CircleMesh(28)
 
+    private var offsetX = 0f
+    private var offsetY = 0f
+
     fun init() {
         shader.build()
         rectMesh.build()
@@ -30,10 +33,15 @@ class Renderer2D {
         Matrix.orthoM(projectionMatrix, 0, 0f, worldWidth, 0f, worldHeight, -1f, 1f)
     }
 
+    fun setOffset(x: Float, y: Float) {
+        offsetX = x
+        offsetY = y
+    }
+
     fun drawRect(x: Float, y: Float, width: Float, height: Float, color: FloatArray) {
         shader.use()
         Matrix.setIdentityM(modelMatrix, 0)
-        Matrix.translateM(modelMatrix, 0, x, y, 0f)
+        Matrix.translateM(modelMatrix, 0, x + offsetX, y + offsetY, 0f)
         Matrix.scaleM(modelMatrix, 0, width, height, 1f)
         Matrix.multiplyMM(mvpMatrix, 0, projectionMatrix, 0, modelMatrix, 0)
         shader.setUniformMatrix("u_MVPMatrix", mvpMatrix)
@@ -44,7 +52,7 @@ class Renderer2D {
     fun drawCircle(x: Float, y: Float, radius: Float, color: FloatArray) {
         shader.use()
         Matrix.setIdentityM(modelMatrix, 0)
-        Matrix.translateM(modelMatrix, 0, x, y, 0f)
+        Matrix.translateM(modelMatrix, 0, x + offsetX, y + offsetY, 0f)
         Matrix.scaleM(modelMatrix, 0, radius, radius, 1f)
         Matrix.multiplyMM(mvpMatrix, 0, projectionMatrix, 0, modelMatrix, 0)
         shader.setUniformMatrix("u_MVPMatrix", mvpMatrix)

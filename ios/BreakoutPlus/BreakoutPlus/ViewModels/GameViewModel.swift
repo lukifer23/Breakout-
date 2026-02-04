@@ -36,6 +36,9 @@ class GameViewModel: ObservableObject {
     @AppStorage("musicEnabled") var musicEnabled = true
     @AppStorage("vibrationEnabled") var vibrationEnabled = true
     @AppStorage("tipsEnabled") var tipsEnabled = true
+    @AppStorage("masterVolume") var masterVolume: Double = 1.0
+    @AppStorage("effectsVolume") var effectsVolume: Double = 0.8
+    @AppStorage("musicVolume") var musicVolume: Double = 0.6
 
     private var cancellables = Set<AnyCancellable>()
 

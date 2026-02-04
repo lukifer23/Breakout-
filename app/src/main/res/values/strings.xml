@@ -22,6 +22,7 @@
     <string name="label_toggle_tips">Show Tips</string>
     <string name="label_sensitivity">Control Sensitivity</string>
     <string name="label_left_handed">Left Handed Mode</string>
+    <string name="label_dark_mode">Dark Mode</string>
     <string name="label_confirm_reset">Reset Scores</string>
     <string name="label_mode_classic">Classic</string>
     <string name="label_mode_timed">Timed Challenge</string>

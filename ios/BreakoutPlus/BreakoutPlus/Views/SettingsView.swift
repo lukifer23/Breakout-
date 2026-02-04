@@ -9,12 +9,15 @@ import SwiftUI
 
 struct SettingsView: View {
     @EnvironmentObject var gameViewModel: GameViewModel
-    // @ObservedObject private var scoreboard = ScoreboardStore.shared // TODO: Implement
+    @ObservedObject private var scoreboard = ScoreboardStore.shared
 
     @AppStorage("soundEnabled") private var soundEnabled = true
     @AppStorage("musicEnabled") private var musicEnabled = true
     @AppStorage("vibrationEnabled") private var vibrationEnabled = true
     @AppStorage("tipsEnabled") private var tipsEnabled = true
+    @AppStorage("masterVolume") private var masterVolume: Double = 1.0
+    @AppStorage("effectsVolume") private var effectsVolume: Double = 0.8
+    @AppStorage("musicVolume") private var musicVolume: Double = 0.6
 
     var body: some View {
         ZStack {
@@ -44,13 +47,24 @@ struct SettingsView: View {
                     ToggleRow(title: "Tips", subtitle: "Show quick in-game hints", isOn: $tipsEnabled)
                 }
 
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Volume")
+                        .foregroundColor(.white.opacity(0.9))
+                        .font(.system(size: 14, weight: .semibold))
+
+                    SliderRow(title: "Master", value: $masterVolume)
+                    SliderRow(title: "Effects", value: $effectsVolume)
+                    SliderRow(title: "Music", value: $musicVolume)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Data")
                         .foregroundColor(.white.opacity(0.9))
                         .font(.system(size: 14, weight: .semibold))
 
                     Button("Reset Scoreboard") {
-                        // scoreboard.reset() // TODO: Implement
+                        scoreboard.reset()
                     }
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(.white)
@@ -88,6 +102,35 @@ private struct ToggleRow: View {
             Spacer()
             Toggle("", isOn: $isOn)
                 .labelsHidden()
+                .tint(Color(hex: "31E1F7"))
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(Color(hex: "1A1F26"))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(Color(hex: "31E1F7").opacity(0.16), lineWidth: 1)
+        )
+        .cornerRadius(14)
+    }
+}
+
+private struct SliderRow: View {
+    let title: String
+    @Binding var value: Double
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text(title)
+                    .foregroundColor(.white)
+                    .font(.system(size: 16, weight: .semibold))
+                Spacer()
+                Text("\(Int((value * 100).rounded()))%")
+                    .foregroundColor(.white.opacity(0.75))
+                    .font(.system(size: 13, weight: .semibold))
+            }
+            Slider(value: $value, in: 0...1, step: 0.01)
                 .tint(Color(hex: "31E1F7"))
         }
         .padding(.horizontal, 14)

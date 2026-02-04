@@ -223,13 +223,40 @@ struct GameView: View {
             if scene == nil {
                 scene = GameScene(viewModel: gameViewModel)
             }
+            AudioManager.shared.configure(
+                soundEnabled: gameViewModel.soundEnabled,
+                musicEnabled: gameViewModel.musicEnabled,
+                masterVolume: Float(gameViewModel.masterVolume),
+                effectsVolume: Float(gameViewModel.effectsVolume),
+                musicVolume: Float(gameViewModel.musicVolume)
+            )
+            AudioManager.shared.startMusicIfEnabled()
         }
+        .onDisappear {
+            AudioManager.shared.stopMusic()
+        }
+        .onChange(of: gameViewModel.soundEnabled) { _ in syncAudioSettings() }
+        .onChange(of: gameViewModel.musicEnabled) { _ in syncAudioSettings() }
+        .onChange(of: gameViewModel.masterVolume) { _ in syncAudioSettings() }
+        .onChange(of: gameViewModel.effectsVolume) { _ in syncAudioSettings() }
+        .onChange(of: gameViewModel.musicVolume) { _ in syncAudioSettings() }
     }
 
     private func timeString(from seconds: Int) -> String {
         let minutes = seconds / 60
         let remainingSeconds = seconds % 60
         return String(format: "%d:%02d", minutes, remainingSeconds)
+    }
+
+    private func syncAudioSettings() {
+        AudioManager.shared.configure(
+            soundEnabled: gameViewModel.soundEnabled,
+            musicEnabled: gameViewModel.musicEnabled,
+            masterVolume: Float(gameViewModel.masterVolume),
+            effectsVolume: Float(gameViewModel.effectsVolume),
+            musicVolume: Float(gameViewModel.musicVolume)
+        )
+        AudioManager.shared.startMusicIfEnabled()
     }
 }
 
@@ -365,6 +392,7 @@ class GameScene: SKScene, GameEngineDelegate {
     private var powerupNodes: [SKNode] = []
     private var beamNodes: [SKNode] = []
     private var flashNode: SKSpriteNode?
+    private var lastBrickSnapshot: [UUID: (alive: Bool, hp: Int)] = [:]
 
     init(viewModel: GameViewModel) {
         self.viewModel = viewModel
@@ -376,6 +404,11 @@ class GameScene: SKScene, GameEngineDelegate {
     }
 
     override func didMove(to view: SKView) {
+        // Prefer higher refresh rates (120Hz) on devices that support it.
+        view.preferredFramesPerSecond = 120
+        view.ignoresSiblingOrder = true
+        view.shouldCullNonVisibleNodes = true
+
         setupScene()
         setupGame()
     }
@@ -398,6 +431,15 @@ class GameScene: SKScene, GameEngineDelegate {
     private func setupGame() {
         gameEngine = GameEngine(gameMode: viewModel.selectedGameMode)
         gameEngine.delegate = self
+
+        AudioManager.shared.configure(
+            soundEnabled: viewModel.soundEnabled,
+            musicEnabled: viewModel.musicEnabled,
+            masterVolume: Float(viewModel.masterVolume),
+            effectsVolume: Float(viewModel.effectsVolume),
+            musicVolume: Float(viewModel.musicVolume)
+        )
+        AudioManager.shared.startMusicIfEnabled()
 
         // Create paddle
         paddleNode = SKSpriteNode(color: .white, size: CGSize(width: 180, height: 26))
@@ -504,6 +546,20 @@ class GameScene: SKScene, GameEngineDelegate {
                 brickNode.position = CGPoint(x: brickX, y: brickY)
                 brickNode.size = CGSize(width: CGFloat(brick.width / gameEngine.worldWidth) * size.width,
                                       height: CGFloat(brick.height / gameEngine.worldHeight) * size.height)
+
+                // Impact FX: detect brick damage/destruction by comparing to prior snapshot.
+                if let prev = lastBrickSnapshot[brick.id] {
+                    if prev.alive && !brick.alive {
+                        spawnBrickBurst(at: brickNode.position, type: brick.type, theme: theme)
+                    } else if brick.alive && prev.hp > brick.hitPoints {
+                        spawnHitSpark(at: brickNode.position, theme: theme)
+                        brickNode.run(SKAction.sequence([
+                            SKAction.scale(to: 1.08, duration: 0.05),
+                            SKAction.scale(to: 1.0, duration: 0.08)
+                        ]))
+                    }
+                }
+                lastBrickSnapshot[brick.id] = (alive: brick.alive, hp: brick.hitPoints)
 
                 if brick.alive {
                     brickNode.isHidden = false
@@ -758,6 +814,19 @@ class GameScene: SKScene, GameEngineDelegate {
         }
     }
 
+    func onFeedback(_ event: GameFeedbackEvent) {
+        switch event {
+        case .sound(let sound, let volume):
+            if viewModel.soundEnabled {
+                AudioManager.shared.play(sound, volume: volume)
+            }
+        case .haptic(let haptic):
+            if viewModel.vibrationEnabled {
+                Haptics.shared.trigger(haptic)
+            }
+        }
+    }
+
     func onTip(message: String) {
         DispatchQueue.main.async {
             self.viewModel.tipMessage = message
@@ -788,17 +857,20 @@ class GameScene: SKScene, GameEngineDelegate {
                 level: summary.level,
                 durationSeconds: summary.durationSeconds
             )
+            AudioManager.shared.pauseMusic()
         }
     }
 
     func pauseGame() {
         gameEngine.pause()
         lastUpdateTime = 0
+        AudioManager.shared.pauseMusic()
     }
 
     func resumeGame() {
         gameEngine.resume()
         lastUpdateTime = 0
+        AudioManager.shared.startMusicIfEnabled()
     }
 
     func restartGame() {
@@ -813,6 +885,7 @@ class GameScene: SKScene, GameEngineDelegate {
         beamNodes.removeAll()
 
         gameEngine.restart()
+        AudioManager.shared.startMusicIfEnabled()
         viewModel.score = 0
         viewModel.lives = viewModel.selectedGameMode.baseLives
         viewModel.level = 1
@@ -827,6 +900,7 @@ class GameScene: SKScene, GameEngineDelegate {
 
     func nextLevel() {
         gameEngine.nextLevel()
+        AudioManager.shared.startMusicIfEnabled()
         viewModel.activePowerup = nil
         viewModel.laserActive = false
         viewModel.tipMessage = nil
@@ -835,6 +909,67 @@ class GameScene: SKScene, GameEngineDelegate {
 
     func fireLasers() {
         gameEngine.fireLasers()
+    }
+
+    private func spawnHitSpark(at position: CGPoint, theme: LevelTheme) {
+        let color = UIColor(
+            red: CGFloat(theme.accent.red),
+            green: CGFloat(theme.accent.green),
+            blue: CGFloat(theme.accent.blue),
+            alpha: 1.0
+        )
+        spawnParticleBurst(at: position, color: color, count: 8, speed: 120, radius: 2.2, life: 0.22)
+    }
+
+    private func spawnBrickBurst(at position: CGPoint, type: BrickType, theme: LevelTheme) {
+        let base = theme.brickPalette[type] ?? theme.accent
+        let color = UIColor(red: CGFloat(base.red), green: CGFloat(base.green), blue: CGFloat(base.blue), alpha: 1.0)
+        let count = (type == .explosive || type == .boss) ? 20 : 12
+        let speed: CGFloat = (type == .explosive || type == .boss) ? 260 : 180
+        let radius: CGFloat = (type == .explosive || type == .boss) ? 3.0 : 2.4
+        let life: TimeInterval = (type == .explosive || type == .boss) ? 0.42 : 0.28
+        spawnParticleBurst(at: position, color: color, count: count, speed: speed, radius: radius, life: life)
+        if type == .explosive || type == .boss {
+            // Small screen shake for weight.
+            run(SKAction.sequence([
+                SKAction.moveBy(x: 6, y: 0, duration: 0.03),
+                SKAction.moveBy(x: -12, y: 0, duration: 0.05),
+                SKAction.moveBy(x: 6, y: 0, duration: 0.03),
+            ]))
+        }
+    }
+
+    private func spawnParticleBurst(
+        at position: CGPoint,
+        color: UIColor,
+        count: Int,
+        speed: CGFloat,
+        radius: CGFloat,
+        life: TimeInterval
+    ) {
+        for _ in 0..<count {
+            let p = SKShapeNode(circleOfRadius: radius)
+            p.fillColor = color
+            p.strokeColor = color
+            p.lineWidth = 0
+            p.position = position
+            p.zPosition = 50
+            addChild(p)
+
+            let angle = CGFloat.random(in: 0..<(CGFloat.pi * 2))
+            let dist = speed * CGFloat(life) * CGFloat.random(in: 0.45...1.0)
+            let dx = cos(angle) * dist
+            let dy = sin(angle) * dist
+
+            let move = SKAction.moveBy(x: dx, y: dy, duration: life)
+            move.timingMode = .easeOut
+            let fade = SKAction.fadeOut(withDuration: life)
+            fade.timingMode = .easeOut
+            p.run(SKAction.sequence([
+                SKAction.group([move, fade]),
+                SKAction.removeFromParent()
+            ]))
+        }
     }
 }
 

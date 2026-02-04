@@ -17,7 +17,9 @@ class GameEngine(
     private val config: GameConfig,
     private val listener: GameEventListener,
     private val audio: GameAudioManager,
-    private val logger: GameLogger? = null
+    private val logger: GameLogger? = null,
+    private val dailyChallenges: MutableList<DailyChallenge>? = null,
+    private val renderer: GameRenderer? = null
 ) {
     private val random = Random(System.nanoTime())
     private val balls = mutableListOf<Ball>()
@@ -786,6 +788,9 @@ class GameEngine(
                 comboTimer = 2f  // Reset combo timer
                 combo += 1
 
+                // Update daily challenges
+                dailyChallenges?.let { DailyChallengeManager.updateChallengeProgress(it, ChallengeType.COMBO_MULTIPLIER, combo) }
+
                 // Calculate multiplier based on combo
                 val multiplier = when {
                     combo >= 10 -> 5f
@@ -793,6 +798,11 @@ class GameEngine(
                     combo >= 4 -> 2f
                     combo >= 2 -> 1.5f
                     else -> 1f
+                }
+
+                // Combo flash effect for high multipliers
+                if (multiplier >= 2f) {
+                    renderer?.triggerComboFlash()
                 }
 
                 val baseScore = brick.scoreValue * multiplier
@@ -846,6 +856,10 @@ class GameEngine(
             val destroyed = brick.applyHit(true)
             if (destroyed) {
                 score += brick.scoreValue
+                dailyChallenges?.let { DailyChallengeManager.updateChallengeProgress(it, ChallengeType.BRICKS_DESTROYED) }
+
+                // Visual effects
+                renderer?.triggerScreenShake(2f, 0.15f)
                 // Play appropriate sound for brick type (softer for beam hits)
                 val brickSound = when (brick.type) {
                     BrickType.NORMAL -> GameSound.BRICK_NORMAL
@@ -922,6 +936,7 @@ class GameEngine(
             if (powerIntersectsPaddle(power)) {
                 logger?.logPowerupCollected(power.type, Pair(power.x, power.y))
                 applyPowerup(power.type)
+                dailyChallenges?.let { DailyChallengeManager.updateChallengeProgress(it, ChallengeType.POWERUPS_COLLECTED) }
                 audio.play(GameSound.POWERUP, 0.8f)
                 iterator.remove()
             }
@@ -1164,6 +1179,7 @@ class GameEngine(
         val beamOffset = paddle.width / 3f
         beams.add(Beam(paddle.x - beamOffset, paddle.y + paddle.height / 2f, 0.5f, 6f, 90f, PowerUpType.LASER.color))
         beams.add(Beam(paddle.x + beamOffset, paddle.y + paddle.height / 2f, 0.5f, 6f, 90f, PowerUpType.LASER.color))
+        dailyChallenges?.let { DailyChallengeManager.updateChallengeProgress(it, ChallengeType.LASER_FIRED) }
         audio.play(GameSound.LASER, 0.7f)
     }
 
