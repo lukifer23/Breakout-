@@ -14,7 +14,7 @@ struct PowerUp: Identifiable, Equatable {
     var y: Float
     var type: PowerUpType
     var vx: Float = 0
-    var vy: Float = 3  // Falling speed
+    var vy: Float = -24  // Falling speed (negative Y is down)
     var width: Float = 4
     var height: Float = 4
 

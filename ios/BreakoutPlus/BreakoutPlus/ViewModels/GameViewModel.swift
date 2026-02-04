@@ -19,8 +19,14 @@ class GameViewModel: ObservableObject {
     @Published var lives = 3
     @Published var level = 1
     @Published var activePowerup: PowerUpType?
+    @Published var laserActive = false
     @Published var comboCount = 0
     @Published var timeRemaining = 0
+    @Published var isPaused = false
+    @Published var lastSummary: GameSummary?
+    @Published var showLevelComplete = false
+    @Published var showGameOver = false
+    @Published var tipMessage: String?
 
     // Game state
     var selectedGameMode: GameMode = .classic
@@ -67,6 +73,10 @@ class GameViewModel: ObservableObject {
 
     func exitToMenu() {
         currentScreen = .menu
+        isPaused = false
+        showLevelComplete = false
+        showGameOver = false
+        laserActive = false
     }
 
     private func resetGameState() {
@@ -74,8 +84,14 @@ class GameViewModel: ObservableObject {
         lives = selectedGameMode.baseLives
         level = 1
         activePowerup = nil
+        laserActive = false
         comboCount = 0
         timeRemaining = selectedGameMode.timeLimitSeconds
+        isPaused = false
+        showLevelComplete = false
+        showGameOver = false
+        lastSummary = nil
+        tipMessage = nil
     }
 
     // Game event handlers (called by GameEngine)

@@ -93,8 +93,6 @@ struct GameModeButton: View {
     let mode: GameMode
     let action: () -> Void
 
-    @State private var isPressed = false
-
     var body: some View {
         Button(action: action) {
             VStack(spacing: 8) {
@@ -123,16 +121,15 @@ struct GameModeButton: View {
                     )
             )
         }
-        .scaleEffect(isPressed ? 0.95 : 1.0)
-        .animation(.easeInOut(duration: 0.1), value: isPressed)
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 0)
-                .onChanged { _ in isPressed = true }
-                .onEnded { _ in
-                    isPressed = false
-                    action()
-                }
-        )
+        .buttonStyle(PressableCardButtonStyle())
+    }
+}
+
+private struct PressableCardButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
+            .animation(.easeInOut(duration: 0.12), value: configuration.isPressed)
     }
 }
 

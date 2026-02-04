@@ -1,0 +1,34 @@
+# Fastfile for Breakout+ iOS
+# CLI-based TestFlight deployment
+
+default_platform(:ios)
+
+platform :ios do
+  desc "Build and upload to TestFlight"
+  lane :beta do
+    # Build the app
+    build_app(
+      scheme: "BreakoutPlus",
+      configuration: "Release",
+      export_method: "app-store",
+      output_directory: "./build",
+      clean: true
+    )
+
+    # Upload to TestFlight
+    upload_to_testflight(
+      skip_waiting_for_build_processing: true
+    )
+  end
+
+  desc "Build debug version"
+  lane :build_debug do
+    build_app(
+      scheme: "BreakoutPlus",
+      configuration: "Debug",
+      export_method: "development",
+      output_directory: "./build",
+      clean: true
+    )
+  end
+end

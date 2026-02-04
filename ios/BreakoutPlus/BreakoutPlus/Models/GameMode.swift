@@ -8,7 +8,7 @@
 
 import Foundation
 
-enum GameMode: String, CaseIterable, Identifiable {
+enum GameMode: String, CaseIterable, Identifiable, Codable {
     case classic, timed, endless, god, rush
 
     var id: String { rawValue }
@@ -83,11 +83,11 @@ enum GameMode: String, CaseIterable, Identifiable {
 
     var launchSpeed: Float {
         switch self {
-        case .classic: return 37.0
-        case .timed: return 42.0
-        case .endless: return 39.0
-        case .god: return 33.0
-        case .rush: return 44.0
+        case .classic: return 58.275  // 55.5 * 1.05
+        case .timed: return 66.15     // 63.0 * 1.05
+        case .endless: return 61.425  // 58.5 * 1.05
+        case .god: return 51.975      // 49.5 * 1.05
+        case .rush: return 69.3       // 66.0 * 1.05
         }
     }
 }

@@ -2,9 +2,9 @@
 
 ## Current Status
 
-**Phase 1: Foundation - IN PROGRESS** ✅
+**Playability: Playable (Core Loop + UI)** ✅
 
-Basic iOS architecture established with SwiftUI + SpriteKit integration. Core game engine ported with basic gameplay functionality.
+SwiftUI + SpriteKit implementation with a real game loop, pause/end overlays, multiple modes, brick/powerup variety, and a persistent local scoreboard.
 
 ## What's Built
 
@@ -17,58 +17,91 @@ Basic iOS architecture established with SwiftUI + SpriteKit integration. Core ga
 - **GameMode**: All 5 modes (Classic, Timed, Endless, God, Rush)
 - **BrickType**: 9 brick types with behaviors
 - **PowerUpType**: 13 powerup types with effects
-- **LevelTheme**: Basic theme system
+- **LevelTheme**: Multiple themes with unique palettes
 
 ### ✅ Core Engine
-- **GameEngine**: Physics, collisions, powerups (90% feature complete)
+- **GameEngine**: Physics, collisions, level progression, powerups, and safe iteration (no mutation-crash traps)
 - **Ball/Brick/Paddle/PowerUp**: Game object models
+- **LevelFactory**: Patterned levels + endless procedural generation
 - **Game Loop**: 60 FPS target with SpriteKit integration
 
 ### ✅ UI Framework
 - **SplashView**: Animated launch screen
 - **MenuView**: Game mode selection with styled buttons
-- **GameView**: SpriteKit game scene with HUD overlay
-- **Settings/Scoreboard/HowTo**: Placeholder views (ready for implementation)
+- **GameView**: SpriteKit game scene with HUD + Pause/Resume + Fire button (Laser)
+- **Overlays**: Pause, level complete, and game over
+- **Settings**: Real toggles (stored via AppStorage/UserDefaults)
+- **Scoreboard**: Persistent local highscores (UserDefaults + Codable)
+- **How-To**: In-app guide
 
 ## Build & Run
 
 ### Prerequisites
 - Xcode 15+
-- iOS 15+ device/simulator
+- iOS simulator/device supported by your Xcode install
 - Swift 5.9+
 
-### Setup
-1. Open `BreakoutPlus.xcodeproj` in Xcode
-2. Select iPhone simulator or device
-3. Build and run (Cmd+R)
+### CLI Build (Simulator)
+From repo root:
+```bash
+xcodebuild -project ios/BreakoutPlus/BreakoutPlus.xcodeproj \
+  -scheme BreakoutPlus -configuration Debug \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.2' build
+```
+
+### CLI Install + Launch (Booted Simulator)
+```bash
+OUT=$(xcodebuild -project ios/BreakoutPlus/BreakoutPlus.xcodeproj -scheme BreakoutPlus -configuration Debug \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.2' -showBuildSettings)
+
+TARGET_BUILD_DIR=$(printf "%s" "$OUT" | rg -m1 '^\\s*TARGET_BUILD_DIR\\s*=\\s*(.*)$' -r '$1')
+WRAPPER_NAME=$(printf "%s" "$OUT" | rg -m1 '^\\s*WRAPPER_NAME\\s*=\\s*(.*)$' -r '$1')
+BUNDLE_ID=$(printf "%s" "$OUT" | rg -m1 '^\\s*PRODUCT_BUNDLE_IDENTIFIER\\s*=\\s*(.*)$' -r '$1')
+
+xcrun simctl bootstatus booted -b || true
+xcrun simctl install booted "$TARGET_BUILD_DIR/$WRAPPER_NAME"
+xcrun simctl launch booted "$BUNDLE_ID"
+```
+
+### CLI-Only TestFlight Deployment
+For Cursor-only development without Xcode GUI:
+
+#### Prerequisites
+- Apple Developer Program membership ($99/year)
+- App Store Connect API key
+
+#### Automated CLI Workflow
+```bash
+cd ios/BreakoutPlus
+
+# 1. Setup API key (run once)
+./setup_testflight_api.sh
+
+# 2. Build release IPA
+./build_testflight.sh
+
+# 3. Upload to TestFlight
+./upload_testflight.sh
+```
+
+#### Manual Upload Alternative
+1. Run `./build_testflight.sh` to create IPA
+2. Go to https://appstoreconnect.apple.com/
+3. Navigate to Breakout+ → TestFlight
+4. Upload the generated IPA file
 
 ### Current Gameplay Features
 - ✅ Ball physics and paddle control
 - ✅ Brick destruction and scoring
-- ✅ Basic level generation (8x8 grid)
-- ✅ Powerup spawning and collection
+- ✅ Patterned levels + endless procedural levels
+- ✅ Powerup spawning and collection (laser/guardrail/shield/etc)
 - ✅ Combo system
-- ✅ Lives and game over logic
+- ✅ Lives, pause, level complete, and game over logic
 
-## Next Steps (Phase 2)
-
-### Immediate Priorities
-- [ ] **Complete Level Generation**: Port LevelFactory for procedural levels
-- [ ] **Advanced Brick Behaviors**: Moving, spawning, phase, boss bricks
-- [ ] **Audio System**: Procedural sound generation
-- [ ] **Visual Polish**: Particle effects, animations, themes
-
-### Medium Term
-- [ ] **Settings Implementation**: Volume controls, preferences
-- [ ] **Scoreboard**: Local high scores with persistence
-- [ ] **How-To Guide**: Interactive tutorial system
-- [ ] **Performance Optimization**: 60+ FPS guarantee
-
-### Future Features
-- [ ] **Game Center**: Leaderboards and achievements
-- [ ] **iPad Support**: Optimized layouts
-- [ ] **Advanced Themes**: All 6 visual themes
-- [ ] **iOS-Specific Features**: Haptic feedback, Siri integration
+## Next Steps (Recommended)
+- **Audio + haptics parity**: match Android feedback (bounce/brick/explosion/powerup + haptics).
+- **Polish parity**: more brick impact FX, nicer transitions, and tighter collision response.
+- **Repo hygiene**: stop tracking SwiftPM build artifacts (`ios/.build/`), keep diffs clean.
 
 ## Architecture Decisions
 
@@ -98,7 +131,9 @@ BreakoutPlus/
 ├── Views/                     # SwiftUI screens
 ├── Core/                      # Game logic
 │   ├── GameEngine.swift       # Main game controller
+│   ├── LevelFactory.swift     # Level generation
 │   └── Models/               # Game objects
+├── Services/                  # Persistence (scoreboard)
 └── Resources/                # Assets (future)
 ```
 
@@ -134,6 +169,5 @@ BreakoutPlus/
 
 This iOS port is developed in parallel with the Android version, maintaining feature parity and cross-platform consistency.
 
-**Status**: Active development - playable MVP achieved
-**Timeline**: Full feature completion in 8-12 weeks
-**Compatibility**: iOS 15+ (iPhone/iPad)
+**Status**: Active development - playable core loop
+**Compatibility**: Simulator + device via Xcode CLI tools

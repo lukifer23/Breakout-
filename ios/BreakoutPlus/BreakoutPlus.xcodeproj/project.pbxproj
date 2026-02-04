@@ -19,6 +19,9 @@
 		1A2B3C4D5E6F7890AB123468 /* Paddle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB123469 /* Paddle.swift */; };
 		1A2B3C4D5E6F7890AB12346A /* PowerUp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB12346B /* PowerUp.swift */; };
 		1A2B3C4D5E6F7890AB12346C /* LevelTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB12346D /* LevelTheme.swift */; };
+			1A2B3C4D5E6F7890AB12349D /* ScoreboardStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB12349C /* ScoreboardStore.swift */; };
+			1A2B3C4D5E6F7890AB12349F /* Beam.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB12349E /* Beam.swift */; };
+			1A2B3C4D5E6F7890AB1234A1 /* LevelFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB1234A0 /* LevelFactory.swift */; };
 		1A2B3C4D5E6F7890AB12346E /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB12346F /* SplashView.swift */; };
 		1A2B3C4D5E6F7890AB123470 /* MenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB123471 /* MenuView.swift */; };
 		1A2B3C4D5E6F7890AB123472 /* GameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB123473 /* GameView.swift */; };
@@ -41,6 +44,9 @@
 		1A2B3C4D5E6F7890AB123469 /* Paddle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Core/Models/Paddle.swift; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F7890AB12346B /* PowerUp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Core/Models/PowerUp.swift; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F7890AB12346D /* LevelTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Core/Models/LevelTheme.swift; sourceTree = SOURCE_ROOT; };
+			1A2B3C4D5E6F7890AB12349C /* ScoreboardStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Services/ScoreboardStore.swift; sourceTree = SOURCE_ROOT; };
+			1A2B3C4D5E6F7890AB12349E /* Beam.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Core/Models/Beam.swift; sourceTree = SOURCE_ROOT; };
+			1A2B3C4D5E6F7890AB1234A0 /* LevelFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Core/LevelFactory.swift; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F7890AB12346F /* SplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Views/SplashView.swift; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F7890AB123471 /* MenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Views/MenuView.swift; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F7890AB123473 /* GameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Views/GameView.swift; sourceTree = SOURCE_ROOT; };
@@ -68,19 +74,20 @@
 			);
 			sourceTree = "<group>";
 		};
-		1A2B3C4D5E6F7890AB12347D /* BreakoutPlus */ = {
-			isa = PBXGroup;
-			children = (
-				1A2B3C4D5E6F7890AB123457 /* BreakoutPlusApp.swift */,
-				1A2B3C4D5E6F7890AB123459 /* ContentView.swift */,
-				1A2B3C4D5E6F7890AB12347F /* ViewModels */,
-				1A2B3C4D5E6F7890AB123480 /* Models */,
-				1A2B3C4D5E6F7890AB123481 /* Core */,
-				1A2B3C4D5E6F7890AB123482 /* Views */,
-			);
-			path = BreakoutPlus;
-			sourceTree = "<group>";
-		};
+			1A2B3C4D5E6F7890AB12347D /* BreakoutPlus */ = {
+				isa = PBXGroup;
+				children = (
+					1A2B3C4D5E6F7890AB123457 /* BreakoutPlusApp.swift */,
+					1A2B3C4D5E6F7890AB123459 /* ContentView.swift */,
+					1A2B3C4D5E6F7890AB12347F /* ViewModels */,
+					1A2B3C4D5E6F7890AB123480 /* Models */,
+					1A2B3C4D5E6F7890AB1234A2 /* Services */,
+					1A2B3C4D5E6F7890AB123481 /* Core */,
+					1A2B3C4D5E6F7890AB123482 /* Views */,
+				);
+				path = BreakoutPlus;
+				sourceTree = "<group>";
+			};
 		1A2B3C4D5E6F7890AB12347E /* Products */ = {
 			isa = PBXGroup;
 			children = (
@@ -97,25 +104,34 @@
 			path = ViewModels;
 			sourceTree = "<group>";
 		};
-		1A2B3C4D5E6F7890AB123480 /* Models */ = {
-			isa = PBXGroup;
-			children = (
-				1A2B3C4D5E6F7890AB12345D /* GameMode.swift */,
-				1A2B3C4D5E6F7890AB12345F /* BrickType.swift */,
-				1A2B3C4D5E6F7890AB123461 /* PowerUpType.swift */,
-			);
-			path = Models;
-			sourceTree = "<group>";
-		};
-		1A2B3C4D5E6F7890AB123481 /* Core */ = {
-			isa = PBXGroup;
-			children = (
-				1A2B3C4D5E6F7890AB123463 /* GameEngine.swift */,
-				1A2B3C4D5E6F7890AB123483 /* Models */,
-			);
-			path = Core;
-			sourceTree = "<group>";
-		};
+			1A2B3C4D5E6F7890AB123480 /* Models */ = {
+				isa = PBXGroup;
+				children = (
+					1A2B3C4D5E6F7890AB12345D /* GameMode.swift */,
+					1A2B3C4D5E6F7890AB12345F /* BrickType.swift */,
+					1A2B3C4D5E6F7890AB123461 /* PowerUpType.swift */,
+				);
+				path = Models;
+				sourceTree = "<group>";
+			};
+			1A2B3C4D5E6F7890AB1234A2 /* Services */ = {
+				isa = PBXGroup;
+				children = (
+					1A2B3C4D5E6F7890AB12349C /* ScoreboardStore.swift */,
+				);
+				path = Services;
+				sourceTree = "<group>";
+			};
+			1A2B3C4D5E6F7890AB123481 /* Core */ = {
+				isa = PBXGroup;
+				children = (
+					1A2B3C4D5E6F7890AB123463 /* GameEngine.swift */,
+					1A2B3C4D5E6F7890AB1234A0 /* LevelFactory.swift */,
+					1A2B3C4D5E6F7890AB123483 /* Models */,
+				);
+				path = Core;
+				sourceTree = "<group>";
+			};
 		1A2B3C4D5E6F7890AB123482 /* Views */ = {
 			isa = PBXGroup;
 			children = (
@@ -129,18 +145,19 @@
 			path = Views;
 			sourceTree = "<group>";
 		};
-		1A2B3C4D5E6F7890AB123483 /* Models */ = {
-			isa = PBXGroup;
-			children = (
-				1A2B3C4D5E6F7890AB123465 /* Ball.swift */,
-				1A2B3C4D5E6F7890AB123467 /* Brick.swift */,
-				1A2B3C4D5E6F7890AB123469 /* Paddle.swift */,
-				1A2B3C4D5E6F7890AB12346B /* PowerUp.swift */,
-				1A2B3C4D5E6F7890AB12346D /* LevelTheme.swift */,
-			);
-			path = Models;
-			sourceTree = "<group>";
-		};
+			1A2B3C4D5E6F7890AB123483 /* Models */ = {
+				isa = PBXGroup;
+				children = (
+					1A2B3C4D5E6F7890AB123465 /* Ball.swift */,
+					1A2B3C4D5E6F7890AB123467 /* Brick.swift */,
+					1A2B3C4D5E6F7890AB123469 /* Paddle.swift */,
+					1A2B3C4D5E6F7890AB12346B /* PowerUp.swift */,
+					1A2B3C4D5E6F7890AB12346D /* LevelTheme.swift */,
+					1A2B3C4D5E6F7890AB12349E /* Beam.swift */,
+				);
+				path = Models;
+				sourceTree = "<group>";
+			};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -206,10 +223,10 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		1A2B3C4D5E6F7890AB123485 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
+			1A2B3C4D5E6F7890AB123485 /* Sources */ = {
+				isa = PBXSourcesBuildPhase;
+				buildActionMask = 2147483647;
+				files = (
 				1A2B3C4D5E6F7890AB12347A /* BreakoutPlusApp.swift in Sources */,
 				1A2B3C4D5E6F7890AB123458 /* ContentView.swift in Sources */,
 				1A2B3C4D5E6F7890AB12345A /* GameViewModel.swift in Sources */,
@@ -222,9 +239,12 @@
 				1A2B3C4D5E6F7890AB123468 /* Paddle.swift in Sources */,
 				1A2B3C4D5E6F7890AB12346A /* PowerUp.swift in Sources */,
 				1A2B3C4D5E6F7890AB12346C /* LevelTheme.swift in Sources */,
-				1A2B3C4D5E6F7890AB12346E /* SplashView.swift in Sources */,
-				1A2B3C4D5E6F7890AB123470 /* MenuView.swift in Sources */,
-				1A2B3C4D5E6F7890AB123472 /* GameView.swift in Sources */,
+					1A2B3C4D5E6F7890AB12349D /* ScoreboardStore.swift in Sources */,
+					1A2B3C4D5E6F7890AB12349F /* Beam.swift in Sources */,
+					1A2B3C4D5E6F7890AB1234A1 /* LevelFactory.swift in Sources */,
+					1A2B3C4D5E6F7890AB12346E /* SplashView.swift in Sources */,
+					1A2B3C4D5E6F7890AB123470 /* MenuView.swift in Sources */,
+					1A2B3C4D5E6F7890AB123472 /* GameView.swift in Sources */,
 				1A2B3C4D5E6F7890AB123474 /* SettingsView.swift in Sources */,
 				1A2B3C4D5E6F7890AB123476 /* ScoreboardView.swift in Sources */,
 				1A2B3C4D5E6F7890AB123478 /* HowToView.swift in Sources */,

@@ -1,0 +1,14 @@
+# Appfile for Breakout+
+# Configure your app details here
+
+app_identifier("com.breakoutplus.ios") # The bundle identifier of your app
+apple_id("your-apple-id@example.com")   # Your Apple ID
+
+# Team ID (optional, will be auto-detected if not specified)
+# team_id("XXXXXXXXXX")
+
+# Path to your code signing identity (optional)
+# codesigning_identity("iPhone Distribution: Your Name")
+
+# Path to your provisioning profile (optional)
+# provisioning_profile_path("./profiles/profile.mobileprovision")
