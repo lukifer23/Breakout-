@@ -62,6 +62,7 @@ class GameEngine(
     private var touchDownTime = 0L
     private var paddlePositioned = false
     private var screenFlash = 0f
+    private var levelClearFlash = 0f
 
     init {
         logger?.logSessionStart(config.mode)
@@ -116,13 +117,14 @@ class GameEngine(
     fun render(renderer: Renderer2D) {
         renderer.setWorldSize(worldWidth, worldHeight)
         // Enhanced background with subtle gradient and flash effect
-        val bgTop = if (screenFlash > 0f) {
-            adjustColor(theme.background, 1.1f + screenFlash, 1f)
+        val flashIntensity = screenFlash + levelClearFlash * 0.8f
+        val bgTop = if (flashIntensity > 0f) {
+            adjustColor(theme.background, 1.1f + flashIntensity, 1f)
         } else {
             adjustColor(theme.background, 1.1f, 1f)
         }
-        val bgBottom = if (screenFlash > 0f) {
-            adjustColor(theme.background, 0.9f + screenFlash, 1f)
+        val bgBottom = if (flashIntensity > 0f) {
+            adjustColor(theme.background, 0.9f + flashIntensity, 1f)
         } else {
             adjustColor(theme.background, 0.9f, 1f)
         }
@@ -766,7 +768,7 @@ class GameEngine(
 
         val hitPos = (ball.x - paddle.x) / (paddle.width / 2f)
         val angle = hitPos * 1.1f
-        val speed = sqrt(ball.vx * ball.vx + ball.vy * ball.vy).coerceAtLeast(24f)
+        val speed = sqrt(ball.vx * ball.vx + ball.vy * ball.vy).coerceAtLeast(28f)
         ball.vx = speed * angle
         ball.vy = abs(speed * (1.2f - abs(angle)))
         ball.y = paddle.y + paddle.height / 2f + ball.radius
@@ -784,6 +786,23 @@ class GameEngine(
             }
 
             if (destroyed) {
+                // Add particle burst for brick destruction
+                repeat(3) {
+                    val angle = random.nextFloat() * Math.PI.toFloat() * 2f
+                    val speed = random.nextFloat() * 12f + 4f
+                    particles.add(
+                        Particle(
+                            x = brick.centerX,
+                            y = brick.centerY,
+                            vx = kotlin.math.cos(angle) * speed,
+                            vy = kotlin.math.sin(angle) * speed,
+                            radius = 0.4f + random.nextFloat() * 0.2f,
+                            life = 0.4f + random.nextFloat() * 0.2f,
+                            color = brick.currentColor(theme)
+                        )
+                    )
+                }
+
                 // Combo system: consecutive breaks within 2 seconds get multipliers
                 comboTimer = 2f  // Reset combo timer
                 combo += 1
@@ -1015,6 +1034,7 @@ class GameEngine(
         }
         // Update screen flash
         screenFlash = max(0f, screenFlash - dt * 3f)
+        levelClearFlash = max(0f, levelClearFlash - dt * 1.5f)
         updatePowerupStatus()
     }
 
@@ -1136,6 +1156,7 @@ class GameEngine(
         val remaining = bricks.count { it.alive && it.type != BrickType.UNBREAKABLE }
         if (remaining == 0) {
             logger?.logLevelComplete(levelIndex, score, elapsedSeconds, remaining)
+            levelClearFlash = 1.0f
             val summary = GameSummary(score, levelIndex + 1, elapsedSeconds.toInt())
             listener.onLevelComplete(summary)
             state = GameState.PAUSED
@@ -1203,7 +1224,7 @@ class GameEngine(
         audio.haptic(GameHaptic.HEAVY)
         screenFlash = 0.3f
         val radius = 1
-        bricks.filter { it.alive && it.isNeighbor(brick, radius) }.forEach { neighbor ->
+        bricks.filter { it.alive && it.gridX >= 0 && it.gridY >= 0 && it.isNeighbor(brick, radius) }.forEach { neighbor ->
             if (neighbor == brick) return@forEach
             val destroyed = neighbor.applyHit(true)
             if (destroyed) {
@@ -1220,23 +1241,23 @@ class GameEngine(
                 y = brick.centerY,
                 radius = 1f,
                 color = brick.currentColor(theme).copyOf(),
-                life = 0.8f,
-                maxLife = 0.8f,
-                speed = 15f
+                life = 1.2f,
+                maxLife = 1.2f,
+                speed = 18f
             )
         )
 
-        repeat(8) {
+        repeat(14) {
             val angle = random.nextFloat() * Math.PI.toFloat() * 2f
-            val speed = random.nextFloat() * 18f + 8f
+            val speed = random.nextFloat() * 22f + 6f
             particles.add(
                 Particle(
                     x = brick.centerX,
                     y = brick.centerY,
                     vx = kotlin.math.cos(angle) * speed,
                     vy = kotlin.math.sin(angle) * speed,
-                    radius = 0.6f,
-                    life = 0.6f,
+                    radius = 0.5f + random.nextFloat() * 0.3f,
+                    life = 0.7f + random.nextFloat() * 0.3f,
                     color = brick.currentColor(theme)
                 )
             )
@@ -1410,8 +1431,8 @@ data class Brick(
                         alive = false
                         return true
                     } else {
-                        // Boss gets stronger in later phases
-                        hitPoints = maxHitPoints * (phase + 1) / phase
+                        // Boss maintains strength across phases
+                        hitPoints = maxHitPoints
                         hitFlash = 0.8f  // Dramatic flash for boss phase
                         // Could add screen shake or special effects here
                         return false

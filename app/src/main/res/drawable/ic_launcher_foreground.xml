@@ -3,27 +3,42 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+    <!-- Background circle for depth -->
     <path
-        android:fillColor="#111B2E"
-        android:pathData="M14,16 H94 V96 H14 Z" />
+        android:fillColor="#1A1A2E"
+        android:pathData="M54,54 m-48,0 a48,48 0 1,1 96,0 a48,48 0 1,1 -96,0" />
+
+    <!-- Bricks row -->
     <path
-        android:fillColor="#1B2A45"
-        android:pathData="M20,22 H88 V90 H20 Z" />
+        android:fillColor="#FF6B6B"
+        android:pathData="M20,25 L88,25 L88,35 L20,35 Z" />
     <path
-        android:fillColor="#00000000"
-        android:strokeColor="#31E1F7"
-        android:strokeWidth="6"
-        android:pathData="M54,20 A34,34 0 1,1 53.99,20 Z" />
+        android:fillColor="#4ECDC4"
+        android:pathData="M20,40 L88,40 L88,50 L20,50 Z" />
+
+    <!-- Paddle -->
     <path
-        android:fillColor="#FF4FD8"
-        android:pathData="M78,30 A7,7 0 1,0 78,44 A7,7 0 1,0 78,30 Z" />
+        android:fillColor="#FFE66D"
+        android:pathData="M42,75 L66,75 L66,82 L42,82 Z" />
+
+    <!-- Ball with motion trail -->
     <path
-        android:fillColor="#31E1F7"
-        android:pathData="M52,44 H56 V66 H52 Z" />
+        android:fillColor="#A8E6CF"
+        android:pathData="M32,60 L38,60 L38,66 L32,66 Z" />
     <path
-        android:fillColor="#31E1F7"
-        android:pathData="M44,52 H64 V56 H44 Z" />
+        android:fillColor="#A8E6CF"
+        android:fillAlpha="0.6"
+        android:pathData="M26,54 L32,54 L32,60 L26,60 Z" />
     <path
-        android:fillColor="#FFC857"
-        android:pathData="M24,74 H84 V82 H24 Z" />
+        android:fillColor="#A8E6CF"
+        android:fillAlpha="0.3"
+        android:pathData="M20,48 L26,48 L26,54 L20,54 Z" />
+
+    <!-- Plus symbol -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M50,15 L58,15 L58,23 L50,23 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M53,12 L55,12 L55,26 L53,26 Z" />
 </vector>

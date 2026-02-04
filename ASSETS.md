@@ -13,11 +13,12 @@
   - `music_loop.wav`
 
 ## Icon
-- Adaptive icon built from vector layers in:
-  - `app/src/main/res/drawable/ic_launcher_foreground.xml`
-  - `app/src/main/res/drawable/ic_launcher_background.xml`
-  - `app/src/main/res/mipmap-anydpi-v26/`
-- Variant foregrounds available:
+- Modern adaptive icon with brickbreaker game elements (bricks, paddle, ball with motion trail, "Breakout+" symbol)
+- Built from vector layers in:
+  - `app/src/main/res/drawable/ic_launcher_foreground.xml` (main design)
+  - `app/src/main/res/drawable/ic_launcher_background.xml` (dark radial gradient)
+  - Referenced in `app/src/main/res/mipmap-anydpi-v26/`
+- Alternative variant foregrounds available:
   - `app/src/main/res/drawable/ic_launcher_foreground_neon.xml` (orbit ring)
   - `app/src/main/res/drawable/ic_launcher_foreground_fold.xml` (folded hinge)
   - `app/src/main/res/drawable/ic_launcher_foreground_minimal.xml` (minimal plus)

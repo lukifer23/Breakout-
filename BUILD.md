@@ -17,6 +17,12 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 adb shell am start -n com.breakoutplus.debug/com.breakoutplus.SplashActivity
 ```
 
+## iOS Build
+
+```bash
+cd ios/BreakoutPlus && xcodebuild -scheme BreakoutPlus -sdk iphonesimulator -configuration Debug build
+```
+
 ## Regenerate Audio
 ```bash
 python3 tools/generate_sfx.py

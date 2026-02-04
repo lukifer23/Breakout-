@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.animation.AccelerateDecelerateInterpolator
 import androidx.core.view.children
 import com.breakoutplus.databinding.ActivityMainBinding
+import com.breakoutplus.game.GameMode
 
 class MainActivity : FoldAwareActivity() {
     private lateinit var binding: ActivityMainBinding
@@ -16,7 +17,7 @@ class MainActivity : FoldAwareActivity() {
         setFoldAwareRoot(binding.root)
 
         binding.buttonPlay.setOnClickListener {
-            startActivity(Intent(this, GameActivity::class.java))
+            startActivity(Intent(this, GameActivity::class.java).putExtra(GameActivity.EXTRA_MODE, GameMode.CLASSIC.name))
         }
         binding.buttonModes.setOnClickListener {
             startActivity(Intent(this, ModeSelectActivity::class.java))

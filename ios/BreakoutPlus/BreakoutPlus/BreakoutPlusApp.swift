@@ -3,7 +3,7 @@
 //  BreakoutPlus
 //
 //  Created by Breakout+ Team
-//  Port from Android version v1.1.2
+//  Port from Android version v1.0.0
 //
 
 import SwiftUI

@@ -35,7 +35,7 @@
 - Magnet: pulls powerups toward the paddle.
 - Gravity Well: bends ball paths toward center.
 - Ball Splitter: splits balls into more.
-- Freeze: nearly stops time briefly.
+- Freeze: nearly stops time briefly (slow motion - affects physics only).
 - Pierce: balls pass through bricks.
 
 ## Scoring

@@ -1,13 +1,12 @@
 # Roadmap
 
-## ✅ Completed (v1.0)
+## ✅ Completed (v1.0.0)
 - **Dynamic Brick Behaviors**: Moving bricks, spawning bricks, phase bricks, boss bricks
 - **Enhanced Touch Controls**: Improved paddle positioning and ball launch
 - **Visual Polish**: Micro-animations, unified UI, foldable optimizations
 - **Advanced Audio**: Screen flash, haptic feedback, explosion waves
 - **UI/UX Improvements**: Expandable How-To, first-run tooltips, level transitions
-
-## ✅ Completed - Full Feature Set (v1.1.2)
+- **Complete Feature Set**: All 9 brick types, 13 powerups, 5 game modes, 6 themes
 - **Gameplay Balance**: Mode-specific physics (Rush 50% faster, Timed 30% faster), balanced powerup frequency, optimized sizing
 - **Audio System**: Individual volume controls (Master/Effects/Music), context-aware brick-specific sounds
 - **Visual Polish**: 6 distinct themes with unique color palettes, 3D bevel effects, animated backgrounds

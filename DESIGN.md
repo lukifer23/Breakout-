@@ -17,7 +17,9 @@
 
 ## Foldable UX
 - `sw600dp` layouts reflow content into two-column layout for the main menu.
-- Hinge-aware padding avoids UI elements being placed under the hinge.
+- `sw720dp` layouts provide larger touch targets and improved readability for 7"+ displays.
+- Hinge-aware padding automatically adjusts spacing to avoid the fold crease on Samsung Galaxy Z Fold series.
+- Z Fold 7 optimized: vertical fold detection adds horizontal padding to keep UI elements clear of the hinge area.
 
 ## Interaction Notes
 - One-handed use supported with left-handed toggle (pause button shifts left).

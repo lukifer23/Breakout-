@@ -116,10 +116,15 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     }
 
     override fun onTimeUpdated(secondsRemaining: Int) {
-        val minutes = secondsRemaining / 60
-        val seconds = secondsRemaining % 60
         runOnUiThread {
-            binding.hudTime.text = "Time ${String.format("%02d:%02d", minutes, seconds)}"
+            if (config.mode.timeLimitSeconds == 0) {
+                binding.hudTime.visibility = android.view.View.GONE
+            } else {
+                binding.hudTime.visibility = android.view.View.VISIBLE
+                val minutes = secondsRemaining / 60
+                val seconds = secondsRemaining % 60
+                binding.hudTime.text = "Time ${String.format("%02d:%02d", minutes, seconds)}"
+            }
         }
     }
 

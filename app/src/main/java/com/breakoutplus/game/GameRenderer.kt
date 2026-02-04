@@ -23,6 +23,7 @@ class GameRenderer(
     private var screenShake = 0f
     private var shakeIntensity = 0f
     private var comboFlash = 0f
+    private var levelClearFlash = 0f
 
     fun triggerScreenShake(intensity: Float = 3f, duration: Float = 0.2f) {
         shakeIntensity = intensity
@@ -31,6 +32,10 @@ class GameRenderer(
 
     fun triggerComboFlash() {
         comboFlash = 0.5f
+    }
+
+    fun triggerLevelClearFlash() {
+        levelClearFlash = 1.0f
     }
 
     override fun onSurfaceCreated(unused: javax.microedition.khronos.opengles.GL10?, config: javax.microedition.khronos.egl.EGLConfig?) {
@@ -65,6 +70,10 @@ class GameRenderer(
         if (comboFlash > 0f) {
             comboFlash -= delta * 2f
             if (comboFlash < 0f) comboFlash = 0f
+        }
+        if (levelClearFlash > 0f) {
+            levelClearFlash -= delta * 1.5f
+            if (levelClearFlash < 0f) levelClearFlash = 0f
         }
 
         if (!paused) {

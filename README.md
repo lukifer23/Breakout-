@@ -2,10 +2,16 @@
 
 A premium brickbreaker game designed specifically for foldable devices like the Samsung Galaxy Z Fold 7, with a native iOS port for cross-platform gaming. Features advanced physics, multiple game modes, dynamic brick behaviors, and comprehensive powerup systems with GPU-accelerated rendering at 60+ FPS.
 
-## Platforms
+## Goals
 
-- **Android**: Production-ready (v1.1.2) with foldable device optimization
-- **iOS**: Playable MVP (v0.1.0) - CLI-buildable, simulator-tested
+**Product Goal**: Deliver Breakout+ as the premier foldable-first brickbreaker for Samsung Galaxy Z Fold 7 and modern Android devices, with a polished cross-platform iOS port. Achieve 60+ FPS gameplay through GPU acceleration, provide a complete feature set (9 brick types, 13 powerups, 5 game modes, 6 visual themes), and maintain full CLI-only development workflow with no external dependencies or placeholders.
+
+**Key Success Criteria**:
+- Smooth 60 FPS gameplay on Z Fold 7 (folded and unfolded)
+- Complete feature parity between Android and iOS implementations
+- Production-ready code with comprehensive documentation
+- CLI-only build and deployment capability
+- No stubs, mocks, or placeholder assets
 
 ## About
 
@@ -34,7 +40,7 @@ Key principles:
 ## Platforms
 
 ### Android: Samsung Galaxy Z Fold 7
-**Status**: Production-ready (v1.1.2)
+**Status**: Production-ready (v1.0.0)
 
 #### Setup Instructions
 1. Enable USB debugging in Developer Options
@@ -183,8 +189,6 @@ adb shell am start -n com.breakoutplus.debug/com.breakoutplus.SplashActivity
 ```bash
 cd ios
 swift build
-```
-adb shell am start -n com.breakoutplus.debug/com.breakoutplus.SplashActivity
 ```
 
 ### Regenerate Audio
