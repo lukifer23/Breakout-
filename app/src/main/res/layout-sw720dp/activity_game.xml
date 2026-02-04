@@ -103,9 +103,16 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
-            android:orientation="horizontal"
+            android:orientation="vertical"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/hudMode">
+
+            <LinearLayout
+                android:id="@+id/hudPowerupChips"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="6dp" />
 
             <TextView
                 android:id="@+id/hudPowerupText"
@@ -117,6 +124,17 @@
                 android:text="Powerups: none"
                 android:textColor="@color/bp_gray"
                 android:textSize="@dimen/bp_caption_text_size" />
+
+            <TextView
+                android:id="@+id/hudFps"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:fontFamily="sans-serif-medium"
+                android:text="FPS: --"
+                android:textColor="@color/bp_cyan"
+                android:textSize="@dimen/bp_caption_text_size"
+                android:visibility="gone" />
         </LinearLayout>
 
         <LinearLayout

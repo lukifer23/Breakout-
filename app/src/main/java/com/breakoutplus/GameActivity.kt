@@ -4,11 +4,14 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.core.graphics.ColorUtils
 import com.breakoutplus.databinding.ActivityGameBinding
 import com.breakoutplus.game.GameConfig
 import com.breakoutplus.game.GameEventListener
 import com.breakoutplus.game.GameMode
 import com.breakoutplus.game.GameSummary
+import com.breakoutplus.game.PowerUpType
+import com.breakoutplus.game.PowerupStatus
 
 class GameActivity : FoldAwareActivity(), GameEventListener {
     private lateinit var binding: ActivityGameBinding
@@ -44,6 +47,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
 
     override fun onResume() {
         super.onResume()
+        refreshSettings()
         binding.gameSurface.onResume()
         if (binding.pauseOverlay.visibility != View.VISIBLE) {
             binding.gameSurface.resumeGame()
@@ -54,6 +58,17 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         binding.gameSurface.pauseGame()
         binding.gameSurface.onPause()
         super.onPause()
+    }
+
+    private fun refreshSettings() {
+        val settings = SettingsManager.load(this)
+        config = GameConfig(config.mode, settings)
+        binding.gameSurface.applySettings(settings)
+        applyHandedness(settings.leftHanded)
+        if (!settings.tipsEnabled) {
+            binding.hudTip.visibility = View.GONE
+            hideTooltip()
+        }
     }
 
     private fun showPause(show: Boolean) {
@@ -140,7 +155,42 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     }
 
     override fun onPowerupStatus(status: String) {
-        runOnUiThread { binding.hudPowerupText.text = status }
+        runOnUiThread {
+            if (binding.hudPowerupChips.visibility != View.VISIBLE) {
+                binding.hudPowerupText.text = status
+                binding.hudPowerupText.visibility = View.VISIBLE
+            }
+        }
+    }
+
+    override fun onPowerupsUpdated(status: List<PowerupStatus>, combo: Int) {
+        runOnUiThread {
+            renderPowerupChips(status)
+            val showCombo = combo >= 2
+            val text = when {
+                status.isEmpty() && showCombo -> "Powerups: none • Combo x$combo"
+                status.isEmpty() -> "Powerups: none"
+                showCombo -> "Combo x$combo"
+                else -> ""
+            }
+            if (text.isNotEmpty()) {
+                binding.hudPowerupText.text = text
+                binding.hudPowerupText.visibility = View.VISIBLE
+            } else {
+                binding.hudPowerupText.visibility = View.GONE
+            }
+        }
+    }
+
+    override fun onFpsUpdate(fps: Int) {
+        runOnUiThread {
+            if (config.settings.showFpsCounter) {
+                binding.hudFps.text = "FPS: $fps"
+                binding.hudFps.visibility = android.view.View.VISIBLE
+            } else {
+                binding.hudFps.visibility = android.view.View.GONE
+            }
+        }
     }
 
     override fun onTip(message: String) {
@@ -160,7 +210,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     override fun onGameOver(summary: GameSummary) {
         runOnUiThread {
             // Check if this is a high score for the mode
-            if (ScoreboardManager.isHighScoreForMode(this, config.mode.displayName, summary.score)) {
+            if (ScoreboardManager.isHighScoreForMode(this, config.mode.displayName, summary.score, summary.durationSeconds)) {
                 // Show name input dialog
                 showNameInputDialog(summary)
             } else {
@@ -260,6 +310,85 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             }
             .start()
     }
+
+    private fun renderPowerupChips(status: List<PowerupStatus>) {
+        val container = binding.hudPowerupChips
+        container.removeAllViews()
+        if (status.isEmpty()) {
+            container.visibility = View.GONE
+            return
+        }
+        container.visibility = View.VISIBLE
+        status.forEach { item ->
+            container.addView(buildPowerupChip(item))
+        }
+    }
+
+    private fun buildPowerupChip(status: PowerupStatus): android.widget.TextView {
+        val chip = android.widget.TextView(this)
+        chip.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12f)
+        chip.setTypeface(android.graphics.Typeface.DEFAULT_BOLD)
+        chip.setSingleLine(true)
+        chip.setPadding(dp(10), dp(6), dp(10), dp(6))
+
+        val label = if (status.type == PowerUpType.SHIELD && status.charges > 0) {
+            "${powerupLabel(status.type)} x${status.charges} ${status.remainingSeconds}s"
+        } else {
+            "${powerupLabel(status.type)} ${status.remainingSeconds}s"
+        }
+        val text = "● $label"
+        val spannable = android.text.SpannableString(text)
+        val color = android.graphics.Color.rgb(
+            (status.type.color[0] * 255).toInt().coerceIn(0, 255),
+            (status.type.color[1] * 255).toInt().coerceIn(0, 255),
+            (status.type.color[2] * 255).toInt().coerceIn(0, 255)
+        )
+        spannable.setSpan(
+            android.text.style.ForegroundColorSpan(color),
+            0,
+            1,
+            android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+        )
+        chip.text = spannable
+        chip.setTextColor(androidx.core.content.ContextCompat.getColor(this, R.color.bp_white))
+
+        val backgroundColor = ColorUtils.setAlphaComponent(color, 46)
+        val strokeColor = ColorUtils.setAlphaComponent(color, 120)
+        val drawable = android.graphics.drawable.GradientDrawable()
+        drawable.cornerRadius = dp(14).toFloat()
+        drawable.setColor(backgroundColor)
+        drawable.setStroke(dp(1), strokeColor)
+        chip.background = drawable
+
+        val params = android.widget.LinearLayout.LayoutParams(
+            android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
+            android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+        )
+        params.marginEnd = dp(8)
+        chip.layoutParams = params
+        return chip
+    }
+
+    private fun powerupLabel(type: PowerUpType): String {
+        return when (type) {
+            PowerUpType.MULTI_BALL -> "MB"
+            PowerUpType.LASER -> "LZR"
+            PowerUpType.GUARDRAIL -> "GRD"
+            PowerUpType.LIFE -> "1UP"
+            PowerUpType.SHIELD -> "SHD"
+            PowerUpType.WIDE_PADDLE -> "WIDE"
+            PowerUpType.SLOW -> "SLOW"
+            PowerUpType.FIREBALL -> "FIRE"
+            PowerUpType.MAGNET -> "MAG"
+            PowerUpType.GRAVITY_WELL -> "GRAV"
+            PowerUpType.BALL_SPLITTER -> "SPLIT"
+            PowerUpType.FREEZE -> "FRZ"
+            PowerUpType.PIERCE -> "PRC"
+        }
+    }
+
+    private fun dp(value: Int): Int =
+        (value * resources.displayMetrics.density).toInt()
 
     companion object {
         const val EXTRA_MODE = "extra_mode"

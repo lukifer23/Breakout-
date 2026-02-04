@@ -19,9 +19,6 @@ class MainActivity : FoldAwareActivity() {
         binding.buttonPlay.setOnClickListener {
             startActivity(Intent(this, ModeSelectActivity::class.java))
         }
-        binding.buttonModes.setOnClickListener {
-            startActivity(Intent(this, ModeSelectActivity::class.java))
-        }
         binding.buttonScoreboard.setOnClickListener {
             startActivity(Intent(this, ScoreboardActivity::class.java))
         }

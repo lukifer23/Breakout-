@@ -16,6 +16,7 @@ object SettingsManager {
     private const val KEY_MUSIC_VOLUME = "music_volume"
     private const val KEY_LOGGING_ENABLED = "logging_enabled"
     private const val KEY_DARK_MODE = "dark_mode"
+    private const val KEY_SHOW_FPS_COUNTER = "show_fps_counter"
 
     data class Settings(
         val soundEnabled: Boolean,
@@ -28,7 +29,8 @@ object SettingsManager {
         val effectsVolume: Float = 0.8f,
         val musicVolume: Float = 0.6f,
         val loggingEnabled: Boolean = false,
-        val darkMode: Boolean = false
+        val darkMode: Boolean = false,
+        val showFpsCounter: Boolean = false
     )
 
     private fun prefs(context: Context): SharedPreferences =
@@ -47,7 +49,8 @@ object SettingsManager {
             effectsVolume = prefs.getFloat(KEY_EFFECTS_VOLUME, 0.8f),
             musicVolume = prefs.getFloat(KEY_MUSIC_VOLUME, 0.6f),
             loggingEnabled = prefs.getBoolean(KEY_LOGGING_ENABLED, false),
-            darkMode = prefs.getBoolean(KEY_DARK_MODE, false)
+            darkMode = prefs.getBoolean(KEY_DARK_MODE, false),
+            showFpsCounter = prefs.getBoolean(KEY_SHOW_FPS_COUNTER, false)
         )
     }
 
@@ -64,6 +67,7 @@ object SettingsManager {
             .putFloat(KEY_MUSIC_VOLUME, settings.musicVolume)
             .putBoolean(KEY_LOGGING_ENABLED, settings.loggingEnabled)
             .putBoolean(KEY_DARK_MODE, settings.darkMode)
+            .putBoolean(KEY_SHOW_FPS_COUNTER, settings.showFpsCounter)
             .apply()
     }
 }

@@ -4,6 +4,7 @@ import android.content.Context
 import android.opengl.GLES20
 import android.opengl.GLSurfaceView
 import android.view.MotionEvent
+import com.breakoutplus.SettingsManager
 
 class GameRenderer(
     private val context: Context,
@@ -18,6 +19,8 @@ class GameRenderer(
     private var lastTimeNs: Long = 0L
     private var paused = false
     private val random = java.util.Random()
+    private var worldWidth = 100f
+    private var worldHeight = 160f
 
     // Enhanced visual effects
     private var screenShake = 0f
@@ -48,6 +51,8 @@ class GameRenderer(
     override fun onSurfaceChanged(unused: javax.microedition.khronos.opengles.GL10?, width: Int, height: Int) {
         GLES20.glViewport(0, 0, width, height)
         renderer2D.setViewport(width, height)
+        worldWidth = 100f
+        worldHeight = worldWidth * (height.toFloat() / width.toFloat())
         engine.onResize(width, height)
     }
 
@@ -93,11 +98,22 @@ class GameRenderer(
 
         engine.render(renderer2D)
 
+        if (comboFlash > 0f) {
+            val alpha = (comboFlash * 0.35f).coerceIn(0f, 0.35f)
+            renderer2D.drawRect(0f, 0f, worldWidth, worldHeight, floatArrayOf(0.9f, 0.98f, 1f, alpha))
+        }
+
+        if (levelClearFlash > 0f) {
+            val alpha = (levelClearFlash * 0.45f).coerceIn(0f, 0.45f)
+            renderer2D.drawRect(0f, 0f, worldWidth, worldHeight, floatArrayOf(1f, 0.85f, 0.35f, alpha))
+        }
+
         // Performance logging
         if (!paused) {
             val frameTime = (System.nanoTime() - frameStart) / 1_000_000f // Convert to milliseconds
             val fps = if (delta > 0f) (1f / delta).toInt() else 0
             logger?.logPerformanceMetric(fps.toFloat(), frameTime, engine.getObjectCount())
+            listener.onFpsUpdate(fps)
         }
     }
 
@@ -132,7 +148,14 @@ class GameRenderer(
 
     fun reset(newConfig: GameConfig) {
         config = newConfig
+        audioManager.updateSettings(newConfig.settings)
         engine = GameEngine(config, listener, audioManager, logger, null, this)
+    }
+
+    fun updateSettings(settings: SettingsManager.Settings) {
+        config = config.copy(settings = settings)
+        engine.updateSettings(settings)
+        audioManager.updateSettings(settings)
     }
 
     fun release() {

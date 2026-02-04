@@ -11,7 +11,9 @@ interface GameEventListener {
     fun onLevelUpdated(level: Int)
     fun onModeUpdated(mode: GameMode)
     fun onPowerupStatus(status: String)
+    fun onPowerupsUpdated(status: List<PowerupStatus>, combo: Int)
     fun onTip(message: String)
+    fun onFpsUpdate(fps: Int)
     fun onGameOver(summary: GameSummary)
     fun onLevelComplete(summary: GameSummary)
 }

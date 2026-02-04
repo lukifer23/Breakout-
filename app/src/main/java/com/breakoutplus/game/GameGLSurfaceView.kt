@@ -29,10 +29,13 @@ class GameGLSurfaceView @JvmOverloads constructor(
 
     fun pauseGame() {
         rendererImpl?.pause()
+        renderMode = RENDERMODE_WHEN_DIRTY
+        requestRender()
     }
 
     fun resumeGame() {
         rendererImpl?.resume()
+        renderMode = RENDERMODE_CONTINUOUSLY
     }
 
     fun restartGame() {
@@ -41,6 +44,10 @@ class GameGLSurfaceView @JvmOverloads constructor(
 
     fun nextLevel() {
         rendererImpl?.nextLevel()
+    }
+
+    fun applySettings(settings: com.breakoutplus.SettingsManager.Settings) {
+        rendererImpl?.updateSettings(settings)
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {

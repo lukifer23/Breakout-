@@ -72,7 +72,7 @@ Breakout+ is a GPU-accelerated brickbreaker built for foldables, tuned for the S
 - Brick variations: Standard, Reinforced, Armored, Explosive, Unbreakable, Moving, Spawning, Phase, Boss.
 - Combo system: Score multipliers (x1.5-5x) for consecutive brick breaks within 2 seconds.
 - Visual themes: 6 distinct themes (Neon, Sunset, Cobalt, Aurora, Forest, Lava) with unique color palettes and animated backgrounds.
-- In-game HUD with score, lives, timer, level, combo indicators, and powerup status with countdown timers.
+- In-game HUD with score, lives, timer, level, combo indicators, and powerup chips with countdown timers.
 - Advanced audio: Individual volume controls (Master/Effects/Music), context-aware sounds per brick type.
 - Enhanced visuals: Unique brick colors per theme, 3D bevel effects, animated powerups, particle systems.
 - Full set of screens: Splash (animated), Title, Mode Select, Settings (volume controls), Scoreboard, How-To (expandable), Game.
@@ -174,6 +174,19 @@ adb devices
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 adb shell am start -n com.breakoutplus.debug/com.breakoutplus.SplashActivity
 ```
+
+#### Release APK (signed)
+Set signing environment variables, then build:
+```bash
+export BP_RELEASE_STORE_FILE="/absolute/path/to/keystore.jks"
+export BP_RELEASE_STORE_PASSWORD="your_store_password"
+export BP_RELEASE_KEY_ALIAS="your_key_alias"
+export BP_RELEASE_KEY_PASSWORD="your_key_password"
+./gradlew assembleRelease
+```
+Output: `app/build/outputs/apk/release/app-release.apk`
+
+If signing variables are not set, the release build will use the debug keystore for local testing.
 
 ### iOS (Xcode)
 

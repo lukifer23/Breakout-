@@ -28,6 +28,7 @@ class SettingsActivity : FoldAwareActivity() {
         binding.seekMusicVolume.progress = (settings.musicVolume * 100).toInt()
         binding.switchLogging.isChecked = settings.loggingEnabled
         binding.switchDarkMode.isChecked = settings.darkMode
+        binding.switchFpsCounter.isChecked = settings.showFpsCounter
 
         val saveSettings = {
             SettingsManager.save(
@@ -43,7 +44,8 @@ class SettingsActivity : FoldAwareActivity() {
                     effectsVolume = binding.seekEffectsVolume.progress / 100f,
                     musicVolume = binding.seekMusicVolume.progress / 100f,
                     loggingEnabled = binding.switchLogging.isChecked,
-                    darkMode = binding.switchDarkMode.isChecked
+                    darkMode = binding.switchDarkMode.isChecked,
+                    showFpsCounter = binding.switchFpsCounter.isChecked
                 )
             )
         }
@@ -60,6 +62,7 @@ class SettingsActivity : FoldAwareActivity() {
                 if (enabled) AppCompatDelegate.MODE_NIGHT_YES else AppCompatDelegate.MODE_NIGHT_NO
             )
         }
+        binding.switchFpsCounter.setOnCheckedChangeListener { _, _ -> saveSettings() }
         binding.seekSensitivity.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 if (fromUser) saveSettings()

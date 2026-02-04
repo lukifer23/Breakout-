@@ -44,23 +44,26 @@ object ScoreboardManager {
     fun getHighScoresForMode(context: Context, mode: String): List<ScoreEntry> {
         return loadScores(context)
             .filter { it.mode == mode }
-            .sortedWith(compareByDescending<ScoreEntry> { it.score }.thenBy { it.durationSeconds })
+            .sortedWith(compareByDescending<ScoreEntry> { it.score }.thenBy { normalizedDuration(it.durationSeconds) })
             .take(10) // Top 10 per mode
     }
 
-    fun isHighScoreForMode(context: Context, mode: String, score: Int): Boolean {
+    fun isHighScoreForMode(context: Context, mode: String, score: Int, durationSeconds: Int): Boolean {
         val highScores = getHighScoresForMode(context, mode)
-        return highScores.isEmpty() || score > highScores.last().score
+        if (highScores.size < 10) return true
+        val worst = highScores.last()
+        return score > worst.score ||
+            (score == worst.score && normalizedDuration(durationSeconds) < normalizedDuration(worst.durationSeconds))
     }
 
     fun addHighScore(context: Context, entry: ScoreEntry): List<ScoreEntry> {
-        if (!isHighScoreForMode(context, entry.mode, entry.score)) {
+        if (!isHighScoreForMode(context, entry.mode, entry.score, entry.durationSeconds)) {
             return getHighScoresForMode(context, entry.mode) // Return existing high scores unchanged
         }
 
         val scores = loadScores(context).toMutableList()
         scores.add(entry)
-        val sorted = scores.sortedWith(compareByDescending<ScoreEntry> { it.score }.thenBy { it.durationSeconds })
+        val sorted = scores.sortedWith(compareByDescending<ScoreEntry> { it.score }.thenBy { normalizedDuration(it.durationSeconds) })
         val trimmed = sorted.take(MAX_SCORES)
         saveScores(context, trimmed)
         return getHighScoresForMode(context, entry.mode)
@@ -84,4 +87,7 @@ object ScoreboardManager {
         }
         prefs(context).edit().putString(KEY_SCORES, json.toString()).apply()
     }
+
+    private fun normalizedDuration(durationSeconds: Int): Int =
+        if (durationSeconds <= 0) Int.MAX_VALUE else durationSeconds
 }

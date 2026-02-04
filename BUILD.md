@@ -10,6 +10,19 @@
 ./gradlew assembleDebug
 ```
 
+## Release Build (Signed)
+Set signing environment variables, then build:
+```bash
+export BP_RELEASE_STORE_FILE="/absolute/path/to/keystore.jks"
+export BP_RELEASE_STORE_PASSWORD="your_store_password"
+export BP_RELEASE_KEY_ALIAS="your_key_alias"
+export BP_RELEASE_KEY_PASSWORD="your_key_password"
+./gradlew assembleRelease
+```
+Output: `app/build/outputs/apk/release/app-release.apk`
+
+If signing variables are not set, the release build will use the debug keystore for local testing.
+
 ## Install to Device
 ```bash
 adb devices

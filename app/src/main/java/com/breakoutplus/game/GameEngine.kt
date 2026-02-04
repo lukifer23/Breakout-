@@ -1,6 +1,7 @@
 package com.breakoutplus.game
 
 import android.view.MotionEvent
+import com.breakoutplus.SettingsManager
 import com.breakoutplus.game.LevelFactory.buildLevel
 import kotlin.math.abs
 import kotlin.math.ceil
@@ -23,6 +24,7 @@ class GameEngine(
     private val renderer: GameRenderer? = null
 ) {
     private val random = Random(System.nanoTime())
+    private var settings: SettingsManager.Settings = config.settings
     private val balls = mutableListOf<Ball>()
     private val bricks = mutableListOf<Brick>()
     private val powerups = mutableListOf<PowerUp>()
@@ -62,10 +64,11 @@ class GameEngine(
 
     private var theme: LevelTheme = LevelThemes.DEFAULT
     private var currentLayout: LevelFactory.LevelLayout? = null
-    private var touchDownTime = 0L
-    private var paddlePositioned = false
     private var screenFlash = 0f
     private var levelClearFlash = 0f
+    private val hitFlashDecayRate = 2.0f
+    private val maxParticles = 240
+    private val maxWaves = 10
 
     init {
         logger?.logSessionStart(config.mode)
@@ -98,7 +101,7 @@ class GameEngine(
         if (state == GameState.PAUSED || state == GameState.GAME_OVER) {
             return
         }
-        updateTimers(delta)
+        updateTimers(dt)
         updatePaddle(delta)
         updateBricks(dt)
         updateEffects(delta)
@@ -443,27 +446,23 @@ class GameEngine(
 
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
-                touchDownTime = System.currentTimeMillis()
-                paddlePositioned = false
                 paddle.targetX = x
             }
             MotionEvent.ACTION_MOVE -> {
                 paddle.targetX = x
-                if (state == GameState.READY) {
-                    paddlePositioned = true
-                }
             }
             MotionEvent.ACTION_UP -> {
-                val touchDuration = System.currentTimeMillis() - touchDownTime
-                if (state == GameState.READY && paddlePositioned) {
-                    // Launch ball on release only if paddle was moved (reduces accidental launches)
+                if (state == GameState.READY) {
+                    // Launch on tap/release for intuitive starts.
                     launchBall()
                     state = GameState.RUNNING
                     listener.onTip("Tap with two fingers to fire when laser is active")
                 }
             }
         }
-        if (event.pointerCount > 1 && activeEffects.containsKey(PowerUpType.LASER)) {
+        if (event.actionMasked == MotionEvent.ACTION_POINTER_DOWN &&
+            activeEffects.containsKey(PowerUpType.LASER)
+        ) {
             shootLaser()
         }
     }
@@ -495,8 +494,6 @@ class GameEngine(
         explosiveTipShown = false
         speedMultiplier = 1f
         activeEffects.clear()
-        touchDownTime = 0L
-        paddlePositioned = false
         balls.clear()
         beams.clear()
         powerups.clear()
@@ -630,10 +627,14 @@ class GameEngine(
         }
     }
 
+    fun updateSettings(newSettings: SettingsManager.Settings) {
+        settings = newSettings
+    }
+
     private fun updatePaddle(dt: Float) {
         val previousX = paddle.x
         val target = paddle.targetX
-        val speed = 60f + config.settings.sensitivity * 140f
+        val speed = 60f + settings.sensitivity * 140f
         val delta = target - paddle.x
         val maxMove = speed * dt
         if (abs(delta) > 0.05f) {
@@ -668,6 +669,9 @@ class GameEngine(
                 else -> {
                     // Static bricks, no movement
                 }
+            }
+            if (brick.hitFlash > 0f) {
+                brick.hitFlash = max(0f, brick.hitFlash - dt * hitFlashDecayRate)
             }
         }
     }
@@ -820,7 +824,9 @@ class GameEngine(
 
             if (destroyed) {
                 // Add particle burst for brick destruction
-                repeat(5) {
+                val available = maxParticles - particles.size
+                val count = min(5, max(0, available))
+                repeat(count) {
                     val angle = random.nextFloat() * Math.PI.toFloat() * 2f
                     val speed = random.nextFloat() * 12f + 4f
                     particles.add(
@@ -928,6 +934,9 @@ class GameEngine(
                 maybeSpawnPowerup(brick)
                 if (brick.type == BrickType.EXPLOSIVE) {
                     triggerExplosion(brick)
+                }
+                if (brick.type == BrickType.SPAWNING) {
+                    spawnChildBricks(brick)
                 }
             }
             listener.onScoreUpdated(score)
@@ -1088,6 +1097,16 @@ class GameEngine(
             ball.vx *= scale
             ball.vy *= scale
         }
+        val minVerticalRatio = 0.22f
+        val minVy = target * minVerticalRatio
+        if (kotlin.math.abs(ball.vy) < minVy) {
+            val signVy = if (ball.vy == 0f) 1f else kotlin.math.sign(ball.vy)
+            val newVy = signVy * minVy
+            val signVx = if (ball.vx == 0f) 1f else kotlin.math.sign(ball.vx)
+            val newVx = kotlin.math.sqrt((target * target - newVy * newVy).coerceAtLeast(0f)) * signVx
+            ball.vy = newVy
+            ball.vx = newVx
+        }
     }
 
     private fun speedBoostSlope(): Float = when (config.mode) {
@@ -1244,7 +1263,9 @@ class GameEngine(
         if (activeEffects.isEmpty()) {
             segments.add("Powerups: none")
         } else {
-            val list = activeEffects.entries.joinToString(" • ") { (type, time) ->
+            val list = activeEffects.entries
+                .sortedBy { it.key.ordinal }
+                .joinToString(" • ") { (type, time) ->
                 if (type == PowerUpType.SHIELD) {
                     "${type.displayName} x$shieldCharges ${time.toInt()}s"
                 } else {
@@ -1261,6 +1282,16 @@ class GameEngine(
             lastPowerupStatus = status
             listener.onPowerupStatus(status)
         }
+        val snapshot = activeEffects.entries
+            .sortedBy { it.key.ordinal }
+            .map { (type, time) ->
+                PowerupStatus(
+                    type = type,
+                    remainingSeconds = time.toInt(),
+                    charges = if (type == PowerUpType.SHIELD) shieldCharges else 0
+                )
+            }
+        listener.onPowerupsUpdated(snapshot, combo)
     }
 
     private fun checkLevelCompletion() {
@@ -1268,6 +1299,7 @@ class GameEngine(
         if (remaining == 0) {
             logger?.logLevelComplete(levelIndex, score, elapsedSeconds, remaining)
             levelClearFlash = 1.0f
+            renderer?.triggerLevelClearFlash()
             val summary = GameSummary(score, levelIndex + 1, elapsedSeconds.toInt())
             listener.onLevelComplete(summary)
             state = GameState.PAUSED
@@ -1348,19 +1380,23 @@ class GameEngine(
         listener.onScoreUpdated(score)
 
         // Add expanding shockwave
-        waves.add(
-            ExplosionWave(
-                x = brick.centerX,
-                y = brick.centerY,
-                radius = 1f,
-                color = brick.currentColor(theme).copyOf(),
-                life = 1.2f,
-                maxLife = 1.2f,
-                speed = 20f
+        if (waves.size < maxWaves) {
+            waves.add(
+                ExplosionWave(
+                    x = brick.centerX,
+                    y = brick.centerY,
+                    radius = 1f,
+                    color = brick.currentColor(theme).copyOf(),
+                    life = 1.2f,
+                    maxLife = 1.2f,
+                    speed = 20f
+                )
             )
-        )
+        }
 
-        repeat(16) {
+        val available = maxParticles - particles.size
+        val count = min(16, max(0, available))
+        repeat(count) {
             val angle = random.nextFloat() * Math.PI.toFloat() * 2f
             val speed = random.nextFloat() * 22f + 6f
             particles.add(
@@ -1427,7 +1463,9 @@ class GameEngine(
     }
 
     private fun spawnPowerupBurst(power: PowerUp) {
-        repeat(8) { index ->
+        val available = maxParticles - particles.size
+        val count = min(8, max(0, available))
+        repeat(count) { index ->
             val angle = (index / 6f) * (Math.PI.toFloat() * 2f)
             val speed = 14f + random.nextFloat() * 10f
             particles.add(
@@ -1699,7 +1737,6 @@ data class Brick(
         )
 
         if (hitFlash <= 0f) return finalColor
-        hitFlash = max(0f, hitFlash - 0.03f)
         return floatArrayOf(
             min(1f, finalColor[0] + 0.4f),
             min(1f, finalColor[1] + 0.4f),
