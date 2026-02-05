@@ -25,7 +25,7 @@ enum class GameMode(
         godMode = false,
         rush = false,
         invaders = false,
-        launchSpeed = 90f  // 5% reduction for better control
+        launchSpeed = 76.5f  // 15% reduction for better control
     ),
     TIMED(
         displayName = "Timed Challenge",
@@ -37,7 +37,7 @@ enum class GameMode(
         godMode = false,
         rush = false,
         invaders = false,
-        launchSpeed = 108f  // Fast for timed challenge
+        launchSpeed = 91.8f  // 15% reduction for timed challenge
     ),
     ENDLESS(
         displayName = "Endless",
@@ -49,7 +49,7 @@ enum class GameMode(
         godMode = false,
         rush = false,
         invaders = false,
-        launchSpeed = 100f  // Balanced for endless
+        launchSpeed = 85f  // 15% reduction for endless
     ),
     GOD(
         displayName = "God Mode",
@@ -61,7 +61,7 @@ enum class GameMode(
         godMode = true,
         rush = false,
         invaders = false,
-        launchSpeed = 85f  // Gentle for practice
+        launchSpeed = 72.25f  // 15% reduction for practice
     ),
     RUSH(
         displayName = "Level Rush",
@@ -73,7 +73,7 @@ enum class GameMode(
         godMode = false,
         rush = true,
         invaders = false,
-        launchSpeed = 115f  // Very fast for rush mode
+        launchSpeed = 97.75f  // 15% reduction for rush mode
     ),
     INVADERS(
         displayName = "Invaders",
@@ -85,6 +85,6 @@ enum class GameMode(
         godMode = false,
         rush = false,
         invaders = true,
-        launchSpeed = 92f
+        launchSpeed = 78.2f
     );
 }

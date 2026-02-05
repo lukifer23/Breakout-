@@ -90,6 +90,7 @@ class GameEngine(
     private var brickSpacing = 0.42f
     private var layoutRowBoost = 0
     private var layoutColBoost = 0
+    private var invaderScale = 1f
     private var screenFlash = 0f
     private var levelClearFlash = 0f
     private val hitFlashDecayRate = 2.0f
@@ -221,6 +222,20 @@ class GameEngine(
                     val alpha = (kotlin.math.sin(time * 1.5f + i) * 0.5f + 0.5f) * 0.15f
                     renderer.drawRect(0f, waveY, worldWidth, 2f,
                                     floatArrayOf(0.3f, 0.8f, 0.5f, alpha))
+                }
+            }
+            "Invaders" -> {
+                // Starfield background
+                for (i in 0 until 36) {
+                    val seed = i * 37 + 13
+                    val rx = kotlin.math.sin(time * 0.08f + seed) * 0.5f + 0.5f
+                    val ry = kotlin.math.cos(time * 0.07f + seed * 1.7f) * 0.5f + 0.5f
+                    val x = rx * worldWidth
+                    val y = ry * worldHeight
+                    val twinkle = (kotlin.math.sin(time * 2.2f + seed) * 0.5f + 0.5f)
+                    val alpha = 0.12f + twinkle * 0.25f
+                    val size = 0.3f + twinkle * 0.4f
+                    renderer.drawCircle(x, y, size, floatArrayOf(0.6f, 0.8f, 1f, alpha))
                 }
             }
         }
@@ -506,25 +521,67 @@ class GameEngine(
         val y = brick.y
         val w = brick.width
         val h = brick.height
+        val variant = ((brick.gridX * 3 + brick.gridY * 5) % 4 + 4) % 4
+        val tint = when (variant) {
+            0 -> 1.0f
+            1 -> 0.88f
+            2 -> 1.12f
+            else -> 0.96f
+        }
+
         val shadow = adjustColor(baseColor, 0.35f, 0.35f)
         renderer.drawRect(x + w * 0.04f, y + h * 0.04f, w * 0.92f, h * 0.92f, shadow)
 
-        val body = adjustColor(baseColor, 0.95f, 1f)
-        renderer.drawRect(x, y + h * 0.26f, w, h * 0.48f, body)
+        val bodyHeight = when (variant) {
+            0 -> 0.48f
+            1 -> 0.42f
+            2 -> 0.52f
+            else -> 0.46f
+        } * h
+        val bodyY = when (variant) {
+            0 -> 0.26f
+            1 -> 0.3f
+            2 -> 0.22f
+            else -> 0.28f
+        } * h
+        val body = adjustColor(baseColor, 0.95f * tint, 1f)
+        renderer.drawRect(x, y + bodyY, w, bodyHeight, body)
 
-        val wing = adjustColor(baseColor, 1.15f, 1f)
-        renderer.drawRect(x + w * 0.06f, y + h * 0.12f, w * 0.2f, h * 0.28f, wing)
-        renderer.drawRect(x + w * 0.74f, y + h * 0.12f, w * 0.2f, h * 0.28f, wing)
+        val wingColor = adjustColor(baseColor, 1.15f * tint, 1f)
+        val wingHeight = h * if (variant == 2) 0.32f else 0.28f
+        renderer.drawRect(x + w * 0.06f, y + h * 0.12f, w * 0.2f, wingHeight, wingColor)
+        renderer.drawRect(x + w * 0.74f, y + h * 0.12f, w * 0.2f, wingHeight, wingColor)
 
         val cockpit = adjustColor(baseColor, 1.35f, 1f)
-        renderer.drawCircle(x + w * 0.5f, y + h * 0.58f, h * 0.18f, cockpit)
+        val cockpitRadius = h * when (variant) {
+            1 -> 0.15f
+            2 -> 0.2f
+            else -> 0.18f
+        }
+        renderer.drawCircle(x + w * 0.5f, y + h * 0.58f, cockpitRadius, cockpit)
 
-        val engine = adjustColor(baseColor, 1.5f, 0.9f)
+        if (variant == 2) {
+            val light = adjustColor(baseColor, 1.6f, 0.9f)
+            renderer.drawCircle(x + w * 0.38f, y + h * 0.56f, h * 0.08f, light)
+            renderer.drawCircle(x + w * 0.62f, y + h * 0.56f, h * 0.08f, light)
+        }
+
+        val engine = adjustColor(baseColor, 1.5f * tint, 0.9f)
         renderer.drawRect(x + w * 0.22f, y + h * 0.08f, w * 0.12f, h * 0.12f, engine)
         renderer.drawRect(x + w * 0.66f, y + h * 0.08f, w * 0.12f, h * 0.12f, engine)
 
-        val rim = adjustColor(baseColor, 0.7f, 1f)
+        val rim = adjustColor(baseColor, 0.7f * tint, 1f)
         renderer.drawRect(x + w * 0.08f, y + h * 0.7f, w * 0.84f, h * 0.06f, rim)
+
+        if (variant == 1) {
+            val fin = adjustColor(baseColor, 1.25f, 0.9f)
+            renderer.drawRect(x + w * 0.14f, y + h * 0.68f, w * 0.12f, h * 0.08f, fin)
+            renderer.drawRect(x + w * 0.74f, y + h * 0.68f, w * 0.12f, h * 0.08f, fin)
+        }
+        if (variant == 3) {
+            val ridge = adjustColor(baseColor, 1.1f, 0.85f)
+            renderer.drawRect(x + w * 0.46f, y + h * 0.34f, w * 0.08f, h * 0.28f, ridge)
+        }
     }
 
     private fun adjustColor(color: FloatArray, factor: Float, alpha: Float): FloatArray {
@@ -546,6 +603,14 @@ class GameEngine(
         if (!preserveRowBoost) {
             layoutRowBoost = if (isWide) 1 else 0
             layoutColBoost = 0
+        }
+        if (config.mode.invaders) {
+            brickAreaTopRatio = if (isWide) 0.93f else 0.9f
+            brickAreaBottomRatio = if (isWide) 0.68f else 0.66f
+            brickSpacing = if (isWide) 0.7f else 0.62f
+            invaderScale = if (isWide) 0.6f else 0.58f
+        } else {
+            invaderScale = 1f
         }
     }
 
@@ -655,8 +720,8 @@ class GameEngine(
         val difficulty = 1f + levelIndex * 0.08f
         val level = if (config.mode.invaders) {
             invaderDirection = if (random.nextBoolean()) 1f else -1f
-            invaderSpeed = (6f + levelIndex * 0.6f).coerceAtMost(14f)
-            invaderShotCooldown = (1.6f - levelIndex * 0.05f).coerceIn(0.65f, 1.6f)
+            invaderSpeed = (22f + levelIndex * 1.2f).coerceAtMost(30f)
+            invaderShotCooldown = (1.45f - levelIndex * 0.05f).coerceIn(0.6f, 1.45f)
             invaderShotTimer = invaderShotCooldown * (0.6f + random.nextFloat() * 0.8f)
             invaderShieldMax = (100f + levelIndex * 4f).coerceAtMost(130f)
             invaderShield = invaderShieldMax
@@ -702,12 +767,17 @@ class GameEngine(
         val areaTop = worldHeight * brickAreaTopRatio
         val areaBottom = worldHeight * brickAreaBottomRatio
         val areaHeight = areaTop - areaBottom
-        val brickHeight = (areaHeight - spacing * (rows - 1)) / rows
-        val brickWidth = (worldWidth - spacing * (cols + 1)) / cols
+        val baseBrickHeight = (areaHeight - spacing * (rows - 1)) / rows
+        val baseBrickWidth = (worldWidth - spacing * (cols + 1)) / cols
+        val sizeScale = if (config.mode.invaders) invaderScale else 1f
+        val brickHeight = baseBrickHeight * sizeScale
+        val brickWidth = baseBrickWidth * sizeScale
         val colOffset = layoutColBoost / 2
         layout.bricks.forEach { spec ->
-            val x = spacing + (spec.col + colOffset) * (brickWidth + spacing)
-            val y = areaBottom + (rows - 1 - spec.row) * (brickHeight + spacing * 0.5f)
+            val cellX = spacing + (spec.col + colOffset) * (baseBrickWidth + spacing)
+            val cellY = areaBottom + (rows - 1 - spec.row) * (baseBrickHeight + spacing * 0.5f)
+            val x = cellX + (baseBrickWidth - brickWidth) * 0.5f
+            val y = cellY + (baseBrickHeight - brickHeight) * 0.5f
             val brick = Brick(
                 gridX = spec.col,
                 gridY = spec.row,
@@ -742,7 +812,7 @@ class GameEngine(
             bricks.add(brick)
         }
 
-        if (layoutRowBoost > 0) {
+        if (layoutRowBoost > 0 && !config.mode.invaders) {
             val difficulty = 1f + levelIndex * 0.08f
             val baseRow = layout.rows
             repeat(layoutRowBoost) { offset ->
@@ -757,8 +827,10 @@ class GameEngine(
                     }
                     val baseHp = baseHitPoints(type)
                     val hp = if (type == BrickType.UNBREAKABLE) baseHp else max(1, (baseHp * difficulty).roundToInt())
-                    val x = spacing + (col + colOffset) * (brickWidth + spacing)
-                    val y = areaBottom + (rows - 1 - rowIndex) * (brickHeight + spacing * 0.5f)
+                    val cellX = spacing + (col + colOffset) * (baseBrickWidth + spacing)
+                    val cellY = areaBottom + (rows - 1 - rowIndex) * (baseBrickHeight + spacing * 0.5f)
+                    val x = cellX + (baseBrickWidth - brickWidth) * 0.5f
+                    val y = cellY + (baseBrickHeight - brickHeight) * 0.5f
                     bricks.add(
                         Brick(
                             gridX = col,
@@ -786,13 +858,18 @@ class GameEngine(
         val areaTop = worldHeight * brickAreaTopRatio
         val areaBottom = worldHeight * brickAreaBottomRatio
         val areaHeight = areaTop - areaBottom
-        val brickHeight = (areaHeight - spacing * (rows - 1)) / rows
-        val brickWidth = (worldWidth - spacing * (cols + 1)) / cols
+        val baseBrickHeight = (areaHeight - spacing * (rows - 1)) / rows
+        val baseBrickWidth = (worldWidth - spacing * (cols + 1)) / cols
+        val sizeScale = if (config.mode.invaders) invaderScale else 1f
+        val brickHeight = baseBrickHeight * sizeScale
+        val brickWidth = baseBrickWidth * sizeScale
         val colOffset = layoutColBoost / 2
         bricks.forEach { brick ->
             if (brick.gridX < 0 || brick.gridY < 0) return@forEach
-            val x = spacing + (brick.gridX + colOffset) * (brickWidth + spacing)
-            val y = areaBottom + (rows - 1 - brick.gridY) * (brickHeight + spacing * 0.5f)
+            val cellX = spacing + (brick.gridX + colOffset) * (baseBrickWidth + spacing)
+            val cellY = areaBottom + (rows - 1 - brick.gridY) * (baseBrickHeight + spacing * 0.5f)
+            val x = cellX + (baseBrickWidth - brickWidth) * 0.5f
+            val y = cellY + (baseBrickHeight - brickHeight) * 0.5f
             brick.x = x
             brick.y = y
             brick.width = brickWidth
@@ -905,14 +982,27 @@ class GameEngine(
     private fun updateInvaderFormation(dt: Float) {
         val invaders = bricks.filter { it.alive && it.type == BrickType.INVADER }
         if (invaders.isEmpty()) return
-        val leftBound = 0.8f
-        val rightBound = worldWidth - 0.8f
+        val leftBound = 1.5f
+        val rightBound = worldWidth - 1.5f
         val minX = invaders.minOf { it.x }
         val maxX = invaders.maxOf { it.x + it.width }
+        val span = maxX - minX
+        val available = rightBound - leftBound
+        if (span >= available) {
+            val clampShift = leftBound - minX
+            invaders.forEach { it.x += clampShift }
+            return
+        }
+
         var dx = invaderSpeed * invaderDirection * dt
-        if (minX + dx < leftBound || maxX + dx > rightBound) {
-            invaderDirection *= -1f
-            dx = invaderSpeed * invaderDirection * dt
+        if (minX + dx < leftBound) {
+            dx = leftBound - minX
+            invaderDirection = 1f
+            audio.play(GameSound.BRICK_MOVING, 0.25f)
+        } else if (maxX + dx > rightBound) {
+            dx = rightBound - maxX
+            invaderDirection = -1f
+            audio.play(GameSound.BRICK_MOVING, 0.25f)
         }
         invaders.forEach { it.x += dx }
     }
@@ -1367,7 +1457,10 @@ class GameEngine(
         if (!config.mode.invaders) return
         invaderShotTimer -= dt
         if (invaderShotTimer <= 0f) {
-            spawnInvaderShot()
+            val maxShots = 6 + (levelIndex / 2).coerceAtMost(6)
+            if (enemyShots.size < maxShots) {
+                spawnInvaderShot()
+            }
             invaderShotTimer = invaderShotCooldown * (0.7f + random.nextFloat() * 0.7f)
         }
 
@@ -1394,16 +1487,17 @@ class GameEngine(
         val baseSpeed = (28f + levelIndex * 1.2f).coerceAtMost(42f)
         val spread = 6f
         val vx = (random.nextFloat() - 0.5f) * spread
+        val shotColor = adjustColor(origin.currentColor(theme), 1.1f, 1f)
         val shot = EnemyShot(
             x = origin.centerX,
             y = origin.y - origin.height * 0.2f,
             radius = 0.7f,
             vx = vx,
             vy = -baseSpeed,
-            color = floatArrayOf(theme.accent[0], theme.accent[1], theme.accent[2], 1f)
+            color = shotColor
         )
         enemyShots.add(shot)
-        audio.play(GameSound.LASER, 0.25f)
+        audio.play(GameSound.LASER, 0.45f)
     }
 
     private fun handleInvaderShotHit(shot: EnemyShot) {
@@ -1412,7 +1506,8 @@ class GameEngine(
             val damage = (12f + levelIndex * 1.2f).coerceAtMost(22f)
             invaderShield = max(0f, invaderShield - damage)
             listener.onShieldUpdated(invaderShield.toInt(), invaderShieldMax.toInt())
-            audio.play(GameSound.POWERUP, 0.6f)
+            audio.play(GameSound.BOUNCE, 0.65f)
+            audio.haptic(GameHaptic.LIGHT)
             if (invaderShield <= 0f && !invaderShieldAlerted) {
                 invaderShieldAlerted = true
                 listener.onTip("Shield down! Dodge the incoming fire.")
@@ -2224,9 +2319,15 @@ data class Brick(
         // Significant variance for huge color variety between bricks
         val gridSeed = (gridX * 7 + gridY * 11 + type.ordinal * 17) % 100  // Unique seed per brick position and type
         val random = java.util.Random(gridSeed.toLong())
-        val positionVarianceR = (random.nextFloat() - 0.5f) * 0.5f  // ±0.25f variance
-        val positionVarianceG = (random.nextFloat() - 0.5f) * 0.5f  // ±0.25f variance
-        val positionVarianceB = (random.nextFloat() - 0.5f) * 0.5f  // ±0.25f variance
+        var positionVarianceR = (random.nextFloat() - 0.5f) * 0.5f  // ±0.25f variance
+        var positionVarianceG = (random.nextFloat() - 0.5f) * 0.5f  // ±0.25f variance
+        var positionVarianceB = (random.nextFloat() - 0.5f) * 0.5f  // ±0.25f variance
+        if (type == BrickType.INVADER) {
+            val varianceBoost = 1.6f
+            positionVarianceR *= varianceBoost
+            positionVarianceG *= varianceBoost
+            positionVarianceB *= varianceBoost
+        }
 
         // Additional type-based color shifts for even more variety
         val typeShift = when (type) {
@@ -2239,7 +2340,15 @@ data class Brick(
             BrickType.SPAWNING -> floatArrayOf(0.05f, 0f, 0.15f)
             BrickType.PHASE -> floatArrayOf(0.2f, 0.1f, -0.1f)
             BrickType.BOSS -> floatArrayOf(0.3f, -0.2f, -0.2f)
-            BrickType.INVADER -> floatArrayOf(0.1f, 0.15f, 0.25f)
+            BrickType.INVADER -> {
+                val variant = ((gridX + gridY) % 4 + 4) % 4
+                when (variant) {
+                    0 -> floatArrayOf(0.15f, 0.1f, 0.2f)
+                    1 -> floatArrayOf(-0.05f, 0.18f, 0.25f)
+                    2 -> floatArrayOf(0.2f, -0.05f, 0.12f)
+                    else -> floatArrayOf(0.05f, 0.22f, -0.05f)
+                }
+            }
         }
 
         // Strong theme-specific color adjustments for maximum variety

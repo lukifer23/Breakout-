@@ -244,27 +244,28 @@ object LevelFactory {
     }
 
     fun buildInvaderLevel(index: Int, difficulty: Float): LevelLayout {
-        val rows = (5 + (index / 3).coerceAtMost(3)).coerceIn(5, 8)
-        val cols = (11 + (index / 4).coerceAtMost(2)).coerceIn(10, 13)
+        val rows = (4 + (index / 4).coerceAtMost(2)).coerceIn(4, 6)
+        val cols = (9 + (index / 5).coerceAtMost(3)).coerceIn(9, 12)
         val bricks = mutableListOf<BrickSpec>()
         for (row in 0 until rows) {
             for (col in 0 until cols) {
                 val edgeGap = (col == 0 || col == cols - 1) && row == 0
-                val staggerGap = row % 2 == 0 && col % 4 == 0
-                val windowGap = row % 3 == 1 && col % 5 == 0
-                if (edgeGap || staggerGap || windowGap) continue
+                val staggerGap = row % 2 == 0 && col % 3 == 0
+                val windowGap = row % 3 == 1 && col % 4 == 1
+                val roll = kotlin.random.Random(index * 41 + row * 13 + col * 7).nextFloat()
+                val densityGate = roll < (0.22f + row * 0.03f)
+                if (edgeGap || staggerGap || windowGap || densityGate) continue
                 val baseHp = 1
                 val hp = max(1, (baseHp * (1f + index * 0.04f) * difficulty).roundToInt())
                 bricks.add(BrickSpec(col, row, BrickType.INVADER, hp))
             }
         }
 
-        val themes = listOf(LevelThemes.COBALT, LevelThemes.NEON, LevelThemes.AURORA, LevelThemes.LAVA)
         return LevelLayout(
             rows = rows,
             cols = cols,
             bricks = bricks,
-            theme = themes[index % themes.size],
+            theme = LevelThemes.INVADERS,
             tip = "Invaders: dodge enemy fire and protect your shield."
         )
     }
@@ -463,6 +464,25 @@ object LevelThemes {
             BrickType.PHASE to floatArrayOf(1f, 0.7f, 0.1f, 1f),            // Amber
             BrickType.BOSS to floatArrayOf(0.8f, 0f, 0f, 1f),               // Blood red
             BrickType.INVADER to floatArrayOf(1f, 0.5f, 0.9f, 1f)           // Neon pink
+        )
+    )
+
+    val INVADERS = LevelTheme(
+        name = "Invaders",
+        background = floatArrayOf(0.03f, 0.05f, 0.12f, 1f),
+        paddle = floatArrayOf(0.92f, 0.95f, 1f, 1f),
+        accent = floatArrayOf(0.35f, 0.85f, 1f, 1f),
+        brickPalette = mapOf(
+            BrickType.NORMAL to floatArrayOf(0.28f, 0.8f, 1f, 1f),
+            BrickType.REINFORCED to floatArrayOf(0.8f, 0.45f, 1f, 1f),
+            BrickType.ARMORED to floatArrayOf(0.4f, 1f, 0.7f, 1f),
+            BrickType.EXPLOSIVE to floatArrayOf(1f, 0.45f, 0.4f, 1f),
+            BrickType.UNBREAKABLE to floatArrayOf(0.7f, 0.75f, 0.85f, 1f),
+            BrickType.MOVING to floatArrayOf(0.4f, 0.9f, 1f, 1f),
+            BrickType.SPAWNING to floatArrayOf(0.85f, 0.55f, 1f, 1f),
+            BrickType.PHASE to floatArrayOf(1f, 0.85f, 0.4f, 1f),
+            BrickType.BOSS to floatArrayOf(1f, 0.2f, 0.25f, 1f),
+            BrickType.INVADER to floatArrayOf(0.6f, 0.9f, 1f, 1f)
         )
     )
 }
