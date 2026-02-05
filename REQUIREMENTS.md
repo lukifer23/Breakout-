@@ -22,7 +22,7 @@
 - **Game modes**: `GameMode` enum controlling lives, timers, and rules
 
 ### UI/UX Features
-- **Multiple screens**: `SplashActivity`, `MainActivity`, `ModeSelectActivity`, `GameActivity`, `SettingsActivity`, `ScoreboardActivity`, `HowToActivity`
+- **Multiple screens**: `SplashActivity`, `MainActivity`, `ModeSelectActivity`, `GameActivity`, `SettingsActivity`, `ScoreboardActivity`, `HowToActivity`, `DailyChallengesActivity`, `PrivacyActivity`
 - **Scoreboard**: `ScoreboardManager` with JSON persistence in SharedPreferences
 - **Settings**: `SettingsManager` with toggles for sound/music/vibration/tips/sensitivity/handedness
 - **How-to**: Expandable sections with controls, powerups, brick types, modes

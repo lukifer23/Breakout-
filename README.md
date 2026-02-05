@@ -27,7 +27,7 @@ Breakout+ elevates the classic brickbreaker genre with modern mobile optimizatio
 - **Combo System**: Score multipliers for consecutive brick destruction
 - **6 Visual Themes**: Unique color palettes and animated backgrounds
 - **Audio System**: Procedural sound generation with individual volume controls
-- **Data Logging**: Built-in analytics for debugging and potential AI training
+- **Data Logging**: Built-in analytics for debugging
 - **Foldable Optimization**: Android version optimized for Samsung Galaxy Z Fold 7
 
 Key principles:
@@ -236,7 +236,8 @@ python3 tools/generate_sfx.py
 app/src/main/java/com/breakoutplus
 ├── MainActivity.kt, GameActivity.kt, SettingsActivity.kt
 ├── ScoreboardActivity.kt, ModeSelectActivity.kt, HowToActivity.kt
-├── FoldAwareActivity.kt, SettingsManager.kt, ScoreboardManager.kt
+├── DailyChallengesActivity.kt, PrivacyActivity.kt
+├── FoldAwareActivity.kt, SettingsManager.kt, ScoreboardManager.kt, DailyChallengeStore.kt
 └── game/
     ├── GameGLSurfaceView.kt, GameRenderer.kt, GameEngine.kt
     ├── LevelFactory.kt, Renderer2D.kt, GameAudioManager.kt
@@ -264,6 +265,9 @@ ios/BreakoutPlus/BreakoutPlus/
 - **Testing**: `TESTING.md`
 - **Assets**: `ASSETS.md`
 - **Roadmap**: `ROADMAP.md`
+- **Data Safety**: `DATA_SAFETY.md`
+- **Privacy Policy**: `PRIVACY_POLICY.md`
+- **Release**: `RELEASE_CHECKLIST.md`, `STORE_LISTING.md`
 - **iOS Port**: `ios/README.md`, `ios/ARCHITECTURE.md`, `ios/ROADMAP.md`
 
 ## Icon Variants

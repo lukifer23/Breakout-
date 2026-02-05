@@ -10,7 +10,7 @@
 - Start Classic and Rush modes: break bricks, collect powerups, pause, level complete, game over.
 - Confirm touch controls: drag paddle, launch ball, two-finger laser.
 - Verify HUD: score, lives, time, level, powerup status with combo.
-- Test all screens: mode selection, scoreboard display, settings toggles (sound/music/vibration/tips/left-handed/dark mode), how-to expandable sections.
+- Test all screens: mode selection, scoreboard display, settings toggles (sound/music/vibration/tips/left-handed/dark mode), how-to expandable sections, Daily Challenges, Privacy Policy.
 - Foldable (if device available): test folded and unfolded states, confirm layouts and hinge padding.
 - No placeholders or stub UI elements.
 

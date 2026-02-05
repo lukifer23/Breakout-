@@ -48,6 +48,7 @@ xcodebuild -project ios/BreakoutPlus/BreakoutPlus.xcodeproj \
   -scheme BreakoutPlus -configuration Debug \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.2' build
 ```
+Use your installed simulator name and OS in the destination if different.
 
 Alternative simple build:
 ```bash
@@ -80,7 +81,7 @@ xcrun simctl launch booted "$BUNDLE_ID"
 ```
 
 ### CLI-Only TestFlight Deployment
-For Cursor-only development without Xcode GUI:
+For CLI-only development without Xcode GUI:
 
 #### Prerequisites
 - Apple Developer Program membership ($99/year)

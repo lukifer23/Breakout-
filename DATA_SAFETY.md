@@ -9,7 +9,7 @@ Breakout+ does not collect or transmit user data off-device.
 - Optional gameplay logs (only if “Enable Game Logging” is turned on)
 
 ## Data Sharing
-No data is shared with third parties.
+No data is shared with third parties. Gameplay logs (when enabled) are stored only on device and are never transmitted.
 
 ## Security
 All data remains local on the device. No accounts or network services are required.

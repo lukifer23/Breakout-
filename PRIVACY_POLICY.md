@@ -16,4 +16,4 @@ If game logging is enabled, gameplay events are written to files stored locally 
 Breakout+ does not sell, share, or transmit your data to third parties.
 
 ## Changes
-If this policy changes, the update will be reflected in the app and in the Play Store listing.
+If this policy changes, the update will be reflected in the app and in the Play Store listing. In-app policy text is kept in sync with this document (`app/src/main/res/raw/privacy_policy.txt`).

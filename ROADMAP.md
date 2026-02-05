@@ -15,7 +15,7 @@
 - **Combo System**: x1.5-5x multipliers for consecutive breaks within 2 seconds
 - **Enhanced Visual Effects**: Screen flash, haptic feedback, explosion waves, particle systems
 - **UI/UX**: Animated splash, expandable How-To, volume controls, micro-animations
-- **Data Logging**: Comprehensive game event logging for debugging and AI training
+- **Data Logging**: Comprehensive game event logging for debugging
 
 ## ✅ iOS Port - Playable MVP (v0.1.0)
 - **Cross-Platform Architecture**: SwiftUI + SpriteKit implementation matching Android features
@@ -26,7 +26,7 @@
 
 ## Future Enhancements (Optional)
 - **Achievement System**: Milestones, mode mastery, unlockable cosmetics
-- **Data Logging**: Game state recording for AI training and debugging
+- **Data Logging**: Game state recording for debugging
 - **Advanced Themes**: Seasonal themes, user-customizable color schemes
 - **Network Features**: Leaderboards, cloud sync, challenge modes
 - **Accessibility**: High contrast modes, screen reader support, gesture alternatives

@@ -8,8 +8,9 @@
 - Foldable support: `FoldAwareActivity` adds hinge-aware padding via WindowManager.
 
 ## Main Modules
-- UI Activities: `app/src/main/java/com/breakoutplus/*.kt`
+- UI Activities: `app/src/main/java/com/breakoutplus/*.kt` (includes `DailyChallengesActivity`, `PrivacyActivity`)
 - Game Logic: `app/src/main/java/com/breakoutplus/game/*.kt`
+- Data: `SettingsManager`, `ScoreboardManager`, `DailyChallengeStore`
 - Resources: `app/src/main/res/`
 - Audio generation: `tools/generate_sfx.py`
 
@@ -38,6 +39,7 @@ flowchart TD
     subgraph Data [Data Layer]
         SettingsManager[SettingsManager]
         ScoreboardManager[ScoreboardManager]
+        DailyChallengeStore[DailyChallengeStore]
         LevelFactory[LevelFactory]
     end
 
@@ -57,6 +59,7 @@ flowchart TD
 - `GameMode`: controls base lives, timer, and special rules.
 - `SettingsManager`: persistent settings via SharedPreferences.
 - `ScoreboardManager`: stores top scores (JSON) in SharedPreferences.
+- `DailyChallengeStore`: daily challenge state and progress (local).
 
 ## Rendering Pipeline
 - Orthographic projection in `Renderer2D`.

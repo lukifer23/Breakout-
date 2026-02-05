@@ -17,6 +17,44 @@ Build the Android App Bundle required by Google Play:
 ```
 Output: `app/build/outputs/bundle/release/app-release.aab`
 
+## Play Console Uploads (Service Account)
+Google Play uploads require a service account JSON key (not an API key). Store it outside git and point tools to it.
+
+Store the key outside the repo or use a path referenced only via `GOOGLE_PLAY_JSON`. Example location (do not commit the file):
+
+```
+/path/to/your/service-account.json
+```
+
+The repo `.gitignore` already excludes common key filenames. Do not commit the key file.
+
+## Play Console Uploads (Fastlane)
+Fastlane is configured for Play uploads.
+
+Install dependencies:
+```bash
+bundle install
+```
+
+Optional (override JSON path):
+```bash
+export GOOGLE_PLAY_JSON="/absolute/path/to/service-account.json"
+```
+
+Build + upload to internal track:
+```bash
+bundle exec fastlane android build_and_upload_internal
+```
+
+Upload only (AAB + metadata/screenshots):
+```bash
+bundle exec fastlane android upload_internal
+```
+
+## Store Listing Metadata
+Text metadata used by Fastlane lives in `fastlane/metadata/android/en-US/`.
+Update `title.txt`, `short_description.txt`, `full_description.txt`, and changelogs before uploads.
+
 ## Release Build (Signed)
 Set signing environment variables, then build:
 ```bash
@@ -29,6 +67,19 @@ export BP_RELEASE_KEY_PASSWORD="your_key_password"
 Output: `app/build/outputs/apk/release/app-release.apk`
 
 If signing variables are not set, the release build will use the debug keystore for local testing.
+
+## Google Play API Key (If Required)
+If Play services require an API key, set it via `local.properties` or an environment variable so it never lands in git.
+
+Option A: `local.properties` (recommended)
+```
+GOOGLE_PLAY_API_KEY=your_key_here
+```
+
+Option B: environment variable
+```bash
+export GOOGLE_PLAY_API_KEY="your_key_here"
+```
 
 ## Install to Device
 ```bash
