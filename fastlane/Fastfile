@@ -36,6 +36,10 @@ platform :android do
   desc "Upload metadata/screenshots only (no AAB)"
   lane :upload_metadata do
     supply(
+      track: "internal",
+      release_status: "draft",
+      track_promote_release_status: "draft",
+      changes_not_sent_for_review: true,
       version_code: (ENV["BP_VERSION_CODE"] || "3").to_i,
       skip_upload_apk: true,
       skip_upload_aab: true,

@@ -1,0 +1,4 @@
+Breakout+ 1.0.4
+- Invaders mode tuning: smaller ships, tighter formation, improved movement
+- New Invaders visual theme and ship variants
+- Ball speed reduction for better control
