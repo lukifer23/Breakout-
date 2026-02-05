@@ -1,0 +1,24 @@
+Breakout+ is a fast, modern brick-breaker built for smooth 60+ FPS play and big screens. Smash through themed levels, chain combos, and stack powerups while the neon HUD keeps you locked in.
+
+Modes:
+- Classic: clear every level with steady difficulty ramps.
+- Timed: race the clock for the highest score.
+- Endless: survive as the pace escalates.
+- Rush: higher speeds and aggressive scoring.
+- God Mode: relaxed play with no lives lost.
+
+Powerups:
+- Multi-Ball, Laser, Guardrail, Shield, Wide Paddle
+- Slow Motion, Fireball, Magnet, Gravity Well
+- Ball Splitter, Freeze, Pierce, Extra Life
+
+Brick types:
+- Reinforced, Armored, Explosive, Unbreakable
+- Moving, Spawning, Phase, Boss
+
+Highlights:
+- Daily challenges and combo-based scoring
+- Foldable-friendly layout with high refresh rate support
+- Crisp touch controls, responsive paddle feel, and polished effects
+
+Whether you want a chill run or a high-speed score chase, Breakout+ delivers the classic feel with modern performance and style.

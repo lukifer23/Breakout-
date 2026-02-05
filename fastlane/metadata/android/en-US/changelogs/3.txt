@@ -1,0 +1,5 @@
+- Release-signed bundle for Play internal testing
+- Daily challenges and progress tracking
+- High refresh rate toggle with improved frame pacing
+- Powerup HUD chips and improved status display
+- UI polish across main menu, settings, and gameplay

@@ -26,3 +26,27 @@
 ## Visuals
 - All UI colors defined in `app/src/main/res/values/colors.xml`.
 - Themes and style tokens in `app/src/main/res/values/themes.xml`.
+
+## Play Store Assets
+Store listing assets live under `store_assets/`:
+- Icon: `store_assets/icon/BreakoutPlus-icon-512.png` (512x512 PNG, 32-bit, <= 1024 KB)
+- Feature graphic: `store_assets/feature_graphic/BreakoutPlus-feature-1024x500.png`
+- Screenshots: `store_assets/screenshots/phone/` and `store_assets/screenshots/tablet/`
+
+Use `tools/capture_screenshots.sh` to capture device screenshots via ADB.
+Generate icon + feature graphic with:
+```bash
+python3 -m venv tools/.venv
+tools/.venv/bin/pip install -r tools/requirements.txt
+tools/.venv/bin/python tools/generate_store_assets.py
+```
+
+If the device has multiple displays (foldables), set a display id:
+```bash
+export BP_DISPLAY_ID=0
+tools/capture_screenshots.sh phone
+```
+List display ids with:
+```bash
+adb shell dumpsys SurfaceFlinger --display-id
+```

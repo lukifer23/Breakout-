@@ -1,0 +1,45 @@
+default_platform(:android)
+
+platform :android do
+  desc "Build release AAB"
+  lane :build_release do
+    gradle(
+      task: "bundle",
+      build_type: "Release"
+    )
+  end
+
+  desc "Upload AAB and metadata/screenshots to Play (internal track)"
+  lane :upload_internal do
+    supply(
+      aab: "app/build/outputs/bundle/release/app-release.aab",
+      track: "internal",
+      release_status: "draft",
+      skip_upload_apk: true,
+      skip_upload_aab: false,
+      skip_upload_metadata: false,
+      skip_upload_images: false,
+      skip_upload_screenshots: false
+    )
+  end
+
+  desc "Upload metadata/screenshots only (no AAB)"
+  lane :upload_metadata do
+    supply(
+      track: "internal",
+      release_status: "draft",
+      version_code: (ENV["BP_VERSION_CODE"] || "3").to_i,
+      skip_upload_apk: true,
+      skip_upload_aab: true,
+      skip_upload_metadata: false,
+      skip_upload_images: false,
+      skip_upload_screenshots: false
+    )
+  end
+
+  desc "Build and upload AAB to Play (internal track)"
+  lane :build_and_upload_internal do
+    build_release
+    upload_internal
+  end
+end

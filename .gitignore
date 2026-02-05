@@ -1,11 +1,20 @@
 # Gradle
 .gradle/
 build/
+.bundle/
+vendor/bundle/
+vendor/cache/
+vendor/ruby/
+.venv/
+tools/.venv/
 
 # Android Studio / IntelliJ
 .idea/
 *.iml
 local.properties
+breakoutplus-9e62e783bb10.json
+**/play-service-account*.json
+**/google-play-service-account*.json
 *.hprof
 
 # Keystores

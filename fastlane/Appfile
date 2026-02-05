@@ -1,0 +1,2 @@
+json_key_file(ENV["GOOGLE_PLAY_JSON"] || ENV["PLAY_SERVICE_ACCOUNT_JSON"] || "/Users/admin/Downloads/VSCode/Android Game/breakoutplus-9e62e783bb10.json")
+package_name("com.breakoutplus")
