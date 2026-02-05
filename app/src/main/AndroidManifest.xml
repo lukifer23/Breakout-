@@ -39,6 +39,14 @@
             android:exported="false" />
 
         <activity
+            android:name=".DailyChallengesActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".PrivacyActivity"
+            android:exported="false" />
+
+        <activity
             android:name=".HowToActivity"
             android:exported="false" />
 

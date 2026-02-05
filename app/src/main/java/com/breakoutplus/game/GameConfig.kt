@@ -4,7 +4,8 @@ import com.breakoutplus.SettingsManager
 
 data class GameConfig(
     val mode: GameMode,
-    val settings: SettingsManager.Settings
+    val settings: SettingsManager.Settings,
+    val dailyChallenges: MutableList<DailyChallenge>? = null
 )
 
 data class GameSummary(

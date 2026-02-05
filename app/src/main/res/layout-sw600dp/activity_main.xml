@@ -57,6 +57,15 @@
             android:text="@string/title_play" />
 
         <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonChallenges"
+            style="@style/Widget.BreakoutPlus.Button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/bp_button_gap"
+            android:text="@string/title_daily_challenges"
+            android:backgroundTint="@color/bp_gold" />
+
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/buttonScoreboard"
             style="@style/Widget.BreakoutPlus.Button"
             android:layout_width="match_parent"

@@ -2,6 +2,7 @@
     <string name="app_name">Breakout+</string>
     <string name="title_play">Play</string>
     <string name="title_modes">Modes</string>
+    <string name="title_daily_challenges">Daily Challenges</string>
     <string name="title_scoreboard">Scoreboard</string>
     <string name="title_settings">Settings</string>
     <string name="title_howto">How To Play</string>
@@ -25,6 +26,8 @@
     <string name="label_dark_mode">Dark Mode</string>
     <string name="label_confirm_reset">Reset Scores</string>
     <string name="label_logging">Enable Game Logging</string>
+    <string name="label_high_refresh">High Refresh Rate</string>
+    <string name="label_privacy_policy">Privacy Policy</string>
     <string name="label_section_audio">Audio</string>
     <string name="label_section_controls">Controls</string>
     <string name="label_section_accessibility">Accessibility</string>

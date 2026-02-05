@@ -15,7 +15,7 @@ class GameRenderer(
     private val renderer2D = Renderer2D()
     private val audioManager = GameAudioManager(context, config.settings)
     private val logger = if (config.settings.loggingEnabled) GameLogger(context, true) else null
-    private var engine = GameEngine(config, listener, audioManager, logger, null, this)
+    private var engine = GameEngine(config, listener, audioManager, logger, config.dailyChallenges, this)
     private var lastTimeNs: Long = 0L
     private var paused = false
     private val random = java.util.Random()
@@ -138,7 +138,7 @@ class GameRenderer(
     }
 
     fun restart() {
-        engine = GameEngine(config, listener, audioManager, logger, null, this)
+        engine = GameEngine(config, listener, audioManager, logger, config.dailyChallenges, this)
         lastTimeNs = 0L
     }
 
@@ -149,7 +149,7 @@ class GameRenderer(
     fun reset(newConfig: GameConfig) {
         config = newConfig
         audioManager.updateSettings(newConfig.settings)
-        engine = GameEngine(config, listener, audioManager, logger, null, this)
+        engine = GameEngine(config, listener, audioManager, logger, config.dailyChallenges, this)
     }
 
     fun updateSettings(settings: SettingsManager.Settings) {

@@ -183,12 +183,29 @@
                 android:text="Show FPS Counter"
                 android:textColor="@color/bp_white" />
 
+            <com.google.android.material.switchmaterial.SwitchMaterial
+                android:id="@+id/switchHighRefresh"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="@string/label_high_refresh"
+                android:textColor="@color/bp_white" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonPrivacyPolicy"
+                style="@style/Widget.BreakoutPlus.Button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:text="@string/label_privacy_policy"
+                android:backgroundTint="@color/bp_gray" />
+
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/buttonResetScores"
                 style="@style/Widget.BreakoutPlus.Button"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="10dp"
                 android:text="@string/label_confirm_reset"
                 android:backgroundTint="@color/bp_red" />
         </LinearLayout>

@@ -73,9 +73,11 @@ Breakout+ is a GPU-accelerated brickbreaker built for foldables, tuned for the S
 - Combo system: Score multipliers (x1.5-5x) for consecutive brick breaks within 2 seconds.
 - Visual themes: 6 distinct themes (Neon, Sunset, Cobalt, Aurora, Forest, Lava) with unique color palettes and animated backgrounds.
 - In-game HUD with score, lives, timer, level, combo indicators, and powerup chips with countdown timers.
+- Daily Challenges with tracked progress.
 - Advanced audio: Individual volume controls (Master/Effects/Music), context-aware sounds per brick type.
 - Enhanced visuals: Unique brick colors per theme, 3D bevel effects, animated powerups, particle systems.
 - Full set of screens: Splash (animated), Title, Mode Select, Settings (volume controls), Scoreboard, How-To (expandable), Game.
+- Privacy Policy screen with in-app disclosure.
 - Audio: Android generates SFX/music locally; iOS uses bundled WAV SFX + looping music (still local assets, no placeholders).
 
 ## Features
@@ -187,6 +189,13 @@ export BP_RELEASE_KEY_PASSWORD="your_key_password"
 Output: `app/build/outputs/apk/release/app-release.apk`
 
 If signing variables are not set, the release build will use the debug keystore for local testing.
+
+#### Play Store Bundle (AAB)
+Build the bundle required for Play Store uploads:
+```bash
+./gradlew bundleRelease
+```
+Output: `app/build/outputs/bundle/release/app-release.aab`
 
 ### iOS (Xcode)
 

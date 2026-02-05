@@ -1,0 +1,18 @@
+Breakout+ Privacy Policy
+Effective date: February 5, 2026
+
+Breakout+ is an offline game that stores your settings and scores locally on your device. The app does not require an account, does not include third-party analytics, and does not transmit gameplay data to external servers.
+
+Data stored on device
+- Settings (sound, music, vibration, sensitivity, refresh-rate preference)
+- Scoreboard entries (player name, score, mode, level, duration)
+- Optional gameplay logs (only if "Enable Game Logging" is turned on)
+
+Logging
+If game logging is enabled, the app writes gameplay events to files stored locally on your device. These logs are not uploaded or shared.
+
+Data sharing
+Breakout+ does not sell, share, or transmit your data to third parties.
+
+Changes
+If this policy changes, the update will be reflected in the app and in the Play Store listing.

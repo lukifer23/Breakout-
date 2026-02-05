@@ -3,6 +3,7 @@ package com.breakoutplus
 import android.os.Bundle
 import android.widget.SeekBar
 import androidx.appcompat.app.AppCompatDelegate
+import android.content.Intent
 import com.breakoutplus.databinding.ActivitySettingsBinding
 
 class SettingsActivity : FoldAwareActivity() {
@@ -29,6 +30,7 @@ class SettingsActivity : FoldAwareActivity() {
         binding.switchLogging.isChecked = settings.loggingEnabled
         binding.switchDarkMode.isChecked = settings.darkMode
         binding.switchFpsCounter.isChecked = settings.showFpsCounter
+        binding.switchHighRefresh.isChecked = settings.highRefreshRate
 
         val saveSettings = {
             SettingsManager.save(
@@ -45,7 +47,8 @@ class SettingsActivity : FoldAwareActivity() {
                     musicVolume = binding.seekMusicVolume.progress / 100f,
                     loggingEnabled = binding.switchLogging.isChecked,
                     darkMode = binding.switchDarkMode.isChecked,
-                    showFpsCounter = binding.switchFpsCounter.isChecked
+                    showFpsCounter = binding.switchFpsCounter.isChecked,
+                    highRefreshRate = binding.switchHighRefresh.isChecked
                 )
             )
         }
@@ -63,6 +66,7 @@ class SettingsActivity : FoldAwareActivity() {
             )
         }
         binding.switchFpsCounter.setOnCheckedChangeListener { _, _ -> saveSettings() }
+        binding.switchHighRefresh.setOnCheckedChangeListener { _, _ -> saveSettings() }
         binding.seekSensitivity.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 if (fromUser) saveSettings()
@@ -108,6 +112,10 @@ class SettingsActivity : FoldAwareActivity() {
                 }
                 .setNegativeButton("Cancel", null)
                 .show()
+        }
+
+        binding.buttonPrivacyPolicy.setOnClickListener {
+            startActivity(Intent(this, PrivacyActivity::class.java))
         }
 
         animateEntry()

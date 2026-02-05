@@ -48,6 +48,7 @@ class GameEngine(
     private var timeRemaining = config.mode.timeLimitSeconds.toFloat()
     private var lastReportedSecond = -1
     private var elapsedSeconds = 0f
+    private var levelStartTime = 0f
     private var combo = 0
     private var comboTimer = 0f
     private var guardrailActive = false
@@ -61,6 +62,7 @@ class GameEngine(
     private var pierceActive = false
     private var explosiveTipShown = false
     private var lastPowerupStatus = ""
+    private var lostLifeThisLevel = false
 
     private var theme: LevelTheme = LevelThemes.DEFAULT
     private var currentLayout: LevelFactory.LevelLayout? = null
@@ -75,7 +77,7 @@ class GameEngine(
         listener.onModeUpdated(config.mode)
         resetLevel(first = true)
         listener.onLivesUpdated(lives)
-        listener.onScoreUpdated(score)
+        reportScore()
         listener.onLevelUpdated(levelIndex + 1)
         listener.onPowerupStatus("Powerups: none")
         lastPowerupStatus = "Powerups: none"
@@ -484,6 +486,7 @@ class GameEngine(
     private fun resetLevel(first: Boolean) {
         state = GameState.READY
         combo = 0
+        lostLifeThisLevel = false
         guardrailActive = false
         shieldCharges = 0
         fireballActive = false
@@ -517,6 +520,7 @@ class GameEngine(
             listener.onTimeUpdated(timeRemaining.toInt())
         }
 
+        levelStartTime = elapsedSeconds
         spawnBall()
         listener.onLevelUpdated(levelIndex + 1)
         listener.onPowerupStatus("Powerups: none")
@@ -823,6 +827,7 @@ class GameEngine(
             }
 
             if (destroyed) {
+                dailyChallenges?.let { DailyChallengeManager.updateChallengeProgress(it, ChallengeType.BRICKS_DESTROYED) }
                 // Add particle burst for brick destruction
                 val available = maxParticles - particles.size
                 val count = min(5, max(0, available))
@@ -902,7 +907,7 @@ class GameEngine(
                 audio.play(GameSound.BOUNCE, 0.5f)
             }
 
-            listener.onScoreUpdated(score)
+            reportScore()
             break
         }
     }
@@ -939,7 +944,7 @@ class GameEngine(
                     spawnChildBricks(brick)
                 }
             }
-            listener.onScoreUpdated(score)
+            reportScore()
             break
         }
     }
@@ -1173,6 +1178,7 @@ class GameEngine(
                     extra
                 }
                 balls.addAll(newBalls.take(2))
+                dailyChallenges?.let { DailyChallengeManager.updateChallengeProgress(it, ChallengeType.MULTI_BALL_ACTIVE) }
             }
             PowerUpType.LASER -> {
                 activeEffects[type] = 12f
@@ -1229,6 +1235,7 @@ class GameEngine(
                     }
                 }
                 balls.addAll(newBalls.take(4)) // Limit to 4 new balls max
+                dailyChallenges?.let { DailyChallengeManager.updateChallengeProgress(it, ChallengeType.MULTI_BALL_ACTIVE) }
             }
             PowerUpType.FREEZE -> {
                 freezeActive = true
@@ -1294,9 +1301,41 @@ class GameEngine(
         listener.onPowerupsUpdated(snapshot, combo)
     }
 
+    private fun reportScore() {
+        updateScoreChallenges()
+        reportScore()
+    }
+
+    private fun updateScoreChallenges() {
+        dailyChallenges?.forEach { challenge ->
+            if (challenge.type == ChallengeType.SCORE_ACHIEVED && !challenge.completed) {
+                if (score > challenge.progress) {
+                    challenge.progress = score
+                }
+                if (challenge.progress >= challenge.targetValue) {
+                    challenge.completed = true
+                    challenge.rewardGranted = true
+                }
+            }
+        }
+    }
+
     private fun checkLevelCompletion() {
         val remaining = bricks.count { it.alive && it.type != BrickType.UNBREAKABLE }
         if (remaining == 0) {
+            val levelDuration = elapsedSeconds - levelStartTime
+            dailyChallenges?.let { challenges ->
+                if (!lostLifeThisLevel) {
+                    DailyChallengeManager.updateChallengeProgress(challenges, ChallengeType.PERFECT_LEVEL)
+                }
+                challenges.forEach { challenge ->
+                    if (challenge.type == ChallengeType.TIME_UNDER_LIMIT && !challenge.completed) {
+                        if (levelDuration <= challenge.targetValue) {
+                            DailyChallengeManager.updateChallengeProgress(challenges, ChallengeType.TIME_UNDER_LIMIT)
+                        }
+                    }
+                }
+            }
             logger?.logLevelComplete(levelIndex, score, elapsedSeconds, remaining)
             levelClearFlash = 1.0f
             renderer?.triggerLevelClearFlash()
@@ -1310,6 +1349,7 @@ class GameEngine(
         // Reset combo on life loss
         combo = 0
         comboTimer = 0f
+        lostLifeThisLevel = true
 
         if (config.mode.godMode) {
             spawnBall()
@@ -1374,10 +1414,11 @@ class GameEngine(
             val destroyed = neighbor.applyHit(true)
             if (destroyed) {
                 score += neighbor.scoreValue
+                dailyChallenges?.let { DailyChallengeManager.updateChallengeProgress(it, ChallengeType.BRICKS_DESTROYED) }
                 maybeSpawnPowerup(neighbor)
             }
         }
-        listener.onScoreUpdated(score)
+        reportScore()
 
         // Add expanding shockwave
         if (waves.size < maxWaves) {

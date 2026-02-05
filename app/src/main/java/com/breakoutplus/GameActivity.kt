@@ -8,6 +8,7 @@ import androidx.core.graphics.ColorUtils
 import android.os.Build
 import android.view.Display
 import android.view.WindowManager
+import com.breakoutplus.DailyChallengeStore
 import com.breakoutplus.databinding.ActivityGameBinding
 import com.breakoutplus.game.GameConfig
 import com.breakoutplus.game.GameEventListener
@@ -29,7 +30,8 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         val modeName = intent.getStringExtra(EXTRA_MODE)
         val mode = runCatching { GameMode.valueOf(modeName ?: "CLASSIC") }.getOrDefault(GameMode.CLASSIC)
         val settings = SettingsManager.load(this)
-        config = GameConfig(mode, settings)
+        val dailyChallenges = DailyChallengeStore.load(this)
+        config = GameConfig(mode, settings, dailyChallenges)
 
         binding.gameSurface.start(config, this)
         applyFrameRatePreference()
@@ -62,12 +64,14 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     override fun onPause() {
         binding.gameSurface.pauseGame()
         binding.gameSurface.onPause()
+        config.dailyChallenges?.let { DailyChallengeStore.save(this, it) }
         super.onPause()
     }
 
     private fun refreshSettings() {
         val settings = SettingsManager.load(this)
-        config = GameConfig(config.mode, settings)
+        val challenges = config.dailyChallenges ?: DailyChallengeStore.load(this)
+        config = GameConfig(config.mode, settings, challenges)
         binding.gameSurface.applySettings(settings)
         applyHandedness(settings.leftHanded)
         if (!settings.tipsEnabled) {
@@ -78,7 +82,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
 
     private fun applyFrameRatePreference() {
         val display = resolveDisplay() ?: return
-        val bestMode = selectBestMode(display)
+        val bestMode = selectBestMode(display, config.settings.highRefreshRate)
         val targetFps = bestMode?.refreshRate ?: display.refreshRate
 
         val params = window.attributes
@@ -100,13 +104,22 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         }
     }
 
-    private fun selectBestMode(display: Display): Display.Mode? {
+    private fun selectBestMode(display: Display, allowHighRefresh: Boolean): Display.Mode? {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return null
         val current = display.mode
         val candidates = display.supportedModes.filter {
             it.physicalWidth == current.physicalWidth && it.physicalHeight == current.physicalHeight
         }
-        return candidates.maxByOrNull { it.refreshRate }
+        return if (allowHighRefresh) {
+            candidates.maxByOrNull { it.refreshRate }
+        } else {
+            val sixty = candidates.filter { it.refreshRate <= 61f }
+            if (sixty.isNotEmpty()) {
+                sixty.maxByOrNull { it.refreshRate }
+            } else {
+                candidates.minByOrNull { it.refreshRate }
+            }
+        }
     }
 
     private fun showPause(show: Boolean) {
@@ -258,6 +271,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
                 binding.buttonEndPrimary.text = getString(R.string.label_restart)
                 showOverlay(binding.endOverlay)
             }
+            config.dailyChallenges?.let { DailyChallengeStore.save(this, it) }
         }
     }
 
@@ -307,6 +321,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             binding.endStats.text = "Score ${summary.score} • Level ${summary.level}"
             binding.buttonEndPrimary.text = getString(R.string.label_next_level)
             showOverlay(binding.endOverlay)
+            config.dailyChallenges?.let { DailyChallengeStore.save(this, it) }
         }
     }
 

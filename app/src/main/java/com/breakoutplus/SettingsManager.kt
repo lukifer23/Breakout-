@@ -17,6 +17,7 @@ object SettingsManager {
     private const val KEY_LOGGING_ENABLED = "logging_enabled"
     private const val KEY_DARK_MODE = "dark_mode"
     private const val KEY_SHOW_FPS_COUNTER = "show_fps_counter"
+    private const val KEY_HIGH_REFRESH = "high_refresh_rate"
 
     data class Settings(
         val soundEnabled: Boolean,
@@ -30,7 +31,8 @@ object SettingsManager {
         val musicVolume: Float = 0.6f,
         val loggingEnabled: Boolean = false,
         val darkMode: Boolean = false,
-        val showFpsCounter: Boolean = false
+        val showFpsCounter: Boolean = false,
+        val highRefreshRate: Boolean = true
     )
 
     private fun prefs(context: Context): SharedPreferences =
@@ -50,7 +52,8 @@ object SettingsManager {
             musicVolume = prefs.getFloat(KEY_MUSIC_VOLUME, 0.6f),
             loggingEnabled = prefs.getBoolean(KEY_LOGGING_ENABLED, false),
             darkMode = prefs.getBoolean(KEY_DARK_MODE, false),
-            showFpsCounter = prefs.getBoolean(KEY_SHOW_FPS_COUNTER, false)
+            showFpsCounter = prefs.getBoolean(KEY_SHOW_FPS_COUNTER, false),
+            highRefreshRate = prefs.getBoolean(KEY_HIGH_REFRESH, true)
         )
     }
 
@@ -68,6 +71,7 @@ object SettingsManager {
             .putBoolean(KEY_LOGGING_ENABLED, settings.loggingEnabled)
             .putBoolean(KEY_DARK_MODE, settings.darkMode)
             .putBoolean(KEY_SHOW_FPS_COUNTER, settings.showFpsCounter)
+            .putBoolean(KEY_HIGH_REFRESH, settings.highRefreshRate)
             .apply()
     }
 }

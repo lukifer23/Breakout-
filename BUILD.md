@@ -10,6 +10,13 @@
 ./gradlew assembleDebug
 ```
 
+## Release Bundle (Play Store)
+Build the Android App Bundle required by Google Play:
+```bash
+./gradlew bundleRelease
+```
+Output: `app/build/outputs/bundle/release/app-release.aab`
+
 ## Release Build (Signed)
 Set signing environment variables, then build:
 ```bash
