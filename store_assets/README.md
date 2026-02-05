@@ -12,4 +12,4 @@ Generated assets:
 - Run `tools/capture_screenshots.sh` to capture device screenshots via ADB.
   - Set `BP_DISPLAY_ID` if multiple displays are detected (foldables).
 
-Recommended filenames are listed in `STORE_LISTING.md`.
+Recommended filenames are listed in `Docs/STORE_LISTING.md`.

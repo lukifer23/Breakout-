@@ -257,17 +257,18 @@ ios/BreakoutPlus/BreakoutPlus/
 ```
 
 ## Docs Index
-- **Requirements**: `REQUIREMENTS.md`
-- **Architecture**: `ARCHITECTURE.md`
-- **Design/UX**: `DESIGN.md`
-- **Gameplay**: `GAMEPLAY.md`
-- **Build/Run**: `BUILD.md`
-- **Testing**: `TESTING.md`
-- **Assets**: `ASSETS.md`
-- **Roadmap**: `ROADMAP.md`
-- **Data Safety**: `DATA_SAFETY.md`
-- **Privacy Policy**: `PRIVACY_POLICY.md`
-- **Release**: `RELEASE_CHECKLIST.md`, `STORE_LISTING.md`
+Project docs live in `Docs/`:
+- **Requirements**: `Docs/REQUIREMENTS.md`
+- **Architecture**: `Docs/ARCHITECTURE.md`
+- **Design/UX**: `Docs/DESIGN.md`
+- **Gameplay**: `Docs/GAMEPLAY.md`
+- **Build/Run**: `Docs/BUILD.md`
+- **Testing**: `Docs/TESTING.md`
+- **Assets**: `Docs/ASSETS.md`
+- **Roadmap**: `Docs/ROADMAP.md`
+- **Data Safety**: `Docs/DATA_SAFETY.md`
+- **Privacy Policy**: `Docs/PRIVACY_POLICY.md`
+- **Release**: `Docs/RELEASE_CHECKLIST.md`, `Docs/STORE_LISTING.md`
 - **iOS Port**: `ios/README.md`, `ios/ARCHITECTURE.md`, `ios/ROADMAP.md`
 
 ## Icon Variants
