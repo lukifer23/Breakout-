@@ -18,12 +18,16 @@ Build the Android App Bundle required by Google Play:
 Output: `app/build/outputs/bundle/release/app-release.aab`
 
 ## Play Console Uploads (Service Account)
-Google Play uploads require a service account JSON key (not an API key). Store it outside git and point tools to it.
+Google Play uploads require a service account JSON key (not an API key). Store it outside git and point tools to it via an environment variable.
 
-Store the key outside the repo or use a path referenced only via `GOOGLE_PLAY_JSON`. Example location (do not commit the file):
+Set one of these environment variables to the absolute path:
+- `GOOGLE_PLAY_JSON` (preferred)
+- `PLAY_SERVICE_ACCOUNT_JSON`
+- `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`
 
-```
-/path/to/your/service-account.json
+Example:
+```bash
+export GOOGLE_PLAY_JSON="/absolute/path/to/service-account.json"
 ```
 
 The repo `.gitignore` already excludes common key filenames. Do not commit the key file.
@@ -36,7 +40,7 @@ Install dependencies:
 bundle install
 ```
 
-Optional (override JSON path):
+Required (set the JSON path):
 ```bash
 export GOOGLE_PLAY_JSON="/absolute/path/to/service-account.json"
 ```

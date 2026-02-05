@@ -8,6 +8,7 @@
 - [ ] App created in Play Console
 - [ ] App signing by Google Play enabled
 - [ ] Service account JSON key stored locally (gitignored) for automated uploads
+- [ ] `GOOGLE_PLAY_JSON` (or equivalent) env var set before Fastlane uploads
 - [ ] Store listing completed (title, short/long description, category, contact email)
 - [ ] App icon uploaded (512x512 PNG, 32-bit, <= 1024 KB)
 - [ ] Feature graphic uploaded (1024x500)

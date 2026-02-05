@@ -47,5 +47,5 @@
     <string name="label_no_scores">No scores yet. Break some bricks!</string>
     <string name="label_powerups">Powerups</string>
     <string name="label_device_hint">Optimized for foldable screens</string>
-    <string name="howto_controls">Drag to move the paddle. Tap or release to launch the ball. When Laser powerup is active, use two-finger tap to fire.</string>
+    <string name="howto_controls">Drag to move the paddle and aim the launch. Release to fire. When Laser powerup is active, use two-finger tap to fire.</string>
 </resources>

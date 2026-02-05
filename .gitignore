@@ -7,6 +7,7 @@ vendor/cache/
 vendor/ruby/
 .venv/
 tools/.venv/
+fastlane/report.xml
 
 # Android Studio / IntelliJ
 .idea/

@@ -1,0 +1,4 @@
+- Added Play Store listing assets and screenshots
+- Release-signed internal testing build (v1.0.3)
+- Daily challenges, powerup HUD, and high refresh rate support
+- UI polish across menus, settings, and gameplay

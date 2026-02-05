@@ -3,6 +3,7 @@ package com.breakoutplus.game
 import android.view.MotionEvent
 import com.breakoutplus.SettingsManager
 import com.breakoutplus.game.LevelFactory.buildLevel
+import java.util.ArrayDeque
 import kotlin.math.abs
 import kotlin.math.ceil
 import kotlin.math.max
@@ -63,6 +64,10 @@ class GameEngine(
     private var explosiveTipShown = false
     private var lastPowerupStatus = ""
     private var lostLifeThisLevel = false
+    private var aimNormalized = 0f
+    private var aimAngle = 0.72f
+    private var aimDirection = 1f
+    private var aimHasInput = false
 
     private var theme: LevelTheme = LevelThemes.DEFAULT
     private var currentLayout: LevelFactory.LevelLayout? = null
@@ -71,6 +76,10 @@ class GameEngine(
     private val hitFlashDecayRate = 2.0f
     private val maxParticles = 240
     private val maxWaves = 10
+    private val trailLife = 0.28f
+    private val maxTrailPoints = 14
+    private val aimMinAngle = 0.35f
+    private val aimMaxAngle = 1.15f
 
     init {
         logger?.logSessionStart(config.mode)
@@ -119,6 +128,7 @@ class GameEngine(
 
         if (state == GameState.RUNNING) {
             updateBalls(dt)
+            updateBallTrails(dt)
             updateBeams(dt)
             updatePowerups(dt)
             updateParticles(dt)
@@ -291,6 +301,10 @@ class GameEngine(
             renderer.drawCircle(particle.x, particle.y, particle.radius, particle.color)
         }
 
+        if (state == GameState.READY || balls.any { it.stuckToPaddle }) {
+            renderAimGuide(renderer)
+        }
+
         if (activeEffects.containsKey(PowerUpType.LASER) || shieldCharges > 0) {
             val glowAlpha = if (activeEffects.containsKey(PowerUpType.LASER)) 0.55f else 0.35f
             val glowColor = floatArrayOf(theme.accent[0], theme.accent[1], theme.accent[2], glowAlpha)
@@ -312,6 +326,14 @@ class GameEngine(
                 pierceActive -> PowerUpType.PIERCE.color
                 else -> theme.accent
             }
+
+            ball.trail.forEach { point ->
+                val lifeRatio = (point.life / point.maxLife).coerceIn(0f, 1f)
+                val alpha = lifeRatio * 0.45f
+                val trailColor = floatArrayOf(glowBase[0], glowBase[1], glowBase[2], alpha)
+                renderer.drawCircle(point.x, point.y, point.radius * lifeRatio, trailColor)
+            }
+
             val glowColor = floatArrayOf(glowBase[0], glowBase[1], glowBase[2], glowStrength)
             renderer.drawCircle(ball.x, ball.y, ball.radius * 1.8f, glowColor)
             renderer.drawCircle(ball.x, ball.y, ball.radius, ball.color)
@@ -411,6 +433,23 @@ class GameEngine(
         }
     }
 
+    private fun renderAimGuide(renderer: Renderer2D) {
+        val ball = balls.firstOrNull() ?: return
+        val dir = if (aimDirection == 0f) 1f else aimDirection
+        val angle = aimAngle.coerceIn(aimMinAngle, aimMaxAngle)
+        val dx = kotlin.math.cos(angle) * dir
+        val dy = kotlin.math.sin(angle)
+        val length = worldHeight * 0.24f
+        val steps = 8
+        for (i in 1..steps) {
+            val t = i.toFloat() / steps.toFloat()
+            val alpha = (0.45f * (1f - t)).coerceIn(0f, 0.45f)
+            val color = floatArrayOf(theme.accent[0], theme.accent[1], theme.accent[2], alpha)
+            val size = 0.35f + (1f - t) * 0.2f
+            renderer.drawCircle(ball.x + dx * length * t, ball.y + dy * length * t, size, color)
+        }
+    }
+
     private fun drawStripe(renderer: Renderer2D, brick: Brick, color: FloatArray, count: Int) {
         if (count <= 0) return
         val stripeHeight = brick.height * 0.12f
@@ -432,6 +471,22 @@ class GameEngine(
 
     fun getObjectCount(): Int = balls.size + bricks.size + powerups.size + beams.size + particles.size + waves.size
 
+    private fun updateAimFromInput(inputX: Float) {
+        val delta = (inputX - paddle.x) / (paddle.width * 0.5f)
+        aimNormalized = delta.coerceIn(-1.2f, 1.2f)
+        if (abs(aimNormalized) > 0.08f) {
+            aimDirection = if (aimNormalized >= 0f) 1f else -1f
+            aimHasInput = true
+        }
+        val strength = abs(aimNormalized).coerceIn(0f, 1f)
+        // Small aim offsets should fire more vertically; larger offsets shallow the angle.
+        aimAngle = aimMaxAngle - (aimMaxAngle - aimMinAngle) * strength
+    }
+
+    private fun resolveAimDirection(): Float {
+        return if (aimDirection == 0f) 1f else aimDirection
+    }
+
     fun handleTouch(event: MotionEvent, viewWidth: Float, viewHeight: Float) {
         if (state == GameState.PAUSED || state == GameState.GAME_OVER) return
         val x = event.x / viewWidth * worldWidth
@@ -449,9 +504,11 @@ class GameEngine(
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 paddle.targetX = x
+                updateAimFromInput(x)
             }
             MotionEvent.ACTION_MOVE -> {
                 paddle.targetX = x
+                updateAimFromInput(x)
             }
             MotionEvent.ACTION_UP -> {
                 if (state == GameState.READY) {
@@ -459,6 +516,8 @@ class GameEngine(
                     launchBall()
                     state = GameState.RUNNING
                     listener.onTip("Tap with two fingers to fire when laser is active")
+                } else if (magnetActive && balls.any { it.stuckToPaddle }) {
+                    releaseStuckBalls()
                 }
             }
         }
@@ -495,6 +554,10 @@ class GameEngine(
         freezeActive = false
         pierceActive = false
         explosiveTipShown = false
+        aimHasInput = false
+        aimNormalized = 0f
+        aimAngle = 0.72f
+        aimDirection = if (random.nextBoolean()) 1f else -1f
         speedMultiplier = 1f
         activeEffects.clear()
         balls.clear()
@@ -686,22 +749,46 @@ class GameEngine(
             ball.y = paddle.y + paddle.height / 2f + ball.radius + 0.5f
             ball.vx = 0f
             ball.vy = 0f
+            ball.trail.clear()
+            ball.trailTimer = 0f
         }
     }
 
     private fun launchBall() {
         balls.firstOrNull()?.let { ball ->
             if (ball.vx == 0f && ball.vy == 0f) {
-                val angle = random.nextFloat() * 0.6f + 0.3f
-                val dir = if (random.nextBoolean()) 1f else -1f
-                val levelBoost = (1f + levelIndex * 0.015f).coerceAtMost(1.35f)
-                val speed = config.mode.launchSpeed * levelBoost
-                ball.vx = speed * kotlin.math.cos(angle) * dir
-                ball.vy = speed * kotlin.math.sin(angle)
+                launchBallWithAim(ball)
+                aimHasInput = false
+                aimNormalized = 0f
                 // Start background music when gameplay begins
                 audio.startMusic()
             }
         }
+    }
+
+    private fun launchBallWithAim(ball: Ball, angleOffset: Float = 0f) {
+        val dir = resolveAimDirection()
+        val levelBoost = (1f + levelIndex * 0.015f).coerceAtMost(1.35f)
+        val speed = config.mode.launchSpeed * levelBoost
+        val jitter = (random.nextFloat() - 0.5f) * 0.04f
+        val angle = (aimAngle + angleOffset + jitter).coerceIn(aimMinAngle, aimMaxAngle)
+        ball.vx = speed * kotlin.math.cos(angle) * dir
+        ball.vy = speed * kotlin.math.sin(angle)
+        ball.stuckToPaddle = false
+    }
+
+    private fun releaseStuckBalls() {
+        val stuck = balls.filter { it.stuckToPaddle }
+        if (stuck.isEmpty()) return
+        val spread = 0.08f
+        val center = (stuck.size - 1) / 2f
+        stuck.forEachIndexed { index, ball ->
+            val offset = (index - center) * spread
+            launchBallWithAim(ball, offset)
+        }
+        aimHasInput = false
+        aimNormalized = 0f
+        audio.startMusic()
     }
 
     private fun spawnBall() {
@@ -719,6 +806,15 @@ class GameEngine(
         val iterator = balls.iterator()
         while (iterator.hasNext()) {
             val ball = iterator.next()
+            if (ball.stuckToPaddle) {
+                val minX = paddle.x - paddle.width / 2f + ball.radius
+                val maxX = paddle.x + paddle.width / 2f - ball.radius
+                ball.x = (paddle.x + ball.stickOffset).coerceIn(minX, maxX)
+                ball.y = paddle.y + paddle.height / 2f + ball.radius + 0.5f
+                ball.vx = 0f
+                ball.vy = 0f
+                continue
+            }
             val speed = sqrt(ball.vx * ball.vx + ball.vy * ball.vy)
             val maxStep = ball.radius * 0.75f
             val steps = max(1, ceil((speed * dt) / maxStep).toInt())
@@ -783,6 +879,44 @@ class GameEngine(
         }
     }
 
+    private fun updateBallTrails(dt: Float) {
+        balls.forEach { ball ->
+            val speed = sqrt(ball.vx * ball.vx + ball.vy * ball.vy)
+            if (speed < 5f) {
+                ball.trail.clear()
+                ball.trailTimer = 0f
+                return@forEach
+            }
+            val interval = (0.024f - speed * 0.0002f).coerceIn(0.012f, 0.03f)
+            ball.trailTimer -= dt
+            if (ball.trailTimer <= 0f) {
+                ball.trailTimer = interval
+                val radius = ball.radius * 0.9f
+                ball.trail.addFirst(
+                    TrailPoint(
+                        x = ball.x,
+                        y = ball.y,
+                        radius = radius,
+                        life = trailLife,
+                        maxLife = trailLife
+                    )
+                )
+                while (ball.trail.size > maxTrailPoints) {
+                    ball.trail.removeLast()
+                }
+            }
+
+            val iterator = ball.trail.iterator()
+            while (iterator.hasNext()) {
+                val point = iterator.next()
+                point.life -= dt
+                if (point.life <= 0f) {
+                    iterator.remove()
+                }
+            }
+        }
+    }
+
     private fun applyGravityWell(ball: Ball, dt: Float) {
         val centerX = worldWidth * 0.5f
         val centerY = worldHeight * 0.62f
@@ -802,6 +936,18 @@ class GameEngine(
         if (ball.x + ball.radius < paddle.x - paddle.width / 2f) return
         if (ball.x - ball.radius > paddle.x + paddle.width / 2f) return
 
+        if (magnetActive) {
+            val maxOffset = paddle.width * 0.4f
+            ball.stuckToPaddle = true
+            ball.stickOffset = (ball.x - paddle.x).coerceIn(-maxOffset, maxOffset)
+            ball.x = paddle.x + ball.stickOffset
+            ball.y = paddle.y + paddle.height / 2f + ball.radius + 0.5f
+            ball.vx = 0f
+            ball.vy = 0f
+            audio.play(GameSound.POWERUP, 0.5f)
+            return
+        }
+
         val hitPos = (ball.x - paddle.x) / (paddle.width / 2f)
         val spin = (paddleVelocity / 180f).coerceIn(-0.35f, 0.35f)
         val angle = (hitPos * 1.1f + spin).coerceIn(-1.15f, 1.15f)
@@ -814,6 +960,7 @@ class GameEngine(
         }
         ball.y = paddle.y + paddle.height / 2f + ball.radius
         audio.play(GameSound.BOUNCE, 0.8f)
+        spawnImpactSparks(ball.x, ball.y + ball.radius, theme.accent, 6, 16f)
     }
 
     private fun handleBrickCollision(ball: Ball) {
@@ -845,6 +992,26 @@ class GameEngine(
                             color = brick.currentColor(theme)
                         )
                     )
+                }
+
+                if (brick.type == BrickType.BOSS) {
+                    screenFlash = 0.4f
+                    renderer?.triggerScreenShake(3.6f, 0.24f)
+                    if (waves.size < maxWaves) {
+                        waves.add(
+                            ExplosionWave(
+                                x = brick.centerX,
+                                y = brick.centerY,
+                                radius = 1.5f,
+                                color = brick.currentColor(theme).copyOf(),
+                                life = 1.6f,
+                                maxLife = 1.6f,
+                                speed = 26f
+                            )
+                        )
+                    }
+                    powerups.add(PowerUp(brick.centerX, brick.centerY, randomPowerupType(), 18f))
+                    listener.onTip("Boss down! Powerup dropped.")
                 }
 
                 // Combo system: consecutive breaks within 2 seconds get multipliers
@@ -907,6 +1074,7 @@ class GameEngine(
                 audio.play(GameSound.BOUNCE, 0.5f)
             }
 
+            spawnImpactSparks(ball.x, ball.y, brick.currentColor(theme), 4, 12f)
             reportScore()
             break
         }
@@ -1057,7 +1225,10 @@ class GameEngine(
                         fireballActive = false
                         ballStyleDirty = true
                     }
-                    PowerUpType.MAGNET -> magnetActive = false
+                    PowerUpType.MAGNET -> {
+                        magnetActive = false
+                        releaseStuckBalls()
+                    }
                     PowerUpType.GRAVITY_WELL -> gravityWellActive = false
                     PowerUpType.FREEZE -> {
                         freezeActive = false
@@ -1303,7 +1474,7 @@ class GameEngine(
 
     private fun reportScore() {
         updateScoreChallenges()
-        reportScore()
+        listener.onScoreUpdated(score)
     }
 
     private fun updateScoreChallenges() {
@@ -1352,6 +1523,7 @@ class GameEngine(
         lostLifeThisLevel = true
 
         if (config.mode.godMode) {
+            aimDirection = if (random.nextBoolean()) 1f else -1f
             spawnBall()
             state = GameState.READY
             return
@@ -1364,6 +1536,7 @@ class GameEngine(
             logger?.logGameOver(score, levelIndex + 1, "lives_depleted")
             triggerGameOver()
         } else {
+            aimDirection = if (random.nextBoolean()) 1f else -1f
             spawnBall()
             state = GameState.READY
         }
@@ -1449,6 +1622,28 @@ class GameEngine(
                     radius = 0.5f + random.nextFloat() * 0.3f,
                     life = 0.7f + random.nextFloat() * 0.3f,
                     color = brick.currentColor(theme)
+                )
+            )
+        }
+    }
+
+    private fun spawnImpactSparks(x: Float, y: Float, baseColor: FloatArray, count: Int, speed: Float) {
+        val available = maxParticles - particles.size
+        val actualCount = min(count, max(0, available))
+        if (actualCount <= 0) return
+        val sparkColor = adjustColor(baseColor, 1.2f, 1f)
+        repeat(actualCount) {
+            val angle = random.nextFloat() * Math.PI.toFloat() * 2f
+            val speedScale = speed * (0.5f + random.nextFloat() * 0.7f)
+            particles.add(
+                Particle(
+                    x = x,
+                    y = y,
+                    vx = kotlin.math.cos(angle) * speedScale,
+                    vy = kotlin.math.sin(angle) * speedScale,
+                    radius = 0.35f + random.nextFloat() * 0.25f,
+                    life = 0.25f + random.nextFloat() * 0.15f,
+                    color = sparkColor
                 )
             )
         }
@@ -1626,9 +1821,13 @@ data class Ball(
     var vx: Float,
     var vy: Float,
     var isFireball: Boolean = false,
-    var color: FloatArray = floatArrayOf(0.97f, 0.97f, 1f, 1f)
+    var color: FloatArray = floatArrayOf(0.97f, 0.97f, 1f, 1f),
+    var stuckToPaddle: Boolean = false,
+    var stickOffset: Float = 0f
 ) {
     val defaultColor: FloatArray = floatArrayOf(0.97f, 0.97f, 1f, 1f)
+    val trail: ArrayDeque<TrailPoint> = ArrayDeque()
+    var trailTimer: Float = 0f
 }
 
 data class Paddle(
@@ -1824,6 +2023,14 @@ data class Beam(
     val height: Float,
     val speed: Float,
     val color: FloatArray
+)
+
+data class TrailPoint(
+    var x: Float,
+    var y: Float,
+    var radius: Float,
+    var life: Float,
+    val maxLife: Float
 )
 
 data class Particle(

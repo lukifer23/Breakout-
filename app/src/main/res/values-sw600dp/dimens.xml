@@ -8,4 +8,8 @@
     <dimen name="bp_body_text_size">18sp</dimen>
     <dimen name="bp_caption_text_size">14sp</dimen>
     <dimen name="bp_small_text_size">16sp</dimen>
+    <dimen name="bp_hud_score_size">20sp</dimen>
+    <dimen name="bp_hud_stat_size">16sp</dimen>
+    <dimen name="bp_hud_mode_size">14sp</dimen>
+    <dimen name="bp_hud_banner_size">24sp</dimen>
 </resources>

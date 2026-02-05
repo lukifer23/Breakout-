@@ -198,7 +198,10 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     }
 
     override fun onLevelUpdated(level: Int) {
-        runOnUiThread { binding.hudLevel.text = "Level $level" }
+        runOnUiThread {
+            binding.hudLevel.text = "Level $level"
+            showLevelBanner(level)
+        }
     }
 
     override fun onModeUpdated(mode: GameMode) {
@@ -347,6 +350,39 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             .start()
     }
 
+    private fun showLevelBanner(level: Int) {
+        val banner = binding.hudLevelBanner
+        banner.text = "Level $level"
+        banner.animate().cancel()
+        banner.visibility = View.VISIBLE
+        banner.alpha = 0f
+        banner.scaleX = 0.92f
+        banner.scaleY = 0.92f
+        banner.animate()
+            .alpha(1f)
+            .scaleX(1f)
+            .scaleY(1f)
+            .setDuration(180)
+            .setInterpolator(android.view.animation.DecelerateInterpolator())
+            .withEndAction {
+                banner.animate()
+                    .alpha(0f)
+                    .scaleX(1.04f)
+                    .scaleY(1.04f)
+                    .setStartDelay(800)
+                    .setDuration(260)
+                    .setInterpolator(android.view.animation.DecelerateInterpolator())
+                    .withEndAction {
+                        banner.visibility = View.GONE
+                        banner.alpha = 1f
+                        banner.scaleX = 1f
+                        banner.scaleY = 1f
+                    }
+                    .start()
+            }
+            .start()
+    }
+
     private fun hideOverlay(view: View) {
         if (view.visibility != View.VISIBLE) return
         view.animate()
@@ -379,10 +415,11 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
 
     private fun buildPowerupChip(status: PowerupStatus): android.widget.TextView {
         val chip = android.widget.TextView(this)
-        chip.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12f)
+        chip.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, resources.getDimension(R.dimen.bp_hud_mode_size))
         chip.setTypeface(android.graphics.Typeface.DEFAULT_BOLD)
         chip.setSingleLine(true)
         chip.setPadding(dp(10), dp(6), dp(10), dp(6))
+        chip.letterSpacing = 0.02f
 
         val label = if (status.type == PowerUpType.SHIELD && status.charges > 0) {
             "${powerupLabel(status.type)} x${status.charges} ${status.remainingSeconds}s"
