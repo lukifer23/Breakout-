@@ -32,7 +32,8 @@ class ModeSelectActivity : FoldAwareActivity() {
             GameMode.TIMED,
             GameMode.ENDLESS,
             GameMode.GOD,
-            GameMode.RUSH
+            GameMode.RUSH,
+            GameMode.INVADERS
         )
         modes.forEachIndexed { index, mode ->
             val cardBinding = ItemModeCardBinding.inflate(inflater, binding.modeList, false)
@@ -45,6 +46,7 @@ class ModeSelectActivity : FoldAwareActivity() {
                 GameMode.ENDLESS -> R.color.bp_green
                 GameMode.GOD -> R.color.bp_magenta
                 GameMode.RUSH -> R.color.bp_red
+                GameMode.INVADERS -> R.color.bp_violet
             }
             val accentColor = ContextCompat.getColor(this, accentRes)
             (cardBinding.root as? MaterialCardView)?.strokeColor = accentColor

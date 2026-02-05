@@ -8,6 +8,7 @@ import kotlin.math.abs
 import kotlin.math.ceil
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.roundToInt
 import kotlin.math.sqrt
 import kotlin.random.Random
 
@@ -30,6 +31,7 @@ class GameEngine(
     private val bricks = mutableListOf<Brick>()
     private val powerups = mutableListOf<PowerUp>()
     private val beams = mutableListOf<Beam>()
+    private val enemyShots = mutableListOf<EnemyShot>()
     private val particles = mutableListOf<Particle>()
     private val waves = mutableListOf<ExplosionWave>()
     private val activeEffects = mutableMapOf<PowerUpType, Float>()
@@ -64,6 +66,17 @@ class GameEngine(
     private var explosiveTipShown = false
     private var lastPowerupStatus = ""
     private var lostLifeThisLevel = false
+    private var laserTipShown = false
+    private var magnetTipShown = false
+    private var magnetCatchTipShown = false
+    private var godModeTipShown = false
+    private var invaderDirection = 1f
+    private var invaderSpeed = 6f
+    private var invaderShotTimer = 0f
+    private var invaderShotCooldown = 1.6f
+    private var invaderShield = 0f
+    private var invaderShieldMax = 0f
+    private var invaderShieldAlerted = false
     private var aimNormalized = 0f
     private var aimAngle = 0.72f
     private var aimDirection = 1f
@@ -71,6 +84,12 @@ class GameEngine(
 
     private var theme: LevelTheme = LevelThemes.DEFAULT
     private var currentLayout: LevelFactory.LevelLayout? = null
+    private var currentAspectRatio = worldHeight / worldWidth
+    private var brickAreaTopRatio = 0.92f
+    private var brickAreaBottomRatio = 0.52f
+    private var brickSpacing = 0.42f
+    private var layoutRowBoost = 0
+    private var layoutColBoost = 0
     private var screenFlash = 0f
     private var levelClearFlash = 0f
     private val hitFlashDecayRate = 2.0f
@@ -104,6 +123,8 @@ class GameEngine(
         basePaddleWidth = 18f
         paddle.width = basePaddleWidth
         paddle.height = 2.6f
+        currentAspectRatio = worldHeight / worldWidth
+        applyLayoutTuning(currentAspectRatio, preserveRowBoost = true)
         relayoutBricks()
     }
 
@@ -131,6 +152,7 @@ class GameEngine(
             updateBallTrails(dt)
             updateBeams(dt)
             updatePowerups(dt)
+            updateInvaderShots(dt)
             updateParticles(dt)
             updateWaves(dt)
             checkLevelCompletion()
@@ -212,6 +234,11 @@ class GameEngine(
         bricks.filter { it.alive }.forEach { brick ->
             val color = brick.currentColor(theme)
 
+            if (brick.type == BrickType.INVADER) {
+                drawInvaderShip(renderer, brick, color)
+                return@forEach
+            }
+
             // 3D depth effect: base shadow
             val shadowOffset = brick.width * 0.02f
             val shadowColor = adjustColor(color, 0.4f, 0.3f)
@@ -292,6 +319,20 @@ class GameEngine(
 
         beams.forEach { beam ->
             renderer.drawBeam(beam.x, beam.y, beam.width, beam.height, beam.color)
+        }
+
+        enemyShots.forEach { shot ->
+            val glow = adjustColor(shot.color, 1.2f, 0.45f)
+            renderer.drawCircle(shot.x, shot.y, shot.radius * 1.8f, glow)
+            val trailAlpha = 0.35f
+            renderer.drawRect(
+                shot.x - shot.radius * 0.25f,
+                shot.y + shot.radius * 0.6f,
+                shot.radius * 0.5f,
+                shot.radius * 1.6f,
+                floatArrayOf(shot.color[0], shot.color[1], shot.color[2], trailAlpha)
+            )
+            renderer.drawCircle(shot.x, shot.y, shot.radius, shot.color)
         }
 
         waves.forEach { wave ->
@@ -460,6 +501,32 @@ class GameEngine(
         }
     }
 
+    private fun drawInvaderShip(renderer: Renderer2D, brick: Brick, baseColor: FloatArray) {
+        val x = brick.x
+        val y = brick.y
+        val w = brick.width
+        val h = brick.height
+        val shadow = adjustColor(baseColor, 0.35f, 0.35f)
+        renderer.drawRect(x + w * 0.04f, y + h * 0.04f, w * 0.92f, h * 0.92f, shadow)
+
+        val body = adjustColor(baseColor, 0.95f, 1f)
+        renderer.drawRect(x, y + h * 0.26f, w, h * 0.48f, body)
+
+        val wing = adjustColor(baseColor, 1.15f, 1f)
+        renderer.drawRect(x + w * 0.06f, y + h * 0.12f, w * 0.2f, h * 0.28f, wing)
+        renderer.drawRect(x + w * 0.74f, y + h * 0.12f, w * 0.2f, h * 0.28f, wing)
+
+        val cockpit = adjustColor(baseColor, 1.35f, 1f)
+        renderer.drawCircle(x + w * 0.5f, y + h * 0.58f, h * 0.18f, cockpit)
+
+        val engine = adjustColor(baseColor, 1.5f, 0.9f)
+        renderer.drawRect(x + w * 0.22f, y + h * 0.08f, w * 0.12f, h * 0.12f, engine)
+        renderer.drawRect(x + w * 0.66f, y + h * 0.08f, w * 0.12f, h * 0.12f, engine)
+
+        val rim = adjustColor(baseColor, 0.7f, 1f)
+        renderer.drawRect(x + w * 0.08f, y + h * 0.7f, w * 0.84f, h * 0.06f, rim)
+    }
+
     private fun adjustColor(color: FloatArray, factor: Float, alpha: Float): FloatArray {
         return floatArrayOf(
             (color[0] * factor).coerceIn(0f, 1f),
@@ -469,7 +536,18 @@ class GameEngine(
         )
     }
 
-    fun getObjectCount(): Int = balls.size + bricks.size + powerups.size + beams.size + particles.size + waves.size
+    fun getObjectCount(): Int = balls.size + bricks.size + powerups.size + beams.size + enemyShots.size + particles.size + waves.size
+
+    private fun applyLayoutTuning(aspectRatio: Float, preserveRowBoost: Boolean) {
+        val isWide = aspectRatio < 1.45f
+        brickAreaTopRatio = if (isWide) 0.965f else 0.92f
+        brickAreaBottomRatio = if (isWide) 0.48f else 0.52f
+        brickSpacing = if (isWide) 0.36f else 0.42f
+        if (!preserveRowBoost) {
+            layoutRowBoost = if (isWide) 1 else 0
+            layoutColBoost = 0
+        }
+    }
 
     private fun updateAimFromInput(inputX: Float) {
         val delta = (inputX - paddle.x) / (paddle.width * 0.5f)
@@ -546,7 +624,7 @@ class GameEngine(
         state = GameState.READY
         combo = 0
         lostLifeThisLevel = false
-        guardrailActive = false
+        guardrailActive = config.mode.godMode
         shieldCharges = 0
         fireballActive = false
         magnetActive = false
@@ -563,11 +641,35 @@ class GameEngine(
         balls.clear()
         beams.clear()
         powerups.clear()
+        enemyShots.clear()
         particles.clear()
         waves.clear()
 
+        if (config.mode.godMode && !godModeTipShown) {
+            listener.onTip("God mode: bottom shield is always active.")
+            godModeTipShown = true
+        }
+
+        applyLayoutTuning(currentAspectRatio, preserveRowBoost = false)
+
         val difficulty = 1f + levelIndex * 0.08f
-        val level = buildLevel(levelIndex, difficulty, config.mode.endless)
+        val level = if (config.mode.invaders) {
+            invaderDirection = if (random.nextBoolean()) 1f else -1f
+            invaderSpeed = (6f + levelIndex * 0.6f).coerceAtMost(14f)
+            invaderShotCooldown = (1.6f - levelIndex * 0.05f).coerceIn(0.65f, 1.6f)
+            invaderShotTimer = invaderShotCooldown * (0.6f + random.nextFloat() * 0.8f)
+            invaderShieldMax = (100f + levelIndex * 4f).coerceAtMost(130f)
+            invaderShield = invaderShieldMax
+            invaderShieldAlerted = false
+            listener.onShieldUpdated(invaderShield.toInt(), invaderShieldMax.toInt())
+            LevelFactory.buildInvaderLevel(levelIndex, difficulty)
+        } else {
+            invaderShield = 0f
+            invaderShieldMax = 0f
+            invaderShieldAlerted = false
+            listener.onShieldUpdated(0, 0)
+            buildLevel(levelIndex, difficulty, config.mode.endless)
+        }
         currentLayout = level
         theme = level.theme
         buildBricks(level)
@@ -594,16 +696,17 @@ class GameEngine(
 
     private fun buildBricks(layout: LevelFactory.LevelLayout) {
         bricks.clear()
-        val rows = layout.rows
-        val cols = layout.cols
-        val spacing = 0.45f
-        val areaTop = worldHeight * 0.88f
-        val areaBottom = worldHeight * 0.55f
+        val rows = layout.rows + layoutRowBoost
+        val cols = layout.cols + layoutColBoost
+        val spacing = brickSpacing
+        val areaTop = worldHeight * brickAreaTopRatio
+        val areaBottom = worldHeight * brickAreaBottomRatio
         val areaHeight = areaTop - areaBottom
         val brickHeight = (areaHeight - spacing * (rows - 1)) / rows
         val brickWidth = (worldWidth - spacing * (cols + 1)) / cols
+        val colOffset = layoutColBoost / 2
         layout.bricks.forEach { spec ->
-            val x = spacing + spec.col * (brickWidth + spacing)
+            val x = spacing + (spec.col + colOffset) * (brickWidth + spacing)
             val y = areaBottom + (rows - 1 - spec.row) * (brickHeight + spacing * 0.5f)
             val brick = Brick(
                 gridX = spec.col,
@@ -638,27 +741,77 @@ class GameEngine(
 
             bricks.add(brick)
         }
+
+        if (layoutRowBoost > 0) {
+            val difficulty = 1f + levelIndex * 0.08f
+            val baseRow = layout.rows
+            repeat(layoutRowBoost) { offset ->
+                val rowIndex = baseRow + offset
+                for (col in 0 until layout.cols) {
+                    val seed = (levelIndex + 1) * 97 + rowIndex * 13 + col * 7
+                    val roll = Random(seed).nextFloat()
+                    val type = when {
+                        roll > 0.9f -> BrickType.REINFORCED
+                        roll < 0.03f -> BrickType.ARMORED
+                        else -> BrickType.NORMAL
+                    }
+                    val baseHp = baseHitPoints(type)
+                    val hp = if (type == BrickType.UNBREAKABLE) baseHp else max(1, (baseHp * difficulty).roundToInt())
+                    val x = spacing + (col + colOffset) * (brickWidth + spacing)
+                    val y = areaBottom + (rows - 1 - rowIndex) * (brickHeight + spacing * 0.5f)
+                    bricks.add(
+                        Brick(
+                            gridX = col,
+                            gridY = rowIndex,
+                            x = x,
+                            y = y,
+                            width = brickWidth,
+                            height = brickHeight,
+                            hitPoints = hp,
+                            maxHitPoints = hp,
+                            type = type
+                        )
+                    )
+                }
+            }
+        }
     }
 
     private fun relayoutBricks() {
         val layout = currentLayout ?: return
         if (bricks.isEmpty()) return
-        val rows = layout.rows
-        val cols = layout.cols
-        val spacing = 0.45f
-        val areaTop = worldHeight * 0.88f
-        val areaBottom = worldHeight * 0.55f
+        val rows = layout.rows + layoutRowBoost
+        val cols = layout.cols + layoutColBoost
+        val spacing = brickSpacing
+        val areaTop = worldHeight * brickAreaTopRatio
+        val areaBottom = worldHeight * brickAreaBottomRatio
         val areaHeight = areaTop - areaBottom
         val brickHeight = (areaHeight - spacing * (rows - 1)) / rows
         val brickWidth = (worldWidth - spacing * (cols + 1)) / cols
+        val colOffset = layoutColBoost / 2
         bricks.forEach { brick ->
             if (brick.gridX < 0 || brick.gridY < 0) return@forEach
-            val x = spacing + brick.gridX * (brickWidth + spacing)
+            val x = spacing + (brick.gridX + colOffset) * (brickWidth + spacing)
             val y = areaBottom + (rows - 1 - brick.gridY) * (brickHeight + spacing * 0.5f)
             brick.x = x
             brick.y = y
             brick.width = brickWidth
             brick.height = brickHeight
+        }
+    }
+
+    private fun baseHitPoints(type: BrickType): Int {
+        return when (type) {
+            BrickType.NORMAL -> 1
+            BrickType.REINFORCED -> 2
+            BrickType.ARMORED -> 3
+            BrickType.EXPLOSIVE -> 1
+            BrickType.UNBREAKABLE -> 999
+            BrickType.MOVING -> 2
+            BrickType.SPAWNING -> 2
+            BrickType.PHASE -> 3
+            BrickType.BOSS -> 6
+            BrickType.INVADER -> 1
         }
     }
 
@@ -712,6 +865,9 @@ class GameEngine(
     }
 
     private fun updateBricks(dt: Float) {
+        if (config.mode.invaders) {
+            updateInvaderFormation(dt)
+        }
         bricks.forEach { brick ->
             when (brick.type) {
                 BrickType.MOVING -> {
@@ -733,6 +889,9 @@ class GameEngine(
                 BrickType.BOSS -> {
                     // Boss bricks stay static but use enhanced visuals
                 }
+                BrickType.INVADER -> {
+                    // Invader formation movement handled globally.
+                }
                 else -> {
                     // Static bricks, no movement
                 }
@@ -741,6 +900,21 @@ class GameEngine(
                 brick.hitFlash = max(0f, brick.hitFlash - dt * hitFlashDecayRate)
             }
         }
+    }
+
+    private fun updateInvaderFormation(dt: Float) {
+        val invaders = bricks.filter { it.alive && it.type == BrickType.INVADER }
+        if (invaders.isEmpty()) return
+        val leftBound = 0.8f
+        val rightBound = worldWidth - 0.8f
+        val minX = invaders.minOf { it.x }
+        val maxX = invaders.maxOf { it.x + it.width }
+        var dx = invaderSpeed * invaderDirection * dt
+        if (minX + dx < leftBound || maxX + dx > rightBound) {
+            invaderDirection *= -1f
+            dx = invaderSpeed * invaderDirection * dt
+        }
+        invaders.forEach { it.x += dx }
     }
 
     private fun attachBallToPaddle() {
@@ -846,7 +1020,11 @@ class GameEngine(
                 }
 
                 if (ball.y - ball.radius < 0f) {
-                    if (guardrailActive) {
+                    if (config.mode.godMode) {
+                        ball.y = ball.radius + 2f
+                        ball.vy = abs(ball.vy)
+                        audio.play(GameSound.BOUNCE, 0.6f)
+                    } else if (guardrailActive) {
                         ball.y = ball.radius + 2f
                         ball.vy = abs(ball.vy)
                         logger?.logBallLost(balls.size, Pair(ball.x, ball.y), lives)
@@ -945,6 +1123,10 @@ class GameEngine(
             ball.vx = 0f
             ball.vy = 0f
             audio.play(GameSound.POWERUP, 0.5f)
+            if (!magnetCatchTipShown) {
+                listener.onTip("Release to launch stuck balls.")
+                magnetCatchTipShown = true
+            }
             return
         }
 
@@ -1058,6 +1240,7 @@ class GameEngine(
                     BrickType.SPAWNING -> GameSound.BRICK_SPAWNING
                     BrickType.PHASE -> GameSound.BRICK_PHASE
                     BrickType.BOSS -> GameSound.BRICK_BOSS
+                    BrickType.INVADER -> GameSound.BRICK_MOVING
                 }
                 audio.play(brickSound, 0.7f)
                 audio.haptic(GameHaptic.LIGHT)
@@ -1102,6 +1285,7 @@ class GameEngine(
                     BrickType.SPAWNING -> GameSound.BRICK_SPAWNING
                     BrickType.PHASE -> GameSound.BRICK_PHASE
                     BrickType.BOSS -> GameSound.BRICK_BOSS
+                    BrickType.INVADER -> GameSound.BRICK_MOVING
                 }
                 audio.play(brickSound, 0.4f) // Softer for beam hits
                 maybeSpawnPowerup(brick)
@@ -1179,6 +1363,77 @@ class GameEngine(
         }
     }
 
+    private fun updateInvaderShots(dt: Float) {
+        if (!config.mode.invaders) return
+        invaderShotTimer -= dt
+        if (invaderShotTimer <= 0f) {
+            spawnInvaderShot()
+            invaderShotTimer = invaderShotCooldown * (0.7f + random.nextFloat() * 0.7f)
+        }
+
+        val iterator = enemyShots.iterator()
+        while (iterator.hasNext()) {
+            val shot = iterator.next()
+            shot.x += shot.vx * dt
+            shot.y += shot.vy * dt
+            if (shot.y < -5f || shot.x < -5f || shot.x > worldWidth + 5f) {
+                iterator.remove()
+                continue
+            }
+            if (shotIntersectsPaddle(shot)) {
+                handleInvaderShotHit(shot)
+                iterator.remove()
+            }
+        }
+    }
+
+    private fun spawnInvaderShot() {
+        val invaders = bricks.filter { it.alive && it.type == BrickType.INVADER }
+        if (invaders.isEmpty()) return
+        val origin = invaders[random.nextInt(invaders.size)]
+        val baseSpeed = (28f + levelIndex * 1.2f).coerceAtMost(42f)
+        val spread = 6f
+        val vx = (random.nextFloat() - 0.5f) * spread
+        val shot = EnemyShot(
+            x = origin.centerX,
+            y = origin.y - origin.height * 0.2f,
+            radius = 0.7f,
+            vx = vx,
+            vy = -baseSpeed,
+            color = floatArrayOf(theme.accent[0], theme.accent[1], theme.accent[2], 1f)
+        )
+        enemyShots.add(shot)
+        audio.play(GameSound.LASER, 0.25f)
+    }
+
+    private fun handleInvaderShotHit(shot: EnemyShot) {
+        spawnImpactSparks(shot.x, shot.y, shot.color, 6, 12f)
+        if (invaderShield > 0f) {
+            val damage = (12f + levelIndex * 1.2f).coerceAtMost(22f)
+            invaderShield = max(0f, invaderShield - damage)
+            listener.onShieldUpdated(invaderShield.toInt(), invaderShieldMax.toInt())
+            audio.play(GameSound.POWERUP, 0.6f)
+            if (invaderShield <= 0f && !invaderShieldAlerted) {
+                invaderShieldAlerted = true
+                listener.onTip("Shield down! Dodge the incoming fire.")
+            }
+        } else {
+            loseLife()
+        }
+    }
+
+    private fun shotIntersectsPaddle(shot: EnemyShot): Boolean {
+        val paddleLeft = paddle.x - paddle.width / 2f
+        val paddleRight = paddle.x + paddle.width / 2f
+        val paddleBottom = paddle.y - paddle.height / 2f
+        val paddleTop = paddle.y + paddle.height / 2f
+        val closestX = shot.x.coerceIn(paddleLeft, paddleRight)
+        val closestY = shot.y.coerceIn(paddleBottom, paddleTop)
+        val dx = shot.x - closestX
+        val dy = shot.y - closestY
+        return dx * dx + dy * dy <= shot.radius * shot.radius
+    }
+
     private fun updateParticles(dt: Float) {
         val iterator = particles.iterator()
         while (iterator.hasNext()) {
@@ -1218,7 +1473,7 @@ class GameEngine(
                 when (entry.key) {
                     PowerUpType.WIDE_PADDLE -> paddle.width = basePaddleWidth
                     PowerUpType.SLOW -> Unit
-                    PowerUpType.GUARDRAIL -> guardrailActive = false
+                    PowerUpType.GUARDRAIL -> guardrailActive = config.mode.godMode
                     PowerUpType.LASER -> Unit
                     PowerUpType.SHIELD -> shieldCharges = 0
                     PowerUpType.FIREBALL -> {
@@ -1291,6 +1546,7 @@ class GameEngine(
         GameMode.ENDLESS -> 0.017f
         GameMode.GOD -> 0.010f
         GameMode.RUSH -> 0.023f
+        GameMode.INVADERS -> 0.016f
     }
 
     private fun speedBoostCap(): Float = when (config.mode) {
@@ -1299,6 +1555,7 @@ class GameEngine(
         GameMode.ENDLESS -> 1.4f
         GameMode.GOD -> 1.25f
         GameMode.RUSH -> 1.5f
+        GameMode.INVADERS -> 1.4f
     }
 
     private fun minSpeedFactor(): Float = when (config.mode) {
@@ -1307,6 +1564,7 @@ class GameEngine(
         GameMode.ENDLESS -> 0.65f
         GameMode.GOD -> 0.5f
         GameMode.RUSH -> 0.72f
+        GameMode.INVADERS -> 0.6f
     }
 
     private fun maxSpeedFactor(): Float = when (config.mode) {
@@ -1315,6 +1573,7 @@ class GameEngine(
         GameMode.ENDLESS -> 1.7f
         GameMode.GOD -> 1.45f
         GameMode.RUSH -> 1.85f
+        GameMode.INVADERS -> 1.6f
     }
 
     private fun difficultyForMode(): Float {
@@ -1324,6 +1583,7 @@ class GameEngine(
             GameMode.ENDLESS -> 1.0f
             GameMode.GOD -> 0.9f
             GameMode.RUSH -> 1.1f
+            GameMode.INVADERS -> 1.05f
         }
         val slope = when (config.mode) {
             GameMode.CLASSIC -> 0.075f
@@ -1331,6 +1591,7 @@ class GameEngine(
             GameMode.ENDLESS -> 0.085f
             GameMode.GOD -> 0.05f
             GameMode.RUSH -> 0.11f
+            GameMode.INVADERS -> 0.08f
         }
         return (base + levelIndex * slope).coerceAtMost(3.0f)
     }
@@ -1353,6 +1614,10 @@ class GameEngine(
             }
             PowerUpType.LASER -> {
                 activeEffects[type] = 12f
+                if (!laserTipShown) {
+                    listener.onTip("Laser active: two-finger tap to fire.")
+                    laserTipShown = true
+                }
             }
             PowerUpType.GUARDRAIL -> {
                 guardrailActive = true
@@ -1384,6 +1649,10 @@ class GameEngine(
             PowerUpType.MAGNET -> {
                 magnetActive = true
                 activeEffects[type] = 15f
+                if (!magnetTipShown) {
+                    listener.onTip("Magnet active: balls stick to the paddle. Release to shoot.")
+                    magnetTipShown = true
+                }
             }
             PowerUpType.GRAVITY_WELL -> {
                 gravityWellActive = true
@@ -1502,7 +1771,7 @@ class GameEngine(
                 challenges.forEach { challenge ->
                     if (challenge.type == ChallengeType.TIME_UNDER_LIMIT && !challenge.completed) {
                         if (levelDuration <= challenge.targetValue) {
-                            DailyChallengeManager.updateChallengeProgress(challenges, ChallengeType.TIME_UNDER_LIMIT)
+                            DailyChallengeManager.completeChallenge(challenge)
                         }
                     }
                 }
@@ -1536,6 +1805,14 @@ class GameEngine(
             logger?.logGameOver(score, levelIndex + 1, "lives_depleted")
             triggerGameOver()
         } else {
+            if (config.mode.invaders && invaderShieldMax > 0f) {
+                invaderShield = invaderShieldMax
+                invaderShieldAlerted = false
+                listener.onShieldUpdated(invaderShield.toInt(), invaderShieldMax.toInt())
+            }
+            if (config.mode.invaders) {
+                enemyShots.clear()
+            }
             aimDirection = if (random.nextBoolean()) 1f else -1f
             spawnBall()
             state = GameState.READY
@@ -1685,6 +1962,11 @@ class GameEngine(
             }
             GameMode.GOD -> {
                 weights[PowerUpType.LIFE] = 0.15f
+            }
+            GameMode.INVADERS -> {
+                weights[PowerUpType.SHIELD] = (weights[PowerUpType.SHIELD] ?: 0f) + 0.3f
+                weights[PowerUpType.GUARDRAIL] = (weights[PowerUpType.GUARDRAIL] ?: 0f) + 0.2f
+                weights[PowerUpType.SLOW] = (weights[PowerUpType.SLOW] ?: 0f) + 0.1f
             }
             else -> Unit
         }
@@ -1868,6 +2150,7 @@ data class Brick(
         BrickType.SPAWNING -> 100
         BrickType.PHASE -> 180
         BrickType.BOSS -> 300
+        BrickType.INVADER -> 90
     }
 
     val centerX: Float
@@ -1956,6 +2239,7 @@ data class Brick(
             BrickType.SPAWNING -> floatArrayOf(0.05f, 0f, 0.15f)
             BrickType.PHASE -> floatArrayOf(0.2f, 0.1f, -0.1f)
             BrickType.BOSS -> floatArrayOf(0.3f, -0.2f, -0.2f)
+            BrickType.INVADER -> floatArrayOf(0.1f, 0.15f, 0.25f)
         }
 
         // Strong theme-specific color adjustments for maximum variety
@@ -1990,7 +2274,7 @@ data class Brick(
     }
 }
 
-enum class BrickType { NORMAL, REINFORCED, ARMORED, EXPLOSIVE, UNBREAKABLE, MOVING, SPAWNING, PHASE, BOSS }
+enum class BrickType { NORMAL, REINFORCED, ARMORED, EXPLOSIVE, UNBREAKABLE, MOVING, SPAWNING, PHASE, BOSS, INVADER }
 
 data class PowerUp(
     var x: Float,
@@ -2022,6 +2306,15 @@ data class Beam(
     val width: Float,
     val height: Float,
     val speed: Float,
+    val color: FloatArray
+)
+
+data class EnemyShot(
+    var x: Float,
+    var y: Float,
+    val radius: Float,
+    val vx: Float,
+    val vy: Float,
     val color: FloatArray
 )
 

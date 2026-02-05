@@ -1,95 +1,109 @@
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/bp_navy">
 
-    <com.breakoutplus.game.GameGLSurfaceView
-        android:id="@+id/gameSurface"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+    <LinearLayout
+        android:id="@+id/hudContainer"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="6dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/hudOverlay"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:padding="12dp">
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/buttonPause"
-            style="@style/Widget.BreakoutPlus.PauseButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:minWidth="44dp"
-            android:minHeight="44dp"
-            android:text=""
-            android:contentDescription="@string/label_pause"
-            app:icon="@drawable/ic_pause"
-            app:iconGravity="textStart"
-            app:iconPadding="0dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <LinearLayout
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/hudRow"
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@drawable/hud_chip"
-            android:gravity="center_vertical"
-            android:padding="10dp"
-            android:orientation="horizontal"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/buttonPause"
-            android:layout_marginTop="10dp">
+            android:padding="10dp">
 
             <TextView
                 android:id="@+id/hudScore"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
+                android:layout_marginEnd="10dp"
                 android:fontFamily="sans-serif-medium"
                 android:text="Score 0"
                 android:textColor="@color/bp_white"
                 android:textSize="@dimen/bp_hud_score_size"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@id/buttonPause"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
 
-            <TextView
-                android:id="@+id/hudLives"
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonPause"
+                style="@style/Widget.BreakoutPlus.PauseButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:fontFamily="sans-serif-medium"
-                android:text="Lives 3"
-                android:textColor="@color/bp_white"
-                android:textSize="@dimen/bp_hud_stat_size" />
+                android:minWidth="44dp"
+                android:minHeight="44dp"
+                android:text=""
+                android:contentDescription="@string/label_pause"
+                app:icon="@drawable/ic_pause"
+                app:iconGravity="textStart"
+                app:iconPadding="0dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
 
-            <TextView
-                android:id="@+id/hudTime"
+            <LinearLayout
+                android:id="@+id/hudStats"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:fontFamily="sans-serif-medium"
-                android:text="Time 02:00"
-                android:textColor="@color/bp_white"
-                android:textSize="@dimen/bp_hud_stat_size" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@id/buttonPause"
+                app:layout_constraintTop_toTopOf="parent">
 
-            <TextView
-                android:id="@+id/hudLevel"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:fontFamily="sans-serif-medium"
-                android:text="Level 1"
-                android:textColor="@color/bp_white"
-                android:textSize="@dimen/bp_hud_stat_size" />
-        </LinearLayout>
+                <TextView
+                    android:id="@+id/hudLives"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="Lives 3"
+                    android:textColor="@color/bp_white"
+                    android:textSize="@dimen/bp_hud_stat_size" />
+
+                <TextView
+                    android:id="@+id/hudTime"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="Time 02:00"
+                    android:textColor="@color/bp_white"
+                    android:textSize="@dimen/bp_hud_stat_size" />
+
+                <TextView
+                    android:id="@+id/hudLevel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="Level 1"
+                    android:textColor="@color/bp_white"
+                    android:textSize="@dimen/bp_hud_stat_size" />
+            </LinearLayout>
+        </androidx.constraintlayout.widget.ConstraintLayout>
 
         <TextView
             android:id="@+id/hudLevelBanner"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
+            android:layout_marginTop="10dp"
+            android:layout_gravity="center_horizontal"
             android:background="@drawable/hud_banner"
             android:paddingStart="16dp"
             android:paddingEnd="16dp"
@@ -99,49 +113,61 @@
             android:textColor="@color/bp_white"
             android:textSize="@dimen/bp_hud_banner_size"
             android:textStyle="bold"
-            android:visibility="gone"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/hudRow" />
+            android:visibility="gone" />
 
         <TextView
-            android:id="@+id/hudMode"
+            android:id="@+id/hudMeta"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:fontFamily="sans-serif-medium"
-            android:text="Classic"
+            android:text="Classic • Powerups: none"
             android:textColor="@color/bp_gray"
-            android:textSize="@dimen/bp_hud_mode_size"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/hudLevelBanner" />
+            android:textSize="@dimen/bp_hud_mode_size" />
+
+        <LinearLayout
+            android:id="@+id/hudShieldRow"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/hudShieldLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-medium"
+                android:text="Shield 100%"
+                android:textColor="@color/bp_white"
+                android:textSize="@dimen/bp_hud_mode_size" />
+
+            <com.google.android.material.progressindicator.LinearProgressIndicator
+                android:id="@+id/hudShieldBar"
+                android:layout_width="120dp"
+                android:layout_height="6dp"
+                android:layout_marginStart="10dp"
+                android:max="100"
+                android:progress="100"
+                app:indicatorColor="@color/bp_cyan"
+                app:trackColor="@color/bp_shadow"
+                app:trackThickness="6dp" />
+        </LinearLayout>
 
         <LinearLayout
             android:id="@+id/hudPowerups"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
-            android:orientation="vertical"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/hudMode">
+            android:orientation="vertical">
 
             <LinearLayout
                 android:id="@+id/hudPowerupChips"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginBottom="4dp" />
-
-            <TextView
-                android:id="@+id/hudPowerupText"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:fontFamily="sans-serif"
-                android:maxLines="2"
-                android:ellipsize="end"
-                android:text="Powerups: none"
-                android:textColor="@color/bp_gray"
-                android:textSize="@dimen/bp_hud_mode_size" />
+                android:layout_marginBottom="4dp"
+                android:orientation="horizontal" />
 
             <TextView
                 android:id="@+id/hudFps"
@@ -154,6 +180,25 @@
                 android:textSize="@dimen/bp_hud_mode_size"
                 android:visibility="gone" />
         </LinearLayout>
+    </LinearLayout>
+
+    <com.breakoutplus.game.GameGLSurfaceView
+        android:id="@+id/gameSurface"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/hudContainer" />
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/hudOverlay"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
 
         <LinearLayout
             android:id="@+id/pauseOverlay"
@@ -222,15 +267,16 @@
                 android:layout_height="wrap_content"
                 android:text="Game Over"
                 android:textColor="@color/bp_white"
-                android:textSize="26sp"
+                android:textSize="28sp"
                 android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/endStats"
+                style="@style/Text.BreakoutPlus.Body"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="Score 0"
+                android:text="Score 0 • Level 1"
                 android:textColor="@color/bp_gray" />
 
             <com.google.android.material.button.MaterialButton
@@ -291,7 +337,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:text="• Drag to move the paddle\n• Tap to launch the ball\n• Collect powerups for special abilities\n• Two-finger tap fires lasers when available"
+                android:text="• Drag to move and aim\n• Release to launch the ball\n• Collect powerups for special abilities\n• Two-finger tap fires lasers when available"
                 android:textColor="@color/bp_gray"
                 android:textSize="@dimen/bp_body_text_size" />
 
@@ -305,4 +351,4 @@
         </LinearLayout>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
-</FrameLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

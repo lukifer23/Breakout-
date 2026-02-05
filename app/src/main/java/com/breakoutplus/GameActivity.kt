@@ -20,6 +20,9 @@ import com.breakoutplus.game.PowerupStatus
 class GameActivity : FoldAwareActivity(), GameEventListener {
     private lateinit var binding: ActivityGameBinding
     private lateinit var config: GameConfig
+    private var currentModeLabel: String = "Classic"
+    private var currentPowerupSummary: String = "Powerups: none"
+    private var currentCombo: Int = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -205,34 +208,30 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     }
 
     override fun onModeUpdated(mode: GameMode) {
-        runOnUiThread { binding.hudMode.text = mode.displayName }
+        runOnUiThread {
+            currentModeLabel = mode.displayName
+            updateHudMeta()
+            updateShieldVisibility(mode.invaders)
+        }
     }
 
     override fun onPowerupStatus(status: String) {
         runOnUiThread {
-            if (binding.hudPowerupChips.visibility != View.VISIBLE) {
-                binding.hudPowerupText.text = status
-                binding.hudPowerupText.visibility = View.VISIBLE
-            }
+            currentPowerupSummary = status.split("•").firstOrNull()?.trim() ?: status
+            updateHudMeta()
         }
     }
 
     override fun onPowerupsUpdated(status: List<PowerupStatus>, combo: Int) {
         runOnUiThread {
             renderPowerupChips(status)
-            val showCombo = combo >= 2
-            val text = when {
-                status.isEmpty() && showCombo -> "Powerups: none • Combo x$combo"
-                status.isEmpty() -> "Powerups: none"
-                showCombo -> "Combo x$combo"
-                else -> ""
-            }
-            if (text.isNotEmpty()) {
-                binding.hudPowerupText.text = text
-                binding.hudPowerupText.visibility = View.VISIBLE
+            currentCombo = combo
+            currentPowerupSummary = if (status.isEmpty()) {
+                "Powerups: none"
             } else {
-                binding.hudPowerupText.visibility = View.GONE
+                "Powerups: ${status.size} active"
             }
+            updateHudMeta()
         }
     }
 
@@ -241,9 +240,29 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             if (config.settings.showFpsCounter) {
                 binding.hudFps.text = "FPS: $fps"
                 binding.hudFps.visibility = android.view.View.VISIBLE
+                if (binding.hudPowerups.visibility != View.VISIBLE) {
+                    binding.hudPowerups.visibility = View.VISIBLE
+                }
             } else {
                 binding.hudFps.visibility = android.view.View.GONE
+                if (binding.hudPowerupChips.visibility != View.VISIBLE) {
+                    binding.hudPowerups.visibility = View.GONE
+                }
             }
+        }
+    }
+
+    override fun onShieldUpdated(current: Int, max: Int) {
+        runOnUiThread {
+            if (max <= 0) {
+                updateShieldVisibility(false)
+                return@runOnUiThread
+            }
+            updateShieldVisibility(true)
+            binding.hudShieldBar.max = max
+            binding.hudShieldBar.progress = current.coerceIn(0, max)
+            val percent = ((current.toFloat() / max.toFloat()) * 100f).toInt().coerceIn(0, 100)
+            binding.hudShieldLabel.text = "Shield $percent%"
         }
     }
 
@@ -279,43 +298,59 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     }
 
     private fun showNameInputDialog(summary: GameSummary) {
-        val input = android.widget.EditText(this)
-        input.hint = "Enter your name"
-        input.setText("Player") // Default name
-        input.setSelection(input.text.length)
+        val dialog = android.app.Dialog(this)
+        val view = layoutInflater.inflate(R.layout.dialog_high_score, null)
+        dialog.setContentView(view)
+        dialog.setCancelable(false)
+        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
+        dialog.window?.setLayout(
+            android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+            android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+        )
 
-        android.app.AlertDialog.Builder(this)
-            .setTitle("New High Score!")
-            .setMessage("Score: ${summary.score} • Level: ${summary.level}\nMode: ${config.mode.displayName}")
-            .setView(input)
-            .setPositiveButton("Save") { _, _ ->
-                val playerName = input.text.toString().trim().ifEmpty { "Player" }
-                ScoreboardManager.addHighScore(
-                    this,
-                    ScoreboardManager.ScoreEntry(
-                        score = summary.score,
-                        mode = config.mode.displayName,
-                        name = playerName,
-                        level = summary.level,
-                        durationSeconds = summary.durationSeconds,
-                        timestamp = System.currentTimeMillis()
-                    )
+        val title = view.findViewById<android.widget.TextView>(R.id.highScoreTitle)
+        val meta = view.findViewById<android.widget.TextView>(R.id.highScoreMeta)
+        val input = view.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.highScoreNameInput)
+        val saveButton = view.findViewById<com.google.android.material.button.MaterialButton>(R.id.highScoreSave)
+        val skipButton = view.findViewById<com.google.android.material.button.MaterialButton>(R.id.highScoreSkip)
+
+        title.text = "New High Score!"
+        meta.text = "Score ${summary.score} • Level ${summary.level} • Mode ${config.mode.displayName}"
+        input.setText("Player")
+        input.setSelection(input.text?.length ?: 0)
+        input.requestFocus()
+        dialog.window?.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE)
+
+        val finishDialog = {
+            binding.endTitle.text = getString(R.string.label_game_over)
+            binding.endStats.text = "Score ${summary.score} • Level ${summary.level}"
+            binding.buttonEndPrimary.text = getString(R.string.label_restart)
+            showOverlay(binding.endOverlay)
+        }
+
+        saveButton.setOnClickListener {
+            val playerName = input.text.toString().trim().ifEmpty { "Player" }
+            ScoreboardManager.addHighScore(
+                this,
+                ScoreboardManager.ScoreEntry(
+                    score = summary.score,
+                    mode = config.mode.displayName,
+                    name = playerName,
+                    level = summary.level,
+                    durationSeconds = summary.durationSeconds,
+                    timestamp = System.currentTimeMillis()
                 )
-                // Now show the game over screen
-                binding.endTitle.text = getString(R.string.label_game_over)
-                binding.endStats.text = "Score ${summary.score} • Level ${summary.level}"
-                binding.buttonEndPrimary.text = getString(R.string.label_restart)
-                showOverlay(binding.endOverlay)
-            }
-            .setNegativeButton("Skip") { _, _ ->
-                // Don't save, just show game over screen
-                binding.endTitle.text = getString(R.string.label_game_over)
-                binding.endStats.text = "Score ${summary.score} • Level ${summary.level}"
-                binding.buttonEndPrimary.text = getString(R.string.label_restart)
-                showOverlay(binding.endOverlay)
-            }
-            .setCancelable(false)
-            .show()
+            )
+            dialog.dismiss()
+            finishDialog()
+        }
+
+        skipButton.setOnClickListener {
+            dialog.dismiss()
+            finishDialog()
+        }
+
+        dialog.show()
     }
 
     override fun onLevelComplete(summary: GameSummary) {
@@ -405,8 +440,12 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         container.removeAllViews()
         if (status.isEmpty()) {
             container.visibility = View.GONE
+            if (binding.hudFps.visibility != View.VISIBLE) {
+                binding.hudPowerups.visibility = View.GONE
+            }
             return
         }
+        binding.hudPowerups.visibility = View.VISIBLE
         container.visibility = View.VISIBLE
         status.forEach { item ->
             container.addView(buildPowerupChip(item))
@@ -457,6 +496,18 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         params.marginEnd = dp(8)
         chip.layoutParams = params
         return chip
+    }
+
+    private fun updateHudMeta() {
+        val parts = mutableListOf<String>()
+        if (currentModeLabel.isNotBlank()) parts.add(currentModeLabel)
+        if (currentPowerupSummary.isNotBlank()) parts.add(currentPowerupSummary)
+        if (currentCombo >= 2) parts.add("Combo x$currentCombo")
+        binding.hudMeta.text = parts.joinToString(" • ")
+    }
+
+    private fun updateShieldVisibility(show: Boolean) {
+        binding.hudShieldRow.visibility = if (show) View.VISIBLE else View.GONE
     }
 
     private fun powerupLabel(type: PowerUpType): String {

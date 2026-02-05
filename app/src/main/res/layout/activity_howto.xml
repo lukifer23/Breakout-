@@ -120,7 +120,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
-                android:text="Classic: Standard breakout progression.\nTimed Challenge: Score high in 2:30.\nEndless: Infinite levels with scaling difficulty.\nGod Mode: Practice without losing lives.\nLevel Rush: Beat each stage before time expires."
+                android:text="Classic: Standard breakout progression.\nTimed Challenge: Score high in 2:30.\nEndless: Infinite levels with scaling difficulty.\nGod Mode: Practice without losing lives.\nLevel Rush: Beat each stage before time expires.\nInvaders: Bounce shots to clear ships while dodging fire."
                 android:textColor="@color/bp_gray"
                 android:textSize="@dimen/bp_small_text_size" />
         </LinearLayout>

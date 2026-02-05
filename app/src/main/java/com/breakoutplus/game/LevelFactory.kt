@@ -196,6 +196,7 @@ object LevelFactory {
                 BrickType.SPAWNING -> 2
                 BrickType.PHASE -> 3
                 BrickType.BOSS -> 6
+                BrickType.INVADER -> 1
             }
             val hp = if (spec.type == BrickType.UNBREAKABLE) baseHp else max(1, (baseHp * difficulty).roundToInt())
             spec.copy(hitPoints = hp)
@@ -219,6 +220,7 @@ object LevelFactory {
                     'S' -> BrickType.SPAWNING
                     'P' -> BrickType.PHASE
                     'B' -> BrickType.BOSS
+                    'I' -> BrickType.INVADER
                     else -> null
                 }
                 if (type != null) {
@@ -232,12 +234,39 @@ object LevelFactory {
                         BrickType.SPAWNING -> 2
                         BrickType.PHASE -> 3
                         BrickType.BOSS -> 6
+                        BrickType.INVADER -> 1
                     }
                     bricks.add(BrickSpec(col, row, type, baseHp))
                 }
             }
         }
         return bricks
+    }
+
+    fun buildInvaderLevel(index: Int, difficulty: Float): LevelLayout {
+        val rows = (5 + (index / 3).coerceAtMost(3)).coerceIn(5, 8)
+        val cols = (11 + (index / 4).coerceAtMost(2)).coerceIn(10, 13)
+        val bricks = mutableListOf<BrickSpec>()
+        for (row in 0 until rows) {
+            for (col in 0 until cols) {
+                val edgeGap = (col == 0 || col == cols - 1) && row == 0
+                val staggerGap = row % 2 == 0 && col % 4 == 0
+                val windowGap = row % 3 == 1 && col % 5 == 0
+                if (edgeGap || staggerGap || windowGap) continue
+                val baseHp = 1
+                val hp = max(1, (baseHp * (1f + index * 0.04f) * difficulty).roundToInt())
+                bricks.add(BrickSpec(col, row, BrickType.INVADER, hp))
+            }
+        }
+
+        val themes = listOf(LevelThemes.COBALT, LevelThemes.NEON, LevelThemes.AURORA, LevelThemes.LAVA)
+        return LevelLayout(
+            rows = rows,
+            cols = cols,
+            bricks = bricks,
+            theme = themes[index % themes.size],
+            tip = "Invaders: dodge enemy fire and protect your shield."
+        )
     }
 
     private fun generateProceduralLevel(index: Int, difficulty: Float): LevelLayout {
@@ -277,6 +306,7 @@ object LevelFactory {
                         BrickType.SPAWNING -> 2
                         BrickType.PHASE -> 3
                         BrickType.BOSS -> 6
+                        BrickType.INVADER -> 1
                     }
                     val hitPoints = if (type == BrickType.UNBREAKABLE) baseHp else (baseHp * difficulty).toInt().coerceAtLeast(1)
                     bricks.add(BrickSpec(col, row, type, hitPoints))
@@ -317,7 +347,8 @@ object LevelThemes {
             BrickType.MOVING to floatArrayOf(0.35f, 0.92f, 0.51f, 1f),
             BrickType.SPAWNING to floatArrayOf(0.88f, 0.51f, 0.92f, 1f),
             BrickType.PHASE to floatArrayOf(0.95f, 0.65f, 0.25f, 1f),
-            BrickType.BOSS to floatArrayOf(0.8f, 0.2f, 0.2f, 1f)
+            BrickType.BOSS to floatArrayOf(0.8f, 0.2f, 0.2f, 1f),
+            BrickType.INVADER to floatArrayOf(0.6f, 0.9f, 1f, 1f)
         )
     )
 
@@ -335,7 +366,8 @@ object LevelThemes {
             BrickType.MOVING to floatArrayOf(0.4f, 1f, 0.6f, 1f),       // Lime green
             BrickType.SPAWNING to floatArrayOf(1f, 0.4f, 1f, 1f),       // Pink
             BrickType.PHASE to floatArrayOf(1f, 0.8f, 0.2f, 1f),        // Gold
-            BrickType.BOSS to floatArrayOf(1f, 0.1f, 0.1f, 1f)          // Red
+            BrickType.BOSS to floatArrayOf(1f, 0.1f, 0.1f, 1f),         // Red
+            BrickType.INVADER to floatArrayOf(0.45f, 0.95f, 1f, 1f)     // Neon cyan
         )
     )
 
@@ -353,7 +385,8 @@ object LevelThemes {
             BrickType.MOVING to floatArrayOf(1f, 0.7f, 0.3f, 1f),        // Peach
             BrickType.SPAWNING to floatArrayOf(0.9f, 0.5f, 0.7f, 1f),    // Rose
             BrickType.PHASE to floatArrayOf(1f, 0.9f, 0.4f, 1f),         // Light gold
-            BrickType.BOSS to floatArrayOf(0.9f, 0.1f, 0.2f, 1f)         // Crimson
+            BrickType.BOSS to floatArrayOf(0.9f, 0.1f, 0.2f, 1f),        // Crimson
+            BrickType.INVADER to floatArrayOf(0.9f, 0.6f, 0.9f, 1f)      // Rose purple
         )
     )
 
@@ -371,7 +404,8 @@ object LevelThemes {
             BrickType.MOVING to floatArrayOf(0.4f, 0.8f, 1f, 1f),         // Light blue
             BrickType.SPAWNING to floatArrayOf(0.7f, 0.5f, 1f, 1f),       // Lavender
             BrickType.PHASE to floatArrayOf(0.8f, 0.9f, 1f, 1f),          // Pale blue
-            BrickType.BOSS to floatArrayOf(0.1f, 0.3f, 1f, 1f)            // Deep blue
+            BrickType.BOSS to floatArrayOf(0.1f, 0.3f, 1f, 1f),           // Deep blue
+            BrickType.INVADER to floatArrayOf(0.55f, 0.85f, 1f, 1f)       // Ice blue
         )
     )
 
@@ -389,7 +423,8 @@ object LevelThemes {
             BrickType.MOVING to floatArrayOf(0.4f, 1f, 0.8f, 1f),          // Aquamarine
             BrickType.SPAWNING to floatArrayOf(0.9f, 0.7f, 1f, 1f),        // Light lavender
             BrickType.PHASE to floatArrayOf(0.9f, 1f, 0.6f, 1f),           // Pale yellow
-            BrickType.BOSS to floatArrayOf(0.2f, 0.8f, 0.4f, 1f)           // Forest green
+            BrickType.BOSS to floatArrayOf(0.2f, 0.8f, 0.4f, 1f),          // Forest green
+            BrickType.INVADER to floatArrayOf(0.5f, 1f, 0.7f, 1f)          // Mint
         )
     )
 
@@ -407,7 +442,8 @@ object LevelThemes {
             BrickType.MOVING to floatArrayOf(0.5f, 0.9f, 0.4f, 1f),         // Light green
             BrickType.SPAWNING to floatArrayOf(0.7f, 0.6f, 0.9f, 1f),       // Light purple
             BrickType.PHASE to floatArrayOf(0.9f, 0.8f, 0.3f, 1f),          // Mustard
-            BrickType.BOSS to floatArrayOf(0.3f, 0.6f, 0.2f, 1f)            // Dark green
+            BrickType.BOSS to floatArrayOf(0.3f, 0.6f, 0.2f, 1f),           // Dark green
+            BrickType.INVADER to floatArrayOf(0.55f, 0.8f, 0.4f, 1f)        // Moss
         )
     )
 
@@ -425,7 +461,8 @@ object LevelThemes {
             BrickType.MOVING to floatArrayOf(1f, 0.5f, 0.1f, 1f),           // Flame orange
             BrickType.SPAWNING to floatArrayOf(0.9f, 0.3f, 0.7f, 1f),       // Deep pink
             BrickType.PHASE to floatArrayOf(1f, 0.7f, 0.1f, 1f),            // Amber
-            BrickType.BOSS to floatArrayOf(0.8f, 0f, 0f, 1f)                // Blood red
+            BrickType.BOSS to floatArrayOf(0.8f, 0f, 0f, 1f),               // Blood red
+            BrickType.INVADER to floatArrayOf(1f, 0.5f, 0.9f, 1f)           // Neon pink
         )
     )
 }

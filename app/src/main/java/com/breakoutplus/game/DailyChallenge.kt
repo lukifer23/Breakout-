@@ -60,7 +60,9 @@ object DailyChallengeManager {
         // Special challenges
         { DailyChallenge("powerups_5", "Power Collector", "Collect 5 powerups", ChallengeType.POWERUPS_COLLECTED, 5, RewardType.COSMETIC_UNLOCK, 1) },
         { DailyChallenge("perfect_level", "Perfectionist", "Complete a level without losing a life", ChallengeType.PERFECT_LEVEL, 1, RewardType.THEME_UNLOCK, 1) },
-        { DailyChallenge("laser_master", "Laser Commander", "Fire laser 10 times", ChallengeType.LASER_FIRED, 10, RewardType.STREAK_BONUS, 4) }
+        { DailyChallenge("laser_master", "Laser Commander", "Fire laser 10 times", ChallengeType.LASER_FIRED, 10, RewardType.STREAK_BONUS, 4) },
+        { DailyChallenge("speed_run_30", "Speed Runner", "Clear a level under 30 seconds", ChallengeType.TIME_UNDER_LIMIT, 30, RewardType.STREAK_BONUS, 4) },
+        { DailyChallenge("multiball_3", "Ball Party", "Activate multi-ball 3 times", ChallengeType.MULTI_BALL_ACTIVE, 3, RewardType.SCORE_MULTIPLIER, 8) }
     )
 
     fun generateDailyChallenges(): List<DailyChallenge> {
@@ -78,6 +80,14 @@ object DailyChallengeManager {
                     challenge.rewardGranted = true
                 }
             }
+        }
+    }
+
+    fun completeChallenge(challenge: DailyChallenge) {
+        if (!challenge.completed) {
+            challenge.progress = challenge.targetValue
+            challenge.completed = true
+            challenge.rewardGranted = true
         }
     }
 

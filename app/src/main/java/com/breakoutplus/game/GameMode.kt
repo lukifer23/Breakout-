@@ -12,6 +12,7 @@ enum class GameMode(
     val endless: Boolean,
     val godMode: Boolean,
     val rush: Boolean,
+    val invaders: Boolean,
     val launchSpeed: Float
 ) {
     CLASSIC(
@@ -23,7 +24,8 @@ enum class GameMode(
         endless = false,
         godMode = false,
         rush = false,
-        launchSpeed = 95f  // Slightly faster for classic feel
+        invaders = false,
+        launchSpeed = 90f  // 5% reduction for better control
     ),
     TIMED(
         displayName = "Timed Challenge",
@@ -34,6 +36,7 @@ enum class GameMode(
         endless = false,
         godMode = false,
         rush = false,
+        invaders = false,
         launchSpeed = 108f  // Fast for timed challenge
     ),
     ENDLESS(
@@ -45,6 +48,7 @@ enum class GameMode(
         endless = true,
         godMode = false,
         rush = false,
+        invaders = false,
         launchSpeed = 100f  // Balanced for endless
     ),
     GOD(
@@ -56,6 +60,7 @@ enum class GameMode(
         endless = false,
         godMode = true,
         rush = false,
+        invaders = false,
         launchSpeed = 85f  // Gentle for practice
     ),
     RUSH(
@@ -67,6 +72,19 @@ enum class GameMode(
         endless = false,
         godMode = false,
         rush = true,
+        invaders = false,
         launchSpeed = 115f  // Very fast for rush mode
+    ),
+    INVADERS(
+        displayName = "Invaders",
+        description = "Breakout meets space invaders. Bounce shots to clear ships while dodging fire.",
+        meta = "Shielded paddle • Enemy fire • No timer",
+        baseLives = 3,
+        timeLimitSeconds = 0,
+        endless = false,
+        godMode = false,
+        rush = false,
+        invaders = true,
+        launchSpeed = 92f
     );
 }
