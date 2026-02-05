@@ -1,7 +1,7 @@
 # Breakout+ Gameplay
 
 ## Core Loop
-- Launch the ball, clear bricks, keep the ball in play.
+- Aim the launch, clear bricks, keep the ball in play.
 - Progress through themed levels with increasing difficulty.
 - Collect powerups to stack temporary abilities.
 
@@ -32,7 +32,7 @@
 - Wide paddle: easier control.
 - Slow: temporary speed reduction.
 - Fireball: pierces bricks.
-- Magnet: pulls powerups toward the paddle.
+- Magnet: pulls powerups toward the paddle and catches balls on contact.
 - Gravity Well: bends ball paths toward center.
 - Ball Splitter: splits balls into more.
 - Freeze: nearly stops time briefly (slow motion - affects physics only).
@@ -43,6 +43,7 @@
 - Explosive chains can rack up high scores quickly.
 
 ## Tips
+- Drag to aim your launch and release for controlled openings.
 - Hit the paddle near its edges to control ball angle.
 - Stack guardrail + shield for safe rallies.
 - Save lasers for armored/unbreakable clusters.
