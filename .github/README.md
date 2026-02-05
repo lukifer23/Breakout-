@@ -23,7 +23,7 @@ A premium brickbreaker game designed specifically for foldable devices like the 
 6. Launch: `adb shell am start -n com.breakoutplus.debug/com.breakoutplus.SplashActivity`
 
 ## Project Status
-Production-ready v1.0.0 - Complete implementation with all core features
+Testing ready v1.0.4 - Complete implementation with all core features
 
 ## License
 MIT License - see [LICENSE](LICENSE) for details
