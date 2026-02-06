@@ -39,7 +39,7 @@ class GameEngine(
     private var worldWidth = 100f
     private var worldHeight = 160f
 
-    private var paddle = Paddle(x = worldWidth / 2f, y = 8f, width = 18f, height = 2.6f)
+    private var paddle = Paddle(x = worldWidth / 2f, y = 8f, width = 20f, height = 2.6f)
     private var basePaddleWidth = paddle.width
     private var paddleVelocity = 0f
 
@@ -121,7 +121,7 @@ class GameEngine(
         worldWidth = 100f
         worldHeight = worldWidth * (height.toFloat() / width.toFloat())
         paddle.y = 8f
-        basePaddleWidth = 18f
+        basePaddleWidth = 20f
         paddle.width = basePaddleWidth
         paddle.height = 2.6f
         currentAspectRatio = worldHeight / worldWidth
@@ -1729,7 +1729,7 @@ class GameEngine(
                 activeEffects[type] = 12f
             }
             PowerUpType.WIDE_PADDLE -> {
-                paddle.width = basePaddleWidth * 1.4f
+                paddle.width = basePaddleWidth * (25f / 18f)
                 activeEffects[type] = 12f
             }
             PowerUpType.SLOW -> {

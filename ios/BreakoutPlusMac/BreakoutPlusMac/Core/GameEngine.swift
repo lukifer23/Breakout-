@@ -44,12 +44,14 @@ class GameEngine {
     private var activeEffects: [PowerUpType: TimeInterval] = [:]
     private var speedMultiplier = 1.0
     private var lastUpdateTime: TimeInterval = 0
+    private let basePaddleWidth: Float = 20
+    private let widePaddleScale: Float = 25.0 / 18.0
 
     weak var delegate: GameEngineDelegate?
 
     init(gameMode: GameMode) {
         self.gameMode = gameMode
-        self.paddle = Paddle(x: 50, y: 10, width: 18, height: 2.6)
+        self.paddle = Paddle(x: 50, y: 10, width: basePaddleWidth, height: 2.6)
         self.lives = gameMode.baseLives
         self.timeRemaining = gameMode.timeLimitSeconds
 
@@ -250,7 +252,7 @@ class GameEngine {
                 balls.append(newBall)
             }
         case .widePaddle:
-            paddle.width = 25
+            paddle.width = basePaddleWidth * widePaddleScale
         case .slowMotion:
             speedMultiplier = 0.7
         case .extraLife:
@@ -264,7 +266,7 @@ class GameEngine {
     private func deactivatePowerup(_ type: PowerUpType) {
         switch type {
         case .widePaddle:
-            paddle.width = 18
+            paddle.width = basePaddleWidth
         case .slowMotion:
             speedMultiplier = 1.0
         default:
