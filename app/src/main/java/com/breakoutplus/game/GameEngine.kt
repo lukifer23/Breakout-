@@ -81,6 +81,7 @@ class GameEngine(
     private var aimAngle = 0.72f
     private var aimDirection = 1f
     private var aimHasInput = false
+    private var isDragging = false
 
     private var theme: LevelTheme = LevelThemes.DEFAULT
     private var currentLayout: LevelFactory.LevelLayout? = null
@@ -648,10 +649,12 @@ class GameEngine(
             MotionEvent.ACTION_DOWN -> {
                 paddle.targetX = x
                 updateAimFromInput(x)
+                isDragging = true
             }
             MotionEvent.ACTION_MOVE -> {
                 paddle.targetX = x
                 updateAimFromInput(x)
+                isDragging = true
             }
             MotionEvent.ACTION_UP -> {
                 if (state == GameState.READY) {
@@ -662,6 +665,10 @@ class GameEngine(
                 } else if (magnetActive && balls.any { it.stuckToPaddle }) {
                     releaseStuckBalls()
                 }
+                isDragging = false
+            }
+            MotionEvent.ACTION_CANCEL -> {
+                isDragging = false
             }
         }
         if (event.actionMasked == MotionEvent.ACTION_POINTER_DOWN &&
@@ -931,10 +938,14 @@ class GameEngine(
     private fun updatePaddle(dt: Float) {
         val previousX = paddle.x
         val target = paddle.targetX
-        val speed = 60f + settings.sensitivity * 140f
+        val speed = 90f + settings.sensitivity * 180f
         val delta = target - paddle.x
-        val maxMove = speed * dt
-        if (abs(delta) > 0.05f) {
+        val dragSnapThreshold = 6f
+        val dragBoost = if (isDragging && abs(delta) > dragSnapThreshold) 2.4f else 1f
+        val maxMove = speed * dragBoost * dt
+        if (isDragging && abs(delta) > dragSnapThreshold * 2.5f) {
+            paddle.x = target
+        } else if (abs(delta) > 0.05f) {
             paddle.x += delta.coerceIn(-maxMove, maxMove)
         }
         paddle.x = paddle.x.coerceIn(paddle.width / 2f, worldWidth - paddle.width / 2f)
