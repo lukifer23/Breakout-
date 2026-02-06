@@ -1,0 +1,4 @@
+- Added on-screen FIRE button for Laser powerup (two-finger tap still supported)
+- Powerup tips now appear on first pickup for quick learning
+- Invaders mode polish: muzzle flash, hit wobble, and shield impact feedback
+- Improved powerup glyph visuals and brick color variety

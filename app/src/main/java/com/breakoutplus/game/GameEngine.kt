@@ -39,7 +39,7 @@ class GameEngine(
     private var worldWidth = 100f
     private var worldHeight = 160f
 
-    private var paddle = Paddle(x = worldWidth / 2f, y = 8f, width = 20f, height = 2.6f)
+    private var paddle = Paddle(x = worldWidth / 2f, y = 8f, width = 22f, height = 2.6f)
     private var basePaddleWidth = paddle.width
     private var paddleVelocity = 0f
 
@@ -65,11 +65,14 @@ class GameEngine(
     private var pierceActive = false
     private var explosiveTipShown = false
     private var lastPowerupStatus = ""
+    private var lastPowerupSnapshot: List<PowerupStatus> = emptyList()
+    private var lastComboReported = 0
     private var lostLifeThisLevel = false
     private var laserTipShown = false
     private var magnetTipShown = false
     private var magnetCatchTipShown = false
     private var godModeTipShown = false
+    private val powerupTipShown = mutableSetOf<PowerUpType>()
     private var invaderDirection = 1f
     private var invaderSpeed = 6f
     private var invaderShotTimer = 0f
@@ -77,6 +80,10 @@ class GameEngine(
     private var invaderShield = 0f
     private var invaderShieldMax = 0f
     private var invaderShieldAlerted = false
+    private var shieldHitPulse = 0f
+    private var shieldHitX = 0f
+    private var shieldHitColor = floatArrayOf(0.8f, 0.95f, 1f, 1f)
+    private var powerupDropsSinceLaser = 0
     private var aimNormalized = 0f
     private var aimAngle = 0.72f
     private var aimDirection = 1f
@@ -92,6 +99,7 @@ class GameEngine(
     private var layoutRowBoost = 0
     private var layoutColBoost = 0
     private var invaderScale = 1f
+    private var globalBrickScale = 0.9f
     private var screenFlash = 0f
     private var levelClearFlash = 0f
     private val hitFlashDecayRate = 2.0f
@@ -122,12 +130,18 @@ class GameEngine(
         worldWidth = 100f
         worldHeight = worldWidth * (height.toFloat() / width.toFloat())
         paddle.y = 8f
-        basePaddleWidth = 20f
+        currentAspectRatio = worldHeight / worldWidth
+        basePaddleWidth = resolveBasePaddleWidth(currentAspectRatio)
         paddle.width = basePaddleWidth
         paddle.height = 2.6f
-        currentAspectRatio = worldHeight / worldWidth
         applyLayoutTuning(currentAspectRatio, preserveRowBoost = true)
         relayoutBricks()
+    }
+
+    private fun resolveBasePaddleWidth(aspectRatio: Float): Float {
+        val base = worldWidth * 0.22f
+        val wideBoost = if (aspectRatio < 1.45f) 1.08f else 1f
+        return base * wideBoost
     }
 
     fun update(delta: Float) {
@@ -158,6 +172,9 @@ class GameEngine(
             updateParticles(dt)
             updateWaves(dt)
             checkLevelCompletion()
+        }
+        if (shieldHitPulse > 0f) {
+            shieldHitPulse = max(0f, shieldHitPulse - dt * 2.6f)
         }
     }
 
@@ -374,6 +391,21 @@ class GameEngine(
             )
         }
         renderer.drawRect(paddle.x - paddle.width / 2f, paddle.y - paddle.height / 2f, paddle.width, paddle.height, theme.paddle)
+        if (shieldHitPulse > 0f) {
+            val pulseAlpha = (shieldHitPulse * 0.65f).coerceIn(0f, 0.65f)
+            val pulseColor = floatArrayOf(shieldHitColor[0], shieldHitColor[1], shieldHitColor[2], pulseAlpha)
+            val pulseWidth = paddle.width + 3.2f * shieldHitPulse
+            val pulseHeight = paddle.height + 1.4f * shieldHitPulse
+            renderer.drawRect(
+                paddle.x - pulseWidth / 2f,
+                paddle.y - pulseHeight / 2f,
+                pulseWidth,
+                pulseHeight,
+                pulseColor
+            )
+            val hitX = shieldHitX.coerceIn(paddle.x - paddle.width / 2f, paddle.x + paddle.width / 2f)
+            renderer.drawCircle(hitX, paddle.y + paddle.height / 2f + 0.6f, 0.8f + 1.4f * shieldHitPulse, pulseColor)
+        }
 
         balls.forEach { ball ->
             val speed = kotlin.math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy)
@@ -416,76 +448,100 @@ class GameEngine(
         val y = power.y - size / 2f
         renderer.drawRect(x, y, size, size, outer)
         renderer.drawRect(x + cornerInset, y + cornerInset, size - cornerInset * 2f, size - cornerInset * 2f, inner)
+        val highlight = floatArrayOf(1f, 1f, 1f, 0.18f + pulse * 0.12f)
+        renderer.drawRect(x + size * 0.12f, y + size * 0.62f, size * 0.76f, size * 0.18f, highlight)
 
-        val glyph = floatArrayOf(0.95f, 0.96f, 1f, 1f)
+        val glyph = floatArrayOf(0.97f, 0.98f, 1f, 1f)
+        val glyphSoft = floatArrayOf(0.88f, 0.93f, 1f, 0.86f)
         when (power.type) {
             PowerUpType.MULTI_BALL -> {
-                renderer.drawCircle(power.x - size * 0.18f, power.y, size * 0.16f, glyph)
-                renderer.drawCircle(power.x + size * 0.18f, power.y, size * 0.16f, glyph)
+                renderer.drawCircle(power.x, power.y + size * 0.16f, size * 0.12f, glyph)
+                renderer.drawCircle(power.x - size * 0.14f, power.y - size * 0.08f, size * 0.12f, glyph)
+                renderer.drawCircle(power.x + size * 0.14f, power.y - size * 0.08f, size * 0.12f, glyph)
+                renderer.drawRect(power.x - size * 0.02f, power.y - size * 0.22f, size * 0.04f, size * 0.44f, glyphSoft)
             }
             PowerUpType.LASER -> {
-                renderer.drawRect(power.x - size * 0.08f, power.y - size * 0.25f, size * 0.16f, size * 0.5f, glyph)
+                renderer.drawRect(power.x - size * 0.18f, power.y - size * 0.26f, size * 0.08f, size * 0.52f, glyph)
+                renderer.drawRect(power.x + size * 0.10f, power.y - size * 0.26f, size * 0.08f, size * 0.52f, glyph)
+                renderer.drawCircle(power.x - size * 0.14f, power.y + size * 0.28f, size * 0.06f, glyphSoft)
+                renderer.drawCircle(power.x + size * 0.14f, power.y + size * 0.28f, size * 0.06f, glyphSoft)
+                renderer.drawRect(power.x - size * 0.06f, power.y - size * 0.04f, size * 0.12f, size * 0.08f, glyphSoft)
             }
             PowerUpType.GUARDRAIL -> {
-                renderer.drawRect(power.x - size * 0.28f, power.y - size * 0.05f, size * 0.56f, size * 0.1f, glyph)
+                renderer.drawRect(power.x - size * 0.32f, power.y - size * 0.02f, size * 0.64f, size * 0.1f, glyph)
+                renderer.drawRect(power.x - size * 0.26f, power.y - size * 0.2f, size * 0.08f, size * 0.18f, glyphSoft)
+                renderer.drawRect(power.x + size * 0.18f, power.y - size * 0.2f, size * 0.08f, size * 0.18f, glyphSoft)
+                renderer.drawRect(power.x - size * 0.22f, power.y + size * 0.08f, size * 0.44f, size * 0.06f, glyphSoft)
             }
             PowerUpType.SHIELD -> {
-                renderer.drawCircle(power.x, power.y + size * 0.02f, size * 0.22f, glyph)
-                renderer.drawRect(power.x - size * 0.18f, power.y - size * 0.16f, size * 0.36f, size * 0.16f, glyph)
+                renderer.drawCircle(power.x, power.y + size * 0.1f, size * 0.18f, glyph)
+                renderer.drawRect(power.x - size * 0.2f, power.y - size * 0.02f, size * 0.4f, size * 0.22f, glyph)
+                renderer.drawRect(power.x - size * 0.12f, power.y - size * 0.2f, size * 0.24f, size * 0.18f, glyph)
+                renderer.drawRect(power.x - size * 0.04f, power.y - size * 0.12f, size * 0.08f, size * 0.18f, glyphSoft)
             }
             PowerUpType.WIDE_PADDLE -> {
-                renderer.drawRect(power.x - size * 0.3f, power.y - size * 0.08f, size * 0.6f, size * 0.16f, glyph)
+                renderer.drawRect(power.x - size * 0.32f, power.y - size * 0.06f, size * 0.64f, size * 0.12f, glyph)
+                renderer.drawRect(power.x - size * 0.48f, power.y - size * 0.12f, size * 0.06f, size * 0.24f, glyphSoft)
+                renderer.drawRect(power.x + size * 0.42f, power.y - size * 0.12f, size * 0.06f, size * 0.24f, glyphSoft)
+                renderer.drawRect(power.x - size * 0.42f, power.y - size * 0.02f, size * 0.1f, size * 0.04f, glyphSoft)
+                renderer.drawRect(power.x + size * 0.32f, power.y - size * 0.02f, size * 0.1f, size * 0.04f, glyphSoft)
             }
             PowerUpType.SLOW -> {
-                renderer.drawCircle(power.x, power.y, size * 0.18f, glyph)
-                renderer.drawRect(power.x - size * 0.02f, power.y - size * 0.3f, size * 0.04f, size * 0.24f, glyph)
-                renderer.drawRect(power.x - size * 0.02f, power.y + size * 0.06f, size * 0.16f, size * 0.04f, glyph)
+                renderer.drawCircle(power.x, power.y, size * 0.19f, glyph)
+                renderer.drawRect(power.x - size * 0.02f, power.y, size * 0.04f, size * 0.16f, glyphSoft)
+                renderer.drawRect(power.x - size * 0.02f, power.y - size * 0.08f, size * 0.14f, size * 0.04f, glyphSoft)
+                renderer.drawCircle(power.x, power.y, size * 0.04f, glyph)
             }
             PowerUpType.FIREBALL -> {
-                renderer.drawCircle(power.x, power.y, size * 0.2f, glyph)
-                renderer.drawRect(power.x - size * 0.04f, power.y + size * 0.14f, size * 0.08f, size * 0.18f, glyph)
+                renderer.drawCircle(power.x, power.y + size * 0.04f, size * 0.18f, glyph)
+                renderer.drawCircle(power.x + size * 0.05f, power.y + size * 0.18f, size * 0.09f, glyphSoft)
+                renderer.drawRect(power.x - size * 0.06f, power.y - size * 0.22f, size * 0.12f, size * 0.18f, glyph)
+                renderer.drawRect(power.x + size * 0.02f, power.y - size * 0.22f, size * 0.08f, size * 0.14f, glyphSoft)
             }
             PowerUpType.LIFE -> {
-                renderer.drawRect(power.x - size * 0.08f, power.y - size * 0.22f, size * 0.16f, size * 0.44f, glyph)
-                renderer.drawRect(power.x - size * 0.22f, power.y - size * 0.08f, size * 0.44f, size * 0.16f, glyph)
+                renderer.drawCircle(power.x - size * 0.1f, power.y + size * 0.08f, size * 0.1f, glyph)
+                renderer.drawCircle(power.x + size * 0.1f, power.y + size * 0.08f, size * 0.1f, glyph)
+                renderer.drawRect(power.x - size * 0.2f, power.y - size * 0.04f, size * 0.4f, size * 0.18f, glyph)
+                renderer.drawRect(power.x - size * 0.1f, power.y - size * 0.22f, size * 0.2f, size * 0.18f, glyph)
             }
             PowerUpType.MAGNET -> {
-                // Horseshoe magnet shape
-                renderer.drawRect(power.x - size * 0.15f, power.y - size * 0.1f, size * 0.3f, size * 0.2f, glyph)
-                renderer.drawRect(power.x - size * 0.25f, power.y - size * 0.05f, size * 0.1f, size * 0.1f, glyph)
-                renderer.drawRect(power.x + size * 0.15f, power.y - size * 0.05f, size * 0.1f, size * 0.1f, glyph)
+                renderer.drawRect(power.x - size * 0.22f, power.y - size * 0.18f, size * 0.1f, size * 0.32f, glyph)
+                renderer.drawRect(power.x + size * 0.12f, power.y - size * 0.18f, size * 0.1f, size * 0.32f, glyph)
+                renderer.drawRect(power.x - size * 0.22f, power.y - size * 0.22f, size * 0.44f, size * 0.08f, glyph)
+                renderer.drawRect(power.x - size * 0.22f, power.y + size * 0.12f, size * 0.44f, size * 0.08f, glyphSoft)
             }
             PowerUpType.GRAVITY_WELL -> {
-                // Spiral or vortex shape
                 val centerX = power.x
                 val centerY = power.y
-                val radius = size * 0.2f
-                for (i in 0..3) {
-                    val angle = i * Math.PI.toFloat() / 2f
+                val step = size * 0.08f
+                for (i in 0..4) {
+                    val angle = i * 1.1f + pulse
+                    val radius = step * (i + 1)
                     val x = centerX + kotlin.math.cos(angle) * radius
                     val y = centerY + kotlin.math.sin(angle) * radius
-                    renderer.drawCircle(x, y, size * 0.08f, glyph)
+                    renderer.drawCircle(x, y, size * 0.06f, glyph)
                 }
+                renderer.drawCircle(centerX, centerY, size * 0.08f, glyphSoft)
             }
             PowerUpType.BALL_SPLITTER -> {
-                // Three balls in triangle
-                renderer.drawCircle(power.x, power.y - size * 0.12f, size * 0.12f, glyph)
-                renderer.drawCircle(power.x - size * 0.1f, power.y + size * 0.08f, size * 0.12f, glyph)
-                renderer.drawCircle(power.x + size * 0.1f, power.y + size * 0.08f, size * 0.12f, glyph)
+                renderer.drawCircle(power.x, power.y + size * 0.12f, size * 0.1f, glyph)
+                renderer.drawCircle(power.x - size * 0.12f, power.y - size * 0.06f, size * 0.1f, glyph)
+                renderer.drawCircle(power.x + size * 0.12f, power.y - size * 0.06f, size * 0.1f, glyph)
+                renderer.drawRect(power.x - size * 0.02f, power.y - size * 0.2f, size * 0.04f, size * 0.4f, glyphSoft)
             }
             PowerUpType.FREEZE -> {
-                // Snowflake pattern
                 renderer.drawRect(power.x - size * 0.02f, power.y - size * 0.2f, size * 0.04f, size * 0.4f, glyph)
                 renderer.drawRect(power.x - size * 0.2f, power.y - size * 0.02f, size * 0.4f, size * 0.04f, glyph)
-                renderer.drawRect(power.x - size * 0.15f, power.y - size * 0.15f, size * 0.3f, size * 0.04f, glyph)
-                renderer.drawRect(power.x - size * 0.15f, power.y + size * 0.11f, size * 0.3f, size * 0.04f, glyph)
+                renderer.drawRect(power.x - size * 0.14f, power.y - size * 0.14f, size * 0.08f, size * 0.08f, glyphSoft)
+                renderer.drawRect(power.x + size * 0.06f, power.y - size * 0.14f, size * 0.08f, size * 0.08f, glyphSoft)
+                renderer.drawRect(power.x - size * 0.14f, power.y + size * 0.06f, size * 0.08f, size * 0.08f, glyphSoft)
+                renderer.drawRect(power.x + size * 0.06f, power.y + size * 0.06f, size * 0.08f, size * 0.08f, glyphSoft)
             }
             PowerUpType.PIERCE -> {
-                // Arrow through brick
-                renderer.drawRect(power.x - size * 0.15f, power.y - size * 0.08f, size * 0.3f, size * 0.16f, glyph)
-                renderer.drawRect(power.x - size * 0.02f, power.y - size * 0.2f, size * 0.04f, size * 0.4f, glyph)
-                renderer.drawRect(power.x - size * 0.08f, power.y - size * 0.12f, size * 0.04f, size * 0.04f, glyph)
-                renderer.drawRect(power.x + size * 0.04f, power.y - size * 0.12f, size * 0.04f, size * 0.04f, glyph)
+                renderer.drawRect(power.x - size * 0.02f, power.y - size * 0.22f, size * 0.04f, size * 0.44f, glyph)
+                renderer.drawRect(power.x - size * 0.12f, power.y + size * 0.12f, size * 0.24f, size * 0.06f, glyph)
+                renderer.drawRect(power.x - size * 0.08f, power.y + size * 0.18f, size * 0.16f, size * 0.06f, glyphSoft)
+                renderer.drawRect(power.x - size * 0.22f, power.y - size * 0.08f, size * 0.44f, size * 0.16f, glyphSoft)
             }
         }
     }
@@ -518,10 +574,21 @@ class GameEngine(
     }
 
     private fun drawInvaderShip(renderer: Renderer2D, brick: Brick, baseColor: FloatArray) {
-        val x = brick.x
-        val y = brick.y
-        val w = brick.width
-        val h = brick.height
+        val time = System.nanoTime() / 1_000_000_000f
+        val hitPulse = brick.hitFlash.coerceIn(0f, 1f)
+        val scale = 1f + hitPulse * 0.08f
+        val wobble = if (hitPulse > 0f) {
+            kotlin.math.sin(time * 18f + brick.gridX) * hitPulse * brick.width * 0.04f
+        } else {
+            0f
+        }
+
+        val baseW = brick.width
+        val baseH = brick.height
+        val w = baseW * scale
+        val h = baseH * scale
+        val x = brick.x + wobble - (w - baseW) * 0.5f
+        val y = brick.y - (h - baseH) * 0.5f
         val variant = ((brick.gridX * 3 + brick.gridY * 5) % 4 + 4) % 4
         val tint = when (variant) {
             0 -> 1.0f
@@ -529,6 +596,7 @@ class GameEngine(
             2 -> 1.12f
             else -> 0.96f
         }
+        val pulseBoost = 1f + hitPulse * 0.25f
 
         val shadow = adjustColor(baseColor, 0.35f, 0.35f)
         renderer.drawRect(x + w * 0.04f, y + h * 0.04f, w * 0.92f, h * 0.92f, shadow)
@@ -545,15 +613,15 @@ class GameEngine(
             2 -> 0.22f
             else -> 0.28f
         } * h
-        val body = adjustColor(baseColor, 0.95f * tint, 1f)
+        val body = adjustColor(baseColor, 0.95f * tint * pulseBoost, 1f)
         renderer.drawRect(x, y + bodyY, w, bodyHeight, body)
 
-        val wingColor = adjustColor(baseColor, 1.15f * tint, 1f)
+        val wingColor = adjustColor(baseColor, 1.15f * tint * pulseBoost, 1f)
         val wingHeight = h * if (variant == 2) 0.32f else 0.28f
         renderer.drawRect(x + w * 0.06f, y + h * 0.12f, w * 0.2f, wingHeight, wingColor)
         renderer.drawRect(x + w * 0.74f, y + h * 0.12f, w * 0.2f, wingHeight, wingColor)
 
-        val cockpit = adjustColor(baseColor, 1.35f, 1f)
+        val cockpit = adjustColor(baseColor, 1.35f * pulseBoost, 1f)
         val cockpitRadius = h * when (variant) {
             1 -> 0.15f
             2 -> 0.2f
@@ -567,7 +635,7 @@ class GameEngine(
             renderer.drawCircle(x + w * 0.62f, y + h * 0.56f, h * 0.08f, light)
         }
 
-        val engine = adjustColor(baseColor, 1.5f * tint, 0.9f)
+        val engine = adjustColor(baseColor, 1.5f * tint * pulseBoost, 0.9f)
         renderer.drawRect(x + w * 0.22f, y + h * 0.08f, w * 0.12f, h * 0.12f, engine)
         renderer.drawRect(x + w * 0.66f, y + h * 0.08f, w * 0.12f, h * 0.12f, engine)
 
@@ -582,6 +650,14 @@ class GameEngine(
         if (variant == 3) {
             val ridge = adjustColor(baseColor, 1.1f, 0.85f)
             renderer.drawRect(x + w * 0.46f, y + h * 0.34f, w * 0.08f, h * 0.28f, ridge)
+        }
+
+        if (brick.fireFlash > 0f) {
+            val flashAlpha = (brick.fireFlash * 0.8f).coerceIn(0f, 0.8f)
+            val flashColor = adjustColor(baseColor, 1.5f, flashAlpha)
+            val flashRadius = h * (0.16f + brick.fireFlash * 0.18f)
+            renderer.drawCircle(x + w * 0.5f, y - h * 0.02f, flashRadius, flashColor)
+            renderer.drawRect(x + w * 0.46f, y - h * 0.16f, w * 0.08f, h * 0.14f, adjustColor(baseColor, 1.8f, flashAlpha))
         }
     }
 
@@ -598,18 +674,23 @@ class GameEngine(
 
     private fun applyLayoutTuning(aspectRatio: Float, preserveRowBoost: Boolean) {
         val isWide = aspectRatio < 1.45f
-        brickAreaTopRatio = if (isWide) 0.965f else 0.92f
-        brickAreaBottomRatio = if (isWide) 0.48f else 0.52f
-        brickSpacing = if (isWide) 0.36f else 0.42f
+        brickAreaTopRatio = if (isWide) 0.985f else 0.95f
+        brickAreaBottomRatio = if (isWide) 0.65f else 0.6f
+        brickSpacing = if (isWide) 0.34f else 0.38f
         if (!preserveRowBoost) {
-            layoutRowBoost = if (isWide) 1 else 0
-            layoutColBoost = 0
+            layoutRowBoost = 2
+            layoutColBoost = 2
         }
+        globalBrickScale = 0.9f
         if (config.mode.invaders) {
-            brickAreaTopRatio = if (isWide) 0.93f else 0.9f
-            brickAreaBottomRatio = if (isWide) 0.68f else 0.66f
-            brickSpacing = if (isWide) 0.7f else 0.62f
+            brickAreaTopRatio = if (isWide) 0.985f else 0.95f
+            brickAreaBottomRatio = if (isWide) 0.7f else 0.65f
+            brickSpacing = if (isWide) 0.34f else 0.38f
             invaderScale = if (isWide) 0.6f else 0.58f
+            if (!preserveRowBoost) {
+                layoutRowBoost = 0
+                layoutColBoost = 0
+            }
         } else {
             invaderScale = 1f
         }
@@ -678,6 +759,13 @@ class GameEngine(
         }
     }
 
+    fun triggerLaserFromUi() {
+        if (state == GameState.PAUSED || state == GameState.GAME_OVER) return
+        if (activeEffects.containsKey(PowerUpType.LASER)) {
+            shootLaser()
+        }
+    }
+
     fun pause() {
         stateBeforePause = state
         state = GameState.PAUSED
@@ -696,7 +784,12 @@ class GameEngine(
         state = GameState.READY
         combo = 0
         lostLifeThisLevel = false
+        if (first) {
+            powerupDropsSinceLaser = 0
+            powerupTipShown.clear()
+        }
         guardrailActive = config.mode.godMode
+        shieldHitPulse = 0f
         shieldCharges = 0
         fireballActive = false
         magnetActive = false
@@ -716,6 +809,8 @@ class GameEngine(
         enemyShots.clear()
         particles.clear()
         waves.clear()
+        lastPowerupSnapshot = emptyList()
+        lastComboReported = 0
 
         if (config.mode.godMode && !godModeTipShown) {
             listener.onTip("God mode: bottom shield is always active.")
@@ -776,17 +871,20 @@ class GameEngine(
         val areaHeight = areaTop - areaBottom
         val baseBrickHeight = (areaHeight - spacing * (rows - 1)) / rows
         val baseBrickWidth = (worldWidth - spacing * (cols + 1)) / cols
-        val sizeScale = if (config.mode.invaders) invaderScale else 1f
+        val sizeScale = (if (config.mode.invaders) invaderScale else 1f) * globalBrickScale
         val brickHeight = baseBrickHeight * sizeScale
         val brickWidth = baseBrickWidth * sizeScale
         val colOffset = layoutColBoost / 2
+        val occupied = HashSet<Long>(layout.bricks.size * 2)
+        fun key(col: Int, row: Int): Long = (col.toLong() shl 32) or (row.toLong() and 0xffffffffL)
         layout.bricks.forEach { spec ->
             val cellX = spacing + (spec.col + colOffset) * (baseBrickWidth + spacing)
             val cellY = areaBottom + (rows - 1 - spec.row) * (baseBrickHeight + spacing * 0.5f)
             val x = cellX + (baseBrickWidth - brickWidth) * 0.5f
             val y = cellY + (baseBrickHeight - brickHeight) * 0.5f
+            val gridX = spec.col + colOffset
             val brick = Brick(
-                gridX = spec.col,
+                gridX = gridX,
                 gridY = spec.row,
                 x = x,
                 y = y,
@@ -817,6 +915,7 @@ class GameEngine(
             }
 
             bricks.add(brick)
+            occupied.add(key(gridX, spec.row))
         }
 
         if (layoutRowBoost > 0 && !config.mode.invaders) {
@@ -838,10 +937,12 @@ class GameEngine(
                     val cellY = areaBottom + (rows - 1 - rowIndex) * (baseBrickHeight + spacing * 0.5f)
                     val x = cellX + (baseBrickWidth - brickWidth) * 0.5f
                     val y = cellY + (baseBrickHeight - brickHeight) * 0.5f
+                    val gridX = col + colOffset
+                    val gridY = rowIndex
                     bricks.add(
                         Brick(
-                            gridX = col,
-                            gridY = rowIndex,
+                            gridX = gridX,
+                            gridY = gridY,
                             x = x,
                             y = y,
                             width = brickWidth,
@@ -851,7 +952,59 @@ class GameEngine(
                             type = type
                         )
                     )
+                    occupied.add(key(gridX, gridY))
                 }
+            }
+        }
+
+        if (layoutColBoost > 0 && !config.mode.invaders) {
+            val difficulty = 1f + levelIndex * 0.08f
+            val leftCols = colOffset
+            val rightStart = colOffset + layout.cols
+            for (col in 0 until cols) {
+                val isExtraCol = col < leftCols || col >= rightStart
+                if (!isExtraCol) continue
+                for (row in 0 until rows) {
+                    if (occupied.contains(key(col, row))) continue
+                    val rowRatio = if (rows > 1) row.toFloat() / (rows - 1).toFloat() else 0f
+                    val density = 0.62f - rowRatio * 0.22f
+                    val seed = (levelIndex + 3) * 131 + row * 17 + col * 29
+                    val roll = Random(seed).nextFloat()
+                    if (roll > density) continue
+                    val typeRoll = Random(seed + 7).nextFloat()
+                    val type = when {
+                        typeRoll > 0.9f -> BrickType.REINFORCED
+                        typeRoll < 0.04f -> BrickType.ARMORED
+                        else -> BrickType.NORMAL
+                    }
+                    val baseHp = baseHitPoints(type)
+                    val hp = if (type == BrickType.UNBREAKABLE) baseHp else max(1, (baseHp * difficulty).roundToInt())
+                    val cellX = spacing + col * (baseBrickWidth + spacing)
+                    val cellY = areaBottom + (rows - 1 - row) * (baseBrickHeight + spacing * 0.5f)
+                    val x = cellX + (baseBrickWidth - brickWidth) * 0.5f
+                    val y = cellY + (baseBrickHeight - brickHeight) * 0.5f
+                    bricks.add(
+                        Brick(
+                            gridX = col,
+                            gridY = row,
+                            x = x,
+                            y = y,
+                            width = brickWidth,
+                            height = brickHeight,
+                            hitPoints = hp,
+                            maxHitPoints = hp,
+                            type = type
+                        )
+                    )
+                    occupied.add(key(col, row))
+                }
+            }
+        }
+
+        if (layoutRowBoost > 0 && !config.mode.invaders) {
+            val topPad = baseBrickHeight * 0.15f
+            bricks.forEach { brick ->
+                brick.y += topPad
             }
         }
     }
@@ -867,13 +1020,12 @@ class GameEngine(
         val areaHeight = areaTop - areaBottom
         val baseBrickHeight = (areaHeight - spacing * (rows - 1)) / rows
         val baseBrickWidth = (worldWidth - spacing * (cols + 1)) / cols
-        val sizeScale = if (config.mode.invaders) invaderScale else 1f
+        val sizeScale = (if (config.mode.invaders) invaderScale else 1f) * globalBrickScale
         val brickHeight = baseBrickHeight * sizeScale
         val brickWidth = baseBrickWidth * sizeScale
-        val colOffset = layoutColBoost / 2
         bricks.forEach { brick ->
             if (brick.gridX < 0 || brick.gridY < 0) return@forEach
-            val cellX = spacing + (brick.gridX + colOffset) * (baseBrickWidth + spacing)
+            val cellX = spacing + brick.gridX * (baseBrickWidth + spacing)
             val cellY = areaBottom + (rows - 1 - brick.gridY) * (baseBrickHeight + spacing * 0.5f)
             val x = cellX + (baseBrickWidth - brickWidth) * 0.5f
             val y = cellY + (baseBrickHeight - brickHeight) * 0.5f
@@ -986,6 +1138,9 @@ class GameEngine(
             }
             if (brick.hitFlash > 0f) {
                 brick.hitFlash = max(0f, brick.hitFlash - dt * hitFlashDecayRate)
+            }
+            if (brick.fireFlash > 0f) {
+                brick.fireFlash = max(0f, brick.fireFlash - dt * 3.2f)
             }
         }
     }
@@ -1293,7 +1448,7 @@ class GameEngine(
                             )
                         )
                     }
-                    powerups.add(PowerUp(brick.centerX, brick.centerY, randomPowerupType(), 18f))
+                    spawnPowerup(brick.centerX, brick.centerY, randomPowerupType())
                     listener.onTip("Boss down! Powerup dropped.")
                 }
 
@@ -1464,6 +1619,27 @@ class GameEngine(
         }
     }
 
+    private fun maybeShowPowerupTip(type: PowerUpType) {
+        if (!settings.tipsEnabled) return
+        if (!powerupTipShown.add(type)) return
+        val message = when (type) {
+            PowerUpType.MULTI_BALL -> "Multi-ball: extra balls in play."
+            PowerUpType.LASER -> "Laser: tap FIRE or two-finger tap."
+            PowerUpType.GUARDRAIL -> "Guardrail: bottom safety net."
+            PowerUpType.LIFE -> "1UP: gain an extra life."
+            PowerUpType.SHIELD -> "Shield: blocks invader shots."
+            PowerUpType.WIDE_PADDLE -> "Wide paddle: bigger hit area."
+            PowerUpType.SLOW -> "Slow: ball speed reduced."
+            PowerUpType.FIREBALL -> "Fireball: smash through bricks."
+            PowerUpType.MAGNET -> "Magnet: balls stick to the paddle."
+            PowerUpType.GRAVITY_WELL -> "Gravity well: bends ball paths."
+            PowerUpType.BALL_SPLITTER -> "Splitter: duplicates balls."
+            PowerUpType.FREEZE -> "Freeze: slows everything."
+            PowerUpType.PIERCE -> "Pierce: balls ignore armor."
+        }
+        listener.onTip(message)
+    }
+
     private fun updateInvaderShots(dt: Float) {
         if (!config.mode.invaders) return
         invaderShotTimer -= dt
@@ -1495,6 +1671,7 @@ class GameEngine(
         val invaders = bricks.filter { it.alive && it.type == BrickType.INVADER }
         if (invaders.isEmpty()) return
         val origin = invaders[random.nextInt(invaders.size)]
+        origin.fireFlash = 0.5f
         val baseSpeed = (28f + levelIndex * 1.2f).coerceAtMost(42f)
         val spread = 6f
         val vx = (random.nextFloat() - 0.5f) * spread
@@ -1517,8 +1694,12 @@ class GameEngine(
             val damage = (12f + levelIndex * 1.2f).coerceAtMost(22f)
             invaderShield = max(0f, invaderShield - damage)
             listener.onShieldUpdated(invaderShield.toInt(), invaderShieldMax.toInt())
+            shieldHitPulse = 1f
+            shieldHitX = shot.x
+            shieldHitColor = adjustColor(shot.color, 1.2f, 1f)
             audio.play(GameSound.BOUNCE, 0.65f)
             audio.haptic(GameHaptic.LIGHT)
+            renderer?.triggerScreenShake(1.1f, 0.08f)
             if (invaderShield <= 0f && !invaderShieldAlerted) {
                 invaderShieldAlerted = true
                 listener.onTip("Shield down! Dodge the incoming fire.")
@@ -1844,7 +2025,11 @@ class GameEngine(
                     charges = if (type == PowerUpType.SHIELD) shieldCharges else 0
                 )
             }
-        listener.onPowerupsUpdated(snapshot, combo)
+        if (snapshot != lastPowerupSnapshot || combo != lastComboReported) {
+            lastPowerupSnapshot = snapshot
+            lastComboReported = combo
+            listener.onPowerupsUpdated(snapshot, combo)
+        }
     }
 
     private fun reportScore() {
@@ -1954,8 +2139,17 @@ class GameEngine(
             else -> 0.08f
         }
         if (random.nextFloat() < dropChance) {
-            val type = randomPowerupType()
-            powerups.add(PowerUp(brick.centerX, brick.centerY, type, 18f))
+            spawnPowerup(brick.centerX, brick.centerY, randomPowerupType())
+        }
+    }
+
+    private fun spawnPowerup(x: Float, y: Float, type: PowerUpType) {
+        powerups.add(PowerUp(x, y, type, 18f))
+        maybeShowPowerupTip(type)
+        if (type == PowerUpType.LASER) {
+            powerupDropsSinceLaser = 0
+        } else {
+            powerupDropsSinceLaser += 1
         }
     }
 
@@ -2033,9 +2227,12 @@ class GameEngine(
     }
 
     private fun randomPowerupType(): PowerUpType {
+        if (powerupDropsSinceLaser >= 5 && !activeEffects.containsKey(PowerUpType.LASER)) {
+            return PowerUpType.LASER
+        }
         val weights = mutableMapOf(
             PowerUpType.MULTI_BALL to 1.25f,
-            PowerUpType.LASER to 1.05f,
+            PowerUpType.LASER to 1.2f,
             PowerUpType.GUARDRAIL to 0.95f,
             PowerUpType.SHIELD to 0.9f,
             PowerUpType.WIDE_PADDLE to 0.95f,
@@ -2238,6 +2435,22 @@ data class Brick(
     val type: BrickType,
     var alive: Boolean = true
 ) {
+    companion object {
+        private val ROW_BANDS = arrayOf(
+            floatArrayOf(0.08f, -0.02f, -0.05f),
+            floatArrayOf(-0.03f, 0.06f, 0.02f),
+            floatArrayOf(0.02f, 0.04f, -0.06f),
+            floatArrayOf(-0.05f, -0.01f, 0.07f),
+            floatArrayOf(0.06f, -0.04f, 0.03f)
+        )
+        private val COL_BANDS = arrayOf(
+            floatArrayOf(0.04f, 0.01f, -0.03f),
+            floatArrayOf(-0.02f, 0.05f, 0.02f),
+            floatArrayOf(0.03f, -0.04f, 0.04f),
+            floatArrayOf(-0.04f, -0.02f, 0.05f)
+        )
+    }
+
     var hitFlash = 0f
     // Dynamic brick properties
     var vx: Float = 0f  // Horizontal velocity for moving bricks
@@ -2246,6 +2459,7 @@ data class Brick(
     var maxPhase: Int = 1  // Total phases for phase bricks
     var spawnCount: Int = 0  // Number of spawns left for spawning bricks
     var lastHitTime: Float = 0f  // Timestamp of last hit for special effects
+    var fireFlash: Float = 0f  // Invader firing glow
     val scoreValue: Int = when (type) {
         BrickType.NORMAL -> 50
         BrickType.REINFORCED -> 80
@@ -2333,8 +2547,17 @@ data class Brick(
         var positionVarianceR = (random.nextFloat() - 0.5f) * 0.5f  // ±0.25f variance
         var positionVarianceG = (random.nextFloat() - 0.5f) * 0.5f  // ±0.25f variance
         var positionVarianceB = (random.nextFloat() - 0.5f) * 0.5f  // ±0.25f variance
+        val baseVarianceScale = when (type) {
+            BrickType.NORMAL -> 1.15f
+            BrickType.INVADER -> 1.35f
+            BrickType.BOSS -> 0.6f
+            else -> 0.9f
+        }
+        positionVarianceR *= baseVarianceScale
+        positionVarianceG *= baseVarianceScale
+        positionVarianceB *= baseVarianceScale
         if (type == BrickType.INVADER) {
-            val varianceBoost = 1.6f
+            val varianceBoost = 1.5f
             positionVarianceR *= varianceBoost
             positionVarianceG *= varianceBoost
             positionVarianceB *= varianceBoost
@@ -2373,10 +2596,24 @@ data class Brick(
             else -> floatArrayOf(0f, 0f, 0f)
         }
 
+        val rowBand = ROW_BANDS[abs(gridY) % ROW_BANDS.size]
+        val colBand = COL_BANDS[abs(gridX) % COL_BANDS.size]
+        val bandScale = when (type) {
+            BrickType.NORMAL -> 1f
+            BrickType.INVADER -> 1.2f
+            BrickType.BOSS -> 0.5f
+            else -> 0.65f
+        }
+        val bandShift = floatArrayOf(
+            (rowBand[0] + colBand[0]) * bandScale,
+            (rowBand[1] + colBand[1]) * bandScale,
+            (rowBand[2] + colBand[2]) * bandScale
+        )
+
         val finalColor = floatArrayOf(
-            (base[0] * ratio + positionVarianceR + themeHueShift[0] + typeShift[0]).coerceIn(0.05f, 0.98f),
-            (base[1] * ratio + positionVarianceG + themeHueShift[1] + typeShift[1]).coerceIn(0.05f, 0.98f),
-            (base[2] * ratio + positionVarianceB + themeHueShift[2] + typeShift[2]).coerceIn(0.05f, 0.98f),
+            (base[0] * ratio + positionVarianceR + themeHueShift[0] + typeShift[0] + bandShift[0]).coerceIn(0.05f, 0.98f),
+            (base[1] * ratio + positionVarianceG + themeHueShift[1] + typeShift[1] + bandShift[1]).coerceIn(0.05f, 0.98f),
+            (base[2] * ratio + positionVarianceB + themeHueShift[2] + typeShift[2] + bandShift[2]).coerceIn(0.05f, 0.98f),
             1f
         )
 

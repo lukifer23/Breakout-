@@ -21,7 +21,7 @@ Breakout+ elevates the classic brickbreaker genre with modern mobile optimizatio
 - **Cross-Platform**: Native Android (production-ready) and iOS (in development) implementations
 - **GPU Acceleration**: OpenGL ES 2.0 (Android) / Metal (iOS) rendering at 60+ FPS
 - **Advanced Physics**: Accurate collision detection with momentum preservation
-- **Multiple Game Modes**: Classic, Timed Challenge, Endless, God Mode, and Level Rush
+- **Multiple Game Modes**: Classic, Timed Challenge, Endless, God Mode, Level Rush, and Invaders
 - **Dynamic Brick System**: 9 brick types with unique behaviors (moving, spawning, phase, boss)
 - **Comprehensive Powerups**: 13 distinct powerups with visual effects and timers
 - **Combo System**: Score multipliers for consecutive brick destruction
@@ -67,7 +67,7 @@ Breakout+ is a GPU-accelerated brickbreaker built for foldables, tuned for the S
 - Vsync-paced rendering using Choreographer-driven frame pacing with surface frame-rate hints.
 - Optimized for modern mobile GPUs with simple geometry (rects/circles) for consistent performance and frame pacing stability.
 - Foldable-optimized layouts (`sw600dp`, `sw720dp`) plus hinge-aware padding using Jetpack WindowManager.
-- Multiple modes: Classic, Timed Challenge, Endless, God Mode, Level Rush (45s with speed boost).
+- Multiple modes: Classic, Timed Challenge, Endless, God Mode, Level Rush (45s with speed boost), Invaders.
 - Powerups: Multi-ball, Laser, Guardrail, Shield, Extra life, Wide paddle, Slow motion, Fireball, Magnet, Gravity Well, Ball Splitter, Freeze, Pierce.
 - Brick variations: Standard, Reinforced, Armored, Explosive, Unbreakable, Moving, Spawning, Phase, Boss.
 - Combo system: Score multipliers (x1.5-5x) for consecutive brick breaks within 2 seconds.
@@ -123,7 +123,7 @@ Breakout+ is a GPU-accelerated brickbreaker built for foldables, tuned for the S
 ## Controls
 - Drag anywhere to move the paddle.
 - Release drag or tap to launch the ball.
-- Two-finger tap fires lasers when Laser powerup is active.
+- Two-finger tap or the on-screen **FIRE** button fires lasers when Laser powerup is active.
 
 ## Modes
 - **Classic**: Standard progression with escalating difficulty.
@@ -131,6 +131,7 @@ Breakout+ is a GPU-accelerated brickbreaker built for foldables, tuned for the S
 - **Endless**: Infinite levels with increasing speed and density.
 - **God Mode**: No life loss for practice or testing.
 - **Level Rush**: 45 seconds per stage, one life.
+- **Invaders**: Moving alien fleets fire back while your shield absorbs hits.
 
 ## Brick Types
 - **Standard**: One hit.

@@ -53,6 +53,24 @@
         <item name="iconTint">@color/bp_navy</item>
     </style>
 
+    <style name="Widget.BreakoutPlus.LaserButton" parent="Widget.MaterialComponents.Button">
+        <item name="android:insetLeft">0dp</item>
+        <item name="android:insetRight">0dp</item>
+        <item name="android:minWidth">84dp</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:paddingLeft">16dp</item>
+        <item name="android:paddingRight">16dp</item>
+        <item name="android:paddingTop">10dp</item>
+        <item name="android:paddingBottom">10dp</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:textColor">@color/bp_navy</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:letterSpacing">0.08</item>
+        <item name="backgroundTint">@color/bp_red</item>
+        <item name="cornerRadius">18dp</item>
+    </style>
+
     <style name="Text.BreakoutPlus.Title" parent="Widget.MaterialComponents.TextView">
         <item name="android:textColor">@color/bp_white</item>
         <item name="android:textSize">@dimen/bp_title_size</item>

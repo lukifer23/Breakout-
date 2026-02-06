@@ -11,6 +11,7 @@
 - Endless: infinite levels with scaling difficulty.
 - God Mode: no life loss for practice.
 - Level Rush: 45 seconds per stage, one life.
+- Invaders: moving alien fleets fire back while your shield absorbs hits.
 
 ## Brick Types
 - Standard: 1 hit.
@@ -46,4 +47,4 @@
 - Drag to aim your launch and release for controlled openings.
 - Hit the paddle near its edges to control ball angle.
 - Stack guardrail + shield for safe rallies.
-- Save lasers for armored/unbreakable clusters.
+- Save lasers for armored/unbreakable clusters. Use the FIRE button or two-finger tap when lasers are active.

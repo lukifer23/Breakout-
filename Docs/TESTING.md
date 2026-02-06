@@ -8,7 +8,8 @@
 ## Manual Test Checklist
 - Launch app, complete splash, open each menu (Main, Modes, Scoreboard, Settings, How-To).
 - Start Classic and Rush modes: break bricks, collect powerups, pause, level complete, game over.
-- Confirm touch controls: drag paddle, launch ball, two-finger laser.
+- Start Invaders mode: verify enemy shots, shield depletion, hit feedback, and laser usage.
+- Confirm touch controls: drag paddle, launch ball, two-finger laser + FIRE button.
 - Verify HUD: score, lives, time, level, powerup status with combo.
 - Test all screens: mode selection, scoreboard display, settings toggles (sound/music/vibration/tips/left-handed/dark mode), how-to expandable sections, Daily Challenges, Privacy Policy.
 - Foldable (if device available): test folded and unfolded states, confirm layouts and hinge padding.

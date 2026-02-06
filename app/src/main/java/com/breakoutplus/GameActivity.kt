@@ -16,6 +16,7 @@ import com.breakoutplus.game.GameMode
 import com.breakoutplus.game.GameSummary
 import com.breakoutplus.game.PowerUpType
 import com.breakoutplus.game.PowerupStatus
+import java.util.concurrent.atomic.AtomicBoolean
 
 class GameActivity : FoldAwareActivity(), GameEventListener {
     private lateinit var binding: ActivityGameBinding
@@ -23,6 +24,11 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     private var currentModeLabel: String = "Classic"
     private var currentPowerupSummary: String = "Powerups: none"
     private var currentCombo: Int = 0
+    private var laserActive: Boolean = false
+    private val hudUpdateQueued = AtomicBoolean(false)
+    @Volatile private var pendingScore: Int? = null
+    @Volatile private var pendingLives: Int? = null
+    @Volatile private var pendingFps: Int? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,6 +53,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         binding.buttonEndSecondary.setOnClickListener { exitToMenu() }
         binding.buttonEndPrimary.setOnClickListener { handleEndPrimary() }
         binding.buttonTooltipDismiss.setOnClickListener { hideTooltip() }
+        binding.buttonLaser.setOnClickListener { binding.gameSurface.fireLaser() }
 
         // Show first-run tooltip if tips enabled
         if (settings.tipsEnabled) {
@@ -80,6 +87,12 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         if (!settings.tipsEnabled) {
             binding.hudTip.visibility = View.GONE
             hideTooltip()
+        }
+        if (!settings.showFpsCounter) {
+            binding.hudFps.visibility = View.GONE
+            if (binding.hudPowerupChips.childCount == 0) {
+                binding.hudPowerups.visibility = View.GONE
+            }
         }
     }
 
@@ -129,9 +142,13 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         if (show) {
             showOverlay(binding.pauseOverlay)
             binding.gameSurface.pauseGame()
+            binding.buttonLaser.visibility = View.GONE
         } else {
             hideOverlay(binding.pauseOverlay)
             binding.gameSurface.resumeGame()
+            if (laserActive) {
+                binding.buttonLaser.visibility = View.VISIBLE
+            }
         }
     }
 
@@ -164,24 +181,36 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         val isCentered =
             params.startToStart == ConstraintLayout.LayoutParams.PARENT_ID &&
                 params.endToEnd == ConstraintLayout.LayoutParams.PARENT_ID
-        if (isCentered) return
-
-        if (leftHanded) {
-            params.startToStart = ConstraintLayout.LayoutParams.PARENT_ID
-            params.endToEnd = ConstraintLayout.LayoutParams.UNSET
-        } else {
-            params.endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
-            params.startToStart = ConstraintLayout.LayoutParams.UNSET
+        if (!isCentered) {
+            if (leftHanded) {
+                params.startToStart = ConstraintLayout.LayoutParams.PARENT_ID
+                params.endToEnd = ConstraintLayout.LayoutParams.UNSET
+            } else {
+                params.endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
+                params.startToStart = ConstraintLayout.LayoutParams.UNSET
+            }
+            binding.buttonPause.layoutParams = params
         }
-        binding.buttonPause.layoutParams = params
+
+        val laserParams = binding.buttonLaser.layoutParams as ConstraintLayout.LayoutParams
+        if (leftHanded) {
+            laserParams.startToStart = ConstraintLayout.LayoutParams.PARENT_ID
+            laserParams.endToEnd = ConstraintLayout.LayoutParams.UNSET
+        } else {
+            laserParams.endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
+            laserParams.startToStart = ConstraintLayout.LayoutParams.UNSET
+        }
+        binding.buttonLaser.layoutParams = laserParams
     }
 
     override fun onScoreUpdated(score: Int) {
-        runOnUiThread { binding.hudScore.text = "Score $score" }
+        pendingScore = score
+        scheduleHudUpdate()
     }
 
     override fun onLivesUpdated(lives: Int) {
-        runOnUiThread { binding.hudLives.text = "Lives $lives" }
+        pendingLives = lives
+        scheduleHudUpdate()
     }
 
     override fun onTimeUpdated(secondsRemaining: Int) {
@@ -231,25 +260,14 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             } else {
                 "Powerups: ${status.size} active"
             }
+            updateLaserButton(status)
             updateHudMeta()
         }
     }
 
     override fun onFpsUpdate(fps: Int) {
-        runOnUiThread {
-            if (config.settings.showFpsCounter) {
-                binding.hudFps.text = "FPS: $fps"
-                binding.hudFps.visibility = android.view.View.VISIBLE
-                if (binding.hudPowerups.visibility != View.VISIBLE) {
-                    binding.hudPowerups.visibility = View.VISIBLE
-                }
-            } else {
-                binding.hudFps.visibility = android.view.View.GONE
-                if (binding.hudPowerupChips.visibility != View.VISIBLE) {
-                    binding.hudPowerups.visibility = View.GONE
-                }
-            }
-        }
+        pendingFps = fps
+        scheduleHudUpdate()
     }
 
     override fun onShieldUpdated(current: Int, max: Int) {
@@ -282,6 +300,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
 
     override fun onGameOver(summary: GameSummary) {
         runOnUiThread {
+            binding.buttonLaser.visibility = View.GONE
             // Check if this is a high score for the mode
             if (ScoreboardManager.isHighScoreForMode(this, config.mode.displayName, summary.score, summary.durationSeconds)) {
                 // Show name input dialog
@@ -355,6 +374,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
 
     override fun onLevelComplete(summary: GameSummary) {
         runOnUiThread {
+            binding.buttonLaser.visibility = View.GONE
             binding.endTitle.text = getString(R.string.label_level_complete)
             binding.endStats.text = "Score ${summary.score} • Level ${summary.level}"
             binding.buttonEndPrimary.text = getString(R.string.label_next_level)
@@ -508,6 +528,40 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
 
     private fun updateShieldVisibility(show: Boolean) {
         binding.hudShieldRow.visibility = if (show) View.VISIBLE else View.GONE
+    }
+
+    private fun updateLaserButton(status: List<PowerupStatus>) {
+        val hasLaser = status.any { it.type == PowerUpType.LASER }
+        laserActive = hasLaser
+        binding.buttonLaser.visibility = if (hasLaser) View.VISIBLE else View.GONE
+    }
+
+    private fun scheduleHudUpdate() {
+        if (!hudUpdateQueued.compareAndSet(false, true)) return
+        binding.root.postOnAnimation {
+            hudUpdateQueued.set(false)
+            pendingScore?.let {
+                binding.hudScore.text = "Score $it"
+                pendingScore = null
+            }
+            pendingLives?.let {
+                binding.hudLives.text = "Lives $it"
+                pendingLives = null
+            }
+            val fps = pendingFps
+            if (fps != null && config.settings.showFpsCounter) {
+                binding.hudFps.text = "FPS: $fps"
+                binding.hudFps.visibility = View.VISIBLE
+                if (binding.hudPowerups.visibility != View.VISIBLE) {
+                    binding.hudPowerups.visibility = View.VISIBLE
+                }
+            } else if (!config.settings.showFpsCounter) {
+                binding.hudFps.visibility = View.GONE
+                if (binding.hudPowerupChips.visibility != View.VISIBLE) {
+                    binding.hudPowerups.visibility = View.GONE
+                }
+            }
+        }
     }
 
     private fun powerupLabel(type: PowerUpType): String {

@@ -113,12 +113,18 @@ class GameRenderer(
             val frameTime = (System.nanoTime() - frameStart) / 1_000_000f // Convert to milliseconds
             val fps = if (delta > 0f) (1f / delta).toInt() else 0
             logger?.logPerformanceMetric(fps.toFloat(), frameTime, engine.getObjectCount())
-            listener.onFpsUpdate(fps)
+            if (config.settings.showFpsCounter) {
+                listener.onFpsUpdate(fps)
+            }
         }
     }
 
     fun handleTouch(event: MotionEvent, viewWidth: Float, viewHeight: Float) {
         engine.handleTouch(event, viewWidth, viewHeight)
+    }
+
+    fun fireLaser() {
+        engine.triggerLaserFromUi()
     }
 
     fun pause() {

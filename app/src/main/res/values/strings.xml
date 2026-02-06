@@ -42,10 +42,12 @@
     <string name="label_mode_rush">Level Rush</string>
     <string name="label_start">Start</string>
     <string name="label_pause">Pause</string>
+    <string name="label_fire">Fire</string>
+    <string name="label_fire_laser">Fire laser</string>
     <string name="label_game_over">Game Over</string>
     <string name="label_level_complete">Level Complete</string>
     <string name="label_no_scores">No scores yet. Break some bricks!</string>
     <string name="label_powerups">Powerups</string>
     <string name="label_device_hint">Optimized for foldable screens</string>
-    <string name="howto_controls">Drag to move the paddle and aim the launch. Release to fire. When Laser powerup is active, use two-finger tap to fire.</string>
+    <string name="howto_controls">Drag to move the paddle and aim the launch. Release to fire. When Laser powerup is active, use two-finger tap or the FIRE button.</string>
 </resources>

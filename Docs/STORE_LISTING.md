@@ -15,6 +15,7 @@ Modes:
 - Endless: survive as the pace escalates.
 - Rush: higher speeds and aggressive scoring.
 - God Mode: relaxed play with no lives lost.
+- Invaders: moving alien fleets fire back while your shield absorbs hits.
 
 Powerups:
 - Multi-Ball, Laser, Guardrail, Shield, Wide Paddle
@@ -28,7 +29,7 @@ Brick types:
 Highlights:
 - Daily challenges and combo-based scoring
 - Foldable-friendly layout with high refresh rate support
-- Crisp touch controls, responsive paddle feel, and polished effects
+- Crisp touch controls, responsive paddle feel, FIRE button for lasers, and polished effects
 
 Whether you want a chill run or a high-speed score chase, Breakout+ delivers the classic feel with modern performance and style.
 

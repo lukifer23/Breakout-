@@ -162,6 +162,8 @@ object LevelFactory {
         )
     )
 
+    private val patternFillStartLevel = 3
+
     fun buildLevel(index: Int, difficulty: Float, endless: Boolean = false): LevelLayout {
         return if (endless && index >= levelPatterns.size) {
             // Procedural generation for endless mode beyond initial patterns
@@ -180,7 +182,11 @@ object LevelFactory {
                 5 -> scaled.copy(theme = LevelThemes.LAVA)
                 else -> scaled
             }
-            themedLayout
+            if (index >= patternFillStartLevel) {
+                fillPatternGaps(themedLayout, difficulty, seed = index * 31 + 7)
+            } else {
+                themedLayout
+            }
         }
     }
 
@@ -241,6 +247,41 @@ object LevelFactory {
             }
         }
         return bricks
+    }
+
+    private fun fillPatternGaps(layout: LevelLayout, difficulty: Float, seed: Int): LevelLayout {
+        val existing = layout.bricks.associateBy { it.col to it.row }
+        val random = kotlin.random.Random(seed)
+        val bricks = layout.bricks.toMutableList()
+        for (row in 0 until layout.rows) {
+            for (col in 0 until layout.cols) {
+                if (existing.containsKey(col to row)) continue
+                val rowRatio = if (layout.rows > 1) row.toFloat() / (layout.rows - 1).toFloat() else 0f
+                val density = 0.68f - rowRatio * 0.22f
+                if (random.nextFloat() > density) continue
+                val typeRoll = random.nextFloat()
+                val type = when {
+                    typeRoll > 0.92f -> BrickType.REINFORCED
+                    typeRoll < 0.05f -> BrickType.ARMORED
+                    else -> BrickType.NORMAL
+                }
+                val baseHp = when (type) {
+                    BrickType.NORMAL -> 1
+                    BrickType.REINFORCED -> 2
+                    BrickType.ARMORED -> 3
+                    BrickType.EXPLOSIVE -> 1
+                    BrickType.UNBREAKABLE -> 999
+                    BrickType.MOVING -> 2
+                    BrickType.SPAWNING -> 2
+                    BrickType.PHASE -> 3
+                    BrickType.BOSS -> 6
+                    BrickType.INVADER -> 1
+                }
+                val hp = if (type == BrickType.UNBREAKABLE) baseHp else max(1, (baseHp * difficulty).roundToInt())
+                bricks.add(BrickSpec(col, row, type, hp))
+            }
+        }
+        return layout.copy(bricks = bricks)
     }
 
     fun buildInvaderLevel(index: Int, difficulty: Float): LevelLayout {

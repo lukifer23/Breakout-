@@ -312,6 +312,19 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent" />
 
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonLaser"
+            style="@style/Widget.BreakoutPlus.LaserButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="22dp"
+            android:layout_marginBottom="26dp"
+            android:contentDescription="@string/label_fire_laser"
+            android:text="@string/label_fire"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
         <LinearLayout
             android:id="@+id/tooltipOverlay"
             android:layout_width="0dp"
@@ -337,7 +350,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="18dp"
-                android:text="• Drag to move and aim\n• Release to launch the ball\n• Collect powerups for special abilities\n• Two-finger tap fires lasers when available"
+                android:text="• Drag to move and aim\n• Release to launch the ball\n• Collect powerups for special abilities\n• Two-finger tap or FIRE button fires lasers"
                 android:textColor="@color/bp_gray"
                 android:textSize="@dimen/bp_body_text_size" />
 

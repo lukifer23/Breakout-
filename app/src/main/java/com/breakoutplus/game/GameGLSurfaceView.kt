@@ -84,6 +84,10 @@ class GameGLSurfaceView @JvmOverloads constructor(
         rendererImpl?.updateSettings(settings)
     }
 
+    fun fireLaser() {
+        rendererImpl?.fireLaser()
+    }
+
     override fun onTouchEvent(event: MotionEvent): Boolean {
         rendererImpl?.handleTouch(event, width.toFloat(), height.toFloat())
         return true

@@ -33,7 +33,7 @@ Store listing assets live under `store_assets/`:
 - Feature graphic: `store_assets/feature_graphic/BreakoutPlus-feature-1024x500.png`
 - Screenshots: `store_assets/screenshots/phone/` and `store_assets/screenshots/tablet/`
 
-Use `tools/capture_screenshots.sh` to capture device screenshots via ADB.
+Use `tools/capture_screenshots.sh` to capture device screenshots via ADB. The script launches the app before each shot and can auto-capture with a timed delay.
 Generate icon + feature graphic with:
 ```bash
 python3 -m venv tools/.venv
@@ -49,4 +49,11 @@ tools/capture_screenshots.sh phone
 List display ids with:
 ```bash
 adb shell dumpsys SurfaceFlinger --display-id
+```
+
+Optional auto-capture (no prompts, 4s delay between shots):
+```bash
+export BP_AUTO=1
+export BP_SHOT_DELAY=4
+tools/capture_screenshots.sh phone
 ```
