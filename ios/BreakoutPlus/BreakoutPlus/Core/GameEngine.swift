@@ -19,6 +19,7 @@ protocol GameEngineDelegate: AnyObject {
     func onTip(message: String)
     func onLevelComplete(summary: GameSummary)
     func onGameOver(summary: GameSummary)
+    func onPowerupStatusUpdated(status: [PowerupStatus])
     func onFeedback(_ event: GameFeedbackEvent)
 }
 
@@ -28,6 +29,7 @@ enum GameFeedbackEvent: Equatable {
 }
 
 extension GameEngineDelegate {
+    func onPowerupStatusUpdated(status: [PowerupStatus]) {}
     func onFeedback(_ event: GameFeedbackEvent) {}
 }
 
@@ -35,6 +37,16 @@ struct GameSummary: Equatable {
     let score: Int
     let level: Int
     let durationSeconds: Int
+}
+
+struct PowerupStatus: Equatable {
+    let type: PowerUpType
+    let remainingSeconds: Int
+    let charges: Int
+
+    static func == (lhs: PowerupStatus, rhs: PowerupStatus) -> Bool {
+        return lhs.type == rhs.type && lhs.remainingSeconds == rhs.remainingSeconds && lhs.charges == rhs.charges
+    }
 }
 
 indirect enum GameState: Equatable {
@@ -57,6 +69,7 @@ class GameEngine {
     private(set) var bricks: [Brick] = []
     private(set) var powerups: [PowerUp] = []
     private(set) var beams: [Beam] = []
+    // private(set) var enemyShots: [EnemyShot] = [] // TODO: Uncomment when EnemyShot added to Xcode project
     private(set) var paddle: Paddle
     private(set) var currentTheme: LevelTheme = .neon
     private(set) var currentTip: String = ""
@@ -92,12 +105,29 @@ class GameEngine {
     private var lastPaddleX: Float? = nil
     private let basePaddleWidth: Float = 20
     private let widePaddleScale: Float = 25.0 / 18.0
+    private var sensitivity: Float = 0.7
+    private var paddleTargetX: Float = 50
+
+    // Invaders mode state
+    // private var enemyShots: [EnemyShot] = [] // TODO: Uncomment when EnemyShot added to Xcode project
+    private var invaderDirection: Float = 1.0
+    private var invaderSpeed: Float = 6.0
+    private var invaderShotTimer: TimeInterval = 0
+    private var invaderShotCooldown: TimeInterval = 1.6
+    private var shieldMaxCharges: Int = 3
+    private var invaderBricks: [Brick] = []
+    private var invaderFormationOffset: Float = 0
+    private var invaderRowPhase: Float = 0
+    private var invaderRowDrift: Float = 0.75
+    private var invaderRowPhaseOffset: Float = 0.5
 
     weak var delegate: GameEngineDelegate?
 
-    init(gameMode: GameMode) {
+    init(gameMode: GameMode, sensitivity: Float = 0.7) {
         self.gameMode = gameMode
+        self.sensitivity = sensitivity
         self.paddle = Paddle(x: 50, y: 8, width: basePaddleWidth, height: 2.6)
+        self.paddleTargetX = paddle.x
         self.lives = gameMode.baseLives
         self.timeRemaining = gameMode.timeLimitSeconds
 
@@ -135,6 +165,10 @@ class GameEngine {
         updatePowerups(dt)
         updateBeams(dt)
         updatePaddle(dt)
+        // Invaders logic commented out until EnemyShot is added to Xcode project
+        // if gameMode.invaders {
+        //     updateInvaders(dt)
+        // }
 
         // Handle collisions
         handleCollisions()
@@ -297,6 +331,7 @@ class GameEngine {
         case .endless: return 0.017
         case .god: return 0.010
         case .rush: return 0.023
+        case .invaders: return 0.016
         }
     }
 
@@ -307,6 +342,7 @@ class GameEngine {
         case .endless: return 1.4
         case .god: return 1.25
         case .rush: return 1.5
+        case .invaders: return 1.4
         }
     }
 
@@ -317,6 +353,7 @@ class GameEngine {
         case .endless: return 0.65
         case .god: return 0.5
         case .rush: return 0.72
+        case .invaders: return 0.6
         }
     }
 
@@ -327,6 +364,7 @@ class GameEngine {
         case .endless: return 1.7
         case .god: return 1.45
         case .rush: return 1.85
+        case .invaders: return 1.6
         }
     }
 
@@ -344,6 +382,8 @@ class GameEngine {
             base = 0.9; slope = 0.05
         case .rush:
             base = 1.1; slope = 0.11
+        case .invaders:
+            base = 1.05; slope = 0.08
         }
         return min(3.0, base + Float(levelIndex) * slope)
     }
@@ -398,15 +438,16 @@ class GameEngine {
     }
 
     private func updatePaddle(_ deltaTime: TimeInterval) {
-        guard deltaTime > 0 else {
-            paddleVelocity = 0
-            return
+        let previousX = paddle.x
+        let target = paddleTargetX
+        let speed: Float = 90 + sensitivity * 180
+        let delta = target - paddle.x
+        let maxMove = speed * Float(deltaTime)
+        if abs(delta) > 0.05 {
+            paddle.x += delta > 0 ? min(delta, maxMove) : max(delta, -maxMove)
         }
-        if let last = lastPaddleX {
-            paddleVelocity = (paddle.x - last) / Float(deltaTime)
-        } else {
-            paddleVelocity = 0
-        }
+        paddle.x = max(paddle.width / 2, min(worldWidth - paddle.width / 2, paddle.x))
+        paddleVelocity = deltaTime > 0 ? (paddle.x - previousX) / Float(deltaTime) : 0
         lastPaddleX = paddle.x
     }
 
@@ -463,6 +504,17 @@ class GameEngine {
                 }
             }
         }
+
+        // Enemy shot-paddle collisions (Invaders mode)
+        // if gameMode.invaders && !enemyShots.isEmpty {
+        //     for i in stride(from: enemyShots.count - 1, through: 0, by: -1) {
+        //         let shot = enemyShots[i]
+        //         if shot.intersects(paddle) {
+        //             handleEnemyShotHit()
+        //             enemyShots.remove(at: i)
+        //         }
+        //     }
+        // } // TODO: Uncomment when EnemyShot added to Xcode project
     }
 
     private func handleBrickCollision(_ ball: inout Ball, _ brick: inout Brick) {
@@ -486,11 +538,13 @@ class GameEngine {
             brick.alive = false
             score += brick.scoreValue
             delegate?.onScoreChanged(newScore: score)
+            // updateDailyChallenge(.bricksDestroyed) // TODO: Uncomment when DailyChallenge added
 
             // Combo system
             comboCount += 1
             comboTimer = 2.0 // 2 seconds to maintain combo
             delegate?.onComboAchieved(count: comboCount)
+            // updateDailyChallenge(.comboMultiplier, value: comboCount) // TODO: Uncomment when DailyChallenge added
 
             let dropChance: Double
             switch brick.type {
@@ -654,6 +708,7 @@ class GameEngine {
 
     private func activatePowerup(_ type: PowerUpType) {
         delegate?.onPowerupActivated(type: type)
+        // updateDailyChallenge(.powerupsCollected) // TODO: Uncomment when DailyChallenge added
         if !type.isInstant {
             activeEffects[type] = type.duration
         }
@@ -722,6 +777,7 @@ class GameEngine {
                 emit(.haptic(.success))
             }
         }
+        updatePowerupStatus()
     }
 
     private func deactivatePowerup(_ type: PowerUpType) {
@@ -749,6 +805,7 @@ class GameEngine {
         default:
             break
         }
+        updatePowerupStatus()
     }
 
     private func spawnPowerup(atX x: Float, y: Float) {
@@ -789,6 +846,11 @@ class GameEngine {
             weights[.ballSplitter, default: 0] += 0.1
         case .god:
             weights[.extraLife] = 0.15
+        case .invaders:
+            weights[.shield, default: 0] += 0.3
+            weights[.guardrail, default: 0] += 0.2
+            weights[.laser, default: 0] += 0.35
+            weights[.slowMotion, default: 0] += 0.1
         default:
             break
         }
@@ -867,23 +929,123 @@ class GameEngine {
         }
     }
 
-    func movePaddle(to x: Float) {
-        let half = paddle.width / 2
-        paddle.x = max(half, min(worldWidth - half, x))
+    private func updatePowerupStatus() {
+        let status = activeEffects.map { (type, remaining) in
+            let charges = type == .shield ? shieldCharges : 0
+            return PowerupStatus(type: type, remainingSeconds: Int(remaining), charges: charges)
+        }
+        delegate?.onPowerupStatusUpdated(status: status)
     }
+
+    func movePaddle(to x: Float) {
+        paddleTargetX = max(paddle.width / 2, min(worldWidth - paddle.width / 2, x))
+    }
+
+    func setSensitivity(_ newSensitivity: Float) {
+        sensitivity = max(0.0, min(1.0, newSensitivity))
+    }
+
+    // TODO: Uncomment when DailyChallenge models added to Xcode project
+    // func enableDailyChallenges(_ enabled: Bool) {
+    //     dailyChallengesEnabled = enabled
+    // }
+
+    // private func updateDailyChallenge(_ type: ChallengeType, value: Int = 1) {
+    //     if dailyChallengesEnabled {
+    //         DailyChallengeStore.shared.updateProgress(type: type, value: value)
+    //     }
+    // }
+
+    // TODO: Uncomment when EnemyShot added to Xcode project
+    // private func updateInvaders(_ deltaTime: TimeInterval) {
+    //     // Move invader bricks
+    //     updateInvaderFormation(deltaTime)
+    //
+    //     // Update enemy shots
+    //     updateEnemyShots(deltaTime)
+    //
+    //     // Fire new shots
+    //     invaderShotTimer += deltaTime
+    //     if invaderShotTimer >= invaderShotCooldown {
+    //         fireInvaderShot()
+    //         invaderShotTimer = 0
+    //     }
+    // }
+
+    private func updateInvaderFormation(_ deltaTime: TimeInterval) {
+        // Simple left-right movement for invader bricks
+        invaderFormationOffset += invaderDirection * invaderSpeed * Float(deltaTime)
+
+        // Reverse direction at edges
+        let maxOffset = worldWidth * 0.3
+        if abs(invaderFormationOffset) > maxOffset {
+            invaderDirection *= -1
+            invaderFormationOffset = invaderDirection * maxOffset
+        }
+
+        // Apply movement to invader bricks
+        for i in 0..<bricks.count {
+            if bricks[i].type != .unbreakable { // Assume unbreakable bricks are invaders for now
+                bricks[i].x += invaderDirection * invaderSpeed * Float(deltaTime)
+                // Keep within bounds
+                bricks[i].x = max(bricks[i].width/2, min(worldWidth - bricks[i].width/2, bricks[i].x))
+            }
+        }
+    }
+
+    // TODO: Uncomment when EnemyShot added to Xcode project
+    // private func updateEnemyShots(_ deltaTime: TimeInterval) {
+    //     enemyShots = enemyShots.filter { shot in
+    //         shot.y += shot.vy * Float(deltaTime)
+    //         return shot.y > -shot.radius // Remove shots that go off screen
+    //     }
+    // }
+
+    // private func fireInvaderShot() {
+    //     // Find a random invader brick to shoot from
+    //     let invaderBricks = bricks.filter { $0.type != .unbreakable } // Temporary: use unbreakable as invaders
+    //     guard let shooter = invaderBricks.randomElement() else { return }
+    //
+    //     let shot = EnemyShot(
+    //         x: shooter.x,
+    //         y: shooter.y - shooter.height/2,
+    //         vx: 0,
+    //         vy: -60 // Shoot downward
+    //     )
+    //     enemyShots.append(shot)
+    // }
+
+    // private func handleEnemyShotHit() {
+    //     if shieldCharges > 0 {
+    //         shieldCharges -= 1
+    //         emit(.sound(.powerup, volume: 0.6)) // Shield absorb sound
+    //         emit(.haptic(.medium))
+    //     } else {
+    //         // Shield broken, lose life
+    //         lives -= 1
+    //         emit(.sound(.life, volume: 0.8))
+    //         emit(.haptic(.medium))
+    //         delegate?.onLivesChanged(lives)
+    //         if lives <= 0 {
+    //             state = .gameOver
+    //             delegate?.onGameOver(summary: makeSummary())
+    //         }
+    //     }
+    // }
 
     private func resetLevel() {
         balls.removeAll()
         bricks.removeAll()
         powerups.removeAll()
         beams.removeAll()
+        // enemyShots.removeAll() // TODO: Uncomment when EnemyShot added to Xcode project
         comboCount = 0
         comboTimer = 0
         activeEffects.removeAll()
         speedMultiplier = 1.0
         timerAccumulator = 0
         guardrailActive = false
-        shieldCharges = 0
+        shieldCharges = gameMode.invaders ? shieldMaxCharges : 0
         laserCooldown = 0
         magnetActive = false
         gravityWellActive = false
@@ -892,6 +1054,13 @@ class GameEngine {
         state = .ready
         paddleVelocity = 0
         lastPaddleX = paddle.x
+
+        // Reset invader state
+        if gameMode.invaders {
+            invaderDirection = 1.0
+            invaderFormationOffset = 0
+            invaderShotTimer = 0
+        }
         if gameMode.rush {
             timeRemaining = gameMode.timeLimitSeconds
         }

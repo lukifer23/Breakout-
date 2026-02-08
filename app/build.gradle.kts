@@ -1,15 +1,6 @@
-import java.util.Properties
-
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
-}
-
-val localProperties = Properties().also { props ->
-    val localPropertiesFile = file("local.properties")
-    if (localPropertiesFile.exists()) {
-        localPropertiesFile.inputStream().use { props.load(it) }
-    }
 }
 
 val releaseStoreFile = System.getenv("BP_RELEASE_STORE_FILE")
@@ -20,8 +11,6 @@ val releaseSigningAvailable = !releaseStoreFile.isNullOrBlank() &&
     !releaseStorePassword.isNullOrBlank() &&
     !releaseKeyAlias.isNullOrBlank() &&
     !releaseKeyPassword.isNullOrBlank()
-val googlePlayApiKey = System.getenv("GOOGLE_PLAY_API_KEY")
-    ?: localProperties.getProperty("GOOGLE_PLAY_API_KEY")
 
 android {
     namespace = "com.breakoutplus"
@@ -36,7 +25,6 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
-        resValue("string", "google_play_api_key", googlePlayApiKey ?: "")
     }
 
     signingConfigs {

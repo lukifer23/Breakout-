@@ -9,7 +9,7 @@
 import Foundation
 
 enum GameMode: String, CaseIterable, Identifiable, Codable {
-    case classic, timed, endless, god, rush
+    case classic, timed, endless, god, rush, invaders
 
     var id: String { rawValue }
 
@@ -20,6 +20,7 @@ enum GameMode: String, CaseIterable, Identifiable, Codable {
         case .endless: return "Endless"
         case .god: return "God Mode"
         case .rush: return "Level Rush"
+        case .invaders: return "Invaders"
         }
     }
 
@@ -30,6 +31,7 @@ enum GameMode: String, CaseIterable, Identifiable, Codable {
         case .endless: return "Infinite levels with scaling speed and brick density."
         case .god: return "Practice mode. No life loss, perfect for experimentation."
         case .rush: return "Beat each stage before the timer expires."
+        case .invaders: return "Breakout meets space invaders. Bounce shots to clear ships while dodging fire."
         }
     }
 
@@ -40,12 +42,13 @@ enum GameMode: String, CaseIterable, Identifiable, Codable {
         case .endless: return "Lives 3 • No timer • Scaling"
         case .god: return "Infinite lives • No timer"
         case .rush: return "Lives 1 • 0:45 per level • Hardcore"
+        case .invaders: return "Shielded paddle • Enemy fire • No timer"
         }
     }
 
     var baseLives: Int {
         switch self {
-        case .classic, .endless: return 3
+        case .classic, .endless, .invaders: return 3
         case .timed: return 2
         case .god: return 99
         case .rush: return 1
@@ -81,6 +84,13 @@ enum GameMode: String, CaseIterable, Identifiable, Codable {
         }
     }
 
+    var invaders: Bool {
+        switch self {
+        case .invaders: return true
+        default: return false
+        }
+    }
+
     var launchSpeed: Float {
         switch self {
         case .classic: return 58.275  // 55.5 * 1.05
@@ -88,6 +98,7 @@ enum GameMode: String, CaseIterable, Identifiable, Codable {
         case .endless: return 61.425  // 58.5 * 1.05
         case .god: return 51.975      // 49.5 * 1.05
         case .rush: return 69.3       // 66.0 * 1.05
+        case .invaders: return 78.2   // Matches Android
         }
     }
 }

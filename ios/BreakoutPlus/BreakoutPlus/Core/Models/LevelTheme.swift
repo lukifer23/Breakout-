@@ -121,4 +121,22 @@ struct LevelTheme {
             .boss: (0.8, 0.0, 0.0)
         ]
     )
+
+    static let invaders = LevelTheme(
+        name: "Invaders",
+        background: (0.03, 0.05, 0.12),
+        paddle: (0.92, 0.95, 1.0),
+        accent: (0.35, 0.85, 1.0),
+        brickPalette: [
+            .normal: (0.28, 0.8, 1.0),
+            .reinforced: (0.8, 0.45, 1.0),
+            .armored: (0.4, 1.0, 0.7),
+            .explosive: (1.0, 0.45, 0.4),
+            .unbreakable: (0.7, 0.75, 0.85),
+            .moving: (0.4, 0.9, 1.0),
+            .spawning: (0.85, 0.55, 1.0),
+            .phase: (1.0, 0.85, 0.4),
+            .boss: (1.0, 0.2, 0.25)
+        ]
+    )
 }

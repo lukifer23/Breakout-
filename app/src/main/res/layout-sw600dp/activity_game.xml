@@ -318,21 +318,6 @@
                 android:backgroundTint="@color/bp_gray" />
         </LinearLayout>
 
-        <TextView
-            android:id="@+id/hudTip"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="18dp"
-            android:background="@drawable/hud_chip"
-            android:padding="10dp"
-            android:text="@string/label_tip_default"
-            android:textColor="@color/bp_white"
-            android:textSize="@dimen/bp_hud_mode_size"
-            android:visibility="gone"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent" />
-
         <com.google.android.material.button.MaterialButton
             android:id="@+id/buttonLaser"
             style="@style/Widget.BreakoutPlus.LaserButton"

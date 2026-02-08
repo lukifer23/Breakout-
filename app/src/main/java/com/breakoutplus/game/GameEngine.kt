@@ -108,7 +108,6 @@ class GameEngine(
     private var aimAngle = 0.72f
     private var aimDirection = 1f
     private var aimHasInput = false
-    private var lastAimInputX: Float? = null
     private var isDragging = false
 
     private var theme: LevelTheme = LevelThemes.DEFAULT
@@ -889,14 +888,12 @@ class GameEngine(
         }
     }
 
-    private fun updateAimFromInput(inputX: Float) {
+    private fun updateAimFromPaddle() {
         val center = worldWidth * 0.5f
-        val delta = (inputX - center) / center
+        val delta = (paddle.x - center) / center
         aimNormalized = delta.coerceIn(-1.2f, 1.2f)
-        if (abs(aimNormalized) > 0.03f) {
-            aimDirection = if (aimNormalized >= 0f) 1f else -1f
-            aimHasInput = true
-        }
+        aimDirection = if (aimNormalized >= 0f) 1f else -1f
+        aimHasInput = isDragging || abs(aimNormalized) > 0.02f
         val strength = abs(aimNormalized).coerceIn(0f, 1f)
         // Small aim offsets should fire more vertically; larger offsets shallow the angle.
         aimAngle = aimMaxAngle - (aimMaxAngle - aimMinAngle) * strength
@@ -923,15 +920,13 @@ class GameEngine(
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 paddle.targetX = x
-                updateAimFromInput(x)
-                lastAimInputX = x
                 isDragging = true
+                updateAimFromPaddle()
             }
             MotionEvent.ACTION_MOVE -> {
                 paddle.targetX = x
-                updateAimFromInput(x)
-                lastAimInputX = x
                 isDragging = true
+                updateAimFromPaddle()
             }
             MotionEvent.ACTION_UP -> {
                 if (state == GameState.READY) {
@@ -939,14 +934,12 @@ class GameEngine(
                     launchBall()
                     state = GameState.RUNNING
                     listener.onTip("Tap with two fingers to fire when laser is active")
-                    lastAimInputX = null
                 } else if (magnetActive && balls.any { it.stuckToPaddle }) {
                     releaseStuckBalls()
                 }
                 isDragging = false
             }
             MotionEvent.ACTION_CANCEL -> {
-                lastAimInputX = null
                 isDragging = false
             }
         }
@@ -1399,7 +1392,7 @@ class GameEngine(
         paddle.x = paddle.x.coerceIn(paddle.width / 2f, worldWidth - paddle.width / 2f)
         paddleVelocity = if (dt > 0f) (paddle.x - previousX) / dt else 0f
         if (isDragging) {
-            lastAimInputX?.let { updateAimFromInput(it) }
+            updateAimFromPaddle()
         }
     }
 

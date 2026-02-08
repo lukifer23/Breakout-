@@ -85,7 +85,8 @@ struct HowToView: View {
                             "Timed: 2:30 to maximize score.",
                             "Endless: infinite levels with scaling challenge.",
                             "God Mode: infinite lives for practice.",
-                            "Rush: 45 seconds per level, one life."
+                            "Rush: 45 seconds per level, one life.",
+                            "Invaders: bounce shots to clear ships while dodging fire."
                         ])
                     }
                     .padding(.vertical, 6)

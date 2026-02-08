@@ -110,6 +110,20 @@ enum LevelFactory {
             ],
             theme: .lava,
             tip: "Boss bricks reward big plays. Save lasers."
+        ),
+        LevelLayout(
+            rows: 6,
+            cols: 12,
+            lines: [
+                "RRRRRRRRRRRR",
+                "RAAARAAARAAAR",
+                "RRRRRRRRRRRR",
+                "NAAANAAANAAAN",
+                "RRRRRRRRRRRR",
+                "..U......U.."
+            ],
+            theme: .invaders,
+            tip: "Invaders: dodge enemy fire and protect your shield."
         )
     ]
 

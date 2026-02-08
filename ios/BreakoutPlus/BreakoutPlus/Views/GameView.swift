@@ -78,14 +78,8 @@ struct GameView: View {
                             .cornerRadius(6)
                     }
 
-                    if let powerup = gameViewModel.activePowerup {
-                        Text(powerup.displayName)
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(.green)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(Color.black.opacity(0.5))
-                            .cornerRadius(6)
+                    ForEach(gameViewModel.powerupStatuses, id: \.type) { status in
+                        PowerupChip(status: status)
                     }
                 }
                 .padding(.bottom, 30)
@@ -95,29 +89,54 @@ struct GameView: View {
             // Top-center controls
             VStack {
                 HStack {
-                    Spacer()
-                    Button(action: {
-                        if gameViewModel.isPaused {
-                            gameViewModel.isPaused = false
-                            scene?.resumeGame()
-                        } else {
-                            gameViewModel.isPaused = true
-                            scene?.pauseGame()
+                    if gameViewModel.leftHanded {
+                        Button(action: {
+                            if gameViewModel.isPaused {
+                                gameViewModel.isPaused = false
+                                scene?.resumeGame()
+                            } else {
+                                gameViewModel.isPaused = true
+                                scene?.pauseGame()
+                            }
+                        }) {
+                            Text(gameViewModel.isPaused ? "RESUME" : "PAUSE")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 10)
+                                .background(Color.black.opacity(0.55))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color(hex: "31E1F7").opacity(0.35), lineWidth: 1)
+                                )
+                                .cornerRadius(12)
                         }
-                    }) {
-                        Text(gameViewModel.isPaused ? "RESUME" : "PAUSE")
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 10)
-                            .background(Color.black.opacity(0.55))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(Color(hex: "31E1F7").opacity(0.35), lineWidth: 1)
-                            )
-                            .cornerRadius(12)
+                        Spacer()
+                    } else {
+                        Spacer()
+                        Button(action: {
+                            if gameViewModel.isPaused {
+                                gameViewModel.isPaused = false
+                                scene?.resumeGame()
+                            } else {
+                                gameViewModel.isPaused = true
+                                scene?.pauseGame()
+                            }
+                        }) {
+                            Text(gameViewModel.isPaused ? "RESUME" : "PAUSE")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 10)
+                                .background(Color.black.opacity(0.55))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color(hex: "31E1F7").opacity(0.35), lineWidth: 1)
+                                )
+                                .cornerRadius(12)
+                        }
+                        Spacer()
                     }
-                    Spacer()
                 }
                 .padding(.top, 14)
                 .padding(.horizontal, 18)
@@ -125,22 +144,37 @@ struct GameView: View {
             }
 
             // Laser fire button (only when laser is active)
-            if gameViewModel.laserActive && !gameViewModel.isPaused && !gameViewModel.showGameOver && !gameViewModel.showLevelComplete {
+            if gameViewModel.powerupStatuses.contains(where: { $0.type == .laser }) && !gameViewModel.isPaused && !gameViewModel.showGameOver && !gameViewModel.showLevelComplete {
                 VStack {
                     Spacer()
                     HStack {
-                        Spacer()
-                        Button(action: { scene?.fireLasers() }) {
-                            Text("FIRE")
-                                .font(.system(size: 14, weight: .bold))
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 18)
-                                .padding(.vertical, 12)
-                                .background(Color(hex: "FF4FD8").opacity(0.85))
-                                .cornerRadius(14)
+                        if gameViewModel.leftHanded {
+                            Button(action: { scene?.fireLasers() }) {
+                                Text("FIRE")
+                                    .font(.system(size: 14, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 18)
+                                    .padding(.vertical, 12)
+                                    .background(Color(hex: "FF4FD8").opacity(0.85))
+                                    .cornerRadius(14)
+                            }
+                            .padding(.leading, 18)
+                            .padding(.bottom, 46)
+                            Spacer()
+                        } else {
+                            Spacer()
+                            Button(action: { scene?.fireLasers() }) {
+                                Text("FIRE")
+                                    .font(.system(size: 14, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 18)
+                                    .padding(.vertical, 12)
+                                    .background(Color(hex: "FF4FD8").opacity(0.85))
+                                    .cornerRadius(14)
+                            }
+                            .padding(.trailing, 18)
+                            .padding(.bottom, 46)
                         }
-                        .padding(.trailing, 18)
-                        .padding(.bottom, 46)
                     }
                 }
             }
@@ -390,6 +424,7 @@ class GameScene: SKScene, GameEngineDelegate {
     private var paddleNode: SKSpriteNode!
     private var powerupNodes: [SKNode] = []
     private var beamNodes: [SKNode] = []
+    // private var enemyShotNodes: [SKNode] = [] // TODO: Uncomment when EnemyShot added to Xcode project
     private var flashNode: SKSpriteNode?
     private var lastBrickSnapshot: [UUID: (alive: Bool, hp: Int)] = [:]
 
@@ -428,7 +463,8 @@ class GameScene: SKScene, GameEngineDelegate {
     }
 
     private func setupGame() {
-        gameEngine = GameEngine(gameMode: viewModel.selectedGameMode)
+        gameEngine = GameEngine(gameMode: viewModel.selectedGameMode, sensitivity: Float(viewModel.sensitivity))
+        // gameEngine.enableDailyChallenges(true) // TODO: Uncomment when DailyChallenge added
         gameEngine.delegate = self
 
         AudioManager.shared.configure(
@@ -727,6 +763,31 @@ class GameScene: SKScene, GameEngineDelegate {
                 }
             }
         }
+
+        // Update enemy shots (Invaders mode)
+        // TODO: Uncomment when EnemyShot added to Xcode project
+        // while enemyShotNodes.count < gameEngine.enemyShots.count {
+        //     let shotPath = CGPath(ellipseIn: CGRect(x: -6, y: -6, width: 12, height: 12), transform: nil)
+        //     let shotNode = SKShapeNode(path: shotPath)
+        //     shotNode.fillColor = UIColor(red: 1.0, green: 0.3, blue: 0.0, alpha: 1.0)
+        //     shotNode.strokeColor = UIColor(red: 1.0, green: 0.6, blue: 0.0, alpha: 1.0)
+        //     shotNode.lineWidth = 1
+        //     addChild(shotNode)
+        //     enemyShotNodes.append(shotNode)
+        // }
+        //
+        // while enemyShotNodes.count > gameEngine.enemyShots.count {
+        //     enemyShotNodes.last?.removeFromParent()
+        //     enemyShotNodes.removeLast()
+        // }
+        //
+        // for (index, shot) in gameEngine.enemyShots.enumerated() {
+        //     if index < enemyShotNodes.count {
+        //         let shotX = CGFloat(shot.x / gameEngine.worldWidth) * size.width
+        //         let shotY = CGFloat(shot.y / gameEngine.worldHeight) * size.height
+        //         enemyShotNodes[index].position = CGPoint(x: shotX, y: shotY)
+        //     }
+        // }
     }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -813,6 +874,12 @@ class GameScene: SKScene, GameEngineDelegate {
         }
     }
 
+    func onPowerupStatusUpdated(status: [PowerupStatus]) {
+        DispatchQueue.main.async {
+            self.viewModel.powerupStatuses = status
+        }
+    }
+
     func onFeedback(_ event: GameFeedbackEvent) {
         switch event {
         case .sound(let sound, let volume):
@@ -878,10 +945,12 @@ class GameScene: SKScene, GameEngineDelegate {
         for node in brickNodes { node.removeFromParent() }
         for node in powerupNodes { node.removeFromParent() }
         for node in beamNodes { node.removeFromParent() }
+        // for node in enemyShotNodes { node.removeFromParent() } // TODO: Uncomment when EnemyShot added to Xcode project
         ballNodes.removeAll()
         brickNodes.removeAll()
         powerupNodes.removeAll()
         beamNodes.removeAll()
+        // enemyShotNodes.removeAll() // TODO: Uncomment when EnemyShot added to Xcode project
 
         gameEngine.restart()
         AudioManager.shared.startMusicIfEnabled()
@@ -969,6 +1038,32 @@ class GameScene: SKScene, GameEngineDelegate {
                 SKAction.removeFromParent()
             ]))
         }
+    }
+}
+
+private struct PowerupChip: View {
+    let status: PowerupStatus
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Text(status.type.displayName)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(.white)
+            if status.remainingSeconds > 0 {
+                Text("\(status.remainingSeconds)s")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundColor(.yellow)
+            }
+            if status.charges > 0 {
+                Text("(\(status.charges))")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundColor(.cyan)
+            }
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(Color(red: Double(status.type.color.red), green: Double(status.type.color.green), blue: Double(status.type.color.blue)).opacity(0.8))
+        .cornerRadius(6)
     }
 }
 

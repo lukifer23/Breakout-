@@ -15,6 +15,8 @@ struct SettingsView: View {
     @AppStorage("musicEnabled") private var musicEnabled = true
     @AppStorage("vibrationEnabled") private var vibrationEnabled = true
     @AppStorage("tipsEnabled") private var tipsEnabled = true
+    @AppStorage("leftHanded") private var leftHanded = false
+    @AppStorage("sensitivity") private var sensitivity: Double = 0.7
     @AppStorage("masterVolume") private var masterVolume: Double = 1.0
     @AppStorage("effectsVolume") private var effectsVolume: Double = 0.8
     @AppStorage("musicVolume") private var musicVolume: Double = 0.6
@@ -59,7 +61,10 @@ struct SettingsView: View {
                         .foregroundColor(.white.opacity(0.9))
                         .font(.system(size: 14, weight: .semibold))
 
+                    ToggleRow(title: "Left Handed", subtitle: "Swap pause and fire button positions", isOn: $leftHanded)
                     ToggleRow(title: "Tips", subtitle: "Show quick in-game hints", isOn: $tipsEnabled)
+
+                    SliderRow(title: "Sensitivity", value: $sensitivity)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -69,6 +74,20 @@ struct SettingsView: View {
                         .font(.system(size: 14, weight: .semibold))
 
                     ToggleRow(title: "Vibration", subtitle: "Haptics on major impacts", isOn: $vibrationEnabled)
+
+                    Button("Privacy Policy") {
+                        gameViewModel.navigateToPrivacy()
+                    }
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(Color(hex: "31E1F7"))
+                    .padding(.horizontal, 18)
+                    .padding(.vertical, 12)
+                    .background(Color(hex: "1A1F26"))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color(hex: "31E1F7").opacity(0.25), lineWidth: 1)
+                    )
+                    .cornerRadius(12)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
 

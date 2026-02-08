@@ -10,7 +10,7 @@ import SwiftUI
 import Combine
 
 enum Screen {
-    case splash, menu, game, settings, scoreboard, howTo
+    case splash, menu, game, settings, scoreboard, howTo, privacy, dailyChallenges
 }
 
 class GameViewModel: ObservableObject {
@@ -27,6 +27,7 @@ class GameViewModel: ObservableObject {
     @Published var showLevelComplete = false
     @Published var showGameOver = false
     @Published var tipMessage: String?
+    @Published var powerupStatuses: [PowerupStatus] = []
 
     // Game state
     var selectedGameMode: GameMode = .classic
@@ -36,6 +37,8 @@ class GameViewModel: ObservableObject {
     @AppStorage("musicEnabled") var musicEnabled = true
     @AppStorage("vibrationEnabled") var vibrationEnabled = true
     @AppStorage("tipsEnabled") var tipsEnabled = true
+    @AppStorage("leftHanded") var leftHanded = false
+    @AppStorage("sensitivity") var sensitivity: Double = 0.7
     @AppStorage("masterVolume") var masterVolume: Double = 1.0
     @AppStorage("effectsVolume") var effectsVolume: Double = 0.8
     @AppStorage("musicVolume") var musicVolume: Double = 0.6
@@ -72,6 +75,14 @@ class GameViewModel: ObservableObject {
 
     func navigateToHowTo() {
         currentScreen = .howTo
+    }
+
+    func navigateToPrivacy() {
+        currentScreen = .privacy
+    }
+
+    func navigateToDailyChallenges() {
+        currentScreen = .dailyChallenges
     }
 
     func exitToMenu() {

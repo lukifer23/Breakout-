@@ -22,7 +22,7 @@ final class ScoreboardStore: ObservableObject {
     @Published private(set) var entries: [ScoreEntry] = []
 
     private let key = "breakoutplus.scoreboard.v1"
-    private let maxEntries = 20
+    private let maxEntriesPerMode = 10
 
     private init() {
         entries = load()
@@ -38,20 +38,44 @@ final class ScoreboardStore: ObservableObject {
         )
         var next = entries
         next.append(entry)
-        next.sort {
-            if $0.score != $1.score { return $0.score > $1.score }
-            return $0.durationSeconds < $1.durationSeconds
-        }
-        if next.count > maxEntries {
-            next = Array(next.prefix(maxEntries))
-        }
+
+        // Keep only top scores per mode
+        next = filterTopScoresPerMode(next)
         entries = next
         save(entries)
+    }
+
+    func getHighScoresForMode(_ mode: GameMode) -> [ScoreEntry] {
+        return entries
+            .filter { $0.mode == mode }
+            .sorted {
+                if $0.score != $1.score { return $0.score > $1.score }
+                return $0.durationSeconds < $1.durationSeconds
+            }
+            .prefix(maxEntriesPerMode)
+            .map { $0 }
     }
 
     func reset() {
         entries = []
         save(entries)
+    }
+
+    private func filterTopScoresPerMode(_ allEntries: [ScoreEntry]) -> [ScoreEntry] {
+        var result: [ScoreEntry] = []
+        let modes = Set(allEntries.map { $0.mode })
+
+        for mode in modes {
+            let modeEntries = allEntries.filter { $0.mode == mode }
+                .sorted {
+                    if $0.score != $1.score { return $0.score > $1.score }
+                    return $0.durationSeconds < $1.durationSeconds
+                }
+                .prefix(maxEntriesPerMode)
+            result.append(contentsOf: modeEntries)
+        }
+
+        return result
     }
 
     private func load() -> [ScoreEntry] {

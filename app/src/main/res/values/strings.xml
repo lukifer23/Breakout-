@@ -1,18 +1,10 @@
 <resources>
     <string name="app_name">Breakout+</string>
     <string name="title_play">Play</string>
-    <string name="title_modes">Modes</string>
     <string name="title_daily_challenges">Daily Challenges</string>
     <string name="title_scoreboard">Scoreboard</string>
     <string name="title_settings">Settings</string>
     <string name="title_howto">How To Play</string>
-    <string name="title_quit">Exit</string>
-    <string name="label_score">Score</string>
-    <string name="label_lives">Lives</string>
-    <string name="label_level">Level</string>
-    <string name="label_time">Time</string>
-    <string name="label_elapsed">Elapsed</string>
-    <string name="label_mode">Mode</string>
     <string name="label_resume">Resume</string>
     <string name="label_restart">Restart</string>
     <string name="label_back">Back</string>
@@ -37,10 +29,6 @@
     <string name="label_scoreboard_hint">Top runs across all modes.</string>
     <string name="label_howto_hint">Quick Start</string>
     <string name="label_mode_classic">Classic</string>
-    <string name="label_mode_timed">Timed Challenge</string>
-    <string name="label_mode_endless">Endless</string>
-    <string name="label_mode_god">God Mode</string>
-    <string name="label_mode_rush">Level Rush</string>
     <string name="label_start">Start</string>
     <string name="label_pause">Pause</string>
     <string name="label_fire">Fire</string>
@@ -48,7 +36,6 @@
     <string name="label_game_over">Game Over</string>
     <string name="label_level_complete">Level Complete</string>
     <string name="label_no_scores">No scores yet. Break some bricks!</string>
-    <string name="label_powerups">Powerups</string>
     <string name="label_device_hint">Optimized for foldable screens</string>
     <string name="howto_controls">Drag to move the paddle and aim the launch. Release to fire. When Laser powerup is active, use two-finger tap or the FIRE button.</string>
     <string name="label_time_format">Time %1$02d:%2$02d</string>
@@ -81,7 +68,6 @@
     <string name="label_hud_meta_default">Classic • Powerups: none</string>
     <string name="label_shield_default">Shield 100%</string>
     <string name="label_fps_default">FPS: —</string>
-    <string name="label_tip_default">Tip</string>
     <string name="label_paused">Paused</string>
     <string name="label_score_level_default">Score 0 • Level 1</string>
     <string name="label_welcome_title">Welcome to Breakout+!</string>

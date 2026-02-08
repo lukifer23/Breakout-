@@ -121,7 +121,6 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         binding.gameSurface.applyUnlocks(unlocks)
         applyHandedness(settings.leftHanded)
         if (!settings.tipsEnabled) {
-            binding.hudTip.visibility = View.GONE
             hideTooltip()
         }
         if (!settings.showFpsCounter) {

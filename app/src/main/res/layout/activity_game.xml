@@ -201,21 +201,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/hudContainer" />
 
-    <TextView
-        android:id="@+id/hudTip"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:background="@drawable/hud_chip"
-        android:padding="8dp"
-        android:text="@string/label_tip_default"
-        android:textColor="@color/bp_white"
-        android:textSize="@dimen/bp_hud_mode_size"
-        android:visibility="gone"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/hudContainer" />
-
     <View
         android:id="@+id/gameFadeOverlay"
         android:layout_width="0dp"
