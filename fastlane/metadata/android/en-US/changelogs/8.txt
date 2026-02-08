@@ -1,0 +1,4 @@
+- Removed bottom tip popups to keep gameplay unobstructed
+- Improved aim guide responsiveness and accuracy
+- Invaders formation smoothing and higher brick density
+- General UI polish and stability fixes

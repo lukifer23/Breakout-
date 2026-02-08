@@ -18,6 +18,7 @@ PLAY_WAIT="${BP_PLAY_WAIT:-2}"
 POWERUP_WAIT="${BP_POWERUP_WAIT:-4}"
 POWERUP_TYPE="${BP_POWERUP_TYPE:-LASER}"
 DEFAULT_GAME_MODE="${BP_GAME_MODE:-CLASSIC}"
+PREFER_EMULATOR="${BP_PREFER_EMULATOR:-0}"
 ADB_SERIAL="${BP_SERIAL:-${ANDROID_SERIAL:-}}"
 EMULATOR_AVD="${BP_EMULATOR_AVD:-${BP_AVD:-}}"
 EMULATOR_TIMEOUT="${BP_EMULATOR_TIMEOUT:-180}"
@@ -78,7 +79,10 @@ start_emulator() {
   emulator "${args[@]}" >/dev/null 2>&1 &
   local elapsed=0
   while [[ $elapsed -lt ${EMULATOR_TIMEOUT} ]]; do
-    mapfile -t emulators < <(list_devices | grep '^emulator-')
+    emulators=()
+    while IFS= read -r line; do
+      [[ -n "${line}" ]] && emulators+=("${line}")
+    done < <(list_devices | grep '^emulator-' || true)
     if [[ ${#emulators[@]} -gt 0 ]]; then
       ADB_SERIAL="${emulators[0]}"
       return 0
@@ -99,13 +103,27 @@ ensure_device() {
     return 0
   fi
 
-  mapfile -t devices < <(list_devices)
+  if [[ "${PREFER_EMULATOR}" == "1" && -n "${EMULATOR_AVD}" ]]; then
+    if start_emulator; then
+      adb_cmd wait-for-device >/dev/null 2>&1 || true
+      wait_for_boot || true
+      return 0
+    fi
+  fi
+
+  devices=()
+  while IFS= read -r line; do
+    [[ -n "${line}" ]] && devices+=("${line}")
+  done < <(list_devices || true)
   if [[ ${#devices[@]} -eq 0 ]]; then
     if ! start_emulator; then
       echo "No adb devices found. Connect a device or set BP_EMULATOR_AVD." >&2
       exit 1
     fi
-    mapfile -t devices < <(list_devices)
+    devices=()
+    while IFS= read -r line; do
+      [[ -n "${line}" ]] && devices+=("${line}")
+    done < <(list_devices || true)
   fi
 
   if [[ ${#devices[@]} -eq 1 ]]; then
