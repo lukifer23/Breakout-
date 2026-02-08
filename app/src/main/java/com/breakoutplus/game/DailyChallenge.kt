@@ -71,16 +71,19 @@ object DailyChallengeManager {
         return shuffled.take(3).map { it() } // Generate 3 random challenges per day
     }
 
-    fun updateChallengeProgress(challenges: MutableList<DailyChallenge>, type: ChallengeType, value: Int = 1) {
+    fun updateChallengeProgress(challenges: MutableList<DailyChallenge>, type: ChallengeType, value: Int = 1): List<DailyChallenge> {
+        val completed = mutableListOf<DailyChallenge>()
         challenges.forEach { challenge ->
             if (!challenge.completed && challenge.type == type) {
                 challenge.progress += value
                 if (challenge.progress >= challenge.targetValue) {
                     challenge.completed = true
                     challenge.rewardGranted = true
+                    completed.add(challenge)
                 }
             }
         }
+        return completed
     }
 
     fun completeChallenge(challenge: DailyChallenge) {
@@ -99,8 +102,8 @@ object DailyChallengeManager {
         return when (challenge.rewardType) {
             RewardType.COSMETIC_UNLOCK -> "Unlocks a cosmetic item"
             RewardType.THEME_UNLOCK -> "Unlocks a visual theme"
-            RewardType.STREAK_BONUS -> "+${challenge.rewardValue} streak bonus"
-            RewardType.SCORE_MULTIPLIER -> "${challenge.rewardValue}% score bonus"
+            RewardType.STREAK_BONUS -> "Bonus points for next ${challenge.rewardValue} bricks"
+            RewardType.SCORE_MULTIPLIER -> "+${challenge.rewardValue}% score bonus"
         }
     }
 }

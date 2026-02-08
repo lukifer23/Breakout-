@@ -84,12 +84,28 @@ class GameGLSurfaceView @JvmOverloads constructor(
         rendererImpl?.updateSettings(settings)
     }
 
+    fun applyUnlocks(unlocks: com.breakoutplus.UnlockManager.UnlockState) {
+        rendererImpl?.updateUnlocks(unlocks)
+    }
+
     fun fireLaser() {
         rendererImpl?.fireLaser()
     }
 
+    fun debugSpawnPowerup(type: PowerUpType) {
+        rendererImpl?.debugSpawnPowerup(type)
+    }
+
     override fun onTouchEvent(event: MotionEvent): Boolean {
         rendererImpl?.handleTouch(event, width.toFloat(), height.toFloat())
+        if (event.action == MotionEvent.ACTION_UP) {
+            performClick()
+        }
+        return true
+    }
+
+    override fun performClick(): Boolean {
+        super.performClick()
         return true
     }
 

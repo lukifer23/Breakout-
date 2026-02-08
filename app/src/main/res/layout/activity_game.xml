@@ -1,8 +1,7 @@
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@color/bp_navy">
+    android:layout_height="match_parent">
 
     <LinearLayout
         android:id="@+id/hudContainer"
@@ -30,7 +29,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="10dp"
                 android:fontFamily="sans-serif-medium"
-                android:text="Score 0"
+                android:text="@string/label_score_default"
                 android:textColor="@color/bp_white"
                 android:textSize="@dimen/bp_hud_score_size"
                 android:textStyle="bold"
@@ -72,7 +71,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:fontFamily="sans-serif-medium"
-                    android:text="Lives 3"
+                    android:text="@string/label_lives_default"
                     android:textColor="@color/bp_white"
                     android:textSize="@dimen/bp_hud_stat_size" />
 
@@ -82,7 +81,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="16dp"
                     android:fontFamily="sans-serif-medium"
-                    android:text="Time 02:00"
+                    android:text="@string/label_time_default"
                     android:textColor="@color/bp_white"
                     android:textSize="@dimen/bp_hud_stat_size" />
 
@@ -92,7 +91,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="16dp"
                     android:fontFamily="sans-serif-medium"
-                    android:text="Level 1"
+                    android:text="@string/label_level_default"
                     android:textColor="@color/bp_white"
                     android:textSize="@dimen/bp_hud_stat_size" />
             </LinearLayout>
@@ -109,50 +108,61 @@
             android:paddingEnd="16dp"
             android:paddingTop="6dp"
             android:paddingBottom="6dp"
-            android:text="Level 1"
+            android:text="@string/label_level_default"
             android:textColor="@color/bp_white"
             android:textSize="@dimen/bp_hud_banner_size"
             android:textStyle="bold"
             android:visibility="gone" />
 
-        <TextView
-            android:id="@+id/hudMeta"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:fontFamily="sans-serif-medium"
-            android:text="Classic • Powerups: none"
-            android:textColor="@color/bp_gray"
-            android:textSize="@dimen/bp_hud_mode_size" />
-
         <LinearLayout
-            android:id="@+id/hudShieldRow"
-            android:layout_width="wrap_content"
+            android:id="@+id/hudStatusRow"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
             android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:visibility="gone">
+            android:orientation="horizontal">
 
             <TextView
-                android:id="@+id/hudShieldLabel"
-                android:layout_width="wrap_content"
+                android:id="@+id/hudMeta"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ellipsize="end"
                 android:fontFamily="sans-serif-medium"
-                android:text="Shield 100%"
-                android:textColor="@color/bp_white"
+                android:maxLines="1"
+                android:text="@string/label_hud_meta_default"
+                android:textColor="@color/bp_gray"
                 android:textSize="@dimen/bp_hud_mode_size" />
 
-            <com.google.android.material.progressindicator.LinearProgressIndicator
-                android:id="@+id/hudShieldBar"
-                android:layout_width="120dp"
-                android:layout_height="6dp"
+            <LinearLayout
+                android:id="@+id/hudShieldRow"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:layout_marginStart="10dp"
-                android:max="100"
-                android:progress="100"
-                app:indicatorColor="@color/bp_cyan"
-                app:trackColor="@color/bp_shadow"
-                app:trackThickness="6dp" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/hudShieldLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="@string/label_shield_default"
+                    android:textColor="@color/bp_white"
+                    android:textSize="@dimen/bp_hud_mode_size" />
+
+                <com.google.android.material.progressindicator.LinearProgressIndicator
+                    android:id="@+id/hudShieldBar"
+                    android:layout_width="120dp"
+                    android:layout_height="6dp"
+                    android:layout_marginStart="10dp"
+                    android:max="100"
+                    android:progress="100"
+                    app:indicatorColor="@color/bp_cyan"
+                    app:trackColor="@color/bp_shadow"
+                    app:trackThickness="6dp" />
+            </LinearLayout>
         </LinearLayout>
 
         <LinearLayout
@@ -175,7 +185,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
                 android:fontFamily="sans-serif-medium"
-                android:text="FPS: --"
+                android:text="@string/label_fps_default"
                 android:textColor="@color/bp_cyan"
                 android:textSize="@dimen/bp_hud_mode_size"
                 android:visibility="gone" />
@@ -191,6 +201,32 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/hudContainer" />
 
+    <TextView
+        android:id="@+id/hudTip"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/hud_chip"
+        android:padding="8dp"
+        android:text="@string/label_tip_default"
+        android:textColor="@color/bp_white"
+        android:textSize="@dimen/bp_hud_mode_size"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/hudContainer" />
+
+    <View
+        android:id="@+id/gameFadeOverlay"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="@color/bp_navy"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@id/gameSurface"
+        app:layout_constraintEnd_toEndOf="@id/gameSurface"
+        app:layout_constraintStart_toStartOf="@id/gameSurface"
+        app:layout_constraintTop_toTopOf="@id/gameSurface" />
+
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/hudOverlay"
         android:layout_width="0dp"
@@ -204,7 +240,7 @@
             android:id="@+id/pauseOverlay"
             android:layout_width="0dp"
             android:layout_height="0dp"
-            android:background="#B3000000"
+            android:background="@drawable/pause_overlay"
             android:gravity="center"
             android:orientation="vertical"
             android:visibility="gone"
@@ -216,7 +252,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Paused"
+                android:text="@string/label_paused"
                 android:textColor="@color/bp_white"
                 android:textSize="26sp"
                 android:textStyle="bold" />
@@ -265,7 +301,7 @@
                 android:id="@+id/endTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Game Over"
+                android:text="@string/label_game_over"
                 android:textColor="@color/bp_white"
                 android:textSize="28sp"
                 android:textStyle="bold" />
@@ -276,7 +312,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="Score 0 • Level 1"
+                android:text="@string/label_score_level_default"
                 android:textColor="@color/bp_gray" />
 
             <com.google.android.material.button.MaterialButton
@@ -296,21 +332,6 @@
                 android:text="@string/label_main_menu"
                 android:backgroundTint="@color/bp_gray" />
         </LinearLayout>
-
-        <TextView
-            android:id="@+id/hudTip"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            android:background="@drawable/hud_chip"
-            android:padding="8dp"
-            android:text="Tip"
-            android:textColor="@color/bp_white"
-            android:textSize="@dimen/bp_hud_mode_size"
-            android:visibility="gone"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/buttonLaser"
@@ -341,7 +362,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Welcome to Breakout+!"
+                android:text="@string/label_welcome_title"
                 android:textColor="@color/bp_white"
                 android:textSize="24sp"
                 android:textStyle="bold" />
@@ -350,7 +371,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:text="• Drag to move and aim\n• Release to launch the ball\n• Collect powerups for special abilities\n• Two-finger tap or FIRE button fires lasers"
+                android:text="@string/label_welcome_body"
                 android:textColor="@color/bp_gray"
                 android:textSize="@dimen/bp_body_text_size" />
 
@@ -360,7 +381,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
-                android:text="Got it!" />
+                android:text="@string/label_got_it" />
         </LinearLayout>
 
     </androidx.constraintlayout.widget.ConstraintLayout>

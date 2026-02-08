@@ -10,7 +10,7 @@
         style="@style/Text.BreakoutPlus.ScreenTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Choose Mode"
+        android:text="@string/label_choose_mode"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 

@@ -10,7 +10,7 @@
         style="@style/Text.BreakoutPlus.ScreenTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="How To Play"
+        android:text="@string/title_howto"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -52,7 +52,7 @@
                 android:layout_marginTop="8dp"
                 android:background="@drawable/card_background"
                 android:padding="12dp"
-                android:text="Swipe anywhere to move the paddle. Drag to aim and release to launch. Magnet powerups can catch balls for a skill shot. Collect powerups to stack abilities. Use the HUD to monitor score, lives, and timers."
+                android:text="@string/label_howto_summary"
                 />
 
             <TextView
@@ -64,7 +64,7 @@
                 android:clickable="true"
                 android:focusable="true"
                 android:padding="8dp"
-                android:text="▼ Powerups"
+                android:text="@string/label_howto_powerups_header"
                 android:textColor="@color/bp_gold"
                 android:textSize="@dimen/bp_body_text_size"
                 android:textStyle="bold" />
@@ -74,7 +74,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
-                android:text="• Multi-ball: Adds extra balls\n• Laser: Fires beams at bricks (two-finger tap)\n• Guardrail: Safety net below paddle\n• Shield: Absorbs a miss\n• Extra life: Gain one additional life\n• Wide paddle: Expands paddle size\n• Slow: Slows gameplay briefly\n• Fireball: Pierces through bricks\n• Magnet: Pulls powerups and catches balls on contact\n• Gravity Well: Bends ball paths toward center\n• Ball Splitter: Splits balls into more\n• Freeze: Nearly stops time for a moment\n• Pierce: Balls pass through bricks"
+                android:text="@string/label_howto_powerups_list"
                 android:textColor="@color/bp_gray"
                 android:textSize="@dimen/bp_small_text_size" />
 
@@ -87,7 +87,7 @@
                 android:clickable="true"
                 android:focusable="true"
                 android:padding="8dp"
-                android:text="▼ Brick Types"
+                android:text="@string/label_howto_bricks_header"
                 android:textColor="@color/bp_gold"
                 android:textSize="@dimen/bp_body_text_size"
                 android:textStyle="bold" />
@@ -97,7 +97,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
-                android:text="• Standard: one hit\n• Reinforced: two hits\n• Armored: three hits\n• Explosive: damages surrounding bricks\n• Unbreakable: requires fireball/laser\n• Moving: slides horizontally\n• Spawning: breaks into child bricks\n• Phase: changes phases with new HP\n• Boss: multi-phase heavyweight brick"
+                android:text="@string/label_howto_bricks_list"
                 android:textColor="@color/bp_gray"
                 android:textSize="@dimen/bp_small_text_size" />
 
@@ -110,7 +110,7 @@
                 android:clickable="true"
                 android:focusable="true"
                 android:padding="8dp"
-                android:text="▼ Game Modes"
+                android:text="@string/label_howto_modes_header"
                 android:textColor="@color/bp_gold"
                 android:textSize="@dimen/bp_body_text_size"
                 android:textStyle="bold" />
@@ -120,7 +120,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
-                android:text="Classic: Standard breakout progression.\nTimed Challenge: Score high in 2:30.\nEndless: Infinite levels with scaling difficulty.\nGod Mode: Practice without losing lives.\nLevel Rush: Beat each stage before time expires.\nInvaders: Bounce shots to clear ships while dodging fire."
+                android:text="@string/label_howto_modes_list"
                 android:textColor="@color/bp_gray"
                 android:textSize="@dimen/bp_small_text_size" />
         </LinearLayout>

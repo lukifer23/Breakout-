@@ -42,7 +42,7 @@ class GameAudioManager(private val context: Context, private var settings: Setti
         soundMap[GameSound.GAME_OVER] = soundPool.load(context, R.raw.sfx_gameover, 1)
     }
 
-    fun play(sound: GameSound, volume: Float = 1f) {
+    fun play(sound: GameSound, volume: Float = 1f, rate: Float = 1f) {
         if (!settings.soundEnabled) return
         val id = soundMap[sound] ?: return
 
@@ -56,7 +56,8 @@ class GameAudioManager(private val context: Context, private var settings: Setti
             else -> volume * settings.effectsVolume * settings.masterVolume
         }
 
-        soundPool.play(id, finalVolume, finalVolume, 1, 0, 1f)
+        val finalRate = rate.coerceIn(0.7f, 1.3f)
+        soundPool.play(id, finalVolume, finalVolume, 1, 0, finalRate)
     }
 
     fun startMusic() {

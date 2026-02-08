@@ -30,8 +30,16 @@ class DailyChallengesActivity : FoldAwareActivity() {
             row.challengeDescription.text = challenge.description
             row.challengeProgressBar.max = challenge.targetValue
             row.challengeProgressBar.progress = challenge.progress.coerceAtMost(challenge.targetValue)
-            row.challengeProgress.text = "${challenge.progress}/${challenge.targetValue}"
-            row.challengeStatus.text = if (challenge.completed) "Completed" else "In progress"
+            row.challengeProgress.text = getString(
+                R.string.label_challenge_progress,
+                challenge.progress,
+                challenge.targetValue
+            )
+            row.challengeStatus.text = if (challenge.completed) {
+                getString(R.string.label_challenge_completed)
+            } else {
+                getString(R.string.label_challenge_in_progress)
+            }
             val statusColor = if (challenge.completed) R.color.bp_green else R.color.bp_gold
             row.challengeStatus.setTextColor(ContextCompat.getColor(this, statusColor))
             binding.challengesList.addView(row.root)

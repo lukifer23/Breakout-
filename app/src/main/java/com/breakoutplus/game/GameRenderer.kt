@@ -127,6 +127,10 @@ class GameRenderer(
         engine.triggerLaserFromUi()
     }
 
+    fun debugSpawnPowerup(type: PowerUpType) {
+        engine.debugSpawnPowerup(type)
+    }
+
     fun pause() {
         paused = true
         engine.pause()
@@ -162,6 +166,11 @@ class GameRenderer(
         config = config.copy(settings = settings)
         engine.updateSettings(settings)
         audioManager.updateSettings(settings)
+    }
+
+    fun updateUnlocks(unlocks: com.breakoutplus.UnlockManager.UnlockState) {
+        config = config.copy(unlocks = unlocks)
+        engine.updateUnlocks(unlocks)
     }
 
     fun release() {

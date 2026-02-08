@@ -15,6 +15,9 @@ interface GameEventListener {
     fun onTip(message: String)
     fun onFpsUpdate(fps: Int)
     fun onShieldUpdated(current: Int, max: Int)
+    fun onLaserFired(cooldownSeconds: Float)
+    fun onThemeUnlocked(themeName: String)
+    fun onCosmeticUnlocked(newTier: Int)
     fun onGameOver(summary: GameSummary)
     fun onLevelComplete(summary: GameSummary)
 }

@@ -1,0 +1,4 @@
+- Invaders mode overhaul: denser waves, smoother formation motion, and clearer shot telegraphs
+- Shield barrier visualized in-game with critical alerts and hit feedback
+- Paddle scaling and brick layout tuned for better spacing across devices
+- Improved enemy shot variety and invader destruction effects

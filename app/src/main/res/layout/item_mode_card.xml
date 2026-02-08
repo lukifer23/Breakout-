@@ -27,7 +27,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:fontFamily="sans-serif-medium"
-            android:text="Classic"
+            android:text="@string/label_mode_classic"
             android:textColor="@color/bp_white"
             android:textSize="@dimen/bp_body_text_size"
             android:textStyle="bold" />
@@ -38,7 +38,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
             android:fontFamily="sans-serif"
-            android:text="Standard breakout with powerups."
+            android:text="@string/label_mode_card_description_default"
             android:textColor="@color/bp_gray"
             android:textSize="@dimen/bp_small_text_size" />
 
@@ -48,7 +48,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:fontFamily="sans-serif-medium"
-            android:text="Lives 3 • No timer • Balanced"
+            android:text="@string/label_mode_card_meta_default"
             android:textColor="#B5C0D4"
             android:textSize="@dimen/bp_caption_text_size" />
 

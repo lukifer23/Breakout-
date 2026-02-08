@@ -34,6 +34,20 @@ Store listing assets live under `store_assets/`:
 - Screenshots: `store_assets/screenshots/phone/` and `store_assets/screenshots/tablet/`
 
 Use `tools/capture_screenshots.sh` to capture device screenshots via ADB. The script launches the app before each shot and can auto-capture with a timed delay.
+For emulator captures (repeatable device sizes), you can boot an AVD directly:
+```bash
+export BP_EMULATOR_AVD="Pixel_7"
+export BP_EMULATOR_HEADLESS=0
+tools/capture_screenshots.sh phone
+```
+If multiple devices are connected, select one with:
+```bash
+export BP_SERIAL="emulator-5554"
+```
+If the app is not installed on the target device, the script will attempt to install `app/build/outputs/apk/debug/app-debug.apk`. You can override with:
+```bash
+export BP_APK="/absolute/path/to/app-debug.apk"
+```
 Generate icon + feature graphic with:
 ```bash
 python3 -m venv tools/.venv
@@ -55,5 +69,16 @@ Optional auto-capture (no prompts, 4s delay between shots):
 ```bash
 export BP_AUTO=1
 export BP_SHOT_DELAY=4
+tools/capture_screenshots.sh phone
+```
+
+Capture specific shots and modes (debug builds can auto-spawn powerups):
+```bash
+export BP_SHOTS="title mode_select gameplay powerup pause scoreboard daily_challenges settings"
+export BP_GAME_MODES="CLASSIC RUSH GOD TIMED INVADERS"
+export BP_AUTO=1
+export BP_AUTO_PLAY=1
+export BP_PLAY_WAIT=2
+export BP_POWERUP_TYPE="LASER"
 tools/capture_screenshots.sh phone
 ```

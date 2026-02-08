@@ -10,7 +10,7 @@
         style="@style/Text.BreakoutPlus.ScreenTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Settings"
+        android:text="@string/title_settings"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -60,7 +60,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:text="Master Volume"
+                android:text="@string/label_master_volume"
                 android:textColor="@color/bp_gray" />
 
             <SeekBar
@@ -73,7 +73,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:text="Effects Volume"
+                android:text="@string/label_effects_volume"
                 android:textColor="@color/bp_gray" />
 
             <SeekBar
@@ -86,7 +86,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:text="Music Volume"
+                android:text="@string/label_music_volume"
                 android:textColor="@color/bp_gray" />
 
             <SeekBar
@@ -180,7 +180,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
-                android:text="Show FPS Counter"
+                android:text="@string/label_show_fps"
                 android:textColor="@color/bp_white" />
 
             <com.google.android.material.switchmaterial.SwitchMaterial

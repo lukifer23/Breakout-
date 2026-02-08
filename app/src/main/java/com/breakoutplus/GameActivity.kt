@@ -1,6 +1,7 @@
 package com.breakoutplus
 
 import android.content.Intent
+import android.content.pm.ApplicationInfo
 import android.os.Bundle
 import android.view.View
 import androidx.constraintlayout.widget.ConstraintLayout
@@ -8,6 +9,9 @@ import androidx.core.graphics.ColorUtils
 import android.os.Build
 import android.view.Display
 import android.view.WindowManager
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowCompat
 import com.breakoutplus.DailyChallengeStore
 import com.breakoutplus.databinding.ActivityGameBinding
 import com.breakoutplus.game.GameConfig
@@ -16,16 +20,27 @@ import com.breakoutplus.game.GameMode
 import com.breakoutplus.game.GameSummary
 import com.breakoutplus.game.PowerUpType
 import com.breakoutplus.game.PowerupStatus
+import com.breakoutplus.UnlockManager
 import java.util.concurrent.atomic.AtomicBoolean
 
 class GameActivity : FoldAwareActivity(), GameEventListener {
+    private enum class EndOverlayState { NONE, LEVEL_COMPLETE, GAME_OVER }
+
     private lateinit var binding: ActivityGameBinding
     private lateinit var config: GameConfig
     private var currentModeLabel: String = "Classic"
     private var currentPowerupSummary: String = "Powerups: none"
     private var currentCombo: Int = 0
     private var laserActive: Boolean = false
+    private var laserCooldownEndMs: Long = 0L
+    private var laserCooldownRunnable: Runnable? = null
+    private var lastShieldValue: Int = 0
+    private var endStatsAnimator: android.animation.ValueAnimator? = null
     private val hudUpdateQueued = AtomicBoolean(false)
+    private var endOverlayState: EndOverlayState = EndOverlayState.NONE
+    private var maxInsetTop = 0
+    private var maxInsetBottom = 0
+    private var baseSurfaceBottomMargin = 0
     @Volatile private var pendingScore: Int? = null
     @Volatile private var pendingLives: Int? = null
     @Volatile private var pendingFps: Int? = null
@@ -35,16 +50,32 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         binding = ActivityGameBinding.inflate(layoutInflater)
         setContentView(binding.root)
         setFoldAwareRoot(binding.root)
+        configureSystemUi()
+        baseSurfaceBottomMargin =
+            (binding.gameSurface.layoutParams as ConstraintLayout.LayoutParams).bottomMargin
+        applyWindowInsets()
 
         val modeName = intent.getStringExtra(EXTRA_MODE)
         val mode = runCatching { GameMode.valueOf(modeName ?: "CLASSIC") }.getOrDefault(GameMode.CLASSIC)
         val settings = SettingsManager.load(this)
         val dailyChallenges = DailyChallengeStore.load(this)
-        config = GameConfig(mode, settings, dailyChallenges)
+        val unlocks = UnlockManager.load(this)
+        config = GameConfig(mode, settings, dailyChallenges, unlocks)
 
         binding.gameSurface.start(config, this)
         applyFrameRatePreference()
         applyHandedness(settings.leftHanded)
+
+        val isDebugBuild = (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
+        if (isDebugBuild) {
+            intent.getStringExtra(EXTRA_DEBUG_POWERUP)?.let { powerupName ->
+                runCatching { PowerUpType.valueOf(powerupName) }.onSuccess { type ->
+                    binding.gameSurface.postDelayed({
+                        binding.gameSurface.debugSpawnPowerup(type)
+                    }, 600)
+                }
+            }
+        }
 
         binding.buttonPause.setOnClickListener { showPause(true) }
         binding.buttonResume.setOnClickListener { showPause(false) }
@@ -59,6 +90,8 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         if (settings.tipsEnabled) {
             showTooltip()
         }
+
+        playGameFade()
     }
 
     override fun onResume() {
@@ -75,14 +108,17 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         binding.gameSurface.pauseGame()
         binding.gameSurface.onPause()
         config.dailyChallenges?.let { DailyChallengeStore.save(this, it) }
+        laserCooldownRunnable?.let { binding.buttonLaser.removeCallbacks(it) }
         super.onPause()
     }
 
     private fun refreshSettings() {
         val settings = SettingsManager.load(this)
         val challenges = config.dailyChallenges ?: DailyChallengeStore.load(this)
-        config = GameConfig(config.mode, settings, challenges)
+        val unlocks = UnlockManager.load(this)
+        config = GameConfig(config.mode, settings, challenges, unlocks)
         binding.gameSurface.applySettings(settings)
+        binding.gameSurface.applyUnlocks(unlocks)
         applyHandedness(settings.leftHanded)
         if (!settings.tipsEnabled) {
             binding.hudTip.visibility = View.GONE
@@ -102,9 +138,9 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         val targetFps = bestMode?.refreshRate ?: display.refreshRate
 
         val params = window.attributes
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && bestMode != null) {
+        if (bestMode != null) {
             params.preferredDisplayModeId = bestMode.modeId
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+        } else {
             params.preferredRefreshRate = targetFps
         }
         window.attributes = params
@@ -121,7 +157,6 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     }
 
     private fun selectBestMode(display: Display, allowHighRefresh: Boolean): Display.Mode? {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return null
         val current = display.mode
         val candidates = display.supportedModes.filter {
             it.physicalWidth == current.physicalWidth && it.physicalHeight == current.physicalHeight
@@ -155,7 +190,9 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     private fun restartGame() {
         hideOverlay(binding.endOverlay)
         hideOverlay(binding.pauseOverlay)
+        endOverlayState = EndOverlayState.NONE
         binding.gameSurface.restartGame()
+        playGameFade()
     }
 
     private fun exitToMenu() {
@@ -164,12 +201,14 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     }
 
     private fun handleEndPrimary() {
-        when (binding.endTitle.text.toString()) {
-            getString(R.string.label_level_complete) -> {
+        when (endOverlayState) {
+            EndOverlayState.LEVEL_COMPLETE -> {
                 hideOverlay(binding.endOverlay)
+                endOverlayState = EndOverlayState.NONE
                 // Add brief celebration delay before next level
                 android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
                     binding.gameSurface.nextLevel()
+                    playGameFade()
                 }, 800)
             }
             else -> restartGame()
@@ -203,6 +242,34 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         binding.buttonLaser.layoutParams = laserParams
     }
 
+    private fun applyWindowInsets() {
+        val baseTop = binding.hudContainer.paddingTop
+        val baseBottom = binding.hudContainer.paddingBottom
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { _, insets ->
+            val bars = insets.getInsets(
+                WindowInsetsCompat.Type.systemBars() or
+                    WindowInsetsCompat.Type.displayCutout() or
+                    WindowInsetsCompat.Type.systemGestures()
+            )
+            if (bars.top > maxInsetTop) maxInsetTop = bars.top
+            if (bars.bottom > maxInsetBottom) maxInsetBottom = bars.bottom
+            binding.hudContainer.setPadding(
+                binding.hudContainer.paddingLeft,
+                baseTop + maxInsetTop,
+                binding.hudContainer.paddingRight,
+                baseBottom
+            )
+            val params = binding.gameSurface.layoutParams as ConstraintLayout.LayoutParams
+            params.bottomMargin = baseSurfaceBottomMargin + maxInsetBottom
+            binding.gameSurface.layoutParams = params
+            insets
+        }
+    }
+
+    private fun configureSystemUi() {
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+    }
+
     override fun onScoreUpdated(score: Int) {
         pendingScore = score
         scheduleHudUpdate()
@@ -218,9 +285,12 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             val minutes = secondsRemaining / 60
             val seconds = secondsRemaining % 60
             val isCountdown = config.mode.timeLimitSeconds > 0
-            val label = if (isCountdown) "Time" else "Elapsed"
             binding.hudTime.visibility = android.view.View.VISIBLE
-            binding.hudTime.text = "$label ${String.format("%02d:%02d", minutes, seconds)}"
+            binding.hudTime.text = if (isCountdown) {
+                getString(R.string.label_time_format, minutes, seconds)
+            } else {
+                getString(R.string.label_elapsed_format, minutes, seconds)
+            }
             if (isCountdown && secondsRemaining <= 10) {
                 binding.hudTime.setTextColor(androidx.core.content.ContextCompat.getColor(this, R.color.bp_red))
             } else {
@@ -231,7 +301,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
 
     override fun onLevelUpdated(level: Int) {
         runOnUiThread {
-            binding.hudLevel.text = "Level $level"
+            binding.hudLevel.text = getString(R.string.label_level_format, level)
             showLevelBanner(level)
         }
     }
@@ -246,7 +316,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
 
     override fun onPowerupStatus(status: String) {
         runOnUiThread {
-            currentPowerupSummary = status.split("•").firstOrNull()?.trim() ?: status
+            currentPowerupSummary = status
             updateHudMeta()
         }
     }
@@ -256,13 +326,34 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             renderPowerupChips(status)
             currentCombo = combo
             currentPowerupSummary = if (status.isEmpty()) {
-                "Powerups: none"
+                getString(R.string.label_powerups_none)
             } else {
-                "Powerups: ${status.size} active"
+                resources.getQuantityString(R.plurals.label_powerups_active, status.size, status.size)
             }
             updateLaserButton(status)
             updateHudMeta()
         }
+    }
+
+    override fun onLaserFired(cooldownSeconds: Float) {
+        runOnUiThread {
+            if (!laserActive) return@runOnUiThread
+            startLaserCooldown(cooldownSeconds)
+        }
+    }
+
+    override fun onThemeUnlocked(themeName: String) {
+        val updated = UnlockManager.unlockTheme(this, themeName)
+        config = config.copy(unlocks = updated)
+        binding.gameSurface.applyUnlocks(updated)
+        onTip("Theme unlocked: $themeName")
+    }
+
+    override fun onCosmeticUnlocked(newTier: Int) {
+        val updated = UnlockManager.setCosmeticTier(this, newTier)
+        config = config.copy(unlocks = updated)
+        binding.gameSurface.applyUnlocks(updated)
+        onTip("Cosmetic upgrade unlocked!")
     }
 
     override fun onFpsUpdate(fps: Int) {
@@ -280,27 +371,40 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             binding.hudShieldBar.max = max
             binding.hudShieldBar.progress = current.coerceIn(0, max)
             val percent = ((current.toFloat() / max.toFloat()) * 100f).toInt().coerceIn(0, 100)
-            binding.hudShieldLabel.text = "Shield $percent%"
+            binding.hudShieldLabel.text = getString(R.string.label_shield_percent, percent)
+            if (current < lastShieldValue) {
+                binding.hudShieldBar.animate().cancel()
+                binding.hudShieldBar.scaleX = 1f
+                binding.hudShieldBar.scaleY = 1f
+                binding.hudShieldBar.animate()
+                    .scaleX(1.08f)
+                    .scaleY(1.08f)
+                    .setDuration(120)
+                    .withEndAction {
+                        binding.hudShieldBar.animate()
+                            .scaleX(1f)
+                            .scaleY(1f)
+                            .setDuration(180)
+                            .start()
+                    }
+                    .start()
+                binding.hudShieldLabel.setTextColor(androidx.core.content.ContextCompat.getColor(this, R.color.bp_red))
+                binding.hudShieldLabel.postDelayed({
+                    binding.hudShieldLabel.setTextColor(androidx.core.content.ContextCompat.getColor(this, R.color.bp_white))
+                }, 260L)
+            }
+            lastShieldValue = current
         }
     }
 
     override fun onTip(message: String) {
-        if (!config.settings.tipsEnabled) return
-        runOnUiThread {
-            binding.hudTip.text = message
-            binding.hudTip.visibility = View.VISIBLE
-            binding.hudTip.alpha = 0f
-            binding.hudTip.animate().alpha(1f).setDuration(300).withEndAction {
-                binding.hudTip.animate().alpha(0f).setDuration(600).setStartDelay(2000).withEndAction {
-                    binding.hudTip.visibility = View.GONE
-                }.start()
-            }.start()
-        }
+        // Intentionally no-op: bottom tip popups obstruct gameplay and are redundant with HUD.
     }
 
     override fun onGameOver(summary: GameSummary) {
         runOnUiThread {
             binding.buttonLaser.visibility = View.GONE
+            endOverlayState = EndOverlayState.GAME_OVER
             // Check if this is a high score for the mode
             if (ScoreboardManager.isHighScoreForMode(this, config.mode.displayName, summary.score, summary.durationSeconds)) {
                 // Show name input dialog
@@ -308,7 +412,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             } else {
                 // Not a high score, just show game over screen
                 binding.endTitle.text = getString(R.string.label_game_over)
-                binding.endStats.text = "Score ${summary.score} • Level ${summary.level}"
+                animateEndStats(summary, getString(R.string.label_game_over))
                 binding.buttonEndPrimary.text = getString(R.string.label_restart)
                 showOverlay(binding.endOverlay)
             }
@@ -318,7 +422,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
 
     private fun showNameInputDialog(summary: GameSummary) {
         val dialog = android.app.Dialog(this)
-        val view = layoutInflater.inflate(R.layout.dialog_high_score, null)
+        val view = layoutInflater.inflate(R.layout.dialog_high_score, binding.root, false)
         dialog.setContentView(view)
         dialog.setCancelable(false)
         dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
@@ -333,16 +437,22 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         val saveButton = view.findViewById<com.google.android.material.button.MaterialButton>(R.id.highScoreSave)
         val skipButton = view.findViewById<com.google.android.material.button.MaterialButton>(R.id.highScoreSkip)
 
-        title.text = "New High Score!"
-        meta.text = "Score ${summary.score} • Level ${summary.level} • Mode ${config.mode.displayName}"
-        input.setText("Player")
+        title.text = getString(R.string.label_high_score_title)
+        meta.text = getString(
+            R.string.label_score_level_mode_format,
+            summary.score,
+            summary.level,
+            config.mode.displayName
+        )
+        input.setText(getString(R.string.label_player_default))
         input.setSelection(input.text?.length ?: 0)
         input.requestFocus()
         dialog.window?.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE)
 
         val finishDialog = {
+            endOverlayState = EndOverlayState.GAME_OVER
             binding.endTitle.text = getString(R.string.label_game_over)
-            binding.endStats.text = "Score ${summary.score} • Level ${summary.level}"
+            animateEndStats(summary, getString(R.string.label_game_over))
             binding.buttonEndPrimary.text = getString(R.string.label_restart)
             showOverlay(binding.endOverlay)
         }
@@ -375,8 +485,9 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     override fun onLevelComplete(summary: GameSummary) {
         runOnUiThread {
             binding.buttonLaser.visibility = View.GONE
+            endOverlayState = EndOverlayState.LEVEL_COMPLETE
             binding.endTitle.text = getString(R.string.label_level_complete)
-            binding.endStats.text = "Score ${summary.score} • Level ${summary.level}"
+            animateEndStats(summary, getString(R.string.label_level_complete))
             binding.buttonEndPrimary.text = getString(R.string.label_next_level)
             showOverlay(binding.endOverlay)
             config.dailyChallenges?.let { DailyChallengeStore.save(this, it) }
@@ -407,7 +518,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
 
     private fun showLevelBanner(level: Int) {
         val banner = binding.hudLevelBanner
-        banner.text = "Level $level"
+        banner.text = getString(R.string.label_level_format, level)
         banner.animate().cancel()
         banner.visibility = View.VISIBLE
         banner.alpha = 0f
@@ -522,7 +633,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         val parts = mutableListOf<String>()
         if (currentModeLabel.isNotBlank()) parts.add(currentModeLabel)
         if (currentPowerupSummary.isNotBlank()) parts.add(currentPowerupSummary)
-        if (currentCombo >= 2) parts.add("Combo x$currentCombo")
+        if (currentCombo >= 2) parts.add(getString(R.string.label_combo_format, currentCombo))
         binding.hudMeta.text = parts.joinToString(" • ")
     }
 
@@ -533,7 +644,65 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     private fun updateLaserButton(status: List<PowerupStatus>) {
         val hasLaser = status.any { it.type == PowerUpType.LASER }
         laserActive = hasLaser
+        if (!hasLaser) {
+            laserCooldownEndMs = 0L
+            laserCooldownRunnable?.let { binding.buttonLaser.removeCallbacks(it) }
+            binding.buttonLaser.text = getString(R.string.label_fire)
+            binding.buttonLaser.isEnabled = true
+            binding.buttonLaser.alpha = 1f
+        }
         binding.buttonLaser.visibility = if (hasLaser) View.VISIBLE else View.GONE
+    }
+
+    private fun playGameFade() {
+        val overlay = binding.gameFadeOverlay
+        overlay.alpha = 1f
+        overlay.visibility = View.VISIBLE
+        overlay.animate()
+            .alpha(0f)
+            .setDuration(220)
+            .withEndAction { overlay.visibility = View.GONE }
+            .start()
+    }
+
+    private fun animateEndStats(summary: GameSummary, title: String) {
+        binding.endTitle.text = title
+        endStatsAnimator?.cancel()
+        val animator = android.animation.ValueAnimator.ofInt(0, summary.score)
+        endStatsAnimator = animator
+        animator.duration = 700
+        animator.addUpdateListener { valueAnimator ->
+            val value = valueAnimator.animatedValue as Int
+            binding.endStats.text = getString(R.string.label_score_level_format, value, summary.level)
+        }
+        animator.start()
+    }
+
+    private fun startLaserCooldown(seconds: Float) {
+        val durationMs = (seconds * 1000f).toLong().coerceAtLeast(100L)
+        laserCooldownEndMs = System.currentTimeMillis() + durationMs
+        binding.buttonLaser.isEnabled = false
+        binding.buttonLaser.alpha = 0.6f
+        laserCooldownRunnable?.let { binding.buttonLaser.removeCallbacks(it) }
+        val runner = Runnable { updateLaserCooldown() }
+        laserCooldownRunnable = runner
+        binding.buttonLaser.post(runner)
+    }
+
+    private fun updateLaserCooldown() {
+        val remainingMs = laserCooldownEndMs - System.currentTimeMillis()
+        if (!laserActive || remainingMs <= 0L) {
+            binding.buttonLaser.text = getString(R.string.label_fire)
+            binding.buttonLaser.isEnabled = true
+            binding.buttonLaser.alpha = 1f
+            return
+        }
+        val remaining = remainingMs / 1000f
+        binding.buttonLaser.text = getString(R.string.label_laser_cooldown, remaining)
+        val runner = laserCooldownRunnable
+        if (runner != null) {
+            binding.buttonLaser.postDelayed(runner, 60L)
+        }
     }
 
     private fun scheduleHudUpdate() {
@@ -541,16 +710,16 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         binding.root.postOnAnimation {
             hudUpdateQueued.set(false)
             pendingScore?.let {
-                binding.hudScore.text = "Score $it"
+                binding.hudScore.text = getString(R.string.label_score_format, it)
                 pendingScore = null
             }
             pendingLives?.let {
-                binding.hudLives.text = "Lives $it"
+                binding.hudLives.text = getString(R.string.label_lives_format, it)
                 pendingLives = null
             }
             val fps = pendingFps
             if (fps != null && config.settings.showFpsCounter) {
-                binding.hudFps.text = "FPS: $fps"
+                binding.hudFps.text = getString(R.string.label_fps_format, fps)
                 binding.hudFps.visibility = View.VISIBLE
                 if (binding.hudPowerups.visibility != View.VISIBLE) {
                     binding.hudPowerups.visibility = View.VISIBLE
@@ -587,5 +756,6 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
 
     companion object {
         const val EXTRA_MODE = "extra_mode"
+        const val EXTRA_DEBUG_POWERUP = "extra_debug_powerup"
     }
 }

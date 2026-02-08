@@ -11,7 +11,7 @@
         android:layout_width="32dp"
         android:layout_height="wrap_content"
         android:fontFamily="sans-serif-medium"
-        android:text="#1"
+        android:text="@string/label_rank_default"
         android:textColor="@color/bp_gold"
         android:textSize="@dimen/bp_body_text_size"
         android:textStyle="bold" />
@@ -27,7 +27,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:fontFamily="sans-serif-medium"
-            android:text="Classic"
+            android:text="@string/label_mode_classic"
             android:textColor="@color/bp_white"
             android:textSize="@dimen/bp_body_text_size"
             android:textStyle="bold" />
@@ -37,7 +37,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:fontFamily="sans-serif"
-            android:text="Level 4 • 02:31"
+            android:text="@string/label_level_time_default"
             android:textColor="@color/bp_gray"
             android:textSize="@dimen/bp_caption_text_size" />
     </LinearLayout>
@@ -47,7 +47,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:fontFamily="sans-serif-medium"
-        android:text="120,000"
+        android:text="@string/label_score_value_default"
         android:textColor="@color/bp_white"
         android:textSize="@dimen/bp_body_text_size"
         android:textStyle="bold" />

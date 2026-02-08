@@ -1,0 +1,6 @@
+<resources>
+    <plurals name="label_powerups_active">
+        <item quantity="one">Powerup: %1$d active</item>
+        <item quantity="other">Powerups: %1$d active</item>
+    </plurals>
+</resources>

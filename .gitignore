@@ -14,6 +14,7 @@ fastlane/report.xml
 *.iml
 local.properties
 breakoutplus-9e62e783bb10.json
+breakoutplus-d44f9bd3848d.json
 **/play-service-account*.json
 **/google-play-service-account*.json
 *.hprof
