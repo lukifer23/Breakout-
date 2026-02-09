@@ -972,12 +972,16 @@ class GameEngine(
     }
 
     private fun updateAim(dt: Float) {
-        val lerpFactor = if (dt > 0f) {
-            1f - exp(-aimSmoothingRate * dt)
+        if (isDragging) {
+            aimNormalized = aimNormalizedTarget
         } else {
-            1f
+            val lerpFactor = if (dt > 0f) {
+                1f - exp(-aimSmoothingRate * dt)
+            } else {
+                1f
+            }
+            aimNormalized += (aimNormalizedTarget - aimNormalized) * lerpFactor
         }
-        aimNormalized += (aimNormalizedTarget - aimNormalized) * lerpFactor
         aimDirection = if (aimNormalized >= 0f) 1f else -1f
         aimHasInput = isDragging || abs(aimNormalized) > 0.02f
         val strength = abs(aimNormalized).coerceIn(0f, 1f)

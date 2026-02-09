@@ -73,7 +73,9 @@
                     android:id="@+id/hudLives"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:ellipsize="end"
                     android:fontFamily="sans-serif-medium"
+                    android:maxLines="1"
                     android:text="@string/label_lives_default"
                     android:textColor="@color/bp_white"
                     android:textSize="@dimen/bp_hud_stat_size" />
@@ -83,7 +85,9 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="20dp"
+                    android:ellipsize="end"
                     android:fontFamily="sans-serif-medium"
+                    android:maxLines="1"
                     android:text="@string/label_time_default"
                     android:textColor="@color/bp_white"
                     android:textSize="@dimen/bp_hud_stat_size" />
@@ -93,7 +97,9 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="20dp"
+                    android:ellipsize="end"
                     android:fontFamily="sans-serif-medium"
+                    android:maxLines="1"
                     android:text="@string/label_level_default"
                     android:textColor="@color/bp_white"
                     android:textSize="@dimen/bp_hud_stat_size" />
