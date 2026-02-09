@@ -31,6 +31,22 @@ Build release AAB
 
 Upload AAB and metadata/screenshots to Play (internal track)
 
+### android publish_internal
+
+```sh
+[bundle exec] fastlane android publish_internal
+```
+
+Publish internal track release (AAB + metadata/screenshots)
+
+### android publish_internal_existing
+
+```sh
+[bundle exec] fastlane android publish_internal_existing
+```
+
+Publish existing internal release without uploading a new AAB
+
 ### android upload_metadata
 
 ```sh

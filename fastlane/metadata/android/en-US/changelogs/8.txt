@@ -1,4 +1,5 @@
 - Removed bottom tip popups to keep gameplay unobstructed
-- Improved aim guide responsiveness and accuracy
-- Invaders formation smoothing and higher brick density
-- General UI polish and stability fixes
+- Aim guide now updates live while dragging
+- HUD fixed-height layout to prevent gameplay shifts
+- Increased brick density and improved color variety
+- Higher powerup drop rates across modes

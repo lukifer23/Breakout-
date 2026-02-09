@@ -33,6 +33,34 @@ platform :android do
     )
   end
 
+  desc "Publish internal track release (AAB + metadata/screenshots)"
+  lane :publish_internal do
+    supply(
+      aab: "app/build/outputs/bundle/release/app-release.aab",
+      track: "internal",
+      release_status: "completed",
+      skip_upload_apk: true,
+      skip_upload_aab: false,
+      skip_upload_metadata: false,
+      skip_upload_images: false,
+      skip_upload_screenshots: false
+    )
+  end
+
+  desc "Publish existing internal release without uploading a new AAB"
+  lane :publish_internal_existing do
+    supply(
+      track: "internal",
+      release_status: "completed",
+      version_code: (ENV["BP_VERSION_CODE"] || "8").to_i,
+      skip_upload_apk: true,
+      skip_upload_aab: true,
+      skip_upload_metadata: false,
+      skip_upload_images: false,
+      skip_upload_screenshots: false
+    )
+  end
+
   desc "Upload metadata/screenshots only (no AAB)"
   lane :upload_metadata do
     supply(
