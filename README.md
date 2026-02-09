@@ -4,7 +4,7 @@ A premium brickbreaker game designed specifically for foldable devices like the 
 
 ## Goals
 
-**Product Goal**: Deliver Breakout+ as the premier foldable-first brickbreaker for Samsung Galaxy Z Fold 7 and modern Android devices, with a polished cross-platform iOS port. Achieve 60+ FPS gameplay through GPU acceleration, provide a complete feature set (9 brick types, 13 powerups, 5 game modes, 6 visual themes), and maintain full CLI-only development workflow with no external dependencies or placeholders.
+**Product Goal**: Deliver Breakout+ as the premier foldable-first brickbreaker for Samsung Galaxy Z Fold 7 and modern Android devices, with a polished cross-platform iOS port. Achieve 60+ FPS gameplay through GPU acceleration, provide a complete feature set (10 brick types, 13 powerups, 6 game modes, 6 visual themes), and maintain full CLI-only development workflow with no external dependencies or placeholders.
 
 **Key Success Criteria**:
 - Smooth 60 FPS gameplay on Z Fold 7 (folded and unfolded)
@@ -22,12 +22,13 @@ Breakout+ elevates the classic brickbreaker genre with modern mobile optimizatio
 - **GPU Acceleration**: OpenGL ES 2.0 (Android) / Metal (iOS) rendering at 60+ FPS
 - **Advanced Physics**: Accurate collision detection with momentum preservation
 - **Multiple Game Modes**: Classic, Timed Challenge, Endless, God Mode, Level Rush, and Invaders
-- **Dynamic Brick System**: 9 brick types with unique behaviors (moving, spawning, phase, boss)
+- **Dynamic Brick System**: 10 brick types with unique behaviors (moving, spawning, phase, boss, invader)
 - **Comprehensive Powerups**: 13 distinct powerups with visual effects and timers
 - **Combo System**: Score multipliers for consecutive brick destruction
 - **6 Visual Themes**: Unique color palettes and animated backgrounds
 - **Audio System**: Procedural sound generation with individual volume controls
 - **Data Logging**: Built-in analytics for debugging
+- **Per-Mode Leaderboards**: Scoreboard supports each mode plus an all-modes view
 - **Foldable Optimization**: Android version optimized for Samsung Galaxy Z Fold 7
 
 Key principles:
@@ -40,7 +41,7 @@ Key principles:
 ## Platforms
 
 ### Android: Samsung Galaxy Z Fold 7
-**Status**: Production-ready (v1.0.0)
+**Status**: Production-ready (v1.0.7)
 
 #### Setup Instructions
 1. Enable USB debugging in Developer Options
@@ -72,11 +73,11 @@ Breakout+ is a GPU-accelerated brickbreaker built for foldables, tuned for the S
 - Brick variations: Standard, Reinforced, Armored, Explosive, Unbreakable, Moving, Spawning, Phase, Boss.
 - Combo system: Score multipliers (x1.5-5x) for consecutive brick breaks within 2 seconds.
 - Visual themes: 6 distinct themes (Neon, Sunset, Cobalt, Aurora, Forest, Lava) with unique color palettes and animated backgrounds.
-- In-game HUD with score, lives, timer, level, combo indicators, and powerup chips with countdown timers.
+- In-game HUD with score, lives, timer, level, combo indicators, and powerup chips with countdown timers (fixed top layout to avoid gameplay shifts).
 - Daily Challenges with tracked progress.
 - Advanced audio: Individual volume controls (Master/Effects/Music), context-aware sounds per brick type.
 - Enhanced visuals: Unique brick colors per theme, 3D bevel effects, animated powerups, particle systems.
-- Full set of screens: Splash (animated), Title, Mode Select, Settings (volume controls), Scoreboard, How-To (expandable), Game.
+- Full set of screens: Splash (system), Title, Mode Select, Settings (volume controls), Scoreboard, How-To (expandable), Game.
 - Privacy Policy screen with in-app disclosure.
 - Audio: Android generates SFX/music locally; iOS uses bundled WAV SFX + looping music (still local assets, no placeholders).
 
@@ -93,9 +94,9 @@ Breakout+ is a GPU-accelerated brickbreaker built for foldables, tuned for the S
 - **Core**: Multi-ball, Laser, Guardrail, Shield, Extra life, Wide paddle, Slow motion, Fireball
 - **Advanced**: Magnet (attracts powerups), Gravity Well (attractive force), Ball Splitter (creates extra balls), Freeze (time stop), Pierce (through bricks)
 
-### Brick Types (9 Total)
+### Brick Types (10 Total)
 - **Standard**: Normal (1 hit), Reinforced (2 hits), Armored (3 hits), Explosive (chain damage), Unbreakable (requires special attacks)
-- **Dynamic**: Moving (slides horizontally), Spawning (creates child bricks), Phase (multi-stage destruction), Boss (powerful multi-phase)
+- **Dynamic**: Moving (slides horizontally), Spawning (creates child bricks), Phase (multi-stage destruction), Boss (powerful multi-phase), Invader (fleet unit in Invaders mode)
 
 ### Gameplay Systems
 - **Combo System**: x1.5-5x score multipliers for consecutive brick breaks within 2 seconds
@@ -122,7 +123,7 @@ Breakout+ is a GPU-accelerated brickbreaker built for foldables, tuned for the S
 
 ## Controls
 - Drag anywhere to move the paddle.
-- Release drag or tap to launch the ball.
+- Release drag or tap to launch the ball; the aim guide updates smoothly as you drag.
 - Two-finger tap or the on-screen **FIRE** button fires lasers when Laser powerup is active.
 
 ## Modes
@@ -143,6 +144,7 @@ Breakout+ is a GPU-accelerated brickbreaker built for foldables, tuned for the S
 - **Spawning**: Breaks into child bricks.
 - **Phase**: Changes phases with new HP totals.
 - **Boss**: Multi-phase heavyweight brick.
+- **Invader**: Fleet unit with shield phases and firing cadence in Invaders mode.
 
 ## Powerups
 - **Multi-ball**: Adds two extra balls.
@@ -175,7 +177,7 @@ Breakout+ is a GPU-accelerated brickbreaker built for foldables, tuned for the S
 ```bash
 adb devices
 adb install -r app/build/outputs/apk/debug/app-debug.apk
-adb shell am start -n com.breakoutplus.debug/com.breakoutplus.SplashActivity
+adb shell am start -n com.breakoutplus.debug/com.breakoutplus.MainActivity
 ```
 
 #### Release APK (signed)

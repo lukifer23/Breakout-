@@ -74,3 +74,4 @@ flowchart TD
 - Continuous render loop.
 - Delta time clamped to avoid large jumps.
 - Simple geometry (rects/circles) for stable GPU throughput.
+- Render path reuses color buffers to reduce per-frame allocations.

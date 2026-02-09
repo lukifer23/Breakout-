@@ -7,7 +7,7 @@
 - Typography: serif title treatment with sans-serif UI labels for a sharper, premium feel.
 
 ## Screens
-- **Splash**: branded intro.
+- **Splash**: system splash screen on launch.
 - **Title/Main**: quick access to Play, Modes, Scoreboard, Settings, How-To.
 - **Mode Select**: cards describing each mode with start button.
 - **Settings**: toggles + sensitivity slider + score reset.
@@ -23,5 +23,5 @@
 
 ## Interaction Notes
 - One-handed use supported with left-handed toggle (pause button shifts left).
-- HUD tip bubble used for quick contextual guidance.
+- HUD uses a fixed top layout with inline stats, transient banners, and subtle pulse cues for key events.
 - Screen entry animations: titles and lists ease in to reduce visual abruptness.

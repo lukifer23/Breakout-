@@ -23,6 +23,7 @@
 - Spawning: breaks into child bricks.
 - Phase: cycles through multiple HP phases.
 - Boss: multi-phase heavyweight brick.
+- Invader: fleet units with multiple HP tiers in Invaders mode.
 
 ## Powerups
 - Multi-ball: adds two balls.
@@ -44,7 +45,7 @@
 - Explosive chains can rack up high scores quickly.
 
 ## Tips
-- Drag to aim your launch and release for controlled openings.
+- Drag to aim your launch; the aim guide tracks your finger and updates smoothly.
 - Hit the paddle near its edges to control ball angle.
 - Stack guardrail + shield for safe rallies.
 - Save lasers for armored/unbreakable clusters. Use the FIRE button or two-finger tap when lasers are active.

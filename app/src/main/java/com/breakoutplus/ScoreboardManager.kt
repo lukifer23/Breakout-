@@ -48,6 +48,12 @@ object ScoreboardManager {
             .take(10) // Top 10 per mode
     }
 
+    fun getHighScoresAllModes(context: Context): List<ScoreEntry> {
+        return loadScores(context)
+            .sortedWith(compareByDescending<ScoreEntry> { it.score }.thenBy { normalizedDuration(it.durationSeconds) })
+            .take(10)
+    }
+
     fun isHighScoreForMode(context: Context, mode: String, score: Int, durationSeconds: Int): Boolean {
         val highScores = getHighScoresForMode(context, mode)
         if (highScores.size < 10) return true

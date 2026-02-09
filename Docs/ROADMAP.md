@@ -1,12 +1,12 @@
 # Roadmap
 
-## ✅ Completed (v1.0.0)
+## ✅ Completed (v1.0.7)
 - **Dynamic Brick Behaviors**: Moving bricks, spawning bricks, phase bricks, boss bricks
 - **Enhanced Touch Controls**: Improved paddle positioning and ball launch
 - **Visual Polish**: Micro-animations, unified UI, foldable optimizations
 - **Advanced Audio**: Screen flash, haptic feedback, explosion waves
 - **UI/UX Improvements**: Expandable How-To, first-run tooltips, level transitions
-- **Complete Feature Set**: All 9 brick types, 13 powerups, 5 game modes, 6 themes
+- **Complete Feature Set**: All 10 brick types, 13 powerups, 6 game modes, 6 themes
 - **Gameplay Balance**: Mode-specific physics (Rush 50% faster, Timed 30% faster), balanced powerup frequency, optimized sizing
 - **Audio System**: Individual volume controls (Master/Effects/Music), context-aware brick-specific sounds
 - **Visual Polish**: 6 distinct themes with unique color palettes, 3D bevel effects, animated backgrounds
@@ -14,7 +14,7 @@
 - **Dynamic Brick Behaviors**: Moving, spawning, phase, boss bricks with enhanced visual indicators
 - **Combo System**: x1.5-5x multipliers for consecutive breaks within 2 seconds
 - **Enhanced Visual Effects**: Screen flash, haptic feedback, explosion waves, particle systems
-- **UI/UX**: Animated splash, expandable How-To, volume controls, micro-animations
+- **UI/UX**: System splash, expandable How-To, volume controls, micro-animations
 - **Data Logging**: Comprehensive game event logging for debugging
 
 ## ✅ iOS Port - Playable MVP (v0.1.0)

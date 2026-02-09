@@ -29,6 +29,7 @@
     <string name="label_scoreboard_hint">Top runs across all modes.</string>
     <string name="label_howto_hint">Quick Start</string>
     <string name="label_mode_classic">Classic</string>
+    <string name="label_mode_all">All Modes</string>
     <string name="label_start">Start</string>
     <string name="label_pause">Pause</string>
     <string name="label_fire">Fire</string>
@@ -56,9 +57,12 @@
     <string name="label_no_scores_mode">No high scores yet for %1$s.\nBe the first!</string>
     <string name="label_rank_format">#%1$d</string>
     <string name="label_level_time_format">Level %1$d • %2$s</string>
+    <string name="label_score_meta_format">%1$s • Level %2$d • %3$s</string>
     <string name="label_challenge_progress">%1$d/%2$d</string>
     <string name="label_challenge_completed">Completed</string>
     <string name="label_challenge_in_progress">In progress</string>
+    <string name="label_theme_unlocked">Theme unlocked: %1$s</string>
+    <string name="label_cosmetic_unlocked">Cosmetic upgrade unlocked!</string>
     <string name="label_prev_symbol">◀</string>
     <string name="label_next_symbol">▶</string>
     <string name="label_score_default">Score 0</string>
@@ -95,5 +99,4 @@
     <string name="label_howto_modes_header">▼ Game Modes</string>
     <string name="label_howto_modes_list">Classic: Standard breakout progression.\nTimed Challenge: Score high in 2:30.\nEndless: Infinite levels with scaling difficulty.\nGod Mode: Practice without losing lives.\nLevel Rush: Beat each stage before time expires.\nInvaders: Bounce shots to clear ships while dodging fire.</string>
     <string name="label_choose_mode">Choose Mode</string>
-    <string name="label_splash_tagline">Foldable-ready brickbreaker</string>
 </resources>

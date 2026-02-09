@@ -7,6 +7,7 @@ import com.breakoutplus.game.LevelFactory.buildLevel
 import java.util.ArrayDeque
 import kotlin.math.abs
 import kotlin.math.ceil
+import kotlin.math.exp
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -100,15 +101,19 @@ class GameEngine(
     private var shieldHitPulse = 0f
     private var shieldHitX = 0f
     private var shieldHitColor = floatArrayOf(0.8f, 0.95f, 1f, 1f)
+    private val tempColor = FloatArray(4)
+    private val aliveInvaderBuffer = ArrayList<Brick>(72)
     private var shieldBreakPulse = 0f
     private var powerupDropsSinceLaser = 0
     private val recentPowerups = ArrayDeque<PowerUpType>()
     private val recentPowerupLimit = 3
     private var aimNormalized = 0f
+    private var aimNormalizedTarget = 0f
     private var aimAngle = 0.72f
     private var aimDirection = 1f
     private var aimHasInput = false
     private var isDragging = false
+    private val aimSmoothingRate = 18f
 
     private var theme: LevelTheme = LevelThemes.DEFAULT
     private var themePool: MutableList<LevelTheme> = LevelThemes.baseThemes().toMutableList()
@@ -189,6 +194,7 @@ class GameEngine(
         }
         updateTimers(dt)
         updatePaddle(delta)
+        updateAim(delta)
         updateBricks(dt)
         updateEffects(delta)
 
@@ -240,13 +246,19 @@ class GameEngine(
         for (i in 0 until gradientSteps) {
             val y = i * stepHeight
             val ratio = i.toFloat() / gradientSteps.toFloat()
-            val gradientColor = floatArrayOf(
-                bgTop[0] * (1f - ratio) + bgBottom[0] * ratio,
-                bgTop[1] * (1f - ratio) + bgBottom[1] * ratio,
-                bgTop[2] * (1f - ratio) + bgBottom[2] * ratio,
-                1f
+            renderer.drawRect(
+                0f,
+                y,
+                worldWidth,
+                stepHeight,
+                fillColor(
+                    tempColor,
+                    bgTop[0] * (1f - ratio) + bgBottom[0] * ratio,
+                    bgTop[1] * (1f - ratio) + bgBottom[1] * ratio,
+                    bgTop[2] * (1f - ratio) + bgBottom[2] * ratio,
+                    1f
+                )
             )
-            renderer.drawRect(0f, y, worldWidth, stepHeight, gradientColor)
         }
 
         // Add theme-specific background effects
@@ -259,8 +271,13 @@ class GameEngine(
                     for (y in 0 until (worldHeight / gridSize).toInt()) {
                         if ((x + y) % 2 == 0) {
                             val alpha = (kotlin.math.sin(time * 2f + x * 0.5f + y * 0.3f) * 0.5f + 0.5f) * 0.1f
-                            renderer.drawRect(x * gridSize, y * gridSize, gridSize, gridSize,
-                                            floatArrayOf(0.3f, 0.9f, 1f, alpha))
+                            renderer.drawRect(
+                                x * gridSize,
+                                y * gridSize,
+                                gridSize,
+                                gridSize,
+                                fillColor(tempColor, 0.3f, 0.9f, 1f, alpha)
+                            )
                         }
                     }
                 }
@@ -271,7 +288,7 @@ class GameEngine(
                     val x = (kotlin.math.sin(time * 0.5f + i) * 0.5f + 0.5f) * worldWidth
                     val y = (kotlin.math.cos(time * 0.3f + i * 0.7f) * 0.5f + 0.5f) * worldHeight
                     val size = 1f + kotlin.math.sin(time * 2f + i) * 0.5f
-                    renderer.drawCircle(x, y, size, floatArrayOf(1f, 0.6f, 0.3f, 0.3f))
+                    renderer.drawCircle(x, y, size, fillColor(tempColor, 1f, 0.6f, 0.3f, 0.3f))
                 }
             }
             "Aurora" -> {
@@ -279,8 +296,13 @@ class GameEngine(
                 for (i in 0 until 8) {
                     val waveY = worldHeight * 0.3f + kotlin.math.sin(time + i * 0.8f) * worldHeight * 0.2f
                     val alpha = (kotlin.math.sin(time * 1.5f + i) * 0.5f + 0.5f) * 0.15f
-                    renderer.drawRect(0f, waveY, worldWidth, 2f,
-                                    floatArrayOf(0.3f, 0.8f, 0.5f, alpha))
+                    renderer.drawRect(
+                        0f,
+                        waveY,
+                        worldWidth,
+                        2f,
+                        fillColor(tempColor, 0.3f, 0.8f, 0.5f, alpha)
+                    )
                 }
             }
             "Invaders" -> {
@@ -294,7 +316,7 @@ class GameEngine(
                     val twinkle = (kotlin.math.sin(time * 2.2f + seed) * 0.5f + 0.5f)
                     val alpha = 0.12f + twinkle * 0.25f
                     val size = 0.3f + twinkle * 0.4f
-                    renderer.drawCircle(x, y, size, floatArrayOf(0.6f, 0.8f, 1f, alpha))
+                    renderer.drawCircle(x, y, size, fillColor(tempColor, 0.6f, 0.8f, 1f, alpha))
                 }
             }
         }
@@ -308,19 +330,24 @@ class GameEngine(
                 val x = centerX + kotlin.math.cos(angle) * radius
                 val y = centerY + kotlin.math.sin(angle) * radius
                 val alpha = (0.18f - i * 0.02f).coerceAtLeast(0.05f)
-                renderer.drawCircle(x, y, 0.6f + i * 0.12f, floatArrayOf(0.45f, 0.65f, 1f, alpha))
+                renderer.drawCircle(x, y, 0.6f + i * 0.12f, fillColor(tempColor, 0.45f, 0.65f, 1f, alpha))
             }
         }
 
         if (activeEffects.containsKey(PowerUpType.FREEZE) || activeEffects.containsKey(PowerUpType.SLOW)) {
             val chillAlpha = if (activeEffects.containsKey(PowerUpType.FREEZE)) 0.12f else 0.08f
-            renderer.drawRect(0f, 0f, worldWidth, worldHeight, floatArrayOf(0.35f, 0.6f, 1f, chillAlpha))
+            renderer.drawRect(0f, 0f, worldWidth, worldHeight, fillColor(tempColor, 0.35f, 0.6f, 1f, chillAlpha))
         }
 
         if (guardrailActive) {
             val pulse = (kotlin.math.sin(time * 3f) * 0.5f + 0.5f)
-            val guardColor = floatArrayOf(theme.accent[0], theme.accent[1], theme.accent[2], 0.5f + pulse * 0.4f)
-            renderer.drawRect(0f, 2f, worldWidth, 0.6f, guardColor)
+            renderer.drawRect(
+                0f,
+                2f,
+                worldWidth,
+                0.6f,
+                fillColor(tempColor, theme.accent[0], theme.accent[1], theme.accent[2], 0.5f + pulse * 0.4f)
+            )
         }
 
         if (config.mode.invaders && invaderTelegraphKey != null) {
@@ -329,12 +356,17 @@ class GameEngine(
                 val alpha = ((invaderTelegraphLead - invaderShotTimer).coerceIn(0f, invaderTelegraphLead) / invaderTelegraphLead)
                 val pulse = (kotlin.math.sin(time * 16f) * 0.5f + 0.5f)
                 val beamAlpha = (0.15f + alpha * 0.5f + pulse * 0.2f).coerceIn(0f, 0.8f)
-                val beamColor = floatArrayOf(theme.accent[0], theme.accent[1], theme.accent[2], beamAlpha)
                 val beamWidth = 0.5f + alpha * 0.8f
                 val beamX = target.centerX - beamWidth / 2f
                 val beamY = target.y - worldHeight * 0.02f
                 val beamHeight = target.y - paddle.y + paddle.height * 0.6f
-                renderer.drawRect(beamX, paddle.y + paddle.height * 0.2f, beamWidth, beamHeight, beamColor)
+                renderer.drawRect(
+                    beamX,
+                    paddle.y + paddle.height * 0.2f,
+                    beamWidth,
+                    beamHeight,
+                    fillColor(tempColor, theme.accent[0], theme.accent[1], theme.accent[2], beamAlpha)
+                )
             }
         }
 
@@ -408,9 +440,9 @@ class GameEngine(
                 BrickType.PHASE -> {
                     // Phase indicator (colored bars)
                     val phaseColor = when (brick.phase) {
-                        0 -> floatArrayOf(0f, 1f, 0f, 0.8f) // Green
-                        1 -> floatArrayOf(1f, 1f, 0f, 0.8f) // Yellow
-                        else -> floatArrayOf(1f, 0f, 0f, 0.8f) // Red
+                        0 -> fillColor(tempColor, 0f, 1f, 0f, 0.8f) // Green
+                        1 -> fillColor(tempColor, 1f, 1f, 0f, 0.8f) // Yellow
+                        else -> fillColor(tempColor, 1f, 0f, 0f, 0.8f) // Red
                     }
                     val barHeight = brick.height * 0.1f
                     val barY = brick.y + brick.height - barHeight
@@ -448,9 +480,9 @@ class GameEngine(
                 else -> if (shot.wiggle > 0f) 3.8f else 3.2f
             }
             val trailColor = when (shot.style) {
-                1 -> floatArrayOf(1f, 0.85f, 0.55f, 0.45f)
-                2 -> floatArrayOf(0.85f, 0.55f, 1f, 0.4f)
-                else -> floatArrayOf(shot.color[0], shot.color[1], shot.color[2], 0.35f)
+                1 -> fillColor(tempColor, 1f, 0.85f, 0.55f, 0.45f)
+                2 -> fillColor(tempColor, 0.85f, 0.55f, 1f, 0.4f)
+                else -> fillColor(tempColor, shot.color[0], shot.color[1], shot.color[2], 0.35f)
             }
             renderer.drawRect(
                 shot.x - shot.radius * 0.28f,
@@ -505,22 +537,36 @@ class GameEngine(
             for (i in 0 until segments) {
                 val shimmer = (kotlin.math.sin(time * 3.2f + i) * 0.4f + 0.6f).coerceIn(0.3f, 1f)
                 val segAlpha = (alpha * shimmer).coerceIn(0f, 0.8f)
-                val segColor = floatArrayOf(baseColor[0], baseColor[1], baseColor[2], segAlpha)
                 val segX = shieldX + i * segmentWidth + 0.35f
-                renderer.drawRect(segX, shieldY - thickness * 0.28f, segmentWidth - 0.7f, thickness * 0.56f, segColor)
+                renderer.drawRect(
+                    segX,
+                    shieldY - thickness * 0.28f,
+                    segmentWidth - 0.7f,
+                    thickness * 0.56f,
+                    fillColor(tempColor, baseColor[0], baseColor[1], baseColor[2], segAlpha)
+                )
             }
 
             if (shieldHitPulse > 0f) {
                 val ringAlpha = (0.4f * shieldHitPulse).coerceIn(0f, 0.6f)
-                val ringColor = floatArrayOf(baseColor[0], baseColor[1], baseColor[2], ringAlpha)
                 val ringX = shieldHitX.coerceIn(shieldX, shieldX + shieldWidth)
-                renderer.drawCircle(ringX, shieldY + thickness * 0.15f, 1.2f + 2.2f * shieldHitPulse, ringColor)
+                renderer.drawCircle(
+                    ringX,
+                    shieldY + thickness * 0.15f,
+                    1.2f + 2.2f * shieldHitPulse,
+                    fillColor(tempColor, baseColor[0], baseColor[1], baseColor[2], ringAlpha)
+                )
             }
 
             if (shieldBreakPulse > 0f) {
                 val breakAlpha = (shieldBreakPulse * 0.55f).coerceIn(0f, 0.7f)
-                val breakColor = floatArrayOf(1f, 0.4f, 0.4f, breakAlpha)
-                renderer.drawRect(shieldX, shieldY - thickness, shieldWidth, thickness * 2.2f, breakColor)
+                renderer.drawRect(
+                    shieldX,
+                    shieldY - thickness,
+                    shieldWidth,
+                    thickness * 2.2f,
+                    fillColor(tempColor, 1f, 0.4f, 0.4f, breakAlpha)
+                )
             }
         }
 
@@ -537,29 +583,26 @@ class GameEngine(
 
         if (activeEffects.containsKey(PowerUpType.LASER) || shieldCharges > 0) {
             val glowAlpha = if (activeEffects.containsKey(PowerUpType.LASER)) 0.55f else 0.35f
-            val glowColor = floatArrayOf(theme.accent[0], theme.accent[1], theme.accent[2], glowAlpha)
             renderer.drawRect(
                 paddle.x - paddle.width / 2f - 1.2f,
                 paddle.y - paddle.height / 2f - 0.6f,
                 paddle.width + 2.4f,
                 paddle.height + 1.2f,
-                glowColor
+                fillColor(tempColor, theme.accent[0], theme.accent[1], theme.accent[2], glowAlpha)
             )
         }
         renderer.drawRect(paddle.x - paddle.width / 2f, paddle.y - paddle.height / 2f, paddle.width, paddle.height, theme.paddle)
         if (cosmeticTier >= 2) {
-            val trim = floatArrayOf(theme.accent[0], theme.accent[1], theme.accent[2], 0.6f)
             renderer.drawRect(
                 paddle.x - paddle.width / 2f,
                 paddle.y + paddle.height * 0.38f,
                 paddle.width,
                 paddle.height * 0.08f,
-                trim
+                fillColor(tempColor, theme.accent[0], theme.accent[1], theme.accent[2], 0.6f)
             )
         }
         if (shieldHitPulse > 0f) {
             val pulseAlpha = (shieldHitPulse * 0.65f).coerceIn(0f, 0.65f)
-            val pulseColor = floatArrayOf(shieldHitColor[0], shieldHitColor[1], shieldHitColor[2], pulseAlpha)
             val pulseWidth = paddle.width + 3.2f * shieldHitPulse
             val pulseHeight = paddle.height + 1.4f * shieldHitPulse
             renderer.drawRect(
@@ -567,10 +610,15 @@ class GameEngine(
                 paddle.y - pulseHeight / 2f,
                 pulseWidth,
                 pulseHeight,
-                pulseColor
+                fillColor(tempColor, shieldHitColor[0], shieldHitColor[1], shieldHitColor[2], pulseAlpha)
             )
             val hitX = shieldHitX.coerceIn(paddle.x - paddle.width / 2f, paddle.x + paddle.width / 2f)
-            renderer.drawCircle(hitX, paddle.y + paddle.height / 2f + 0.6f, 0.8f + 1.4f * shieldHitPulse, pulseColor)
+            renderer.drawCircle(
+                hitX,
+                paddle.y + paddle.height / 2f + 0.6f,
+                0.8f + 1.4f * shieldHitPulse,
+                fillColor(tempColor, shieldHitColor[0], shieldHitColor[1], shieldHitColor[2], pulseAlpha)
+            )
         }
 
         balls.forEach { ball ->
@@ -585,19 +633,35 @@ class GameEngine(
             ball.trail.forEach { point ->
                 val lifeRatio = (point.life / point.maxLife).coerceIn(0f, 1f)
                 val alpha = lifeRatio * (0.35f + cosmeticTier * 0.06f)
-                val trailColor = floatArrayOf(glowBase[0], glowBase[1], glowBase[2], alpha)
-                renderer.drawCircle(point.x, point.y, point.radius * lifeRatio, trailColor)
+                renderer.drawCircle(
+                    point.x,
+                    point.y,
+                    point.radius * lifeRatio,
+                    fillColor(tempColor, glowBase[0], glowBase[1], glowBase[2], alpha)
+                )
                 if (cosmeticTier >= 2) {
-                    val secondary = floatArrayOf(theme.paddle[0], theme.paddle[1], theme.paddle[2], alpha * 0.6f)
-                    renderer.drawCircle(point.x, point.y, point.radius * lifeRatio * 0.6f, secondary)
+                    renderer.drawCircle(
+                        point.x,
+                        point.y,
+                        point.radius * lifeRatio * 0.6f,
+                        fillColor(tempColor, theme.paddle[0], theme.paddle[1], theme.paddle[2], alpha * 0.6f)
+                    )
                 }
             }
 
-            val glowColor = floatArrayOf(glowBase[0], glowBase[1], glowBase[2], glowStrength)
-            renderer.drawCircle(ball.x, ball.y, ball.radius * 1.8f, glowColor)
+            renderer.drawCircle(
+                ball.x,
+                ball.y,
+                ball.radius * 1.8f,
+                fillColor(tempColor, glowBase[0], glowBase[1], glowBase[2], glowStrength)
+            )
             if (cosmeticTier >= 3) {
-                val halo = floatArrayOf(glowBase[0], glowBase[1], glowBase[2], 0.18f + cosmeticTier * 0.04f)
-                renderer.drawCircle(ball.x, ball.y, ball.radius * 2.4f, halo)
+                renderer.drawCircle(
+                    ball.x,
+                    ball.y,
+                    ball.radius * 2.4f,
+                    fillColor(tempColor, glowBase[0], glowBase[1], glowBase[2], 0.18f + cosmeticTier * 0.04f)
+                )
             }
             renderer.drawCircle(ball.x, ball.y, ball.radius, ball.color)
         }
@@ -616,7 +680,7 @@ class GameEngine(
             power.x,
             power.y,
             size * 0.62f,
-            floatArrayOf(power.type.color[0], power.type.color[1], power.type.color[2], ringAlpha)
+            fillColor(tempColor, power.type.color[0], power.type.color[1], power.type.color[2], ringAlpha)
         )
 
         // Main powerup body with gradient
@@ -629,7 +693,7 @@ class GameEngine(
         val y = power.y - size / 2f
         renderer.drawRect(x, y, size, size, outer)
         renderer.drawRect(x + cornerInset, y + cornerInset, size - cornerInset * 2f, size - cornerInset * 2f, inner)
-        val highlight = floatArrayOf(1f, 1f, 1f, 0.18f + pulse * 0.12f)
+        val highlight = fillColor(tempColor, 1f, 1f, 1f, 0.18f + pulse * 0.12f)
         renderer.drawRect(x + size * 0.12f, y + size * 0.62f, size * 0.76f, size * 0.18f, highlight)
 
         val glyph = adjustColor(power.type.color, 1.5f, 0.95f)
@@ -738,9 +802,13 @@ class GameEngine(
         for (i in 1..steps) {
             val t = i.toFloat() / steps.toFloat()
             val alpha = (0.45f * (1f - t)).coerceIn(0f, 0.45f)
-            val color = floatArrayOf(theme.accent[0], theme.accent[1], theme.accent[2], alpha)
             val size = 0.35f + (1f - t) * 0.2f
-            renderer.drawCircle(ball.x + dx * length * t, ball.y + dy * length * t, size, color)
+            renderer.drawCircle(
+                ball.x + dx * length * t,
+                ball.y + dy * length * t,
+                size,
+                fillColor(tempColor, theme.accent[0], theme.accent[1], theme.accent[2], alpha)
+            )
         }
     }
 
@@ -855,6 +923,14 @@ class GameEngine(
         )
     }
 
+    private fun fillColor(out: FloatArray, r: Float, g: Float, b: Float, a: Float): FloatArray {
+        out[0] = r
+        out[1] = g
+        out[2] = b
+        out[3] = a
+        return out
+    }
+
     private fun lerp(start: Float, end: Float, t: Float): Float {
         return start + (end - start) * t.coerceIn(0f, 1f)
     }
@@ -869,8 +945,8 @@ class GameEngine(
         brickSpacing = lerp(0.32f, 0.36f, tallness)
         if (!preserveRowBoost) {
             val densityBoost = (levelIndex / 5).coerceAtMost(2)
-            layoutRowBoost = (if (isWide) 3 else 2) + densityBoost
-            layoutColBoost = (if (isWide) 3 else 2) + densityBoost
+            layoutRowBoost = (if (isWide) 4 else 3) + densityBoost
+            layoutColBoost = (if (isWide) 4 else 3) + densityBoost
         }
         globalBrickScale = lerp(0.88f, 0.86f, tallness)
         if (config.mode.invaders) {
@@ -890,8 +966,18 @@ class GameEngine(
 
     private fun updateAimFromPaddle() {
         val center = worldWidth * 0.5f
-        val delta = (paddle.x - center) / center
-        aimNormalized = delta.coerceIn(-1.2f, 1.2f)
+        val sourceX = if (isDragging) paddle.targetX else paddle.x
+        val delta = (sourceX - center) / center
+        aimNormalizedTarget = delta.coerceIn(-1.2f, 1.2f)
+    }
+
+    private fun updateAim(dt: Float) {
+        val lerpFactor = if (dt > 0f) {
+            1f - exp(-aimSmoothingRate * dt)
+        } else {
+            1f
+        }
+        aimNormalized += (aimNormalizedTarget - aimNormalized) * lerpFactor
         aimDirection = if (aimNormalized >= 0f) 1f else -1f
         aimHasInput = isDragging || abs(aimNormalized) > 0.02f
         val strength = abs(aimNormalized).coerceIn(0f, 1f)
@@ -991,6 +1077,7 @@ class GameEngine(
         explosiveTipShown = false
         aimHasInput = false
         aimNormalized = 0f
+        aimNormalizedTarget = 0f
         aimAngle = 0.72f
         aimDirection = if (random.nextBoolean()) 1f else -1f
         speedMultiplier = 1f
@@ -1377,23 +1464,26 @@ class GameEngine(
     private fun updatePaddle(dt: Float) {
         val previousX = paddle.x
         val target = paddle.targetX
-        val speed = 90f + settings.sensitivity * 180f
-        val delta = target - paddle.x
-        val dragBoost = if (isDragging) {
-            val distanceBoost = (abs(delta) / 24f).coerceAtMost(2.5f)
-            1f + distanceBoost
+        val snapToFinger = isDragging && (state == GameState.READY || balls.any { it.stuckToPaddle })
+        if (snapToFinger) {
+            paddle.x = target
         } else {
-            1f
-        }
-        val maxMove = speed * dragBoost * dt
-        if (abs(delta) > 0.05f) {
-            paddle.x += delta.coerceIn(-maxMove, maxMove)
+            val speed = 90f + settings.sensitivity * 180f
+            val delta = target - paddle.x
+            val dragBoost = if (isDragging) {
+                val distanceBoost = (abs(delta) / 24f).coerceAtMost(2.5f)
+                1f + distanceBoost
+            } else {
+                1f
+            }
+            val maxMove = speed * dragBoost * dt
+            if (abs(delta) > 0.05f) {
+                paddle.x += delta.coerceIn(-maxMove, maxMove)
+            }
         }
         paddle.x = paddle.x.coerceIn(paddle.width / 2f, worldWidth - paddle.width / 2f)
         paddleVelocity = if (dt > 0f) (paddle.x - previousX) / dt else 0f
-        if (isDragging) {
-            updateAimFromPaddle()
-        }
+        updateAimFromPaddle()
     }
 
     private fun updateBricks(dt: Float) {
@@ -1437,12 +1527,25 @@ class GameEngine(
         }
     }
 
+    private fun collectAliveInvaders(): List<Brick> {
+        aliveInvaderBuffer.clear()
+        invaderBricks.forEach { invader ->
+            if (invader.alive) {
+                aliveInvaderBuffer.add(invader)
+            }
+        }
+        return aliveInvaderBuffer
+    }
+
     private fun updateInvaderFormation(dt: Float) {
-        val invaders = invaderBricks.filter { it.alive }
+        val invaders = collectAliveInvaders()
         if (invaders.isEmpty()) return
         invaderRowPhase += dt * (0.55f + levelIndex * 0.015f)
-        val leftBound = 0.6f
-        val rightBound = worldWidth - 0.6f
+        val driftAmplitude = abs(invaderRowDrift)
+        val leftBound = 0.6f + driftAmplitude
+        val rightBound = worldWidth - 0.6f - driftAmplitude
+        val clampLeft = 0.6f
+        val clampRight = worldWidth - 0.6f
 
         fun rowDrift(row: Int): Float {
             return kotlin.math.sin(invaderRowPhase + row * invaderRowPhaseOffset) * invaderRowDrift
@@ -1452,26 +1555,30 @@ class GameEngine(
         var minX = Float.POSITIVE_INFINITY
         var maxX = Float.NEGATIVE_INFINITY
         invaders.forEach { invader ->
-            val x = invader.baseX + nextOffset + rowDrift(invader.gridY)
+            val x = invader.baseX + nextOffset
             minX = min(minX, x)
             maxX = max(maxX, x + invader.width)
         }
 
         if (minX < leftBound) {
             nextOffset += leftBound - minX
-            invaderDirection = 1f
-            audio.play(GameSound.BRICK_MOVING, 0.25f)
+            if (invaderDirection != 1f) {
+                invaderDirection = 1f
+                audio.play(GameSound.BRICK_MOVING, 0.25f)
+            }
         } else if (maxX > rightBound) {
             nextOffset -= maxX - rightBound
-            invaderDirection = -1f
-            audio.play(GameSound.BRICK_MOVING, 0.25f)
+            if (invaderDirection != -1f) {
+                invaderDirection = -1f
+                audio.play(GameSound.BRICK_MOVING, 0.25f)
+            }
         }
 
         invaderFormationOffset = nextOffset
         invaders.forEach { invader ->
             val drift = rowDrift(invader.gridY)
             invader.x = (invader.baseX + invaderFormationOffset + drift)
-                .coerceIn(leftBound, rightBound - invader.width)
+                .coerceIn(clampLeft, clampRight - invader.width)
         }
     }
 
@@ -1492,6 +1599,7 @@ class GameEngine(
                 launchBallWithAim(ball)
                 aimHasInput = false
                 aimNormalized = 0f
+                aimNormalizedTarget = 0f
                 // Start background music when gameplay begins
                 audio.startMusic()
             }
@@ -1521,6 +1629,7 @@ class GameEngine(
         }
         aimHasInput = false
         aimNormalized = 0f
+        aimNormalizedTarget = 0f
         audio.startMusic()
     }
 
@@ -1953,7 +2062,7 @@ class GameEngine(
     private fun updateInvaderShots(dt: Float) {
         if (!config.mode.invaders) return
         invaderShotTimer -= dt
-        val invaders = invaderBricks.filter { it.alive }
+        val invaders = collectAliveInvaders()
         if (invaders.isEmpty()) return
         val ratio = invaders.size.toFloat() / invaderTotal.toFloat().coerceAtLeast(1f)
         val paceBoost = (1f - ratio).coerceIn(0f, 1f)
@@ -2572,14 +2681,24 @@ class GameEngine(
     }
 
     private fun maybeSpawnPowerup(brick: Brick) {
-        val dropChance = when (brick.type) {
-            BrickType.EXPLOSIVE -> 0.25f
-            BrickType.REINFORCED, BrickType.ARMORED -> 0.15f
-            BrickType.BOSS, BrickType.PHASE -> 0.20f
-            BrickType.SPAWNING -> 0.12f
-            BrickType.MOVING -> 0.10f
-            else -> 0.08f
+        val baseChance = when (brick.type) {
+            BrickType.EXPLOSIVE -> 0.28f
+            BrickType.REINFORCED, BrickType.ARMORED -> 0.18f
+            BrickType.BOSS, BrickType.PHASE -> 0.24f
+            BrickType.SPAWNING -> 0.15f
+            BrickType.MOVING -> 0.12f
+            BrickType.INVADER -> 0.12f
+            else -> 0.10f
         }
+        val levelBoost = (levelIndex * 0.0025f).coerceAtMost(0.04f)
+        val modeBoost = when (config.mode) {
+            GameMode.TIMED -> 0.02f
+            GameMode.RUSH -> 0.02f
+            GameMode.ENDLESS -> 0.015f
+            GameMode.INVADERS -> 0.03f
+            else -> 0f
+        }
+        val dropChance = (baseChance + levelBoost + modeBoost).coerceAtMost(0.32f)
         if (random.nextFloat() < dropChance) {
             spawnPowerup(brick.centerX, brick.centerY, randomPowerupType())
         }
@@ -3079,14 +3198,14 @@ data class Brick(
         // Significant variance for huge color variety between bricks
         val gridSeed = (gridX * 7 + gridY * 11 + type.ordinal * 17) % 100  // Unique seed per brick position and type
         val random = java.util.Random(gridSeed.toLong())
-        var positionVarianceR = (random.nextFloat() - 0.5f) * 0.5f  // ±0.25f variance
-        var positionVarianceG = (random.nextFloat() - 0.5f) * 0.5f  // ±0.25f variance
-        var positionVarianceB = (random.nextFloat() - 0.5f) * 0.5f  // ±0.25f variance
+        var positionVarianceR = (random.nextFloat() - 0.5f) * 0.6f  // ±0.30f variance
+        var positionVarianceG = (random.nextFloat() - 0.5f) * 0.6f  // ±0.30f variance
+        var positionVarianceB = (random.nextFloat() - 0.5f) * 0.6f  // ±0.30f variance
         val baseVarianceScale = when (type) {
-            BrickType.NORMAL -> 1.15f
-            BrickType.INVADER -> 1.35f
-            BrickType.BOSS -> 0.6f
-            else -> 0.9f
+            BrickType.NORMAL -> 1.25f
+            BrickType.INVADER -> 1.45f
+            BrickType.BOSS -> 0.65f
+            else -> 1.0f
         }
         positionVarianceR *= baseVarianceScale
         positionVarianceG *= baseVarianceScale
@@ -3134,10 +3253,10 @@ data class Brick(
         val rowBand = ROW_BANDS[abs(gridY) % ROW_BANDS.size]
         val colBand = COL_BANDS[abs(gridX) % COL_BANDS.size]
         val bandScale = when (type) {
-            BrickType.NORMAL -> 1f
-            BrickType.INVADER -> 1.2f
-            BrickType.BOSS -> 0.5f
-            else -> 0.65f
+            BrickType.NORMAL -> 1.15f
+            BrickType.INVADER -> 1.35f
+            BrickType.BOSS -> 0.6f
+            else -> 0.8f
         }
         val bandShift = floatArrayOf(
             (rowBand[0] + colBand[0]) * bandScale,

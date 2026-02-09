@@ -4,7 +4,7 @@
 - Ship a foldable-optimized Breakout/brickbreaker for Samsung Galaxy Z Fold 7.
 - Deliver smooth 60 FPS gameplay with hardware-accelerated rendering.
 - Provide multiple modes, levels, powerups, and brick variants with escalating difficulty.
-- Include full UI/UX flow: splash, title, modes, gameplay, scoreboard, settings, how-to.
+- Include full UI/UX flow: system splash, title, modes, gameplay, scoreboard, settings, how-to.
 - Fully functional via CLI build and install (no Android Studio dependency).
 
 ## Target Device
@@ -22,7 +22,7 @@
 - **Game modes**: `GameMode` enum controlling lives, timers, and rules
 
 ### UI/UX Features
-- **Multiple screens**: `SplashActivity`, `MainActivity`, `ModeSelectActivity`, `GameActivity`, `SettingsActivity`, `ScoreboardActivity`, `HowToActivity`, `DailyChallengesActivity`, `PrivacyActivity`
+- **Multiple screens**: `MainActivity`, `ModeSelectActivity`, `GameActivity`, `SettingsActivity`, `ScoreboardActivity`, `HowToActivity`, `DailyChallengesActivity`, `PrivacyActivity`
 - **Scoreboard**: `ScoreboardManager` with JSON persistence in SharedPreferences
 - **Settings**: `SettingsManager` with toggles for sound/music/vibration/tips/sensitivity/handedness
 - **How-to**: Expandable sections with controls, powerups, brick types, modes

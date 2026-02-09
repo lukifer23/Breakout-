@@ -12,4 +12,5 @@
     <dimen name="bp_hud_stat_size">14sp</dimen>
     <dimen name="bp_hud_mode_size">12sp</dimen>
     <dimen name="bp_hud_banner_size">20sp</dimen>
+    <dimen name="bp_hud_reserved_height">150dp</dimen>
 </resources>

@@ -31,6 +31,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     private var currentModeLabel: String = "Classic"
     private var currentPowerupSummary: String = "Powerups: none"
     private var currentCombo: Int = 0
+    private var currentPowerupCount: Int = 0
     private var laserActive: Boolean = false
     private var laserCooldownEndMs: Long = 0L
     private var laserCooldownRunnable: Runnable? = null
@@ -322,8 +323,11 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
 
     override fun onPowerupsUpdated(status: List<PowerupStatus>, combo: Int) {
         runOnUiThread {
+            val previousCount = currentPowerupCount
+            val previousCombo = currentCombo
             renderPowerupChips(status)
             currentCombo = combo
+            currentPowerupCount = status.size
             currentPowerupSummary = if (status.isEmpty()) {
                 getString(R.string.label_powerups_none)
             } else {
@@ -331,6 +335,9 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             }
             updateLaserButton(status)
             updateHudMeta()
+            if (status.size > previousCount || combo > previousCombo) {
+                pulseHudMeta()
+            }
         }
     }
 
@@ -345,14 +352,14 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         val updated = UnlockManager.unlockTheme(this, themeName)
         config = config.copy(unlocks = updated)
         binding.gameSurface.applyUnlocks(updated)
-        onTip("Theme unlocked: $themeName")
+        showBanner(getString(R.string.label_theme_unlocked, themeName))
     }
 
     override fun onCosmeticUnlocked(newTier: Int) {
         val updated = UnlockManager.setCosmeticTier(this, newTier)
         config = config.copy(unlocks = updated)
         binding.gameSurface.applyUnlocks(updated)
-        onTip("Cosmetic upgrade unlocked!")
+        showBanner(getString(R.string.label_cosmetic_unlocked))
     }
 
     override fun onFpsUpdate(fps: Int) {
@@ -516,8 +523,12 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     }
 
     private fun showLevelBanner(level: Int) {
+        showBanner(getString(R.string.label_level_format, level))
+    }
+
+    private fun showBanner(message: String) {
         val banner = binding.hudLevelBanner
-        banner.text = getString(R.string.label_level_format, level)
+        banner.text = message
         banner.animate().cancel()
         banner.visibility = View.VISIBLE
         banner.alpha = 0f
@@ -543,6 +554,27 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
                         banner.scaleX = 1f
                         banner.scaleY = 1f
                     }
+                    .start()
+            }
+            .start()
+    }
+
+    private fun pulseHudMeta() {
+        val meta = binding.hudMeta
+        meta.animate().cancel()
+        meta.scaleX = 1f
+        meta.scaleY = 1f
+        meta.animate()
+            .scaleX(1.05f)
+            .scaleY(1.05f)
+            .setDuration(140)
+            .setInterpolator(android.view.animation.DecelerateInterpolator())
+            .withEndAction {
+                meta.animate()
+                    .scaleX(1f)
+                    .scaleY(1f)
+                    .setDuration(160)
+                    .setInterpolator(android.view.animation.DecelerateInterpolator())
                     .start()
             }
             .start()

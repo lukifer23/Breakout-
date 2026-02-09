@@ -89,7 +89,7 @@ export GOOGLE_PLAY_API_KEY="your_key_here"
 ```bash
 adb devices
 adb install -r app/build/outputs/apk/debug/app-debug.apk
-adb shell am start -n com.breakoutplus.debug/com.breakoutplus.SplashActivity
+adb shell am start -n com.breakoutplus.debug/com.breakoutplus.MainActivity
 ```
 
 ## Performance

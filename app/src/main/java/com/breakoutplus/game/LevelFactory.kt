@@ -254,7 +254,7 @@ object LevelFactory {
             for (col in 0 until layout.cols) {
                 if (existing.containsKey(col to row)) continue
                 val rowRatio = if (layout.rows > 1) row.toFloat() / (layout.rows - 1).toFloat() else 0f
-                val density = 0.78f - rowRatio * 0.14f
+                val density = 0.85f - rowRatio * 0.12f
                 if (random.nextFloat() > density) continue
                 val typeRoll = random.nextFloat()
                 val type = when {
@@ -282,8 +282,8 @@ object LevelFactory {
     }
 
     fun buildInvaderLevel(index: Int, difficulty: Float): LevelLayout {
-        val rows = (6 + (index / 3).coerceAtMost(3)).coerceIn(6, 9)
-        val cols = (12 + (index / 4).coerceAtMost(4)).coerceIn(12, 16)
+        val rows = (7 + (index / 3).coerceAtMost(3)).coerceIn(7, 10)
+        val cols = (13 + (index / 4).coerceAtMost(4)).coerceIn(13, 17)
         val formation = index % 3
         val bricks = mutableListOf<BrickSpec>()
         for (row in 0 until rows) {
@@ -325,13 +325,13 @@ object LevelFactory {
         val themes = if (themePool.isNotEmpty()) themePool else LevelThemes.baseThemes()
         val theme = themes[index % themes.size] // Rotate themes every level for endless variety
 
-        val baseRows = 7 + (index / 5).coerceAtMost(3) // Add rows as levels progress
-        val baseCols = 11 + (index / 4).coerceAtMost(3) // Add columns as levels progress
+        val baseRows = 8 + (index / 5).coerceAtMost(3) // Add rows as levels progress
+        val baseCols = 12 + (index / 4).coerceAtMost(3) // Add columns as levels progress
         val rows = (baseRows * (0.8f + kotlin.random.Random(index).nextFloat() * 0.4f)).toInt().coerceIn(6, 12)
         val cols = (baseCols * (0.8f + kotlin.random.Random(index + 1).nextFloat() * 0.4f)).toInt().coerceIn(10, 15)
 
         val bricks = mutableListOf<BrickSpec>()
-        val density = 0.7f + (index * 0.01f).coerceAtMost(0.22f) // Increase density over time
+        val density = 0.78f + (index * 0.01f).coerceAtMost(0.22f) // Increase density over time
 
         // Create random but structured brick layout
         for (row in 0 until rows) {

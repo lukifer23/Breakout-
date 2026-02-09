@@ -24,12 +24,12 @@ Powerups:
 
 Brick types:
 - Reinforced, Armored, Explosive, Unbreakable
-- Moving, Spawning, Phase, Boss
+- Moving, Spawning, Phase, Boss, Invader
 
 Highlights:
 - Daily challenges and combo-based scoring
 - Foldable-friendly layout with high refresh rate support
-- Crisp touch controls, responsive paddle feel, FIRE button for lasers, and polished effects
+- Crisp touch controls with smooth aim guide, responsive paddle feel, FIRE button for lasers, and polished effects
 
 Whether you want a chill run or a high-speed score chase, Breakout+ delivers the classic feel with modern performance and style.
 

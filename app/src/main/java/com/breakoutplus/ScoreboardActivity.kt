@@ -11,7 +11,9 @@ import java.util.Locale
 class ScoreboardActivity : FoldAwareActivity() {
     private lateinit var binding: ActivityScoreboardBinding
     private var currentModeIndex = 0
-    private val modes = GameMode.values()
+    private val modes = mutableListOf<ModeEntry>()
+
+    private data class ModeEntry(val label: String, val mode: GameMode?)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -22,6 +24,12 @@ class ScoreboardActivity : FoldAwareActivity() {
         binding.buttonScoreBack.setOnClickListener { finish() }
         findViewById<com.google.android.material.button.MaterialButton>(R.id.buttonScorePrev)?.setOnClickListener { switchMode(-1) }
         findViewById<com.google.android.material.button.MaterialButton>(R.id.buttonScoreNext)?.setOnClickListener { switchMode(1) }
+
+        modes.clear()
+        modes.add(ModeEntry(getString(R.string.label_mode_all), null))
+        GameMode.values().forEach { mode ->
+            modes.add(ModeEntry(mode.displayName, mode))
+        }
 
         renderScores()
         animateEntry()
@@ -34,14 +42,18 @@ class ScoreboardActivity : FoldAwareActivity() {
 
     private fun renderScores() {
         val currentMode = modes[currentModeIndex]
-        val scores = ScoreboardManager.getHighScoresForMode(this, currentMode.displayName)
+        val scores = if (currentMode.mode == null) {
+            ScoreboardManager.getHighScoresAllModes(this)
+        } else {
+            ScoreboardManager.getHighScoresForMode(this, currentMode.mode.displayName)
+        }
         binding.scoreList.removeAllViews()
 
         // Update mode title
-        binding.scoreTitle.text = getString(R.string.label_leaderboard_format, currentMode.displayName)
+        binding.scoreTitle.text = getString(R.string.label_leaderboard_format, currentMode.label)
 
         if (scores.isEmpty()) {
-            binding.scoreEmpty.text = getString(R.string.label_no_scores_mode, currentMode.displayName)
+            binding.scoreEmpty.text = getString(R.string.label_no_scores_mode, currentMode.label)
             binding.scoreEmpty.visibility = android.view.View.VISIBLE
             return
         }
@@ -50,9 +62,10 @@ class ScoreboardActivity : FoldAwareActivity() {
         scores.forEachIndexed { index, entry ->
             val row = ItemScoreRowBinding.inflate(inflater, binding.scoreList, false)
             row.scoreRank.text = getString(R.string.label_rank_format, index + 1)
-            row.scoreMode.text = entry.name // Show player name instead of mode
+            row.scoreMode.text = entry.name
             val timeText = if (entry.durationSeconds > 0) formatDuration(entry.durationSeconds) else "--"
-            row.scoreMeta.text = getString(R.string.label_level_time_format, entry.level, timeText)
+            val modeLabel = entry.mode.ifBlank { getString(R.string.label_mode_classic) }
+            row.scoreMeta.text = getString(R.string.label_score_meta_format, modeLabel, entry.level, timeText)
             row.scoreValue.text = "%d".format(entry.score)
             val rankColor = when (index) {
                 0 -> R.color.bp_gold
