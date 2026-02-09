@@ -27,6 +27,8 @@
     <string name="label_section_advanced">Advanced</string>
     <string name="label_mode_hint">Pick a mode tailored to your play style.</string>
     <string name="label_scoreboard_hint">Top runs across all modes.</string>
+    <string name="label_progress_format">Journey %1$d-%2$d • XP %3$d</string>
+    <string name="label_progress_default">Journey 1-1 • XP 0</string>
     <string name="label_howto_hint">Quick Start</string>
     <string name="label_mode_classic">Classic</string>
     <string name="label_mode_all">All Modes</string>
@@ -46,6 +48,8 @@
     <string name="label_lives_format">Lives %1$d</string>
     <string name="label_fps_format">FPS: %1$d</string>
     <string name="label_combo_format">Combo x%1$d</string>
+    <string name="label_journey_format">Journey %1$d-%2$d</string>
+    <string name="label_xp_format">XP %1$d</string>
     <string name="label_powerups_none">Powerups: none</string>
     <string name="label_shield_percent">Shield %1$d%%</string>
     <string name="label_score_level_format">Score %1$d • Level %2$d</string>
@@ -69,7 +73,7 @@
     <string name="label_lives_default">Lives 3</string>
     <string name="label_time_default">Time 02:00</string>
     <string name="label_level_default">Level 1</string>
-    <string name="label_hud_meta_default">Classic • Powerups: none</string>
+    <string name="label_hud_meta_default">Classic • Journey 1-1 • XP 0</string>
     <string name="label_shield_default">Shield 100%</string>
     <string name="label_fps_default">FPS: —</string>
     <string name="label_paused">Paused</string>
@@ -93,10 +97,10 @@
     <string name="label_show_fps">Show FPS Counter</string>
     <string name="label_howto_summary">Swipe anywhere to move the paddle. Drag to aim and release to launch. Magnet powerups can catch balls for a skill shot. Collect powerups to stack abilities. Use the HUD to monitor score, lives, and timers.</string>
     <string name="label_howto_powerups_header">▼ Powerups</string>
-    <string name="label_howto_powerups_list">• Multi-ball: Adds extra balls\n• Laser: Fires beams at bricks (two-finger tap or FIRE button)\n• Guardrail: Safety net below paddle\n• Shield: Absorbs a miss\n• Extra life: Gain one additional life\n• Wide paddle: Expands paddle size\n• Slow: Slows gameplay briefly\n• Fireball: Pierces through bricks\n• Magnet: Pulls powerups and catches balls on contact\n• Gravity Well: Bends ball paths toward center\n• Ball Splitter: Splits balls into more\n• Freeze: Nearly stops time for a moment\n• Pierce: Balls pass through bricks</string>
+    <string name="label_howto_powerups_list">• Multi-ball: Adds extra balls\n• Laser: Fires beams at bricks (two-finger tap or FIRE button)\n• Guardrail: Safety net below paddle\n• Shield: Absorbs a miss\n• Extra life: Gain one additional life\n• Wide paddle: Expands paddle size\n• Shrink: Temporarily reduces paddle width\n• Slow: Slows gameplay briefly\n• Overdrive: Speeds up the action\n• Fireball: Pierces through bricks\n• Magnet: Pulls powerups and catches balls on contact\n• Gravity Well: Bends ball paths toward center\n• Ball Splitter: Splits balls into more\n• Freeze: Nearly stops time for a moment\n• Pierce: Balls pass through bricks</string>
     <string name="label_howto_bricks_header">▼ Brick Types</string>
     <string name="label_howto_bricks_list">• Standard: one hit\n• Reinforced: two hits\n• Armored: three hits\n• Explosive: damages surrounding bricks\n• Unbreakable: requires fireball/laser\n• Moving: slides horizontally\n• Spawning: breaks into child bricks\n• Phase: changes phases with new HP\n• Boss: multi-phase heavyweight brick</string>
     <string name="label_howto_modes_header">▼ Game Modes</string>
-    <string name="label_howto_modes_list">Classic: Standard breakout progression.\nTimed Challenge: Score high in 2:30.\nEndless: Infinite levels with scaling difficulty.\nGod Mode: Practice without losing lives.\nLevel Rush: Beat each stage before time expires.\nInvaders: Bounce shots to clear ships while dodging fire.</string>
+    <string name="label_howto_modes_list">Classic: Standard breakout progression.\nTimed Challenge: Score high in 2:30.\nEndless: Infinite levels with scaling difficulty.\nGod Mode: Practice without losing lives.\nLevel Rush: Beat each stage before time expires.\nSurvival: One life with faster speed ramps.\nInvaders: Bounce shots to clear ships while dodging fire.</string>
     <string name="label_choose_mode">Choose Mode</string>
 </resources>

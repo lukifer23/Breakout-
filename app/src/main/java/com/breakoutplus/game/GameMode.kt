@@ -75,6 +75,18 @@ enum class GameMode(
         invaders = false,
         launchSpeed = 97.75f  // 15% reduction for rush mode
     ),
+    SURVIVAL(
+        displayName = "Survival",
+        description = "One life. Speed ramps faster as you climb.",
+        meta = "Lives 1 • No timer • High speed",
+        baseLives = 1,
+        timeLimitSeconds = 0,
+        endless = true,
+        godMode = false,
+        rush = false,
+        invaders = false,
+        launchSpeed = 92.5f
+    ),
     INVADERS(
         displayName = "Invaders",
         description = "Breakout meets space invaders. Bounce shots to clear ships while dodging fire.",

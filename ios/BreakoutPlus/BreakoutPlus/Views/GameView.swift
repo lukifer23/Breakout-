@@ -676,10 +676,18 @@ class GameScene: SKScene, GameEngineDelegate {
                         shapeNode.path = CGPath(rect: CGRect(x: -12, y: -6, width: 24, height: 12), transform: nil)
                         shapeNode.fillColor = .purple
                         shapeNode.strokeColor = .purple
+                    case .shrink:
+                        shapeNode.path = CGPath(rect: CGRect(x: -8, y: -5, width: 16, height: 10), transform: nil)
+                        shapeNode.fillColor = .red
+                        shapeNode.strokeColor = .red
                     case .slowMotion:
                         shapeNode.path = CGPath(ellipseIn: CGRect(x: -10, y: -10, width: 20, height: 20), transform: nil)
                         shapeNode.fillColor = .white
                         shapeNode.strokeColor = .white
+                    case .overdrive:
+                        shapeNode.path = CGPath(rect: CGRect(x: -6, y: -10, width: 12, height: 20), transform: nil)
+                        shapeNode.fillColor = .orange
+                        shapeNode.strokeColor = .orange
                     case .fireball:
                         shapeNode.path = CGPath(ellipseIn: CGRect(x: -10, y: -10, width: 20, height: 20), transform: nil)
                         shapeNode.fillColor = .red

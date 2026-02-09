@@ -21,10 +21,11 @@ Breakout+ elevates the classic brickbreaker genre with modern mobile optimizatio
 - **Cross-Platform**: Native Android (production-ready) and iOS (in development) implementations
 - **GPU Acceleration**: OpenGL ES 2.0 (Android) / Metal (iOS) rendering at 60+ FPS
 - **Advanced Physics**: Accurate collision detection with momentum preservation
-- **Multiple Game Modes**: Classic, Timed Challenge, Endless, God Mode, Level Rush, and Invaders
+- **Multiple Game Modes**: Classic, Timed Challenge, Endless, God Mode, Level Rush, Survival, and Invaders
 - **Dynamic Brick System**: 10 brick types with unique behaviors (moving, spawning, phase, boss, invader)
-- **Comprehensive Powerups**: 13 distinct powerups with visual effects and timers
+- **Comprehensive Powerups**: 15 distinct powerups with visual effects and timers
 - **Combo System**: Score multipliers for consecutive brick destruction
+- **Journey Progression**: Chaptered levels (every 10 stages) with XP tracking
 - **6 Visual Themes**: Unique color palettes and animated backgrounds
 - **Audio System**: Procedural sound generation with individual volume controls
 - **Data Logging**: Built-in analytics for debugging
@@ -68,10 +69,11 @@ Breakout+ is a GPU-accelerated brickbreaker built for foldables, tuned for the S
 - Vsync-paced rendering using Choreographer-driven frame pacing with surface frame-rate hints.
 - Optimized for modern mobile GPUs with simple geometry (rects/circles) for consistent performance and frame pacing stability.
 - Foldable-optimized layouts (`sw600dp`, `sw720dp`) plus hinge-aware padding using Jetpack WindowManager.
-- Multiple modes: Classic, Timed Challenge, Endless, God Mode, Level Rush (45s with speed boost), Invaders.
-- Powerups: Multi-ball, Laser, Guardrail, Shield, Extra life, Wide paddle, Slow motion, Fireball, Magnet, Gravity Well, Ball Splitter, Freeze, Pierce.
+- Multiple modes: Classic, Timed Challenge, Endless, God Mode, Level Rush (45s with speed boost), Survival, Invaders.
+- Powerups: Multi-ball, Laser, Guardrail, Shield, Extra life, Wide paddle, Shrink, Slow motion, Overdrive, Fireball, Magnet, Gravity Well, Ball Splitter, Freeze, Pierce.
 - Brick variations: Standard, Reinforced, Armored, Explosive, Unbreakable, Moving, Spawning, Phase, Boss.
 - Combo system: Score multipliers (x1.5-5x) for consecutive brick breaks within 2 seconds.
+- Journey chapters: Every 10 levels form a named chapter with XP progression.
 - Visual themes: 6 distinct themes (Neon, Sunset, Cobalt, Aurora, Forest, Lava) with unique color palettes and animated backgrounds.
 - In-game HUD with score, lives, timer, level, combo indicators, and powerup chips with countdown timers (fixed top layout to avoid gameplay shifts).
 - Daily Challenges with tracked progress.
@@ -89,9 +91,10 @@ Breakout+ is a GPU-accelerated brickbreaker built for foldables, tuned for the S
 - **Endless**: Infinite procedurally generated levels with scaling difficulty
 - **God Mode**: Practice mode with infinite lives, no penalties
 - **Level Rush**: Beat each stage before 45-second timer expires (50% faster ball speed)
+- **Survival**: One life with faster speed ramps
 
-### Powerups (13 Total)
-- **Core**: Multi-ball, Laser, Guardrail, Shield, Extra life, Wide paddle, Slow motion, Fireball
+### Powerups (15 Total)
+- **Core**: Multi-ball, Laser, Guardrail, Shield, Extra life, Wide paddle, Shrink, Slow motion, Overdrive, Fireball
 - **Advanced**: Magnet (attracts powerups), Gravity Well (attractive force), Ball Splitter (creates extra balls), Freeze (time stop), Pierce (through bricks)
 
 ### Brick Types (10 Total)
@@ -132,6 +135,7 @@ Breakout+ is a GPU-accelerated brickbreaker built for foldables, tuned for the S
 - **Endless**: Infinite levels with increasing speed and density.
 - **God Mode**: No life loss for practice or testing.
 - **Level Rush**: 45 seconds per stage, one life.
+- **Survival**: One life with faster speed ramps.
 - **Invaders**: Moving alien fleets fire back while your shield absorbs hits.
 
 ## Brick Types
@@ -153,7 +157,9 @@ Breakout+ is a GPU-accelerated brickbreaker built for foldables, tuned for the S
 - **Shield**: Absorbs a miss.
 - **Extra Life**: +1 life.
 - **Wide Paddle**: Expands paddle.
+- **Shrink**: Temporarily reduces paddle width.
 - **Slow**: Slows time briefly.
+- **Overdrive**: Speeds up the action.
 - **Fireball**: Ball pierces bricks.
 - **Magnet**: Pulls powerups toward the paddle.
 - **Gravity Well**: Bends ball paths toward center.

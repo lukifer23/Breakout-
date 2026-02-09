@@ -128,6 +128,7 @@ class GameEngine(
     private var globalBrickScale = 0.9f
     private var screenFlash = 0f
     private var levelClearFlash = 0f
+    private var renderTimeSeconds = 0f
     private val hitFlashDecayRate = 2.0f
     private val maxParticles = 240
     private val maxWaves = 10
@@ -170,6 +171,7 @@ class GameEngine(
         paddle.width = basePaddleWidth
         paddle.height = 2.6f
         applyLayoutTuning(currentAspectRatio, preserveRowBoost = true)
+        syncPaddleWidthFromEffects()
         relayoutBricks()
     }
 
@@ -180,6 +182,7 @@ class GameEngine(
             GameMode.INVADERS -> 1.12f
             GameMode.GOD -> 1.08f
             GameMode.RUSH -> 1.06f
+            GameMode.SURVIVAL -> 0.96f
             GameMode.TIMED -> 1.04f
             else -> 1.0f
         }
@@ -227,6 +230,7 @@ class GameEngine(
 
     fun render(renderer: Renderer2D) {
         renderer.setWorldSize(worldWidth, worldHeight)
+        renderTimeSeconds = System.nanoTime() / 1_000_000_000f
         // Enhanced background with subtle gradient and flash effect
         val flashIntensity = screenFlash + levelClearFlash * 0.8f
         val bgTop = if (flashIntensity > 0f) {
@@ -731,11 +735,21 @@ class GameEngine(
                 renderer.drawRect(power.x - size * 0.42f, power.y - size * 0.02f, size * 0.1f, size * 0.04f, glyphSoft)
                 renderer.drawRect(power.x + size * 0.32f, power.y - size * 0.02f, size * 0.1f, size * 0.04f, glyphSoft)
             }
+            PowerUpType.SHRINK -> {
+                renderer.drawRect(power.x - size * 0.18f, power.y - size * 0.08f, size * 0.12f, size * 0.16f, glyph)
+                renderer.drawRect(power.x + size * 0.06f, power.y - size * 0.08f, size * 0.12f, size * 0.16f, glyph)
+                renderer.drawRect(power.x - size * 0.05f, power.y - size * 0.06f, size * 0.1f, size * 0.12f, glyphSoft)
+            }
             PowerUpType.SLOW -> {
                 renderer.drawCircle(power.x, power.y, size * 0.19f, glyph)
                 renderer.drawRect(power.x - size * 0.02f, power.y, size * 0.04f, size * 0.16f, glyphSoft)
                 renderer.drawRect(power.x - size * 0.02f, power.y - size * 0.08f, size * 0.14f, size * 0.04f, glyphSoft)
                 renderer.drawCircle(power.x, power.y, size * 0.04f, glyph)
+            }
+            PowerUpType.OVERDRIVE -> {
+                renderer.drawRect(power.x - size * 0.08f, power.y + size * 0.08f, size * 0.16f, size * 0.18f, glyph)
+                renderer.drawRect(power.x - size * 0.14f, power.y - size * 0.02f, size * 0.28f, size * 0.12f, glyphSoft)
+                renderer.drawRect(power.x - size * 0.08f, power.y - size * 0.2f, size * 0.16f, size * 0.18f, glyph)
             }
             PowerUpType.FIREBALL -> {
                 renderer.drawCircle(power.x, power.y + size * 0.04f, size * 0.18f, glyph)
@@ -795,21 +809,122 @@ class GameEngine(
         val ball = balls.firstOrNull() ?: return
         val dir = if (aimDirection == 0f) 1f else aimDirection
         val angle = aimAngle.coerceIn(aimMinAngle, aimMaxAngle)
-        val dx = kotlin.math.cos(angle) * dir
-        val dy = kotlin.math.sin(angle)
-        val length = worldHeight * 0.24f
-        val steps = 8
-        for (i in 1..steps) {
-            val t = i.toFloat() / steps.toFloat()
-            val alpha = (0.45f * (1f - t)).coerceIn(0f, 0.45f)
-            val size = 0.35f + (1f - t) * 0.2f
-            renderer.drawCircle(
-                ball.x + dx * length * t,
-                ball.y + dy * length * t,
-                size,
-                fillColor(tempColor, theme.accent[0], theme.accent[1], theme.accent[2], alpha)
-            )
+        var dx = kotlin.math.cos(angle) * dir
+        var dy = kotlin.math.sin(angle)
+        var startX = ball.x
+        var startY = ball.y
+        val radius = ball.radius
+        val maxSegments = 4
+
+        repeat(maxSegments) { segment ->
+            val hit = findAimCollision(startX, startY, dx, dy, radius)
+            if (!hit.t.isFinite() || hit.t <= 0f) return
+            val segmentLength = hit.t
+            val steps = (segmentLength / (worldHeight * 0.05f))
+                .toInt()
+                .coerceIn(6, 16)
+            val segmentAlpha = (0.5f - segment * 0.1f).coerceAtLeast(0.2f)
+            for (i in 1..steps) {
+                val t = i.toFloat() / steps.toFloat()
+                val alpha = (segmentAlpha * (1f - t)).coerceIn(0f, segmentAlpha)
+                val size = 0.35f + (1f - t) * 0.22f
+                renderer.drawCircle(
+                    startX + dx * segmentLength * t,
+                    startY + dy * segmentLength * t,
+                    size,
+                    fillColor(tempColor, theme.accent[0], theme.accent[1], theme.accent[2], alpha)
+                )
+            }
+            if (hit.isBrick) {
+                return
+            }
+            if (hit.nx == 0f && hit.ny == 0f) {
+                return
+            }
+            if (hit.nx != 0f) dx = -dx
+            if (hit.ny != 0f) dy = -dy
+            startX = startX + dx * (segmentLength + 0.02f)
+            startY = startY + dy * (segmentLength + 0.02f)
         }
+    }
+
+    private data class AimHit(val t: Float, val nx: Float, val ny: Float, val isBrick: Boolean)
+
+    private fun findAimCollision(
+        startX: Float,
+        startY: Float,
+        dirX: Float,
+        dirY: Float,
+        radius: Float
+    ): AimHit {
+        var bestT = Float.POSITIVE_INFINITY
+        var normalX = 0f
+        var normalY = 0f
+        var hitBrick = false
+
+        if (dirY > 0f) {
+            val tTop = (worldHeight - radius - startY) / dirY
+            if (tTop > 0f && tTop < bestT) {
+                bestT = tTop
+                normalX = 0f
+                normalY = -1f
+                hitBrick = false
+            }
+        }
+        if (dirX > 0f) {
+            val tRight = (worldWidth - radius - startX) / dirX
+            if (tRight > 0f && tRight < bestT) {
+                bestT = tRight
+                normalX = -1f
+                normalY = 0f
+                hitBrick = false
+            }
+        } else if (dirX < 0f) {
+            val tLeft = (radius - startX) / dirX
+            if (tLeft > 0f && tLeft < bestT) {
+                bestT = tLeft
+                normalX = 1f
+                normalY = 0f
+                hitBrick = false
+            }
+        }
+
+        bricks.forEach { brick ->
+            if (!brick.alive) return@forEach
+            val minX = brick.x - radius
+            val maxX = brick.x + brick.width + radius
+            val minY = brick.y - radius
+            val maxY = brick.y + brick.height + radius
+
+            val invDx = if (dirX != 0f) 1f / dirX else Float.POSITIVE_INFINITY
+            val invDy = if (dirY != 0f) 1f / dirY else Float.POSITIVE_INFINITY
+            val tx1 = (minX - startX) * invDx
+            val tx2 = (maxX - startX) * invDx
+            val ty1 = (minY - startY) * invDy
+            val ty2 = (maxY - startY) * invDy
+
+            val tMinX = min(tx1, tx2)
+            val tMaxX = max(tx1, tx2)
+            val tMinY = min(ty1, ty2)
+            val tMaxY = max(ty1, ty2)
+
+            val tEnter = max(tMinX, tMinY)
+            val tExit = min(tMaxX, tMaxY)
+            if (tExit < 0f || tEnter > tExit) return@forEach
+            if (tEnter <= 0f || tEnter >= bestT) return@forEach
+
+            bestT = tEnter
+            hitBrick = true
+            if (tMinX > tMinY) {
+                normalX = if (dirX > 0f) -1f else 1f
+                normalY = 0f
+            } else {
+                normalX = 0f
+                normalY = if (dirY > 0f) -1f else 1f
+            }
+        }
+
+        return AimHit(bestT, normalX, normalY, hitBrick)
     }
 
     private fun drawStripe(renderer: Renderer2D, brick: Brick, color: FloatArray, count: Int) {
@@ -823,7 +938,7 @@ class GameEngine(
     }
 
     private fun drawInvaderShip(renderer: Renderer2D, brick: Brick, baseColor: FloatArray) {
-        val time = System.nanoTime() / 1_000_000_000f
+        val time = renderTimeSeconds
         val hitPulse = brick.hitFlash.coerceIn(0f, 1f)
         val scale = 1f + hitPulse * 0.08f
         val wobble = if (hitPulse > 0f) {
@@ -982,8 +1097,11 @@ class GameEngine(
             }
             aimNormalized += (aimNormalizedTarget - aimNormalized) * lerpFactor
         }
-        aimDirection = if (aimNormalized >= 0f) 1f else -1f
-        aimHasInput = isDragging || abs(aimNormalized) > 0.02f
+        val deadZone = 0.02f
+        if (abs(aimNormalized) > deadZone) {
+            aimDirection = if (aimNormalized >= 0f) 1f else -1f
+        }
+        aimHasInput = isDragging || abs(aimNormalized) > deadZone
         val strength = abs(aimNormalized).coerceIn(0f, 1f)
         // Small aim offsets should fire more vertically; larger offsets shallow the angle.
         aimAngle = aimMaxAngle - (aimMaxAngle - aimMinAngle) * strength
@@ -1545,11 +1663,8 @@ class GameEngine(
         val invaders = collectAliveInvaders()
         if (invaders.isEmpty()) return
         invaderRowPhase += dt * (0.55f + levelIndex * 0.015f)
-        val driftAmplitude = abs(invaderRowDrift)
-        val leftBound = 0.6f + driftAmplitude
-        val rightBound = worldWidth - 0.6f - driftAmplitude
-        val clampLeft = 0.6f
-        val clampRight = worldWidth - 0.6f
+        val leftBound = 0.6f
+        val rightBound = worldWidth - 0.6f
 
         fun rowDrift(row: Int): Float {
             return kotlin.math.sin(invaderRowPhase + row * invaderRowPhaseOffset) * invaderRowDrift
@@ -1559,7 +1674,8 @@ class GameEngine(
         var minX = Float.POSITIVE_INFINITY
         var maxX = Float.NEGATIVE_INFINITY
         invaders.forEach { invader ->
-            val x = invader.baseX + nextOffset
+            val drift = rowDrift(invader.gridY)
+            val x = invader.baseX + nextOffset + drift
             minX = min(minX, x)
             maxX = max(maxX, x + invader.width)
         }
@@ -1581,8 +1697,7 @@ class GameEngine(
         invaderFormationOffset = nextOffset
         invaders.forEach { invader ->
             val drift = rowDrift(invader.gridY)
-            invader.x = (invader.baseX + invaderFormationOffset + drift)
-                .coerceIn(clampLeft, clampRight - invader.width)
+            invader.x = invader.baseX + invaderFormationOffset + drift
         }
     }
 
@@ -2052,7 +2167,9 @@ class GameEngine(
             PowerUpType.LIFE -> "1UP: gain an extra life."
             PowerUpType.SHIELD -> "Shield: blocks invader shots."
             PowerUpType.WIDE_PADDLE -> "Wide paddle: bigger hit area."
+            PowerUpType.SHRINK -> "Shrink: paddle size reduced."
             PowerUpType.SLOW -> "Slow: ball speed reduced."
+            PowerUpType.OVERDRIVE -> "Overdrive: everything speeds up."
             PowerUpType.FIREBALL -> "Fireball: smash through bricks."
             PowerUpType.MAGNET -> "Magnet: balls stick to the paddle."
             PowerUpType.GRAVITY_WELL -> "Gravity well: bends ball paths."
@@ -2280,12 +2397,14 @@ class GameEngine(
     private fun updateEffects(dt: Float) {
         val iterator = activeEffects.entries.iterator()
         var ballStyleDirty = false
+        var paddleWidthDirty = false
         while (iterator.hasNext()) {
             val entry = iterator.next()
             val remaining = entry.value - dt
             if (remaining <= 0f) {
                 when (entry.key) {
-                    PowerUpType.WIDE_PADDLE -> paddle.width = basePaddleWidth
+                    PowerUpType.WIDE_PADDLE,
+                    PowerUpType.SHRINK -> paddleWidthDirty = true
                     PowerUpType.SLOW -> Unit
                     PowerUpType.GUARDRAIL -> guardrailActive = config.mode.godMode
                     PowerUpType.LASER -> Unit
@@ -2306,6 +2425,7 @@ class GameEngine(
                         pierceActive = false
                         ballStyleDirty = true
                     }
+                    PowerUpType.OVERDRIVE -> Unit
                     else -> Unit
                 }
                 iterator.remove()
@@ -2316,15 +2436,30 @@ class GameEngine(
         speedMultiplier = when {
             activeEffects.containsKey(PowerUpType.FREEZE) -> 0.1f
             activeEffects.containsKey(PowerUpType.SLOW) -> 0.8f
+            activeEffects.containsKey(PowerUpType.OVERDRIVE) -> 1.2f
             else -> 1f
         }
         if (ballStyleDirty) {
             syncBallStyles()
         }
+        if (paddleWidthDirty) {
+            syncPaddleWidthFromEffects()
+        }
         // Update screen flash
         screenFlash = max(0f, screenFlash - dt * 3f)
         levelClearFlash = max(0f, levelClearFlash - dt * 1.5f)
         updatePowerupStatus()
+    }
+
+    private fun syncPaddleWidthFromEffects() {
+        val wideActive = activeEffects.containsKey(PowerUpType.WIDE_PADDLE)
+        val shrinkActive = activeEffects.containsKey(PowerUpType.SHRINK)
+        paddle.width = when {
+            wideActive && shrinkActive -> basePaddleWidth
+            wideActive -> basePaddleWidth * (25f / 18f)
+            shrinkActive -> basePaddleWidth * 0.7f
+            else -> basePaddleWidth
+        }
     }
 
     private fun clampBallSpeed(ball: Ball) {
@@ -2360,6 +2495,7 @@ class GameEngine(
         GameMode.ENDLESS -> 0.017f
         GameMode.GOD -> 0.010f
         GameMode.RUSH -> 0.023f
+        GameMode.SURVIVAL -> 0.028f
         GameMode.INVADERS -> 0.016f
     }
 
@@ -2369,6 +2505,7 @@ class GameEngine(
         GameMode.ENDLESS -> 1.4f
         GameMode.GOD -> 1.25f
         GameMode.RUSH -> 1.5f
+        GameMode.SURVIVAL -> 1.6f
         GameMode.INVADERS -> 1.4f
     }
 
@@ -2378,6 +2515,7 @@ class GameEngine(
         GameMode.ENDLESS -> 0.65f
         GameMode.GOD -> 0.5f
         GameMode.RUSH -> 0.72f
+        GameMode.SURVIVAL -> 0.75f
         GameMode.INVADERS -> 0.6f
     }
 
@@ -2387,6 +2525,7 @@ class GameEngine(
         GameMode.ENDLESS -> 1.7f
         GameMode.GOD -> 1.45f
         GameMode.RUSH -> 1.85f
+        GameMode.SURVIVAL -> 1.9f
         GameMode.INVADERS -> 1.6f
     }
 
@@ -2397,6 +2536,7 @@ class GameEngine(
             GameMode.ENDLESS -> 1.0f
             GameMode.GOD -> 0.9f
             GameMode.RUSH -> 1.1f
+            GameMode.SURVIVAL -> 1.15f
             GameMode.INVADERS -> 1.05f
         }
         val slope = when (config.mode) {
@@ -2405,6 +2545,7 @@ class GameEngine(
             GameMode.ENDLESS -> 0.085f
             GameMode.GOD -> 0.05f
             GameMode.RUSH -> 0.11f
+            GameMode.SURVIVAL -> 0.12f
             GameMode.INVADERS -> 0.08f
         }
         return (base + levelIndex * slope).coerceAtMost(3.0f)
@@ -2448,11 +2589,19 @@ class GameEngine(
                 activeEffects[type] = 12f
             }
             PowerUpType.WIDE_PADDLE -> {
-                paddle.width = basePaddleWidth * (25f / 18f)
                 activeEffects[type] = 12f
+                syncPaddleWidthFromEffects()
+            }
+            PowerUpType.SHRINK -> {
+                activeEffects[type] = 10f
+                syncPaddleWidthFromEffects()
             }
             PowerUpType.SLOW -> {
                 speedMultiplier = 0.8f
+                activeEffects[type] = 8f
+            }
+            PowerUpType.OVERDRIVE -> {
+                speedMultiplier = 1.2f
                 activeEffects[type] = 8f
             }
             PowerUpType.FIREBALL -> {
@@ -2539,6 +2688,7 @@ class GameEngine(
         activeEffects[PowerUpType.SLOW]?.let { effectTimers.add("Slow ${it.toInt()}s") }
         activeEffects[PowerUpType.FREEZE]?.let { effectTimers.add("Freeze ${it.toInt()}s") }
         activeEffects[PowerUpType.GRAVITY_WELL]?.let { effectTimers.add("Grav ${it.toInt()}s") }
+        activeEffects[PowerUpType.OVERDRIVE]?.let { effectTimers.add("Overdrive ${it.toInt()}s") }
         if (effectTimers.isNotEmpty()) {
             segments.addAll(effectTimers)
         }
@@ -2699,6 +2849,7 @@ class GameEngine(
             GameMode.TIMED -> 0.02f
             GameMode.RUSH -> 0.02f
             GameMode.ENDLESS -> 0.015f
+            GameMode.SURVIVAL -> 0.018f
             GameMode.INVADERS -> 0.03f
             else -> 0f
         }
@@ -2860,7 +3011,9 @@ class GameEngine(
             PowerUpType.GUARDRAIL to 0.95f,
             PowerUpType.SHIELD to 0.9f,
             PowerUpType.WIDE_PADDLE to 0.95f,
+            PowerUpType.SHRINK to 0.45f,
             PowerUpType.SLOW to 0.9f,
+            PowerUpType.OVERDRIVE to 0.5f,
             PowerUpType.MAGNET to 0.85f,
             PowerUpType.LIFE to 0.6f,
             PowerUpType.FIREBALL to 0.8f,
@@ -2887,8 +3040,17 @@ class GameEngine(
                 weights[PowerUpType.GRAVITY_WELL] = (weights[PowerUpType.GRAVITY_WELL] ?: 0f) + 0.15f
                 weights[PowerUpType.BALL_SPLITTER] = (weights[PowerUpType.BALL_SPLITTER] ?: 0f) + 0.1f
             }
+            GameMode.SURVIVAL -> {
+                weights[PowerUpType.SHIELD] = (weights[PowerUpType.SHIELD] ?: 0f) + 0.2f
+                weights[PowerUpType.GUARDRAIL] = (weights[PowerUpType.GUARDRAIL] ?: 0f) + 0.2f
+                weights[PowerUpType.LIFE] = (weights[PowerUpType.LIFE] ?: 0f) + 0.05f
+                weights[PowerUpType.SHRINK]?.let { weights[PowerUpType.SHRINK] = it * 0.7f }
+                weights[PowerUpType.OVERDRIVE]?.let { weights[PowerUpType.OVERDRIVE] = it * 0.7f }
+            }
             GameMode.GOD -> {
                 weights[PowerUpType.LIFE] = 0.15f
+                weights[PowerUpType.SHRINK] = 0.1f
+                weights[PowerUpType.OVERDRIVE] = 0.1f
             }
             GameMode.INVADERS -> {
                 weights[PowerUpType.SHIELD] = (weights[PowerUpType.SHIELD] ?: 0f) + 0.3f
@@ -3311,7 +3473,9 @@ enum class PowerUpType(val displayName: String, val color: FloatArray) {
     LIFE("Extra Life", floatArrayOf(0.14f, 0.92f, 0.64f, 1f)),
     SHIELD("Shield", floatArrayOf(0.52f, 0.61f, 1f, 1f)),
     WIDE_PADDLE("Wide Paddle", floatArrayOf(0.98f, 0.62f, 0.2f, 1f)),
+    SHRINK("Shrink", floatArrayOf(1f, 0.45f, 0.35f, 1f)),
     SLOW("Slow", floatArrayOf(0.63f, 0.76f, 1f, 1f)),
+    OVERDRIVE("Overdrive", floatArrayOf(1f, 0.62f, 0.22f, 1f)),
     FIREBALL("Fireball", floatArrayOf(1f, 0.36f, 0.27f, 1f)),
     MAGNET("Magnet", floatArrayOf(0.8f, 0.4f, 1f, 1f)),
     GRAVITY_WELL("Gravity Well", floatArrayOf(0.4f, 0.6f, 1f, 1f)),

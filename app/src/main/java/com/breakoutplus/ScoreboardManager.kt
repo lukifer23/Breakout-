@@ -7,7 +7,7 @@ import org.json.JSONObject
 object ScoreboardManager {
     private const val PREFS_NAME = "breakout_plus_scores"
     private const val KEY_SCORES = "scores"
-    private const val MAX_SCORES = 20
+    private const val MAX_SCORES_PER_MODE = 10
 
     data class ScoreEntry(
         val score: Int,
@@ -45,7 +45,7 @@ object ScoreboardManager {
         return loadScores(context)
             .filter { it.mode == mode }
             .sortedWith(compareByDescending<ScoreEntry> { it.score }.thenBy { normalizedDuration(it.durationSeconds) })
-            .take(10) // Top 10 per mode
+            .take(MAX_SCORES_PER_MODE)
     }
 
     fun getHighScoresAllModes(context: Context): List<ScoreEntry> {
@@ -69,10 +69,16 @@ object ScoreboardManager {
 
         val scores = loadScores(context).toMutableList()
         scores.add(entry)
-        val sorted = scores.sortedWith(compareByDescending<ScoreEntry> { it.score }.thenBy { normalizedDuration(it.durationSeconds) })
-        val trimmed = sorted.take(MAX_SCORES)
+        val trimmed = trimScoresPerMode(scores)
         saveScores(context, trimmed)
         return getHighScoresForMode(context, entry.mode)
+    }
+
+    private fun trimScoresPerMode(scores: List<ScoreEntry>): List<ScoreEntry> {
+        return scores.groupBy { it.mode }.flatMap { (_, entries) ->
+            entries.sortedWith(compareByDescending<ScoreEntry> { it.score }.thenBy { normalizedDuration(it.durationSeconds) })
+                .take(MAX_SCORES_PER_MODE)
+        }
     }
 
     fun reset(context: Context) {

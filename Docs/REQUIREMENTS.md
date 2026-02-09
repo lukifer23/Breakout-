@@ -17,7 +17,7 @@
 ### Core Gameplay
 - **Touch controls**: `GameEngine.handleTouch()` - drag moves paddle, release launches ball
 - **Powerups**: `PowerUpType` enum, `GameEngine.applyPowerup()`, HUD shows active with timers
-- **Multiple effects**: Multi-ball, laser beams, guardrail, shield, extra life, wide paddle, slow motion, fireball, magnet, gravity well, ball splitter, freeze, pierce
+- **Multiple effects**: Multi-ball, laser beams, guardrail, shield, extra life, wide paddle, shrink, slow motion, overdrive, fireball, magnet, gravity well, ball splitter, freeze, pierce
 - **Brick variants**: `BrickType` enum with hit point scaling and special behaviors
 - **Game modes**: `GameMode` enum controlling lives, timers, and rules
 

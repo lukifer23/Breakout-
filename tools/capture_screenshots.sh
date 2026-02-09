@@ -221,13 +221,14 @@ else
   fi
 fi
 
-ACTIVITY_SPLASH="${PACKAGE}/com.breakoutplus.SplashActivity"
 ACTIVITY_MAIN="${PACKAGE}/com.breakoutplus.MainActivity"
 ACTIVITY_MODE="${PACKAGE}/com.breakoutplus.ModeSelectActivity"
 ACTIVITY_SETTINGS="${PACKAGE}/com.breakoutplus.SettingsActivity"
 ACTIVITY_SCOREBOARD="${PACKAGE}/com.breakoutplus.ScoreboardActivity"
 ACTIVITY_DAILY="${PACKAGE}/com.breakoutplus.DailyChallengesActivity"
 ACTIVITY_GAME="${PACKAGE}/com.breakoutplus.GameActivity"
+ACTIVITY_LAUNCHER="${ACTIVITY_MAIN}"
+ACTIVITY_SPLASH="${PACKAGE}/com.breakoutplus.SplashActivity"
 
 wait_for_focus() {
   local pkg="$1"
@@ -320,7 +321,8 @@ start_game_if_needed() {
 mkdir -p "${OUTPUT_ROOT}"
 
 adb_cmd shell am force-stop "${PACKAGE}" >/dev/null 2>&1 || true
-adb_cmd shell am start -n "${ACTIVITY_SPLASH}" >/dev/null 2>&1 || true
+adb_cmd shell am start -n "${ACTIVITY_LAUNCHER}" >/dev/null 2>&1 || \
+  adb_cmd shell am start -n "${ACTIVITY_SPLASH}" >/dev/null 2>&1 || true
 sleep "${LAUNCH_WAIT}"
 
 if [[ -n "${SHOTS_RAW}" ]]; then

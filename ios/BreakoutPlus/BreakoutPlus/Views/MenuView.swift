@@ -121,6 +121,7 @@ struct GameModeButton: View {
         case .endless: return Color(hex: "2CEAA3")
         case .god: return Color(hex: "FF4FD8")
         case .rush: return Color(hex: "FF5D5D")
+        case .survival: return Color(hex: "FF8A3D")
         case .invaders: return Color(hex: "9C6ADE") // Purple/violet for invaders
         }
     }

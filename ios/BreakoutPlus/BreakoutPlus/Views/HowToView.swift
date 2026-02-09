@@ -71,7 +71,9 @@ struct HowToView: View {
                             "Shield: saves you from a miss.",
                             "Extra life: +1 life (not in God Mode).",
                             "Wide paddle: easier catches.",
+                            "Shrink: temporarily reduces paddle width.",
                             "Slow motion: reduces game speed.",
+                            "Overdrive: speeds up the action.",
                             "Freeze: near-stop time briefly.",
                             "Fireball: smash unbreakable bricks; passes through.",
                             "Pierce: pass through multiple bricks.",
@@ -86,6 +88,7 @@ struct HowToView: View {
                             "Endless: infinite levels with scaling challenge.",
                             "God Mode: infinite lives for practice.",
                             "Rush: 45 seconds per level, one life.",
+                            "Survival: one life with faster speed ramps.",
                             "Invaders: bounce shots to clear ships while dodging fire."
                         ])
                     }

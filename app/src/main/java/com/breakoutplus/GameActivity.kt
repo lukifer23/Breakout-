@@ -13,6 +13,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowCompat
 import com.breakoutplus.DailyChallengeStore
+import com.breakoutplus.ProgressionManager
 import com.breakoutplus.databinding.ActivityGameBinding
 import com.breakoutplus.game.GameConfig
 import com.breakoutplus.game.GameEventListener
@@ -21,6 +22,7 @@ import com.breakoutplus.game.GameSummary
 import com.breakoutplus.game.PowerUpType
 import com.breakoutplus.game.PowerupStatus
 import com.breakoutplus.UnlockManager
+import androidx.activity.OnBackPressedCallback
 import java.util.concurrent.atomic.AtomicBoolean
 
 class GameActivity : FoldAwareActivity(), GameEventListener {
@@ -32,6 +34,8 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     private var currentPowerupSummary: String = "Powerups: none"
     private var currentCombo: Int = 0
     private var currentPowerupCount: Int = 0
+    private var currentJourneyLabel: String = ""
+    private var currentXpTotal: Int = 0
     private var laserActive: Boolean = false
     private var laserCooldownEndMs: Long = 0L
     private var laserCooldownRunnable: Runnable? = null
@@ -62,6 +66,8 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         val dailyChallenges = DailyChallengeStore.load(this)
         val unlocks = UnlockManager.load(this)
         config = GameConfig(mode, settings, dailyChallenges, unlocks)
+        currentXpTotal = ProgressionManager.loadXp(this)
+        updateJourneyLabel(1)
 
         binding.gameSurface.start(config, this)
         applyFrameRatePreference()
@@ -86,6 +92,18 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         binding.buttonEndPrimary.setOnClickListener { handleEndPrimary() }
         binding.buttonTooltipDismiss.setOnClickListener { hideTooltip() }
         binding.buttonLaser.setOnClickListener { binding.gameSurface.fireLaser() }
+        onBackPressedDispatcher.addCallback(
+            this,
+            object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    if (binding.pauseOverlay.visibility == View.VISIBLE) {
+                        showPause(false)
+                    } else if (binding.endOverlay.visibility != View.VISIBLE) {
+                        showPause(true)
+                    }
+                }
+            }
+        )
 
         // Show first-run tooltip if tips enabled
         if (settings.tipsEnabled) {
@@ -303,6 +321,8 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         runOnUiThread {
             binding.hudLevel.text = getString(R.string.label_level_format, level)
             showLevelBanner(level)
+            updateJourneyLabel(level)
+            updateHudMeta()
         }
     }
 
@@ -491,6 +511,9 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     override fun onLevelComplete(summary: GameSummary) {
         runOnUiThread {
             binding.buttonLaser.visibility = View.GONE
+            ProgressionManager.updateBestLevel(this, summary.level)
+            currentXpTotal = ProgressionManager.addXp(this, ProgressionManager.xpForLevel(summary.level))
+            updateHudMeta()
             endOverlayState = EndOverlayState.LEVEL_COMPLETE
             binding.endTitle.text = getString(R.string.label_level_complete)
             animateEndStats(summary, getString(R.string.label_level_complete))
@@ -663,9 +686,16 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     private fun updateHudMeta() {
         val parts = mutableListOf<String>()
         if (currentModeLabel.isNotBlank()) parts.add(currentModeLabel)
-        if (currentPowerupSummary.isNotBlank()) parts.add(currentPowerupSummary)
+        if (currentJourneyLabel.isNotBlank()) parts.add(currentJourneyLabel)
+        parts.add(getString(R.string.label_xp_format, currentXpTotal))
         if (currentCombo >= 2) parts.add(getString(R.string.label_combo_format, currentCombo))
         binding.hudMeta.text = parts.joinToString(" • ")
+    }
+
+    private fun updateJourneyLabel(level: Int) {
+        val chapter = ProgressionManager.chapterForLevel(level)
+        val stage = ProgressionManager.stageForLevel(level)
+        currentJourneyLabel = getString(R.string.label_journey_format, chapter, stage)
     }
 
     private fun updateShieldVisibility(show: Boolean) {
@@ -772,7 +802,9 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             PowerUpType.LIFE -> "1UP"
             PowerUpType.SHIELD -> "SHD"
             PowerUpType.WIDE_PADDLE -> "WIDE"
+            PowerUpType.SHRINK -> "SHRK"
             PowerUpType.SLOW -> "SLOW"
+            PowerUpType.OVERDRIVE -> "FAST"
             PowerUpType.FIREBALL -> "FIRE"
             PowerUpType.MAGNET -> "MAG"
             PowerUpType.GRAVITY_WELL -> "GRAV"

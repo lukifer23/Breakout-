@@ -7,6 +7,7 @@ import com.breakoutplus.databinding.ActivityScoreboardBinding
 import com.breakoutplus.databinding.ItemScoreRowBinding
 import com.breakoutplus.game.GameMode
 import java.util.Locale
+import com.breakoutplus.ProgressionManager
 
 class ScoreboardActivity : FoldAwareActivity() {
     private lateinit var binding: ActivityScoreboardBinding
@@ -31,8 +32,14 @@ class ScoreboardActivity : FoldAwareActivity() {
             modes.add(ModeEntry(mode.displayName, mode))
         }
 
+        updateProgress()
         renderScores()
         animateEntry()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        updateProgress()
     }
 
     private fun switchMode(direction: Int) {
@@ -93,6 +100,14 @@ class ScoreboardActivity : FoldAwareActivity() {
 
             binding.scoreList.addView(rowView)
         }
+    }
+
+    private fun updateProgress() {
+        val bestLevel = ProgressionManager.loadBestLevel(this)
+        val chapter = ProgressionManager.chapterForLevel(bestLevel)
+        val stage = ProgressionManager.stageForLevel(bestLevel)
+        val xp = ProgressionManager.loadXp(this)
+        binding.scoreProgress.text = getString(R.string.label_progress_format, chapter, stage, xp)
     }
 
     private fun formatDuration(seconds: Int): String {

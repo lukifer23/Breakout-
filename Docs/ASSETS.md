@@ -37,6 +37,7 @@ Use `tools/capture_screenshots.sh` to capture device screenshots via ADB. The sc
 For emulator captures (repeatable device sizes), you can boot an AVD directly:
 ```bash
 export BP_EMULATOR_AVD="Pixel_7"
+export BP_PREFER_EMULATOR=1
 export BP_EMULATOR_HEADLESS=0
 tools/capture_screenshots.sh phone
 ```

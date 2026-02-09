@@ -9,8 +9,8 @@
 import Foundation
 
 enum PowerUpType: String, CaseIterable {
-    case multiBall, laser, guardrail, shield, extraLife, widePaddle
-    case slowMotion, fireball, magnet, gravityWell, ballSplitter, freeze, pierce
+    case multiBall, laser, guardrail, shield, extraLife, widePaddle, shrink
+    case slowMotion, overdrive, fireball, magnet, gravityWell, ballSplitter, freeze, pierce
 
     var displayName: String {
         switch self {
@@ -20,7 +20,9 @@ enum PowerUpType: String, CaseIterable {
         case .shield: return "Shield"
         case .extraLife: return "Extra Life"
         case .widePaddle: return "Wide Paddle"
+        case .shrink: return "Shrink"
         case .slowMotion: return "Slow Motion"
+        case .overdrive: return "Overdrive"
         case .fireball: return "Fireball"
         case .magnet: return "Magnet"
         case .gravityWell: return "Gravity Well"
@@ -38,7 +40,9 @@ enum PowerUpType: String, CaseIterable {
         case .shield: return "Protects paddle from ball damage"
         case .extraLife: return "Grants an additional life"
         case .widePaddle: return "Makes paddle wider for easier catches"
+        case .shrink: return "Shrinks the paddle temporarily"
         case .slowMotion: return "Slows down time for precision play"
+        case .overdrive: return "Speeds up the action"
         case .fireball: return "Ball passes through bricks and destroys unbreakable ones"
         case .magnet: return "Attracts powerups to the paddle"
         case .gravityWell: return "Creates attractive force for nearby powerups"
@@ -56,7 +60,9 @@ enum PowerUpType: String, CaseIterable {
         case .shield: return 12.0
         case .extraLife: return 0  // Instant effect
         case .widePaddle: return 8.0
+        case .shrink: return 8.0
         case .slowMotion: return 6.0
+        case .overdrive: return 6.0
         case .fireball: return 10.0
         case .magnet: return 12.0
         case .gravityWell: return 8.0
@@ -74,7 +80,9 @@ enum PowerUpType: String, CaseIterable {
         case .shield: return (1.0, 0.8, 0.2)         // Gold
         case .extraLife: return (1.0, 0.4, 0.4)      // Red
         case .widePaddle: return (0.5, 0.5, 1.0)     // Blue
+        case .shrink: return (1.0, 0.45, 0.35)       // Warm red
         case .slowMotion: return (0.8, 0.4, 1.0)     // Purple
+        case .overdrive: return (1.0, 0.6, 0.2)      // Orange
         case .fireball: return (1.0, 0.3, 0.0)       // Orange
         case .magnet: return (1.0, 0.6, 1.0)         // Pink
         case .gravityWell: return (0.4, 0.8, 1.0)    // Light blue
@@ -89,11 +97,11 @@ enum PowerUpType: String, CaseIterable {
     }
 
     var affectsPhysics: Bool {
-        return self == .slowMotion || self == .freeze
+        return self == .slowMotion || self == .freeze || self == .overdrive
     }
 
     var affectsPaddle: Bool {
-        return self == .widePaddle || self == .shield
+        return self == .widePaddle || self == .shrink || self == .shield
     }
 
     var affectsBall: Bool {

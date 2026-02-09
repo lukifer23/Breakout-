@@ -105,6 +105,7 @@ class GameEngine {
     private var lastPaddleX: Float? = nil
     private let basePaddleWidth: Float = 20
     private let widePaddleScale: Float = 25.0 / 18.0
+    private let shrinkPaddleScale: Float = 0.7
     private var sensitivity: Float = 0.7
     private var paddleTargetX: Float = 50
 
@@ -331,6 +332,7 @@ class GameEngine {
         case .endless: return 0.017
         case .god: return 0.010
         case .rush: return 0.023
+        case .survival: return 0.028
         case .invaders: return 0.016
         }
     }
@@ -342,6 +344,7 @@ class GameEngine {
         case .endless: return 1.4
         case .god: return 1.25
         case .rush: return 1.5
+        case .survival: return 1.6
         case .invaders: return 1.4
         }
     }
@@ -353,6 +356,7 @@ class GameEngine {
         case .endless: return 0.65
         case .god: return 0.5
         case .rush: return 0.72
+        case .survival: return 0.75
         case .invaders: return 0.6
         }
     }
@@ -364,6 +368,7 @@ class GameEngine {
         case .endless: return 1.7
         case .god: return 1.45
         case .rush: return 1.85
+        case .survival: return 1.9
         case .invaders: return 1.6
         }
     }
@@ -382,6 +387,8 @@ class GameEngine {
             base = 0.9; slope = 0.05
         case .rush:
             base = 1.1; slope = 0.11
+        case .survival:
+            base = 1.15; slope = 0.12
         case .invaders:
             base = 1.05; slope = 0.08
         }
@@ -737,12 +744,16 @@ class GameEngine {
         case .shield:
             shieldCharges = min(2, shieldCharges + 1)
         case .widePaddle:
-            paddle.width = basePaddleWidth * widePaddleScale
+            syncPaddleWidthFromEffects()
+        case .shrink:
+            syncPaddleWidthFromEffects()
         case .slowMotion:
-            speedMultiplier = 0.7
+            syncSpeedMultiplier()
+        case .overdrive:
+            syncSpeedMultiplier()
         case .freeze:
             freezeActive = true
-            speedMultiplier = 0.12
+            syncSpeedMultiplier()
         case .pierce:
             pierceActive = true
             for i in 0..<balls.count { balls[i].isPiercing = true }
@@ -783,16 +794,20 @@ class GameEngine {
     private func deactivatePowerup(_ type: PowerUpType) {
         switch type {
         case .widePaddle:
-            paddle.width = basePaddleWidth
+            syncPaddleWidthFromEffects(removing: type)
+        case .shrink:
+            syncPaddleWidthFromEffects(removing: type)
         case .slowMotion:
-            speedMultiplier = 1.0
+            syncSpeedMultiplier(removing: type)
         case .guardrail:
             guardrailActive = false
         case .shield:
             shieldCharges = 0
         case .freeze:
             freezeActive = false
-            speedMultiplier = 1.0
+            syncSpeedMultiplier(removing: type)
+        case .overdrive:
+            syncSpeedMultiplier(removing: type)
         case .pierce:
             pierceActive = false
             for i in 0..<balls.count { balls[i].isPiercing = false }
@@ -820,7 +835,9 @@ class GameEngine {
             .guardrail: 0.95,
             .shield: 0.9,
             .widePaddle: 0.95,
+            .shrink: 0.45,
             .slowMotion: 0.9,
+            .overdrive: 0.5,
             .magnet: 0.85,
             .extraLife: 0.55,
             .fireball: 0.7,
@@ -844,8 +861,16 @@ class GameEngine {
             weights[.pierce, default: 0] += 0.2
             weights[.gravityWell, default: 0] += 0.15
             weights[.ballSplitter, default: 0] += 0.1
+        case .survival:
+            weights[.shield, default: 0] += 0.2
+            weights[.guardrail, default: 0] += 0.2
+            weights[.extraLife, default: 0] += 0.05
+            weights[.shrink] = (weights[.shrink] ?? 0) * 0.7
+            weights[.overdrive] = (weights[.overdrive] ?? 0) * 0.7
         case .god:
             weights[.extraLife] = 0.15
+            weights[.shrink] = 0.1
+            weights[.overdrive] = 0.1
         case .invaders:
             weights[.shield, default: 0] += 0.3
             weights[.guardrail, default: 0] += 0.2
@@ -935,6 +960,35 @@ class GameEngine {
             return PowerupStatus(type: type, remainingSeconds: Int(remaining), charges: charges)
         }
         delegate?.onPowerupStatusUpdated(status: status)
+    }
+
+    private func syncPaddleWidthFromEffects(removing type: PowerUpType? = nil) {
+        let wideActive = activeEffects.keys.contains(.widePaddle) && type != .widePaddle
+        let shrinkActive = activeEffects.keys.contains(.shrink) && type != .shrink
+        if wideActive && shrinkActive {
+            paddle.width = basePaddleWidth
+        } else if wideActive {
+            paddle.width = basePaddleWidth * widePaddleScale
+        } else if shrinkActive {
+            paddle.width = basePaddleWidth * shrinkPaddleScale
+        } else {
+            paddle.width = basePaddleWidth
+        }
+    }
+
+    private func syncSpeedMultiplier(removing type: PowerUpType? = nil) {
+        let hasFreeze = activeEffects.keys.contains(.freeze) && type != .freeze
+        let hasSlow = activeEffects.keys.contains(.slowMotion) && type != .slowMotion
+        let hasOverdrive = activeEffects.keys.contains(.overdrive) && type != .overdrive
+        if hasFreeze {
+            speedMultiplier = 0.12
+        } else if hasSlow {
+            speedMultiplier = 0.7
+        } else if hasOverdrive {
+            speedMultiplier = 1.2
+        } else {
+            speedMultiplier = 1.0
+        }
     }
 
     func movePaddle(to x: Float) {

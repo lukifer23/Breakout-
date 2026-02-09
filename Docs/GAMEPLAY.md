@@ -4,6 +4,8 @@
 - Aim the launch, clear bricks, keep the ball in play.
 - Progress through themed levels with increasing difficulty.
 - Collect powerups to stack temporary abilities.
+- Every 10 levels form a Journey chapter (e.g., Journey 2-3).
+- Complete levels to earn XP and track long-term progress.
 
 ## Modes
 - Classic: balanced progression.
@@ -11,6 +13,7 @@
 - Endless: infinite levels with scaling difficulty.
 - God Mode: no life loss for practice.
 - Level Rush: 45 seconds per stage, one life.
+- Survival: one life with faster speed ramps.
 - Invaders: moving alien fleets fire back while your shield absorbs hits.
 
 ## Brick Types
@@ -32,7 +35,9 @@
 - Shield: absorbs a miss.
 - Extra life: +1 life (not in God Mode).
 - Wide paddle: easier control.
+- Shrink: temporarily reduces paddle width.
 - Slow: temporary speed reduction.
+- Overdrive: speeds up the action briefly.
 - Fireball: pierces bricks.
 - Magnet: pulls powerups toward the paddle and catches balls on contact.
 - Gravity Well: bends ball paths toward center.
