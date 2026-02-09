@@ -4,6 +4,7 @@
 - JDK 17
 - Android SDK (platform 35 installed)
 - ADB in PATH
+- Ruby 2.7+ and Bundler 2.x (for Fastlane uploads)
 
 ## Build
 ```bash

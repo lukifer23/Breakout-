@@ -167,6 +167,7 @@ Breakout+ is a GPU-accelerated brickbreaker built for foldables, tuned for the S
 
 #### Prerequisites
 - JDK 17, Android SDK (API 35 installed), Python 3, ADB in PATH
+- Ruby 2.7+ and Bundler 2.x (for Fastlane uploads)
 
 #### Build APK
 ```bash
