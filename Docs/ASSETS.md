@@ -76,7 +76,7 @@ tools/capture_screenshots.sh phone
 Capture specific shots and modes (debug builds can auto-spawn powerups):
 ```bash
 export BP_SHOTS="title mode_select gameplay powerup pause scoreboard daily_challenges settings"
-export BP_GAME_MODES="CLASSIC RUSH GOD TIMED INVADERS"
+export BP_GAME_MODES="CLASSIC RUSH VOLLEY GOD TIMED INVADERS"
 export BP_AUTO=1
 export BP_AUTO_PLAY=1
 export BP_PLAY_WAIT=2

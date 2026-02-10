@@ -13,6 +13,7 @@
 - Endless: infinite levels with scaling difficulty.
 - God Mode: no life loss for practice.
 - Level Rush: 55 seconds per stage, one life.
+- Volley: launch a chain of balls each turn; bricks descend after every volley.
 - Survival: one life with faster speed ramps.
 - Invaders: moving alien fleets fire back while your shield absorbs hits.
 

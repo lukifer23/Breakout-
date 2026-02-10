@@ -15,4 +15,11 @@ class GameModeTest {
     fun rushHasPlayableTimerWindow() {
         assertTrue(GameMode.RUSH.timeLimitSeconds >= 50)
     }
+
+    @Test
+    fun volleyModeConfiguredAsTurnBasedSingleLife() {
+        assertTrue(GameMode.VOLLEY.baseLives == 1)
+        assertTrue(GameMode.VOLLEY.timeLimitSeconds == 0)
+        assertTrue(GameMode.VOLLEY.launchSpeed > GameMode.GOD.launchSpeed)
+    }
 }

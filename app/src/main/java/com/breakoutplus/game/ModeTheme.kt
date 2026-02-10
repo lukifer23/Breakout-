@@ -9,6 +9,7 @@ object ModeTheme {
     private val endlessRotation = listOf("Neon", "Sunset", "Cobalt", "Aurora", "Forest", "Lava", "Circuit", "Vapor", "Ember")
     private val godRotation = listOf("Aurora", "Forest", "Cobalt")
     private val rushRotation = listOf("Lava", "Ember", "Sunset")
+    private val volleyRotation = listOf("Circuit", "Cobalt", "Neon", "Vapor")
     private val survivalRotation = listOf("Forest", "Circuit", "Cobalt")
 
     private val fallbackByMode = mapOf(
@@ -17,6 +18,7 @@ object ModeTheme {
         GameMode.ENDLESS to "Neon",
         GameMode.GOD to "Aurora",
         GameMode.RUSH to "Lava",
+        GameMode.VOLLEY to "Circuit",
         GameMode.SURVIVAL to "Forest",
         GameMode.INVADERS to "Invaders"
     )
@@ -33,6 +35,7 @@ object ModeTheme {
             GameMode.ENDLESS -> endlessRotation
             GameMode.GOD -> godRotation
             GameMode.RUSH -> rushRotation
+            GameMode.VOLLEY -> volleyRotation
             GameMode.SURVIVAL -> survivalRotation
             GameMode.INVADERS -> listOf("Invaders")
         }

@@ -74,6 +74,15 @@ object ModeBalance {
             difficultySlope = 0.09f,
             dropChanceModeBoost = 0.045f
         ),
+        GameMode.VOLLEY to Pacing(
+            speedBoostSlope = 0.012f,
+            speedBoostCap = 1.34f,
+            minSpeedFactor = 0.58f,
+            maxSpeedFactor = 1.52f,
+            difficultyBase = 1.0f,
+            difficultySlope = 0.062f,
+            dropChanceModeBoost = -0.08f
+        ),
         GameMode.SURVIVAL to Pacing(
             speedBoostSlope = 0.029f,
             speedBoostCap = 1.64f,

@@ -4,7 +4,7 @@ An Android-first brickbreaker tuned for foldables and modern phones. Breakout+ s
 
 ## Goals
 
-**Product Goal**: Deliver Breakout+ as a premier foldable-first brickbreaker for Samsung Galaxy Z Fold devices and modern Android hardware. Achieve 60+ FPS gameplay through GPU acceleration, provide a complete feature set (10 brick types, 15 powerups, 7 game modes, base + unlockable visual themes), and maintain a full CLI-only development workflow.
+**Product Goal**: Deliver Breakout+ as a premier foldable-first brickbreaker for Samsung Galaxy Z Fold devices and modern Android hardware. Achieve 60+ FPS gameplay through GPU acceleration, provide a complete feature set (10 brick types, 15 powerups, 8 game modes, base + unlockable visual themes), and maintain a full CLI-only development workflow.
 
 **Key Success Criteria**:
 - Smooth 60 FPS gameplay on Z Fold 7 (folded and unfolded)
@@ -21,7 +21,7 @@ Breakout+ elevates the classic brickbreaker genre with modern mobile optimizatio
 - **Platform Focus**: Native Android (release target) with iOS kept separate/in development
 - **GPU Acceleration**: OpenGL ES 2.0 (Android) / Metal (iOS) rendering at 60+ FPS
 - **Advanced Physics**: Accurate collision detection with momentum preservation
-- **Multiple Game Modes**: Classic, Timed Challenge, Endless, God Mode, Level Rush, Survival, and Invaders
+- **Multiple Game Modes**: Classic, Timed Challenge, Endless, God Mode, Level Rush, Volley, Survival, and Invaders
 - **Dynamic Brick System**: 10 brick types with unique behaviors (moving, spawning, phase, boss, invader)
 - **Comprehensive Powerups**: 15 distinct powerups with visual effects and timers
 - **Combo System**: Score multipliers for consecutive brick destruction
@@ -69,7 +69,7 @@ Breakout+ is a GPU-accelerated brickbreaker built for foldables, tuned for the S
 - Vsync-paced rendering using Choreographer-driven frame pacing with surface frame-rate hints.
 - Optimized for modern mobile GPUs with simple geometry (rects/circles) for consistent performance and frame pacing stability.
 - Foldable-optimized layouts (`sw600dp`, `sw720dp`) plus hinge-aware padding using Jetpack WindowManager.
-- Multiple modes: Classic, Timed Challenge, Endless, God Mode, Level Rush (55s per level with aggressive pacing), Survival, Invaders.
+- Multiple modes: Classic, Timed Challenge, Endless, God Mode, Level Rush (55s per level with aggressive pacing), Volley (turn-based chain launch), Survival, Invaders.
 - Powerups: Multi-ball, Laser, Guardrail, Shield, Extra life, Wide paddle, Shrink, Slow motion, Overdrive, Fireball, Magnet, Gravity Well, Ball Splitter, Freeze, Pierce.
 - Brick variations: Standard, Reinforced, Armored, Explosive, Unbreakable, Moving, Spawning, Phase, Boss.
 - Combo system: Score multipliers (x1.5-5x) for consecutive brick breaks within 2 seconds.
@@ -91,6 +91,7 @@ Breakout+ is a GPU-accelerated brickbreaker built for foldables, tuned for the S
 - **Endless**: Infinite procedurally generated levels with scaling difficulty
 - **God Mode**: Practice mode with infinite lives, no penalties
 - **Level Rush**: Beat each stage before the 55-second timer expires with aggressive pacing tuned for fairness
+- **Volley**: Aim once, launch a chain of balls, then survive descending rows
 - **Survival**: One life with faster speed ramps
 
 ### Powerups (15 Total)
@@ -135,6 +136,7 @@ Breakout+ is a GPU-accelerated brickbreaker built for foldables, tuned for the S
 - **Endless**: Infinite levels with increasing speed and density.
 - **God Mode**: No life loss for practice or testing.
 - **Level Rush**: 55 seconds per stage, one life.
+- **Volley**: Turn-based chain launch; rows descend every volley.
 - **Survival**: One life with faster speed ramps.
 - **Invaders**: Moving alien fleets fire back while your shield absorbs hits.
 

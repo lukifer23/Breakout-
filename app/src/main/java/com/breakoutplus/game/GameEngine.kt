@@ -117,6 +117,14 @@ class GameEngine(
     private var aimHasInput = false
     private var isDragging = false
     private val aimSmoothingRate = 18f
+    private var volleyBallCount = 3
+    private var volleyQueuedBalls = 0
+    private var volleyLaunchTimer = 0f
+    private var volleyTurnActive = false
+    private var volleyTurnCount = 0
+    private var volleyAdvanceRows = 0
+    private var volleyLaunchX = worldWidth * 0.5f
+    private var volleyReturnAnchorX = Float.NaN
 
     private var theme: LevelTheme = LevelThemes.DEFAULT
     private var themePool: MutableList<LevelTheme> = LevelThemes.baseThemes().toMutableList()
@@ -156,8 +164,12 @@ class GameEngine(
         listener.onLivesUpdated(lives)
         reportScore()
         listener.onLevelUpdated(levelIndex + 1)
-        listener.onPowerupStatus("Powerups: none")
-        lastPowerupStatus = "Powerups: none"
+        if (config.mode == GameMode.VOLLEY) {
+            updatePowerupStatus()
+        } else {
+            listener.onPowerupStatus("Powerups: none")
+            lastPowerupStatus = "Powerups: none"
+        }
         if (config.mode.timeLimitSeconds > 0) {
             listener.onTimeUpdated(timeRemaining.toInt())
         } else {
@@ -188,6 +200,7 @@ class GameEngine(
             GameMode.INVADERS -> 1.12f
             GameMode.GOD -> 1.08f
             GameMode.RUSH -> 1.06f
+            GameMode.VOLLEY -> 1.1f
             GameMode.SURVIVAL -> 0.96f
             GameMode.TIMED -> 1.04f
             else -> 1.0f
@@ -217,6 +230,9 @@ class GameEngine(
         }
 
         if (state == GameState.RUNNING) {
+            if (config.mode == GameMode.VOLLEY) {
+                updateVolleyLaunchQueue(dt)
+            }
             updateBalls(dt)
             updateBallTrails(dt)
             updateBeams(dt)
@@ -225,6 +241,9 @@ class GameEngine(
             updateParticles(dt)
             updateWaves(dt)
             checkLevelCompletion()
+            if (config.mode == GameMode.VOLLEY && state == GameState.RUNNING) {
+                resolveVolleyTurnIfReady()
+            }
         }
         if (shieldHitPulse > 0f) {
             shieldHitPulse = max(0f, shieldHitPulse - dt * 2.6f)
@@ -1156,6 +1175,10 @@ class GameEngine(
                     layoutRowBoost = 0
                     layoutColBoost = 0
                 }
+                GameMode.VOLLEY -> {
+                    layoutRowBoost = 0
+                    layoutColBoost = 0
+                }
                 GameMode.SURVIVAL -> {
                     layoutRowBoost = baseRowBoost + 1
                     layoutColBoost = baseColBoost + 1
@@ -1174,6 +1197,9 @@ class GameEngine(
         if (config.mode == GameMode.RUSH) {
             globalBrickScale = (globalBrickScale + 0.045f).coerceAtMost(0.915f)
             brickSpacing = (brickSpacing + 0.04f).coerceAtMost(0.44f)
+        } else if (config.mode == GameMode.VOLLEY) {
+            globalBrickScale = (globalBrickScale + 0.02f).coerceAtMost(0.9f)
+            brickAreaBottomRatio = (brickAreaBottomRatio - 0.02f).coerceAtLeast(0.58f)
         } else if (config.mode == GameMode.TIMED) {
             globalBrickScale = (globalBrickScale + 0.015f).coerceAtMost(0.895f)
         } else if (config.mode == GameMode.SURVIVAL) {
@@ -1241,6 +1267,14 @@ class GameEngine(
 
     fun handleTouch(event: MotionEvent, viewWidth: Float, viewHeight: Float) {
         if (state == GameState.PAUSED || state == GameState.GAME_OVER) return
+        if (config.mode == GameMode.VOLLEY && state == GameState.RUNNING) {
+            if (event.actionMasked == MotionEvent.ACTION_POINTER_DOWN &&
+                activeEffects.containsKey(PowerUpType.LASER)
+            ) {
+                shootLaser()
+            }
+            return
+        }
         val x = (event.x / viewWidth * worldWidth)
             .coerceIn(paddle.width / 2f, worldWidth - paddle.width / 2f)
         val y = worldHeight - (event.y / viewHeight * worldHeight) // Invert Y: Android screen (0,0)=top-left, world (0,0)=bottom-left
@@ -1275,8 +1309,11 @@ class GameEngine(
                 if (state == GameState.READY) {
                     // Launch on tap/release for intuitive starts.
                     launchBall()
-                    state = GameState.RUNNING
-                    listener.onTip("Tap with two fingers to fire when laser is active")
+                    if (config.mode == GameMode.VOLLEY) {
+                        listener.onTip("Volley launched. Bricks will descend when all balls return.")
+                    } else {
+                        listener.onTip("Tap with two fingers to fire when laser is active")
+                    }
                 } else if (magnetActive && balls.any { it.stuckToPaddle }) {
                     releaseStuckBalls()
                 }
@@ -1344,6 +1381,13 @@ class GameEngine(
         aimNormalizedTarget = 0f
         aimAngle = aimMaxAngle
         aimDirection = if (levelIndex % 2 == 0) 1f else -1f
+        volleyTurnActive = false
+        volleyQueuedBalls = 0
+        volleyLaunchTimer = 0f
+        volleyTurnCount = 0
+        volleyAdvanceRows = 0
+        volleyLaunchX = paddle.x
+        volleyReturnAnchorX = Float.NaN
         speedMultiplier = 1f
         screenFlash = 0f
         levelClearFlash = 0f
@@ -1360,6 +1404,9 @@ class GameEngine(
         if (config.mode.godMode && !godModeTipShown) {
             listener.onTip("God mode: bottom shield is always active.")
             godModeTipShown = true
+        }
+        if (config.mode == GameMode.VOLLEY) {
+            volleyBallCount = if (first) 3 else (volleyBallCount + 1).coerceAtMost(18)
         }
 
         applyLayoutTuning(currentAspectRatio, preserveRowBoost = false)
@@ -1432,9 +1479,14 @@ class GameEngine(
         paddle.targetX = paddle.x
         syncAimForLaunch()
         listener.onLevelUpdated(levelIndex + 1)
-        listener.onPowerupStatus("Powerups: none")
-        lastPowerupStatus = "Powerups: none"
-        listener.onTip(level.tip)
+        if (config.mode == GameMode.VOLLEY) {
+            updatePowerupStatus()
+            listener.onTip("Volley mode: launch a chain, then survive the descending row.")
+        } else {
+            listener.onPowerupStatus("Powerups: none")
+            lastPowerupStatus = "Powerups: none"
+            listener.onTip(level.tip)
+        }
         logger?.logLevelStart(levelIndex, theme.name)
     }
 
@@ -1448,6 +1500,8 @@ class GameEngine(
         val areaHeight = areaTop - areaBottom
         val baseBrickHeight = (areaHeight - spacing * (rows - 1)) / rows
         val baseBrickWidth = (worldWidth - spacing * (cols + 1)) / cols
+        val rowStep = baseBrickHeight + spacing * 0.5f
+        val volleyOffset = if (config.mode == GameMode.VOLLEY) volleyAdvanceRows * rowStep else 0f
         val sizeScale = (if (config.mode.invaders) invaderScale else 1f) * globalBrickScale
         val brickHeight = baseBrickHeight * sizeScale
         val brickWidth = baseBrickWidth * sizeScale
@@ -1458,7 +1512,7 @@ class GameEngine(
             val cellX = spacing + (spec.col + colOffset) * (baseBrickWidth + spacing)
             val cellY = areaBottom + (rows - 1 - spec.row) * (baseBrickHeight + spacing * 0.5f)
             val x = cellX + (baseBrickWidth - brickWidth) * 0.5f
-            val y = cellY + (baseBrickHeight - brickHeight) * 0.5f
+            val y = cellY + (baseBrickHeight - brickHeight) * 0.5f + volleyOffset
             val gridX = spec.col + colOffset
             val brick = Brick(
                 gridX = gridX,
@@ -1515,7 +1569,7 @@ class GameEngine(
                     val cellX = spacing + (col + colOffset) * (baseBrickWidth + spacing)
                     val cellY = areaBottom + (rows - 1 - rowIndex) * (baseBrickHeight + spacing * 0.5f)
                     val x = cellX + (baseBrickWidth - brickWidth) * 0.5f
-                    val y = cellY + (baseBrickHeight - brickHeight) * 0.5f
+                    val y = cellY + (baseBrickHeight - brickHeight) * 0.5f + volleyOffset
                     val gridX = col + colOffset
                     val gridY = rowIndex
                     bricks.add(
@@ -1565,7 +1619,7 @@ class GameEngine(
                     val cellX = spacing + col * (baseBrickWidth + spacing)
                     val cellY = areaBottom + (rows - 1 - row) * (baseBrickHeight + spacing * 0.5f)
                     val x = cellX + (baseBrickWidth - brickWidth) * 0.5f
-                    val y = cellY + (baseBrickHeight - brickHeight) * 0.5f
+                    val y = cellY + (baseBrickHeight - brickHeight) * 0.5f + volleyOffset
                     bricks.add(
                         Brick(
                             gridX = col,
@@ -1588,7 +1642,7 @@ class GameEngine(
             }
         }
 
-        if (layoutRowBoost > 0 && !config.mode.invaders) {
+        if (layoutRowBoost > 0 && !config.mode.invaders && config.mode != GameMode.VOLLEY) {
             val topPad = baseBrickHeight * 0.15f
             bricks.forEach { brick ->
                 brick.y += topPad
@@ -1613,15 +1667,17 @@ class GameEngine(
         val areaHeight = areaTop - areaBottom
         val baseBrickHeight = (areaHeight - spacing * (rows - 1)) / rows
         val baseBrickWidth = (worldWidth - spacing * (cols + 1)) / cols
+        val rowStep = baseBrickHeight + spacing * 0.5f
+        val volleyOffset = if (config.mode == GameMode.VOLLEY) volleyAdvanceRows * rowStep else 0f
         val sizeScale = (if (config.mode.invaders) invaderScale else 1f) * globalBrickScale
         val brickHeight = baseBrickHeight * sizeScale
         val brickWidth = baseBrickWidth * sizeScale
         bricks.forEach { brick ->
-            if (brick.gridX < 0 || brick.gridY < 0) return@forEach
+            if (brick.gridX < 0 || (brick.gridY < 0 && config.mode != GameMode.VOLLEY)) return@forEach
             val cellX = spacing + brick.gridX * (baseBrickWidth + spacing)
             val cellY = areaBottom + (rows - 1 - brick.gridY) * (baseBrickHeight + spacing * 0.5f)
             val x = cellX + (baseBrickWidth - brickWidth) * 0.5f
-            val y = cellY + (baseBrickHeight - brickHeight) * 0.5f
+            val y = cellY + (baseBrickHeight - brickHeight) * 0.5f + volleyOffset
             brick.x = x
             brick.y = y
             brick.width = brickWidth
@@ -1745,6 +1801,11 @@ class GameEngine(
     }
 
     private fun updatePaddle(dt: Float) {
+        if (config.mode == GameMode.VOLLEY && state == GameState.RUNNING) {
+            paddle.targetX = paddle.x
+            paddleVelocity = 0f
+            return
+        }
         val previousX = paddle.x
         val target = paddle.targetX
         val snapToFinger = isDragging && (state == GameState.READY || balls.any { it.stuckToPaddle })
@@ -1877,12 +1938,17 @@ class GameEngine(
 
     private fun launchBall() {
         syncAimForLaunch()
+        if (config.mode == GameMode.VOLLEY) {
+            launchVolleyTurn()
+            return
+        }
         balls.firstOrNull()?.let { ball ->
             if (ball.vx == 0f && ball.vy == 0f) {
                 launchBallWithAim(ball)
                 aimHasInput = false
                 aimNormalized = 0f
                 aimNormalizedTarget = 0f
+                state = GameState.RUNNING
                 // Start background music when gameplay begins
                 audio.startMusic()
             }
@@ -1915,8 +1981,41 @@ class GameEngine(
         audio.startMusic()
     }
 
-    private fun spawnBall() {
-        val ball = Ball(paddle.x, paddle.y + 5f, 1.0f, 0f, 0f)
+    private fun launchVolleyTurn() {
+        if (volleyTurnActive) return
+        val firstBall = balls.firstOrNull() ?: run {
+            spawnBall()
+            balls.firstOrNull()
+        } ?: return
+        if (firstBall.vx != 0f || firstBall.vy != 0f) return
+
+        volleyTurnActive = true
+        volleyQueuedBalls = (volleyBallCount - 1).coerceAtLeast(0)
+        volleyLaunchTimer = 0f
+        volleyLaunchX = paddle.x
+        volleyReturnAnchorX = Float.NaN
+
+        launchBallWithAim(firstBall)
+        aimHasInput = false
+        aimNormalized = 0f
+        aimNormalizedTarget = 0f
+        state = GameState.RUNNING
+        audio.startMusic()
+    }
+
+    private fun updateVolleyLaunchQueue(dt: Float) {
+        if (!volleyTurnActive || volleyQueuedBalls <= 0) return
+        volleyLaunchTimer -= dt
+        while (volleyQueuedBalls > 0 && volleyLaunchTimer <= 0f) {
+            spawnBall(spawnX = volleyLaunchX.coerceIn(paddle.width / 2f, worldWidth - paddle.width / 2f))
+            balls.lastOrNull()?.let { launchBallWithAim(it) }
+            volleyQueuedBalls -= 1
+            volleyLaunchTimer += 0.065f
+        }
+    }
+
+    private fun spawnBall(spawnX: Float = paddle.x) {
+        val ball = Ball(spawnX, paddle.y + 5f, 1.0f, 0f, 0f)
         if (fireballActive) {
             ball.isFireball = true
             ball.color = PowerUpType.FIREBALL.color
@@ -1970,7 +2069,14 @@ class GameEngine(
                 }
 
                 if (ball.y - ball.radius < 0f) {
-                    if (config.mode.godMode) {
+                    if (config.mode == GameMode.VOLLEY) {
+                        if (!volleyReturnAnchorX.isFinite()) {
+                            volleyReturnAnchorX = ball.x.coerceIn(paddle.width / 2f, worldWidth - paddle.width / 2f)
+                        }
+                        iterator.remove()
+                        removed = true
+                        return@repeat
+                    } else if (config.mode.godMode) {
                         ball.y = ball.radius + 2f
                         ball.vy = abs(ball.vy)
                         audio.play(GameSound.BOUNCE, 0.6f)
@@ -1997,7 +2103,9 @@ class GameEngine(
                     }
                 }
 
-                handlePaddleCollision(ball)
+                if (config.mode != GameMode.VOLLEY) {
+                    handlePaddleCollision(ball)
+                }
                 handleBrickCollision(ball)
             }
 
@@ -2005,6 +2113,91 @@ class GameEngine(
                 clampBallSpeed(ball)
             }
         }
+    }
+
+    private fun resolveVolleyTurnIfReady() {
+        if (!volleyTurnActive) return
+        if (volleyQueuedBalls > 0 || balls.isNotEmpty()) return
+
+        volleyTurnActive = false
+        volleyTurnCount += 1
+        volleyAdvanceRows += 1
+        if (volleyTurnCount % 2 == 0 && volleyBallCount < 18) {
+            volleyBallCount += 1
+            listener.onTip("Volley +1 ball (${volleyBallCount} total).")
+        }
+
+        relayoutBricks()
+        if (hasVolleyBreach()) {
+            logger?.logGameOver(score, levelIndex + 1, "volley_breach")
+            listener.onTip("Breach! Bricks reached the launch line.")
+            triggerGameOver()
+            return
+        }
+
+        spawnVolleyTopRow()
+        relayoutBricks()
+        if (hasVolleyBreach()) {
+            logger?.logGameOver(score, levelIndex + 1, "volley_breach")
+            listener.onTip("Breach! Bricks reached the launch line.")
+            triggerGameOver()
+            return
+        }
+
+        val launchX = if (volleyReturnAnchorX.isFinite()) volleyReturnAnchorX else paddle.x
+        paddle.x = launchX.coerceIn(paddle.width / 2f, worldWidth - paddle.width / 2f)
+        paddle.targetX = paddle.x
+        spawnBall(paddle.x)
+        syncAimForLaunch()
+        state = GameState.READY
+        updatePowerupStatus()
+    }
+
+    private fun spawnVolleyTopRow() {
+        val layout = currentLayout ?: return
+        val cols = (layout.cols + layoutColBoost).coerceAtLeast(6)
+        val spawnRow = volleyAdvanceRows
+        val occupied = HashSet<Int>(cols)
+        bricks.forEach { brick ->
+            if (brick.alive && brick.gridY == spawnRow) {
+                occupied.add(brick.gridX)
+            }
+        }
+
+        val density = (0.68f + levelIndex * 0.015f + volleyTurnCount * 0.006f).coerceIn(0.64f, 0.9f)
+        val hpScale = 1f + levelIndex * 0.07f + volleyTurnCount * 0.03f
+
+        for (col in 0 until cols) {
+            if (occupied.contains(col)) continue
+            if (random.nextFloat() > density) continue
+            val typeRoll = random.nextFloat()
+            val type = when {
+                typeRoll < 0.08f -> BrickType.EXPLOSIVE
+                typeRoll < 0.2f -> BrickType.REINFORCED
+                typeRoll < 0.3f -> BrickType.ARMORED
+                else -> BrickType.NORMAL
+            }
+            val baseHp = baseHitPoints(type)
+            val hp = if (type == BrickType.UNBREAKABLE) baseHp else max(1, (baseHp * hpScale).roundToInt())
+            val brick = Brick(
+                gridX = col,
+                gridY = spawnRow,
+                x = 0f,
+                y = 0f,
+                width = 1f,
+                height = 1f,
+                hitPoints = hp,
+                maxHitPoints = hp,
+                type = type
+            )
+            bricks.add(brick)
+        }
+    }
+
+    private fun hasVolleyBreach(): Boolean {
+        if (config.mode != GameMode.VOLLEY) return false
+        val breachY = paddle.y + paddle.height * 0.5f + 1.8f
+        return bricks.any { it.alive && it.y <= breachY }
     }
 
     private fun updateBallTrails(dt: Float) {
@@ -2670,7 +2863,9 @@ class GameEngine(
                 activeEffects[type] = 10f
             }
             PowerUpType.LIFE -> {
-                if (!config.mode.godMode) {
+                if (config.mode == GameMode.VOLLEY) {
+                    volleyBallCount = (volleyBallCount + 1).coerceAtMost(18)
+                } else if (!config.mode.godMode) {
                     lives += 1
                     listener.onLivesUpdated(lives)
                 }
@@ -2760,6 +2955,19 @@ class GameEngine(
     }
 
     private fun updatePowerupStatus() {
+        if (config.mode == GameMode.VOLLEY) {
+            val status = "Volley balls: $volleyBallCount • Turn ${volleyTurnCount + 1}"
+            if (status != lastPowerupStatus) {
+                lastPowerupStatus = status
+                listener.onPowerupStatus(status)
+            }
+            if (lastPowerupSnapshot.isNotEmpty() || combo != lastComboReported) {
+                lastPowerupSnapshot = emptyList()
+                lastComboReported = combo
+                listener.onPowerupsUpdated(emptyList(), combo)
+            }
+            return
+        }
         val segments = mutableListOf<String>()
         if (activeEffects.isEmpty()) {
             segments.add("Powerups: none")
@@ -2929,6 +3137,7 @@ class GameEngine(
     }
 
     private fun maybeSpawnPowerup(brick: Brick) {
+        if (config.mode == GameMode.VOLLEY) return
         val baseChance = when (brick.type) {
             BrickType.EXPLOSIVE -> 0.30f
             BrickType.REINFORCED, BrickType.ARMORED -> 0.2f

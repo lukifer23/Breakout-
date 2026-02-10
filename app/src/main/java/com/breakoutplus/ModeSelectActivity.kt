@@ -33,6 +33,7 @@ class ModeSelectActivity : FoldAwareActivity() {
             GameMode.ENDLESS,
             GameMode.GOD,
             GameMode.RUSH,
+            GameMode.VOLLEY,
             GameMode.SURVIVAL,
             GameMode.INVADERS
         )
@@ -47,6 +48,7 @@ class ModeSelectActivity : FoldAwareActivity() {
                 GameMode.ENDLESS -> R.color.bp_green
                 GameMode.GOD -> R.color.bp_magenta
                 GameMode.RUSH -> R.color.bp_red
+                GameMode.VOLLEY -> R.color.bp_azure
                 GameMode.SURVIVAL -> R.color.bp_orange
                 GameMode.INVADERS -> R.color.bp_violet
             }

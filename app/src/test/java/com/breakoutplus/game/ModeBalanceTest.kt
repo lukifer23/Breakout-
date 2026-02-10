@@ -22,6 +22,7 @@ class ModeBalanceTest {
         val classic = ModeBalance.pacingFor(GameMode.CLASSIC)
         val timed = ModeBalance.pacingFor(GameMode.TIMED)
         val rush = ModeBalance.pacingFor(GameMode.RUSH)
+        val volley = ModeBalance.pacingFor(GameMode.VOLLEY)
         val survival = ModeBalance.pacingFor(GameMode.SURVIVAL)
         val god = ModeBalance.pacingFor(GameMode.GOD)
 
@@ -31,6 +32,8 @@ class ModeBalanceTest {
         assertTrue("Timed should drop slightly more powerups than classic", timed.dropChanceModeBoost > classic.dropChanceModeBoost)
         assertTrue("Rush should not out-scale survival's speed ceiling", rush.speedBoostCap <= survival.speedBoostCap)
         assertTrue("Rush should keep higher drop support than timed", rush.dropChanceModeBoost >= timed.dropChanceModeBoost)
+        assertTrue("Volley should keep a gentler speed ramp than timed", volley.speedBoostSlope < timed.speedBoostSlope)
+        assertTrue("Volley should cap speed below rush", volley.speedBoostCap < rush.speedBoostCap)
     }
 
     @Test

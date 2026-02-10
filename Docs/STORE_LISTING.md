@@ -14,6 +14,7 @@ Modes:
 - Timed: race the clock for the highest score.
 - Endless: survive as the pace escalates.
 - Rush: higher speeds and aggressive scoring.
+- Volley: turn-based chain launches with descending rows.
 - Survival: one life with faster speed ramps.
 - God Mode: relaxed play with no lives lost.
 - Invaders: moving alien fleets fire back while your shield absorbs hits.

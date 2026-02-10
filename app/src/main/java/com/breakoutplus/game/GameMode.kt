@@ -75,6 +75,18 @@ enum class GameMode(
         invaders = false,
         launchSpeed = 90f
     ),
+    VOLLEY(
+        displayName = "Volley",
+        description = "Aim once, launch a chain of balls, then brace for descending rows.",
+        meta = "Lives 1 • Turn-based • Chain shots",
+        baseLives = 1,
+        timeLimitSeconds = 0,
+        endless = false,
+        godMode = false,
+        rush = false,
+        invaders = false,
+        launchSpeed = 82f
+    ),
     SURVIVAL(
         displayName = "Survival",
         description = "One life. Speed ramps faster as you climb.",

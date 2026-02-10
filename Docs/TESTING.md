@@ -7,7 +7,7 @@
 
 ## Manual Test Checklist
 - Launch app, confirm system splash, open each menu (Main, Modes, Scoreboard, Settings, How-To).
-- Start every mode (Classic, Timed, Endless, God, Rush, Survival, Invaders): break bricks, collect powerups, pause, level complete, game over.
+- Start every mode (Classic, Timed, Endless, God, Rush, Volley, Survival, Invaders): break bricks, collect powerups, pause, level complete, game over.
 - Start Invaders mode: verify enemy shots, shield depletion, hit feedback, and laser usage.
 - Confirm touch controls: drag paddle, launch ball, two-finger laser + FIRE button.
 - Confirm aim accuracy: while dragging, the aim guide should match the actual launch trajectory and first bounce.

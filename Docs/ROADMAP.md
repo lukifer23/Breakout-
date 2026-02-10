@@ -6,7 +6,7 @@
 - **Visual Polish**: Micro-animations, unified UI, foldable optimizations
 - **Advanced Audio**: Screen flash, haptic feedback, explosion waves
 - **UI/UX Improvements**: Expandable How-To, first-run tooltips, level transitions
-- **Complete Feature Set**: All 10 brick types, 15 powerups, 7 game modes, base + unlockable themes
+- **Complete Feature Set**: All 10 brick types, 15 powerups, 8 game modes, base + unlockable themes
 - **Gameplay Balance**: Mode-specific physics and pacing (Rush tuned for clearable 55s stages), balanced powerup frequency, optimized sizing
 - **Audio System**: Individual volume controls (Master/Effects/Music), context-aware brick-specific sounds
 - **Visual Polish**: 6 distinct themes with unique color palettes, 3D bevel effects, animated backgrounds
