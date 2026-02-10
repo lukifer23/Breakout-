@@ -3,6 +3,8 @@ package com.breakoutplus
 import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.View
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.graphics.ColorUtils
@@ -49,6 +51,9 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     @Volatile private var pendingScore: Int? = null
     @Volatile private var pendingLives: Int? = null
     @Volatile private var pendingFps: Int? = null
+    private val uiHandler = Handler(Looper.getMainLooper())
+    private var pendingNextLevelRunnable: Runnable? = null
+    private var levelAdvanceInProgress = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -126,6 +131,9 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     override fun onPause() {
         binding.gameSurface.pauseGame()
         binding.gameSurface.onPause()
+        pendingNextLevelRunnable?.let { uiHandler.removeCallbacks(it) }
+        pendingNextLevelRunnable = null
+        levelAdvanceInProgress = false
         config.dailyChallenges?.let { DailyChallengeStore.save(this, it) }
         laserCooldownRunnable?.let { binding.buttonLaser.removeCallbacks(it) }
         super.onPause()
@@ -206,14 +214,22 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     }
 
     private fun restartGame() {
+        pendingNextLevelRunnable?.let { uiHandler.removeCallbacks(it) }
+        pendingNextLevelRunnable = null
+        levelAdvanceInProgress = false
         hideOverlay(binding.endOverlay)
         hideOverlay(binding.pauseOverlay)
         endOverlayState = EndOverlayState.NONE
+        binding.buttonEndPrimary.isEnabled = true
+        binding.buttonEndSecondary.isEnabled = true
         binding.gameSurface.restartGame()
         playGameFade()
     }
 
     private fun exitToMenu() {
+        pendingNextLevelRunnable?.let { uiHandler.removeCallbacks(it) }
+        pendingNextLevelRunnable = null
+        levelAdvanceInProgress = false
         finish()
         startActivity(Intent(this, MainActivity::class.java))
     }
@@ -221,13 +237,22 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     private fun handleEndPrimary() {
         when (endOverlayState) {
             EndOverlayState.LEVEL_COMPLETE -> {
+                if (levelAdvanceInProgress) return
+                levelAdvanceInProgress = true
+                binding.buttonEndPrimary.isEnabled = false
+                binding.buttonEndSecondary.isEnabled = false
                 hideOverlay(binding.endOverlay)
                 endOverlayState = EndOverlayState.NONE
-                // Add brief celebration delay before next level
-                android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                val advanceRunnable = Runnable {
+                    pendingNextLevelRunnable = null
                     binding.gameSurface.nextLevel()
                     playGameFade()
-                }, 800)
+                    levelAdvanceInProgress = false
+                    binding.buttonEndPrimary.isEnabled = true
+                    binding.buttonEndSecondary.isEnabled = true
+                }
+                pendingNextLevelRunnable = advanceRunnable
+                uiHandler.postDelayed(advanceRunnable, 260L)
             }
             else -> restartGame()
         }
@@ -405,12 +430,12 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
                 binding.hudShieldBar.animate()
                     .scaleX(1.08f)
                     .scaleY(1.08f)
-                    .setDuration(120)
+                    .setDuration(UiMotion.PULSE_IN_DURATION)
                     .withEndAction {
                         binding.hudShieldBar.animate()
                             .scaleX(1f)
                             .scaleY(1f)
-                            .setDuration(180)
+                            .setDuration(UiMotion.PULSE_OUT_DURATION)
                             .start()
                     }
                     .start()
@@ -429,6 +454,9 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
 
     override fun onGameOver(summary: GameSummary) {
         runOnUiThread {
+            levelAdvanceInProgress = false
+            binding.buttonEndPrimary.isEnabled = true
+            binding.buttonEndSecondary.isEnabled = true
             binding.buttonLaser.visibility = View.GONE
             endOverlayState = EndOverlayState.GAME_OVER
             // Check if this is a high score for the mode
@@ -510,6 +538,9 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
 
     override fun onLevelComplete(summary: GameSummary) {
         runOnUiThread {
+            levelAdvanceInProgress = false
+            binding.buttonEndPrimary.isEnabled = true
+            binding.buttonEndSecondary.isEnabled = true
             binding.buttonLaser.visibility = View.GONE
             ProgressionManager.updateBestLevel(this, summary.level)
             currentXpTotal = ProgressionManager.addXp(this, ProgressionManager.xpForLevel(summary.level))
@@ -540,8 +571,8 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             .alpha(1f)
             .scaleX(1f)
             .scaleY(1f)
-            .setDuration(200)
-            .setInterpolator(android.view.animation.DecelerateInterpolator())
+            .setDuration(UiMotion.OVERLAY_IN_DURATION)
+            .setInterpolator(UiMotion.EMPHASIS_OUT)
             .start()
     }
 
@@ -561,16 +592,16 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             .alpha(1f)
             .scaleX(1f)
             .scaleY(1f)
-            .setDuration(180)
-            .setInterpolator(android.view.animation.DecelerateInterpolator())
+            .setDuration(UiMotion.BANNER_IN_DURATION)
+            .setInterpolator(UiMotion.EMPHASIS_OUT)
             .withEndAction {
                 banner.animate()
                     .alpha(0f)
                     .scaleX(1.04f)
                     .scaleY(1.04f)
-                    .setStartDelay(800)
-                    .setDuration(260)
-                    .setInterpolator(android.view.animation.DecelerateInterpolator())
+                    .setStartDelay(UiMotion.BANNER_HOLD_DURATION)
+                    .setDuration(UiMotion.BANNER_OUT_DURATION)
+                    .setInterpolator(UiMotion.EMPHASIS_OUT)
                     .withEndAction {
                         banner.visibility = View.GONE
                         banner.alpha = 1f
@@ -590,14 +621,14 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         meta.animate()
             .scaleX(1.05f)
             .scaleY(1.05f)
-            .setDuration(140)
-            .setInterpolator(android.view.animation.DecelerateInterpolator())
+            .setDuration(UiMotion.PULSE_IN_DURATION)
+            .setInterpolator(UiMotion.EMPHASIS_OUT)
             .withEndAction {
                 meta.animate()
                     .scaleX(1f)
                     .scaleY(1f)
-                    .setDuration(160)
-                    .setInterpolator(android.view.animation.DecelerateInterpolator())
+                    .setDuration(UiMotion.PULSE_OUT_DURATION)
+                    .setInterpolator(UiMotion.EMPHASIS_OUT)
                     .start()
             }
             .start()
@@ -609,8 +640,8 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             .alpha(0f)
             .scaleX(0.98f)
             .scaleY(0.98f)
-            .setDuration(180)
-            .setInterpolator(android.view.animation.DecelerateInterpolator())
+            .setDuration(UiMotion.OVERLAY_OUT_DURATION)
+            .setInterpolator(UiMotion.EMPHASIS_OUT)
             .withEndAction {
                 view.visibility = View.GONE
                 view.alpha = 1f
@@ -721,7 +752,8 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         overlay.visibility = View.VISIBLE
         overlay.animate()
             .alpha(0f)
-            .setDuration(220)
+            .setDuration(UiMotion.OVERLAY_IN_DURATION)
+            .setInterpolator(UiMotion.EMPHASIS_OUT)
             .withEndAction { overlay.visibility = View.GONE }
             .start()
     }

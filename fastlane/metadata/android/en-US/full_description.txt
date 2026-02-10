@@ -5,12 +5,13 @@ Modes:
 - Timed: race the clock for the highest score.
 - Endless: survive as the pace escalates.
 - Rush: higher speeds and aggressive scoring.
+- Survival: one life with faster speed ramps.
 - God Mode: relaxed play with no lives lost.
 - Invaders: moving alien fleets fire back while your shield absorbs hits.
 
 Powerups:
-- Multi-Ball, Laser, Guardrail, Shield, Wide Paddle
-- Slow Motion, Fireball, Magnet, Gravity Well
+- Multi-Ball, Laser, Guardrail, Shield, Wide Paddle, Shrink
+- Slow Motion, Overdrive, Fireball, Magnet, Gravity Well
 - Ball Splitter, Freeze, Pierce, Extra Life
 
 Brick types:

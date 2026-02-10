@@ -214,12 +214,25 @@
         android:id="@+id/gameFadeOverlay"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:background="@color/bp_navy"
+        android:background="@drawable/game_fade_overlay"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="@id/gameSurface"
         app:layout_constraintEnd_toEndOf="@id/gameSurface"
         app:layout_constraintStart_toStartOf="@id/gameSurface"
         app:layout_constraintTop_toTopOf="@id/gameSurface" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/buttonLaser"
+        style="@style/Widget.BreakoutPlus.LaserButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        android:layout_marginEnd="20dp"
+        android:contentDescription="@string/label_fire_laser"
+        android:text="@string/label_fire"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/hudContainer" />
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/hudOverlay"
@@ -282,7 +295,7 @@
             android:id="@+id/endOverlay"
             android:layout_width="0dp"
             android:layout_height="0dp"
-            android:background="#CC0B1220"
+            android:background="@drawable/pause_overlay"
             android:gravity="center"
             android:orientation="vertical"
             android:visibility="gone"
@@ -327,24 +340,11 @@
                 android:backgroundTint="@color/bp_gray" />
         </LinearLayout>
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/buttonLaser"
-            style="@style/Widget.BreakoutPlus.LaserButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="20dp"
-            android:layout_marginBottom="24dp"
-            android:contentDescription="@string/label_fire_laser"
-            android:text="@string/label_fire"
-            android:visibility="gone"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent" />
-
         <LinearLayout
             android:id="@+id/tooltipOverlay"
             android:layout_width="0dp"
             android:layout_height="0dp"
-            android:background="#CC000000"
+            android:background="@drawable/pause_overlay"
             android:gravity="center"
             android:orientation="vertical"
             android:visibility="gone"

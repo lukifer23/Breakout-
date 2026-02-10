@@ -2,9 +2,9 @@
     <item>
         <shape android:shape="rectangle">
             <gradient
-                android:startColor="#CC0B1220"
-                android:centerColor="#BF0B1220"
-                android:endColor="#E0000000"
+                android:startColor="@color/bp_overlay_soft"
+                android:centerColor="@color/bp_overlay_strong"
+                android:endColor="@color/bp_overlay_dim"
                 android:angle="270" />
         </shape>
     </item>

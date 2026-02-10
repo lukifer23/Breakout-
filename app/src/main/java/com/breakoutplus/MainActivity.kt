@@ -2,7 +2,6 @@ package com.breakoutplus
 
 import android.content.Intent
 import android.os.Bundle
-import android.view.animation.AccelerateDecelerateInterpolator
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.children
 import com.breakoutplus.databinding.ActivityMainBinding
@@ -45,16 +44,16 @@ class MainActivity : FoldAwareActivity() {
         binding.titleText.animate()
             .alpha(1f)
             .translationY(0f)
-            .setDuration(500)
-            .setInterpolator(AccelerateDecelerateInterpolator())
+            .setDuration(UiMotion.TITLE_DURATION)
+            .setInterpolator(UiMotion.EMPHASIS_IN_OUT)
             .start()
 
         binding.titleSubtitle.animate()
             .alpha(1f)
             .translationY(0f)
-            .setStartDelay(120)
-            .setDuration(500)
-            .setInterpolator(AccelerateDecelerateInterpolator())
+            .setStartDelay(UiMotion.stagger(1, base = 90L, step = 90L))
+            .setDuration(UiMotion.SUBTITLE_DURATION)
+            .setInterpolator(UiMotion.EMPHASIS_IN_OUT)
             .start()
 
         binding.mainButtonColumn.children.forEachIndexed { index, view ->
@@ -63,9 +62,9 @@ class MainActivity : FoldAwareActivity() {
             view.animate()
                 .alpha(1f)
                 .translationY(0f)
-                .setStartDelay(200L + index * 90L)
-                .setDuration(400)
-                .setInterpolator(AccelerateDecelerateInterpolator())
+                .setStartDelay(UiMotion.stagger(index, base = 180L, step = 78L))
+                .setDuration(UiMotion.ENTRY_DURATION)
+                .setInterpolator(UiMotion.EMPHASIS_OUT)
                 .start()
         }
     }

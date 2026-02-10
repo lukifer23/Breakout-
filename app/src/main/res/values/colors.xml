@@ -1,14 +1,34 @@
 <resources>
-    <color name="bp_navy">#0B1220</color>
-    <color name="bp_ink">#111B2E</color>
-    <color name="bp_cyan">#31E1F7</color>
-    <color name="bp_magenta">#FF4FD8</color>
-    <color name="bp_gold">#FFC857</color>
-    <color name="bp_green">#2CEAA3</color>
-    <color name="bp_red">#FF5D5D</color>
-    <color name="bp_orange">#FF8A3D</color>
-    <color name="bp_violet">#8A6CFF</color>
-    <color name="bp_white">#F7F8FF</color>
-    <color name="bp_gray">#9AA4B2</color>
-    <color name="bp_shadow">#2B3347</color>
+    <color name="bp_navy">#070E1C</color>
+    <color name="bp_ink">#111A2C</color>
+    <color name="bp_surface">#1A263D</color>
+    <color name="bp_surface_raised">#24344F</color>
+    <color name="bp_surface_tint">#2D4061</color>
+    <color name="bp_line">#415372</color>
+
+    <color name="bp_cyan">#58E2FF</color>
+    <color name="bp_magenta">#FF6EA3</color>
+    <color name="bp_gold">#F6C45A</color>
+    <color name="bp_green">#48D894</color>
+    <color name="bp_red">#FF6D61</color>
+    <color name="bp_orange">#FFA453</color>
+    <color name="bp_violet">#8B8EFF</color>
+
+    <color name="bp_white">#F4F7FF</color>
+    <color name="bp_gray">#A6B3C9</color>
+    <color name="bp_shadow">#060A14</color>
+
+    <color name="bp_glow_top">#663D5E8A</color>
+    <color name="bp_scrim_mid">#221D2B44</color>
+    <color name="bp_scrim_bottom">#4D111A2B</color>
+
+    <color name="bp_banner_top">#324F7E</color>
+    <color name="bp_banner_bottom">#263D60</color>
+    <color name="bp_banner_stroke">#8058E2FF</color>
+
+    <color name="bp_overlay_soft">#A6060A14</color>
+    <color name="bp_overlay_strong">#D6060A14</color>
+    <color name="bp_overlay_dim">#CC04070F</color>
+
+    <color name="bp_transparent">#00000000</color>
 </resources>

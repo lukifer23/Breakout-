@@ -5,6 +5,8 @@ import android.opengl.GLES20
 import android.opengl.GLSurfaceView
 import android.view.MotionEvent
 import com.breakoutplus.SettingsManager
+import kotlin.math.cos
+import kotlin.math.sin
 
 class GameRenderer(
     private val context: Context,
@@ -18,20 +20,24 @@ class GameRenderer(
     private var engine = GameEngine(config, listener, audioManager, logger, config.dailyChallenges, this)
     private var lastTimeNs: Long = 0L
     private var paused = false
-    private val random = java.util.Random()
     private var worldWidth = 100f
     private var worldHeight = 160f
 
     // Enhanced visual effects
     private var screenShake = 0f
+    private var screenShakeDuration = 0f
     private var shakeIntensity = 0f
+    private var shakePhase = 0f
     private var comboFlash = 0f
     private var levelClearFlash = 0f
     private var musicWasPlaying = false
+    private var fixedStepSeconds = 1f / 120f
+    private var simulationAccumulator = 0f
 
     fun triggerScreenShake(intensity: Float = 3f, duration: Float = 0.2f) {
         shakeIntensity = intensity
-        screenShake = duration
+        screenShakeDuration = duration.coerceAtLeast(0.01f)
+        screenShake = screenShakeDuration
     }
 
     fun triggerComboFlash() {
@@ -40,6 +46,11 @@ class GameRenderer(
 
     fun triggerLevelClearFlash() {
         levelClearFlash = 1.0f
+    }
+
+    fun setTargetFrameRate(fps: Float) {
+        val normalized = if (fps.isFinite() && fps > 0f) fps.coerceIn(45f, 240f) else 120f
+        fixedStepSeconds = 1f / normalized
     }
 
     override fun onSurfaceCreated(unused: javax.microedition.khronos.opengles.GL10?, config: javax.microedition.khronos.egl.EGLConfig?) {
@@ -66,12 +77,13 @@ class GameRenderer(
         }
         var delta = (now - lastTimeNs) / 1_000_000_000f
         lastTimeNs = now
-        if (delta > 0.05f) delta = 0.05f
+        if (delta > 0.1f) delta = 0.1f
 
         // Update visual effects
         if (screenShake > 0f) {
             screenShake -= delta
             if (screenShake < 0f) screenShake = 0f
+            shakePhase += delta * 48f
         }
         if (comboFlash > 0f) {
             comboFlash -= delta * 2f
@@ -83,14 +95,32 @@ class GameRenderer(
         }
 
         if (!paused) {
-            engine.update(delta)
+            val step = fixedStepSeconds.coerceIn(1f / 240f, 1f / 45f)
+            simulationAccumulator = (simulationAccumulator + delta).coerceAtMost(step * 6f)
+            var updates = 0
+            while (simulationAccumulator >= step && updates < 6) {
+                engine.update(step)
+                simulationAccumulator -= step
+                updates += 1
+            }
+            if (updates == 0 && delta > 0f) {
+                // Keep controls responsive when frame pacing temporarily outruns simulation step.
+                engine.update(delta.coerceAtMost(step))
+                simulationAccumulator = 0f
+            }
         }
 
         // Apply screen shake to renderer
         if (screenShake > 0f) {
-            val densityScale = context.resources.displayMetrics.density.coerceAtMost(1.5f) // Scale shake for larger screens but cap it
-            val shakeX = (random.nextFloat() - 0.5f) * shakeIntensity * densityScale * (screenShake / 0.2f)
-            val shakeY = (random.nextFloat() - 0.5f) * shakeIntensity * densityScale * (screenShake / 0.2f)
+            val densityScale = context.resources.displayMetrics.density.coerceAtMost(1.5f)
+            val decay = if (screenShakeDuration > 0f) {
+                (screenShake / screenShakeDuration).coerceIn(0f, 1f)
+            } else {
+                0f
+            }
+            val amplitude = shakeIntensity * densityScale * decay
+            val shakeX = sin(shakePhase) * amplitude
+            val shakeY = cos(shakePhase * 1.37f) * amplitude * 0.82f
             renderer2D.setOffset(shakeX, shakeY)
         } else {
             renderer2D.setOffset(0f, 0f)
@@ -145,11 +175,13 @@ class GameRenderer(
             audioManager.startMusic()
         }
         lastTimeNs = 0L
+        simulationAccumulator = 0f
     }
 
     fun restart() {
         engine = GameEngine(config, listener, audioManager, logger, config.dailyChallenges, this)
         lastTimeNs = 0L
+        simulationAccumulator = 0f
     }
 
     fun nextLevel() {
@@ -160,6 +192,7 @@ class GameRenderer(
         config = newConfig
         audioManager.updateSettings(newConfig.settings)
         engine = GameEngine(config, listener, audioManager, logger, config.dailyChallenges, this)
+        simulationAccumulator = 0f
     }
 
     fun updateSettings(settings: SettingsManager.Settings) {

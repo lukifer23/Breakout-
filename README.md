@@ -1,14 +1,14 @@
 # Breakout+
 
-A premium brickbreaker game designed specifically for foldable devices like the Samsung Galaxy Z Fold 7, with a native iOS port for cross-platform gaming. Features advanced physics, multiple game modes, dynamic brick behaviors, and comprehensive powerup systems with GPU-accelerated rendering at 60+ FPS.
+An Android-first brickbreaker tuned for foldables and modern phones. Breakout+ ships with advanced physics, multiple game modes, dynamic brick behaviors, and a deep powerup system with GPU-accelerated rendering at 60+ FPS.
 
 ## Goals
 
-**Product Goal**: Deliver Breakout+ as the premier foldable-first brickbreaker for Samsung Galaxy Z Fold 7 and modern Android devices, with a polished cross-platform iOS port. Achieve 60+ FPS gameplay through GPU acceleration, provide a complete feature set (10 brick types, 13 powerups, 6 game modes, 6 visual themes), and maintain full CLI-only development workflow with no external dependencies or placeholders.
+**Product Goal**: Deliver Breakout+ as a premier foldable-first brickbreaker for Samsung Galaxy Z Fold devices and modern Android hardware. Achieve 60+ FPS gameplay through GPU acceleration, provide a complete feature set (10 brick types, 15 powerups, 7 game modes, base + unlockable visual themes), and maintain a full CLI-only development workflow.
 
 **Key Success Criteria**:
 - Smooth 60 FPS gameplay on Z Fold 7 (folded and unfolded)
-- Complete feature parity between Android and iOS implementations
+- Reliable Android release quality with no gameplay regressions
 - Production-ready code with comprehensive documentation
 - CLI-only build and deployment capability
 - No stubs, mocks, or placeholder assets
@@ -18,7 +18,7 @@ A premium brickbreaker game designed specifically for foldable devices like the 
 Breakout+ elevates the classic brickbreaker genre with modern mobile optimizations and innovative gameplay mechanics. Built from the ground up for foldable devices, it leverages the unique form factor for enhanced gameplay experiences across folded and unfolded states.
 
 ### Key Features
-- **Cross-Platform**: Native Android (production-ready) and iOS (in development) implementations
+- **Platform Focus**: Native Android (release target) with iOS kept separate/in development
 - **GPU Acceleration**: OpenGL ES 2.0 (Android) / Metal (iOS) rendering at 60+ FPS
 - **Advanced Physics**: Accurate collision detection with momentum preservation
 - **Multiple Game Modes**: Classic, Timed Challenge, Endless, God Mode, Level Rush, Survival, and Invaders
@@ -26,7 +26,7 @@ Breakout+ elevates the classic brickbreaker genre with modern mobile optimizatio
 - **Comprehensive Powerups**: 15 distinct powerups with visual effects and timers
 - **Combo System**: Score multipliers for consecutive brick destruction
 - **Journey Progression**: Chaptered levels (every 10 stages) with XP tracking
-- **6 Visual Themes**: Unique color palettes and animated backgrounds
+- **Theme Variety**: 6 base themes plus unlockable bonus themes and mode-specific variants
 - **Audio System**: Procedural sound generation with individual volume controls
 - **Data Logging**: Built-in analytics for debugging
 - **Per-Mode Leaderboards**: Scoreboard supports each mode plus an all-modes view
@@ -42,7 +42,7 @@ Key principles:
 ## Platforms
 
 ### Android: Samsung Galaxy Z Fold 7
-**Status**: Production-ready (v1.0.7)
+**Status**: Active Android release development
 
 #### Setup Instructions
 1. Enable USB debugging in Developer Options

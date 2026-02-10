@@ -31,7 +31,7 @@ class HowToActivity : FoldAwareActivity() {
     private fun setupExpandableSection(header: View, content: View) {
         header.setOnClickListener {
             if (content.visibility == View.VISIBLE) {
-                content.animate().alpha(0f).translationY(-6f).setDuration(180).withEndAction {
+                content.animate().alpha(0f).translationY(-6f).setDuration(UiMotion.OVERLAY_OUT_DURATION).setInterpolator(UiMotion.EMPHASIS_OUT).withEndAction {
                     content.visibility = View.GONE
                     content.alpha = 1f
                     content.translationY = 0f
@@ -41,7 +41,7 @@ class HowToActivity : FoldAwareActivity() {
                 content.visibility = View.VISIBLE
                 content.alpha = 0f
                 content.translationY = -6f
-                content.animate().alpha(1f).translationY(0f).setDuration(220).start()
+                content.animate().alpha(1f).translationY(0f).setDuration(UiMotion.OVERLAY_IN_DURATION).setInterpolator(UiMotion.EMPHASIS_OUT).start()
                 (header as android.widget.TextView).text = (header.text as String).replace("▶", "▼")
             }
         }
@@ -55,9 +55,9 @@ class HowToActivity : FoldAwareActivity() {
             view.animate()
                 .alpha(1f)
                 .translationY(0f)
-                .setStartDelay(80L * index)
-                .setDuration(350L)
-                .setInterpolator(android.view.animation.DecelerateInterpolator())
+                .setStartDelay(UiMotion.stagger(index, step = 80L))
+                .setDuration(UiMotion.ENTRY_DURATION)
+                .setInterpolator(UiMotion.EMPHASIS_OUT)
                 .start()
         }
 
@@ -74,9 +74,9 @@ class HowToActivity : FoldAwareActivity() {
             child.animate()
                 .alpha(1f)
                 .translationY(0f)
-                .setStartDelay(60L * i)
-                .setDuration(260L)
-                .setInterpolator(android.view.animation.DecelerateInterpolator())
+                .setStartDelay(UiMotion.stagger(i, step = 54L))
+                .setDuration(UiMotion.LIST_ITEM_DURATION)
+                .setInterpolator(UiMotion.EMPHASIS_OUT)
                 .start()
         }
     }

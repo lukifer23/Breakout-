@@ -5,9 +5,9 @@
     android:layout_marginBottom="16dp"
     app:cardCornerRadius="20dp"
     app:cardElevation="6dp"
-    app:strokeColor="#344869"
+    app:strokeColor="@color/bp_line"
     app:strokeWidth="1dp"
-    app:cardBackgroundColor="#1B2A45">
+    app:cardBackgroundColor="@color/bp_surface">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -49,7 +49,7 @@
             android:layout_marginTop="8dp"
             android:fontFamily="sans-serif-medium"
             android:text="@string/label_mode_card_meta_default"
-            android:textColor="#B5C0D4"
+            android:textColor="@color/bp_gray"
             android:textSize="@dimen/bp_caption_text_size" />
 
         <com.google.android.material.button.MaterialButton

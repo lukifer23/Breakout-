@@ -129,9 +129,9 @@ class SettingsActivity : FoldAwareActivity() {
             view.animate()
                 .alpha(1f)
                 .translationY(0f)
-                .setStartDelay(80L * index)
-                .setDuration(350L)
-                .setInterpolator(android.view.animation.DecelerateInterpolator())
+                .setStartDelay(UiMotion.stagger(index, step = 80L))
+                .setDuration(UiMotion.ENTRY_DURATION)
+                .setInterpolator(UiMotion.EMPHASIS_OUT)
                 .start()
         }
 
@@ -148,9 +148,9 @@ class SettingsActivity : FoldAwareActivity() {
             child.animate()
                 .alpha(1f)
                 .translationY(0f)
-                .setStartDelay(60L * i)
-                .setDuration(260L)
-                .setInterpolator(android.view.animation.DecelerateInterpolator())
+                .setStartDelay(UiMotion.stagger(i, step = 54L))
+                .setDuration(UiMotion.LIST_ITEM_DURATION)
+                .setInterpolator(UiMotion.EMPHASIS_OUT)
                 .start()
         }
     }

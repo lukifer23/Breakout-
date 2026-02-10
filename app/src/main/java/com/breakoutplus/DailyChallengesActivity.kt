@@ -54,9 +54,9 @@ class DailyChallengesActivity : FoldAwareActivity() {
             view.animate()
                 .alpha(1f)
                 .translationY(0f)
-                .setStartDelay(80L * index)
-                .setDuration(350L)
-                .setInterpolator(android.view.animation.DecelerateInterpolator())
+                .setStartDelay(UiMotion.stagger(index, step = 80L))
+                .setDuration(UiMotion.ENTRY_DURATION)
+                .setInterpolator(UiMotion.EMPHASIS_OUT)
                 .start()
         }
     }

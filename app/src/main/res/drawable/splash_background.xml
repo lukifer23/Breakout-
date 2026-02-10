@@ -1,22 +1,19 @@
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item>
-        <shape android:shape="rectangle">
-            <gradient
-                android:angle="135"
-                android:startColor="@color/bp_navy"
-                android:centerColor="@color/bp_ink"
-                android:endColor="@color/bp_shadow" />
-        </shape>
-    </item>
+    <item android:drawable="@drawable/menu_background" />
+
     <item android:gravity="center">
         <inset
-            android:insetLeft="72dp"
-            android:insetRight="72dp"
-            android:insetTop="72dp"
-            android:insetBottom="72dp">
+            android:insetLeft="68dp"
+            android:insetRight="68dp"
+            android:insetTop="68dp"
+            android:insetBottom="68dp">
             <shape android:shape="rectangle">
-                <corners android:radius="28dp" />
-                <solid android:color="#1C2741" />
+                <corners android:radius="30dp" />
+                <gradient
+                    android:angle="130"
+                    android:startColor="@color/bp_surface_raised"
+                    android:endColor="@color/bp_surface" />
+                <stroke android:width="1dp" android:color="@color/bp_line" />
             </shape>
         </inset>
     </item>

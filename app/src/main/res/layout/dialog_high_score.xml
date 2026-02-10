@@ -34,7 +34,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
         app:boxBackgroundMode="filled"
-        app:boxBackgroundColor="#22314D"
+        app:boxBackgroundColor="@color/bp_surface_raised"
         app:boxCornerRadiusTopStart="12dp"
         app:boxCornerRadiusTopEnd="12dp"
         app:boxCornerRadiusBottomStart="12dp"

@@ -162,7 +162,7 @@ object LevelFactory {
         )
     )
 
-    private val patternFillStartLevel = 2
+    private val patternFillStartLevel = 0
 
     fun buildLevel(
         index: Int,
@@ -250,16 +250,21 @@ object LevelFactory {
         val existing = layout.bricks.associateBy { it.col to it.row }
         val random = kotlin.random.Random(seed)
         val bricks = layout.bricks.toMutableList()
+        val intensity = ((difficulty - 1f) / 2f).coerceIn(0f, 1f)
         for (row in 0 until layout.rows) {
             for (col in 0 until layout.cols) {
                 if (existing.containsKey(col to row)) continue
                 val rowRatio = if (layout.rows > 1) row.toFloat() / (layout.rows - 1).toFloat() else 0f
-                val density = 0.85f - rowRatio * 0.12f
+                val density = (0.88f + intensity * 0.08f - rowRatio * 0.08f).coerceIn(0.78f, 0.97f)
                 if (random.nextFloat() > density) continue
                 val typeRoll = random.nextFloat()
                 val type = when {
+                    typeRoll < 0.025f + intensity * 0.035f -> BrickType.EXPLOSIVE
+                    typeRoll < 0.045f + intensity * 0.04f -> BrickType.MOVING
+                    typeRoll < 0.065f + intensity * 0.035f -> BrickType.SPAWNING
+                    typeRoll > 0.985f - intensity * 0.02f -> BrickType.PHASE
                     typeRoll > 0.92f -> BrickType.REINFORCED
-                    typeRoll < 0.05f -> BrickType.ARMORED
+                    typeRoll < 0.13f -> BrickType.ARMORED
                     else -> BrickType.NORMAL
                 }
                 val baseHp = when (type) {
@@ -292,9 +297,9 @@ object LevelFactory {
                 val seed = index * 41 + row * 13 + col * 7
                 val roll = kotlin.random.Random(seed).nextFloat()
                 val density = when (formation) {
-                    1 -> 0.88f - row * 0.02f
-                    2 -> 0.86f - row * 0.018f
-                    else -> 0.9f - row * 0.02f
+                    1 -> 0.92f - row * 0.018f
+                    2 -> 0.9f - row * 0.016f
+                    else -> 0.94f - row * 0.018f
                 }
                 val staggerGap = formation == 1 && row % 2 == 1 && col % 3 == 0 && roll < 0.12f
                 val windowGap = formation == 0 && row % 3 == 1 && col % 4 == 1 && roll < 0.18f
@@ -332,11 +337,14 @@ object LevelFactory {
 
         val bricks = mutableListOf<BrickSpec>()
         val density = 0.78f + (index * 0.01f).coerceAtMost(0.22f) // Increase density over time
+        val occupied = mutableSetOf<Pair<Int, Int>>()
 
         // Create random but structured brick layout
         for (row in 0 until rows) {
             for (col in 0 until cols) {
-                if (kotlin.random.Random(index * 31 + row * 17 + col).nextFloat() < density) {
+                val rowRatio = if (rows > 1) row.toFloat() / (rows - 1).toFloat() else 0f
+                val rowDensity = (density - rowRatio * 0.06f + if (row <= 1) 0.03f else 0f).coerceIn(0.72f, 0.98f)
+                if (kotlin.random.Random(index * 31 + row * 17 + col).nextFloat() < rowDensity) {
                     val type = when {
                         row < 2 && index > 8 && kotlin.random.Random(index * 5 + row * 7 + col).nextFloat() < 0.04f -> BrickType.BOSS
                         row < 3 && index > 5 && kotlin.random.Random(index * 9 + row * 13 + col).nextFloat() < 0.06f -> BrickType.PHASE
@@ -362,6 +370,26 @@ object LevelFactory {
                     }
                     val hitPoints = if (type == BrickType.UNBREAKABLE) baseHp else (baseHp * difficulty).toInt().coerceAtLeast(1)
                     bricks.add(BrickSpec(col, row, type, hitPoints))
+                    occupied.add(col to row)
+                }
+            }
+        }
+
+        val minimumBricks = (rows * cols * 0.45f).roundToInt()
+        if (bricks.size < minimumBricks) {
+            for (row in 0 until rows) {
+                for (col in 0 until cols) {
+                    if (bricks.size >= minimumBricks) break
+                    val cell = col to row
+                    if (occupied.contains(cell)) continue
+                    val rowRatio = if (rows > 1) row.toFloat() / (rows - 1).toFloat() else 0f
+                    val fillChance = (0.7f - rowRatio * 0.25f).coerceIn(0.3f, 0.8f)
+                    if (kotlin.random.Random(index * 59 + row * 23 + col * 17).nextFloat() > fillChance) continue
+                    val type = if ((row + col + index) % 7 == 0) BrickType.REINFORCED else BrickType.NORMAL
+                    val baseHp = if (type == BrickType.REINFORCED) 2 else 1
+                    val hp = (baseHp * difficulty).roundToInt().coerceAtLeast(1)
+                    bricks.add(BrickSpec(col, row, type, hp))
+                    occupied.add(cell)
                 }
             }
         }

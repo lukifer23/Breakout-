@@ -36,6 +36,8 @@ class LevelFactoryTest {
         assertTrue(l.rows in 6..12)
         assertTrue(l.cols in 10..15)
         assertTrue("Procedural levels should spawn some bricks", l.bricks.isNotEmpty())
+        val occupancy = l.bricks.size.toFloat() / (l.rows * l.cols).toFloat()
+        assertTrue("Procedural levels should keep dense gameplay lanes", occupancy >= 0.45f)
 
         l.bricks.forEach { b ->
             assertTrue(b.row in 0 until l.rows)
@@ -43,5 +45,11 @@ class LevelFactoryTest {
             assertTrue(b.hitPoints >= 1)
         }
     }
-}
 
+    @Test
+    fun buildLevel_patternFillKeepsDenseBoards() {
+        val l = LevelFactory.buildLevel(index = 0, difficulty = 1.2f, endless = false)
+        val occupancy = l.bricks.size.toFloat() / (l.rows * l.cols).toFloat()
+        assertTrue("Pattern levels should avoid sparse boards", occupancy >= 0.72f)
+    }
+}

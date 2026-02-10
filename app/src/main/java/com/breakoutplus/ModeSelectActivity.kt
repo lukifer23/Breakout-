@@ -70,9 +70,9 @@ class ModeSelectActivity : FoldAwareActivity() {
                 .translationY(0f)
                 .scaleX(1f)
                 .scaleY(1f)
-                .setDuration(400)
-                .setStartDelay(100L + index * 80L)
-                .setInterpolator(android.view.animation.DecelerateInterpolator())
+                .setDuration(UiMotion.ENTRY_DURATION)
+                .setStartDelay(UiMotion.stagger(index, base = 90L, step = 70L))
+                .setInterpolator(UiMotion.EMPHASIS_OUT)
                 .start()
 
             binding.modeList.addView(cardView)
@@ -87,9 +87,9 @@ class ModeSelectActivity : FoldAwareActivity() {
             view.animate()
                 .alpha(1f)
                 .translationY(0f)
-                .setStartDelay(60L * index)
-                .setDuration(320L)
-                .setInterpolator(android.view.animation.DecelerateInterpolator())
+                .setStartDelay(UiMotion.stagger(index, step = 60L))
+                .setDuration(UiMotion.ENTRY_DURATION)
+                .setInterpolator(UiMotion.EMPHASIS_OUT)
                 .start()
         }
     }

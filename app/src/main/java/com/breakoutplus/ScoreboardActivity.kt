@@ -93,9 +93,9 @@ class ScoreboardActivity : FoldAwareActivity() {
                 .translationX(0f)
                 .scaleX(1f)
                 .scaleY(1f)
-                .setDuration(300)
-                .setStartDelay(index * 50L)
-                .setInterpolator(android.view.animation.DecelerateInterpolator())
+                .setDuration(UiMotion.LIST_ITEM_DURATION)
+                .setStartDelay(UiMotion.stagger(index, step = 52L))
+                .setInterpolator(UiMotion.EMPHASIS_OUT)
                 .start()
 
             binding.scoreList.addView(rowView)
@@ -124,9 +124,9 @@ class ScoreboardActivity : FoldAwareActivity() {
             view.animate()
                 .alpha(1f)
                 .translationY(0f)
-                .setStartDelay(80L * index)
-                .setDuration(350L)
-                .setInterpolator(android.view.animation.DecelerateInterpolator())
+                .setStartDelay(UiMotion.stagger(index, step = 80L))
+                .setDuration(UiMotion.ENTRY_DURATION)
+                .setInterpolator(UiMotion.EMPHASIS_OUT)
                 .start()
         }
     }

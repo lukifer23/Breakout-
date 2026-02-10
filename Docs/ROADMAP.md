@@ -1,12 +1,12 @@
 # Roadmap
 
-## ✅ Completed (v1.0.7)
+## ✅ Completed (Android Baseline)
 - **Dynamic Brick Behaviors**: Moving bricks, spawning bricks, phase bricks, boss bricks
 - **Enhanced Touch Controls**: Improved paddle positioning and ball launch
 - **Visual Polish**: Micro-animations, unified UI, foldable optimizations
 - **Advanced Audio**: Screen flash, haptic feedback, explosion waves
 - **UI/UX Improvements**: Expandable How-To, first-run tooltips, level transitions
-- **Complete Feature Set**: All 10 brick types, 13 powerups, 6 game modes, 6 themes
+- **Complete Feature Set**: All 10 brick types, 15 powerups, 7 game modes, base + unlockable themes
 - **Gameplay Balance**: Mode-specific physics (Rush 50% faster, Timed 30% faster), balanced powerup frequency, optimized sizing
 - **Audio System**: Individual volume controls (Master/Effects/Music), context-aware brick-specific sounds
 - **Visual Polish**: 6 distinct themes with unique color palettes, 3D bevel effects, animated backgrounds
@@ -17,12 +17,12 @@
 - **UI/UX**: System splash, expandable How-To, volume controls, micro-animations
 - **Data Logging**: Comprehensive game event logging for debugging
 
-## ✅ iOS Port - Playable MVP (v0.1.0)
+## ✅ iOS Port - Playable MVP (Out of Current Scope)
 - **Cross-Platform Architecture**: SwiftUI + SpriteKit implementation matching Android features
 - **Core Gameplay**: All game modes, ball physics, brick destruction, powerup system
 - **CLI Build System**: Xcode-free development with Swift Package Manager
 - **Simulator Testing**: Full game functionality tested in iOS Simulator
-- **Feature Parity**: Ball positioning, collision detection, scoring, combo system
+- **Current Status**: Kept separate while Android release quality is prioritized
 
 ## Future Enhancements (Optional)
 - **Achievement System**: Milestones, mode mastery, unlockable cosmetics

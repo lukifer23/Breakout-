@@ -51,6 +51,7 @@ class GameGLSurfaceView @JvmOverloads constructor(
             rendererImpl?.reset(config)
             framePacer.start()
         }
+        rendererImpl?.setTargetFrameRate(targetFps)
     }
 
     fun pauseGame() {
@@ -77,6 +78,7 @@ class GameGLSurfaceView @JvmOverloads constructor(
     fun setTargetFrameRate(fps: Float) {
         targetFps = if (fps.isFinite() && fps > 0f) fps else 0f
         framePacer.setTargetFps(targetFps)
+        rendererImpl?.setTargetFrameRate(targetFps)
         applySurfaceFrameRate()
     }
 
