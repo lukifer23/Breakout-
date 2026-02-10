@@ -12,7 +12,7 @@
 - Timed Challenge: 2:30 to maximize score.
 - Endless: infinite levels with scaling difficulty.
 - God Mode: no life loss for practice.
-- Level Rush: 45 seconds per stage, one life.
+- Level Rush: 55 seconds per stage, one life.
 - Survival: one life with faster speed ramps.
 - Invaders: moving alien fleets fire back while your shield absorbs hits.
 

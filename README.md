@@ -69,7 +69,7 @@ Breakout+ is a GPU-accelerated brickbreaker built for foldables, tuned for the S
 - Vsync-paced rendering using Choreographer-driven frame pacing with surface frame-rate hints.
 - Optimized for modern mobile GPUs with simple geometry (rects/circles) for consistent performance and frame pacing stability.
 - Foldable-optimized layouts (`sw600dp`, `sw720dp`) plus hinge-aware padding using Jetpack WindowManager.
-- Multiple modes: Classic, Timed Challenge, Endless, God Mode, Level Rush (45s with speed boost), Survival, Invaders.
+- Multiple modes: Classic, Timed Challenge, Endless, God Mode, Level Rush (55s per level with aggressive pacing), Survival, Invaders.
 - Powerups: Multi-ball, Laser, Guardrail, Shield, Extra life, Wide paddle, Shrink, Slow motion, Overdrive, Fireball, Magnet, Gravity Well, Ball Splitter, Freeze, Pierce.
 - Brick variations: Standard, Reinforced, Armored, Explosive, Unbreakable, Moving, Spawning, Phase, Boss.
 - Combo system: Score multipliers (x1.5-5x) for consecutive brick breaks within 2 seconds.
@@ -87,10 +87,10 @@ Breakout+ is a GPU-accelerated brickbreaker built for foldables, tuned for the S
 
 ### Game Modes
 - **Classic**: Standard breakout progression with escalating difficulty
-- **Timed Challenge**: Score as high as possible in 2:30 (30% faster ball speed)
+- **Timed Challenge**: Score as high as possible in 2:30 with an accelerated pace
 - **Endless**: Infinite procedurally generated levels with scaling difficulty
 - **God Mode**: Practice mode with infinite lives, no penalties
-- **Level Rush**: Beat each stage before 45-second timer expires (50% faster ball speed)
+- **Level Rush**: Beat each stage before the 55-second timer expires with aggressive pacing tuned for fairness
 - **Survival**: One life with faster speed ramps
 
 ### Powerups (15 Total)
@@ -134,7 +134,7 @@ Breakout+ is a GPU-accelerated brickbreaker built for foldables, tuned for the S
 - **Timed Challenge**: 2:30 to score as high as possible.
 - **Endless**: Infinite levels with increasing speed and density.
 - **God Mode**: No life loss for practice or testing.
-- **Level Rush**: 45 seconds per stage, one life.
+- **Level Rush**: 55 seconds per stage, one life.
 - **Survival**: One life with faster speed ramps.
 - **Invaders**: Moving alien fleets fire back while your shield absorbs hits.
 

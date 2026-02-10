@@ -29,6 +29,8 @@ class ModeBalanceTest {
         assertTrue("Survival should scale harder than classic", survival.difficultySlope > classic.difficultySlope)
         assertTrue("Rush should ramp speed faster than classic", rush.speedBoostSlope > classic.speedBoostSlope)
         assertTrue("Timed should drop slightly more powerups than classic", timed.dropChanceModeBoost > classic.dropChanceModeBoost)
+        assertTrue("Rush should not out-scale survival's speed ceiling", rush.speedBoostCap <= survival.speedBoostCap)
+        assertTrue("Rush should keep higher drop support than timed", rush.dropChanceModeBoost >= timed.dropChanceModeBoost)
     }
 
     @Test

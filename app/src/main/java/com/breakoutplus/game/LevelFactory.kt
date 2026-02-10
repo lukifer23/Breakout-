@@ -168,17 +168,18 @@ object LevelFactory {
         index: Int,
         difficulty: Float,
         endless: Boolean = false,
-        themePool: List<LevelTheme> = LevelThemes.baseThemes()
+        themePool: List<LevelTheme> = LevelThemes.baseThemes(),
+        forcedTheme: LevelTheme? = null
     ): LevelLayout {
         val pool = if (themePool.isNotEmpty()) themePool else LevelThemes.baseThemes()
+        val resolvedTheme = forcedTheme ?: pool[index % pool.size]
         return if (endless && index >= levelPatterns.size) {
             // Procedural generation for endless mode beyond initial patterns
-            generateProceduralLevel(index, difficulty, pool)
+            generateProceduralLevel(index, difficulty, pool, resolvedTheme)
         } else {
             val base = levelPatterns[index % levelPatterns.size]
             val scaled = scaleLayout(base, difficulty)
-            val theme = pool[index % pool.size]
-            val themedLayout = scaled.copy(theme = theme)
+            val themedLayout = scaled.copy(theme = resolvedTheme)
             if (index >= patternFillStartLevel) {
                 fillPatternGaps(themedLayout, difficulty, seed = index * 31 + 7)
             } else {
@@ -326,9 +327,14 @@ object LevelFactory {
         )
     }
 
-    private fun generateProceduralLevel(index: Int, difficulty: Float, themePool: List<LevelTheme>): LevelLayout {
+    private fun generateProceduralLevel(
+        index: Int,
+        difficulty: Float,
+        themePool: List<LevelTheme>,
+        forcedTheme: LevelTheme? = null
+    ): LevelLayout {
         val themes = if (themePool.isNotEmpty()) themePool else LevelThemes.baseThemes()
-        val theme = themes[index % themes.size] // Rotate themes every level for endless variety
+        val theme = forcedTheme ?: themes[index % themes.size] // Rotate themes every level for endless variety
 
         val baseRows = 8 + (index / 5).coerceAtMost(3) // Add rows as levels progress
         val baseCols = 12 + (index / 4).coerceAtMost(3) // Add columns as levels progress

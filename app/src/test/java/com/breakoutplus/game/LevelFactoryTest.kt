@@ -52,4 +52,15 @@ class LevelFactoryTest {
         val occupancy = l.bricks.size.toFloat() / (l.rows * l.cols).toFloat()
         assertTrue("Pattern levels should avoid sparse boards", occupancy >= 0.72f)
     }
+
+    @Test
+    fun buildLevel_respectsForcedTheme() {
+        val level = LevelFactory.buildLevel(
+            index = 5,
+            difficulty = 1.3f,
+            endless = false,
+            forcedTheme = LevelThemes.AURORA
+        )
+        assertEquals("Aurora", level.theme.name)
+    }
 }

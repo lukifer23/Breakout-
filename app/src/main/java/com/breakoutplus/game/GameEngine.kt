@@ -1140,11 +1140,45 @@ class GameEngine(
         brickAreaBottomRatio = lerp(0.70f, 0.62f, tallness)
         brickSpacing = lerp(0.32f, 0.36f, tallness)
         if (!preserveRowBoost) {
-            val densityBoost = (levelIndex / 5).coerceAtMost(2)
-            layoutRowBoost = (if (isWide) 4 else 3) + densityBoost
-            layoutColBoost = (if (isWide) 4 else 3) + densityBoost
+            val densityBoost = (levelIndex / 6).coerceAtMost(2)
+            val baseRowBoost = (if (isWide) 3 else 2) + densityBoost
+            val baseColBoost = (if (isWide) 3 else 2) + densityBoost
+            when (config.mode) {
+                GameMode.RUSH -> {
+                    layoutRowBoost = (baseRowBoost - 2).coerceAtLeast(0)
+                    layoutColBoost = (baseColBoost - 2).coerceAtLeast(0)
+                }
+                GameMode.TIMED -> {
+                    layoutRowBoost = (baseRowBoost - 1).coerceAtLeast(1)
+                    layoutColBoost = (baseColBoost - 1).coerceAtLeast(1)
+                }
+                GameMode.GOD -> {
+                    layoutRowBoost = 0
+                    layoutColBoost = 0
+                }
+                GameMode.SURVIVAL -> {
+                    layoutRowBoost = baseRowBoost + 1
+                    layoutColBoost = baseColBoost + 1
+                }
+                GameMode.ENDLESS -> {
+                    layoutRowBoost = baseRowBoost
+                    layoutColBoost = baseColBoost + 1
+                }
+                else -> {
+                    layoutRowBoost = baseRowBoost
+                    layoutColBoost = baseColBoost
+                }
+            }
         }
         globalBrickScale = lerp(0.88f, 0.86f, tallness)
+        if (config.mode == GameMode.RUSH) {
+            globalBrickScale = (globalBrickScale + 0.045f).coerceAtMost(0.915f)
+            brickSpacing = (brickSpacing + 0.04f).coerceAtMost(0.44f)
+        } else if (config.mode == GameMode.TIMED) {
+            globalBrickScale = (globalBrickScale + 0.015f).coerceAtMost(0.895f)
+        } else if (config.mode == GameMode.SURVIVAL) {
+            globalBrickScale = (globalBrickScale - 0.015f).coerceAtLeast(0.82f)
+        }
         if (config.mode.invaders) {
             brickAreaBottomRatio = (brickAreaBottomRatio + lerp(0.03f, 0.05f, tallness)).coerceAtMost(0.78f)
             brickSpacing = brickSpacing * 0.95f
@@ -1360,7 +1394,18 @@ class GameEngine(
             invaderShieldMax = 0f
             invaderShieldAlerted = false
             listener.onShieldUpdated(0, 0)
-            buildLevel(levelIndex, difficulty, config.mode.endless, themePool)
+            val forcedTheme = ModeTheme.themeFor(
+                mode = config.mode,
+                levelIndex = levelIndex,
+                availableThemeNames = themePool.asSequence().map { it.name }.toSet()
+            )
+            buildLevel(
+                index = levelIndex,
+                difficulty = difficulty,
+                endless = config.mode.endless,
+                themePool = themePool,
+                forcedTheme = forcedTheme
+            )
         }
         currentLayout = level
         theme = level.theme

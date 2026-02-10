@@ -66,14 +66,14 @@ enum class GameMode(
     RUSH(
         displayName = "Level Rush",
         description = "Beat each stage before the timer expires.",
-        meta = "Lives 1 • 0:45 per level • Hardcore",
+        meta = "Lives 1 • 0:55 per level • Hardcore",
         baseLives = 1,
-        timeLimitSeconds = 45,
+        timeLimitSeconds = 55,
         endless = false,
         godMode = false,
         rush = true,
         invaders = false,
-        launchSpeed = 97.75f  // 15% reduction for rush mode
+        launchSpeed = 90f
     ),
     SURVIVAL(
         displayName = "Survival",

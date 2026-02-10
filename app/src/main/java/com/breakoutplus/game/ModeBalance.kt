@@ -66,13 +66,13 @@ object ModeBalance {
             dropChanceModeBoost = -0.03f
         ),
         GameMode.RUSH to Pacing(
-            speedBoostSlope = 0.024f,
-            speedBoostCap = 1.55f,
-            minSpeedFactor = 0.74f,
-            maxSpeedFactor = 1.88f,
-            difficultyBase = 1.14f,
-            difficultySlope = 0.115f,
-            dropChanceModeBoost = 0.03f
+            speedBoostSlope = 0.02f,
+            speedBoostCap = 1.48f,
+            minSpeedFactor = 0.7f,
+            maxSpeedFactor = 1.78f,
+            difficultyBase = 1.06f,
+            difficultySlope = 0.09f,
+            dropChanceModeBoost = 0.045f
         ),
         GameMode.SURVIVAL to Pacing(
             speedBoostSlope = 0.029f,

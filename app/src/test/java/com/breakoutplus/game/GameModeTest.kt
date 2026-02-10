@@ -10,4 +10,9 @@ class GameModeTest {
         assertTrue(speeds.all { it > 0f })
         assertTrue(GameMode.RUSH.launchSpeed > GameMode.GOD.launchSpeed)
     }
+
+    @Test
+    fun rushHasPlayableTimerWindow() {
+        assertTrue(GameMode.RUSH.timeLimitSeconds >= 50)
+    }
 }
