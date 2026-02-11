@@ -98,6 +98,10 @@ class GameGLSurfaceView @JvmOverloads constructor(
         rendererImpl?.debugSpawnPowerup(type)
     }
 
+    fun setDebugAutoPlay(enabled: Boolean) {
+        rendererImpl?.setDebugAutoPlay(enabled)
+    }
+
     override fun onTouchEvent(event: MotionEvent): Boolean {
         rendererImpl?.handleTouch(event, width.toFloat(), height.toFloat())
         if (event.action == MotionEvent.ACTION_UP) {

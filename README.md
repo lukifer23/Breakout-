@@ -30,6 +30,7 @@ Breakout+ elevates the classic brickbreaker genre with modern mobile optimizatio
 - **Audio System**: Procedural sound generation with individual volume controls
 - **Data Logging**: Built-in analytics for debugging
 - **Per-Mode Leaderboards**: Scoreboard supports each mode plus an all-modes view
+- **Lifetime Run Stats**: Scoreboard tracks cumulative bricks broken, lives lost, play time, best run duration, and average score
 - **Foldable Optimization**: Android version optimized for Samsung Galaxy Z Fold 7
 
 Key principles:
@@ -82,6 +83,7 @@ Breakout+ is a GPU-accelerated brickbreaker built for foldables, tuned for the S
 - Full set of screens: Splash (system), Title, Mode Select, Settings (volume controls), Scoreboard, How-To (expandable), Game.
 - Privacy Policy screen with in-app disclosure.
 - Audio: Android generates SFX/music locally; iOS uses bundled WAV SFX + looping music (still local assets, no placeholders).
+- Device smoke-test script for all gameplay modes: `tools/mode_smoke_test.sh`.
 
 ## Features
 
@@ -93,6 +95,7 @@ Breakout+ is a GPU-accelerated brickbreaker built for foldables, tuned for the S
 - **Level Rush**: Beat each stage before the 55-second timer expires with aggressive pacing tuned for fairness
 - **Volley**: Aim once, launch a chain of balls, then survive descending rows
 - **Survival**: One life with faster speed ramps
+- **Invaders**: Breakout + invader fleet combat with enemy fire and shield management
 
 ### Powerups (15 Total)
 - **Core**: Multi-ball, Laser, Guardrail, Shield, Extra life, Wide paddle, Shrink, Slow motion, Overdrive, Fireball
@@ -187,6 +190,15 @@ Breakout+ is a GPU-accelerated brickbreaker built for foldables, tuned for the S
 adb devices
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 adb shell am start -n com.breakoutplus.debug/com.breakoutplus.MainActivity
+```
+
+#### Automated Device Mode Smoke Test
+```bash
+tools/mode_smoke_test.sh
+```
+For deeper gameplay probing, enable debug autoplay:
+```bash
+BP_AUTO_PLAY=1 BP_AUTO_PLAY_SECONDS=20 BP_MODE_WAIT=20 tools/mode_smoke_test.sh
 ```
 
 #### Release APK (signed)

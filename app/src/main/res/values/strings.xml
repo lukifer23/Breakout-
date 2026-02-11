@@ -29,6 +29,8 @@
     <string name="label_scoreboard_hint">Top runs across all modes.</string>
     <string name="label_progress_format">Journey %1$d-%2$d • XP %3$d</string>
     <string name="label_progress_default">Journey 1-1 • XP 0</string>
+    <string name="label_lifetime_stats_format">Lifetime: Bricks %1$,d • Lives Lost %2$,d • Play %3$s • Best Run %4$ds • Avg Score %5$,d</string>
+    <string name="label_lifetime_stats_default">Lifetime: Bricks 0 • Lives Lost 0 • Play 0h 00m • Best Run 0s • Avg Score 0</string>
     <string name="label_howto_hint">Quick Start</string>
     <string name="label_mode_classic">Classic</string>
     <string name="label_mode_all">All Modes</string>
@@ -101,6 +103,6 @@
     <string name="label_howto_bricks_header">▼ Brick Types</string>
     <string name="label_howto_bricks_list">• Standard: one hit\n• Reinforced: two hits\n• Armored: three hits\n• Explosive: damages surrounding bricks\n• Unbreakable: requires fireball/laser\n• Moving: slides horizontally\n• Spawning: breaks into child bricks\n• Phase: changes phases with new HP\n• Boss: multi-phase heavyweight brick</string>
     <string name="label_howto_modes_header">▼ Game Modes</string>
-    <string name="label_howto_modes_list">Classic: Standard breakout progression.\nTimed Challenge: Score high in 2:30.\nEndless: Infinite levels with scaling difficulty.\nGod Mode: Practice without losing lives.\nLevel Rush: Beat each stage before time expires.\nSurvival: One life with faster speed ramps.\nInvaders: Bounce shots to clear ships while dodging fire.</string>
+    <string name="label_howto_modes_list">Classic: Standard breakout progression.\nTimed Challenge: Score high in 2:30.\nEndless: Infinite levels with scaling difficulty.\nGod Mode: Practice without losing lives.\nLevel Rush: Beat each stage before time expires.\nVolley: Launch a chain, then survive descending rows.\nSurvival: One life with faster speed ramps.\nInvaders: Bounce shots to clear ships while dodging fire.</string>
     <string name="label_choose_mode">Choose Mode</string>
 </resources>

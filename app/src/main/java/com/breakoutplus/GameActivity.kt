@@ -5,6 +5,7 @@ import android.content.pm.ApplicationInfo
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.view.View
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.graphics.ColorUtils
@@ -54,6 +55,8 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     private val uiHandler = Handler(Looper.getMainLooper())
     private var pendingNextLevelRunnable: Runnable? = null
     private var levelAdvanceInProgress = false
+    private var debugAutoPlaySession = false
+    private var debugAutoPlayStopRunnable: Runnable? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -86,6 +89,17 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
                         binding.gameSurface.debugSpawnPowerup(type)
                     }, 600)
                 }
+            }
+            debugAutoPlaySession = intent.getBooleanExtra(EXTRA_DEBUG_AUTOPLAY, false)
+            if (debugAutoPlaySession) {
+                val runSeconds = intent.getIntExtra(EXTRA_DEBUG_AUTOPLAY_SECONDS, 0).coerceIn(0, 600)
+                binding.gameSurface.setDebugAutoPlay(true)
+                if (runSeconds > 0) {
+                    val stopRunnable = Runnable { binding.gameSurface.setDebugAutoPlay(false) }
+                    debugAutoPlayStopRunnable = stopRunnable
+                    binding.gameSurface.postDelayed(stopRunnable, runSeconds * 1000L)
+                }
+                Log.i("BreakoutAutoPlay", "event=session_start mode=${mode.name} seconds=${runSeconds}")
             }
         }
 
@@ -136,6 +150,11 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         levelAdvanceInProgress = false
         config.dailyChallenges?.let { DailyChallengeStore.save(this, it) }
         laserCooldownRunnable?.let { binding.buttonLaser.removeCallbacks(it) }
+        debugAutoPlayStopRunnable?.let { binding.gameSurface.removeCallbacks(it) }
+        debugAutoPlayStopRunnable = null
+        if (debugAutoPlaySession) {
+            binding.gameSurface.setDebugAutoPlay(false)
+        }
         super.onPause()
     }
 
@@ -459,6 +478,13 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             binding.buttonEndSecondary.isEnabled = true
             binding.buttonLaser.visibility = View.GONE
             endOverlayState = EndOverlayState.GAME_OVER
+            LifetimeStatsManager.recordRun(this, summary)
+            if (debugAutoPlaySession) {
+                Log.i(
+                    "BreakoutAutoPlay",
+                    "event=game_over mode=${config.mode.name} score=${summary.score} level=${summary.level} duration=${summary.durationSeconds} bricks=${summary.bricksBroken} lives_lost=${summary.livesLost}"
+                )
+            }
             // Check if this is a high score for the mode
             if (ScoreboardManager.isHighScoreForMode(this, config.mode.displayName, summary.score, summary.durationSeconds)) {
                 // Show name input dialog
@@ -542,6 +568,12 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             binding.buttonEndPrimary.isEnabled = true
             binding.buttonEndSecondary.isEnabled = true
             binding.buttonLaser.visibility = View.GONE
+            if (debugAutoPlaySession) {
+                Log.i(
+                    "BreakoutAutoPlay",
+                    "event=level_complete mode=${config.mode.name} score=${summary.score} level=${summary.level} duration=${summary.durationSeconds} bricks=${summary.bricksBroken} lives_lost=${summary.livesLost}"
+                )
+            }
             ProgressionManager.updateBestLevel(this, summary.level)
             currentXpTotal = ProgressionManager.addXp(this, ProgressionManager.xpForLevel(summary.level))
             updateHudMeta()
@@ -852,5 +884,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     companion object {
         const val EXTRA_MODE = "extra_mode"
         const val EXTRA_DEBUG_POWERUP = "extra_debug_powerup"
+        const val EXTRA_DEBUG_AUTOPLAY = "extra_debug_autoplay"
+        const val EXTRA_DEBUG_AUTOPLAY_SECONDS = "extra_debug_autoplay_seconds"
     }
 }

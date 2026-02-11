@@ -33,6 +33,7 @@ class GameRenderer(
     private var musicWasPlaying = false
     private var fixedStepSeconds = 1f / 120f
     private var simulationAccumulator = 0f
+    private var debugAutoPlayEnabled = false
 
     fun triggerScreenShake(intensity: Float = 3f, duration: Float = 0.2f) {
         shakeIntensity = intensity
@@ -161,6 +162,11 @@ class GameRenderer(
         engine.debugSpawnPowerup(type)
     }
 
+    fun setDebugAutoPlay(enabled: Boolean) {
+        debugAutoPlayEnabled = enabled
+        engine.setDebugAutoPlay(enabled)
+    }
+
     fun pause() {
         paused = true
         engine.pause()
@@ -180,6 +186,7 @@ class GameRenderer(
 
     fun restart() {
         engine = GameEngine(config, listener, audioManager, logger, config.dailyChallenges, this)
+        engine.setDebugAutoPlay(debugAutoPlayEnabled)
         lastTimeNs = 0L
         simulationAccumulator = 0f
     }
@@ -192,6 +199,7 @@ class GameRenderer(
         config = newConfig
         audioManager.updateSettings(newConfig.settings)
         engine = GameEngine(config, listener, audioManager, logger, config.dailyChallenges, this)
+        engine.setDebugAutoPlay(debugAutoPlayEnabled)
         simulationAccumulator = 0f
     }
 

@@ -5,6 +5,20 @@
 ./gradlew test
 ```
 
+## Automated Mode Smoke Test (Device)
+Runs each gameplay mode on a connected Android device, verifies the activity launches, then checks logcat for fatal crashes.
+```bash
+tools/mode_smoke_test.sh
+```
+Requires at least one `adb`-visible device or emulator.
+Optional env vars:
+- `BP_SERIAL=<adb-serial>` to target a specific device.
+- `BP_GAME_MODES="CLASSIC RUSH VOLLEY"` to limit modes.
+- `BP_MODE_WAIT=6` to wait longer before log checks.
+- `BP_AUTO_PLAY=1` to enable debug autoplay during each mode probe.
+- `BP_AUTO_PLAY_SECONDS=20` to cap autoplay runtime per launch.
+When autoplay is enabled, look for `BreakoutAutoPlay` log entries (`session_start`, `level_complete`, `game_over`) for viability/balance signals.
+
 ## Manual Test Checklist
 - Launch app, confirm system splash, open each menu (Main, Modes, Scoreboard, Settings, How-To).
 - Start every mode (Classic, Timed, Endless, God, Rush, Volley, Survival, Invaders): break bricks, collect powerups, pause, level complete, game over.

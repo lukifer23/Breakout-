@@ -13,15 +13,18 @@
   - `music_loop.wav`
 
 ## Icon
-- Modern adaptive icon with a neon orbit ring, plus mark, ball, and paddle
-- Default foreground: `app/src/main/res/drawable/ic_launcher_foreground.xml`
-- Background: `app/src/main/res/drawable/ic_launcher_background.xml` (dark radial gradient)
-- Referenced in `app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml` and `ic_launcher_round.xml`
-- Alternative variant foregrounds available:
-  - `app/src/main/res/drawable/ic_launcher_foreground_neon.xml` (orbit ring)
-  - `app/src/main/res/drawable/ic_launcher_foreground_fold.xml` (folded hinge)
-  - `app/src/main/res/drawable/ic_launcher_foreground_minimal.xml` (minimal plus)
-- To switch default icon: replace the drawable reference in `mipmap-anydpi-v26/ic_launcher.xml` (e.g., change `@drawable/ic_launcher_foreground` to `@drawable/ic_launcher_foreground_neon`)
+- Adaptive icon background: `app/src/main/res/drawable/ic_launcher_background.xml`.
+- Adaptive icon foreground wrapper: `app/src/main/res/drawable/ic_launcher_foreground_asset.xml`.
+- Foreground source image: `app/src/main/res/drawable-nodpi/ic_launcher_foreground_raw.png` (1024x1024 RGBA).
+- Current foreground is generated from `icon2.png` with safe-zone padding to avoid launcher-mask clipping.
+- Adaptive icon XML references:
+  - `app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml`
+  - `app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml`
+
+Rebuild the foreground from `icon2.png` (center crop + safe padding):
+```bash
+ffmpeg -y -i icon2.png -vf "crop=1024:1024:0:256,scale=920:920,pad=1024:1024:52:52:color=black@0" -frames:v 1 app/src/main/res/drawable-nodpi/ic_launcher_foreground_raw.png
+```
 
 ## Visuals
 - All UI colors defined in `app/src/main/res/values/colors.xml`.

@@ -33,6 +33,7 @@ class ScoreboardActivity : FoldAwareActivity() {
         }
 
         updateProgress()
+        updateLifetimeStats()
         renderScores()
         animateEntry()
     }
@@ -40,6 +41,7 @@ class ScoreboardActivity : FoldAwareActivity() {
     override fun onResume() {
         super.onResume()
         updateProgress()
+        updateLifetimeStats()
     }
 
     private fun switchMode(direction: Int) {
@@ -108,6 +110,27 @@ class ScoreboardActivity : FoldAwareActivity() {
         val stage = ProgressionManager.stageForLevel(bestLevel)
         val xp = ProgressionManager.loadXp(this)
         binding.scoreProgress.text = getString(R.string.label_progress_format, chapter, stage, xp)
+    }
+
+    private fun updateLifetimeStats() {
+        val stats = LifetimeStatsManager.load(this)
+        val avgScore = if (stats.gamesPlayed > 0) {
+            (stats.totalScore / stats.gamesPlayed.toLong()).toInt()
+        } else {
+            0
+        }
+        val totalMinutes = (stats.totalPlaySeconds / 60L).toInt()
+        val totalHours = totalMinutes / 60
+        val remainingMinutes = totalMinutes % 60
+        val playTime = String.format(Locale.getDefault(), "%dh %02dm", totalHours, remainingMinutes)
+        binding.scoreLifetimeStats.text = getString(
+            R.string.label_lifetime_stats_format,
+            stats.totalBricksBroken,
+            stats.totalLivesLost,
+            playTime,
+            stats.longestRunSeconds,
+            avgScore
+        )
     }
 
     private fun formatDuration(seconds: Int): String {

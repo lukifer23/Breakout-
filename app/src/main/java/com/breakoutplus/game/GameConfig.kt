@@ -13,5 +13,7 @@ data class GameConfig(
 data class GameSummary(
     val score: Int,
     val level: Int,
-    val durationSeconds: Int
+    val durationSeconds: Int,
+    val bricksBroken: Int = 0,
+    val livesLost: Int = 0
 )

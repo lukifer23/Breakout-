@@ -34,6 +34,17 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/scoreSubtitle" />
 
+    <TextView
+        android:id="@+id/scoreLifetimeStats"
+        style="@style/Text.BreakoutPlus.Caption"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:text="@string/label_lifetime_stats_default"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/scoreProgress" />
+
     <ScrollView
         android:id="@+id/scoreScroll"
         android:layout_width="0dp"
@@ -42,7 +53,7 @@
         app:layout_constraintBottom_toTopOf="@id/scoreFooter"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/scoreProgress">
+        app:layout_constraintTop_toBottomOf="@id/scoreLifetimeStats">
 
         <LinearLayout
             android:id="@+id/scoreList"
@@ -62,7 +73,7 @@
         android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/scoreProgress" />
+        app:layout_constraintTop_toBottomOf="@id/scoreLifetimeStats" />
 
     <LinearLayout
         android:id="@+id/scoreFooter"

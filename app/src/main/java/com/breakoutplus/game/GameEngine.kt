@@ -54,6 +54,8 @@ class GameEngine(
     private var lastReportedSecond = -1
     private var elapsedSeconds = 0f
     private var levelStartTime = 0f
+    private var runBricksBroken = 0
+    private var runLivesLost = 0
     private var combo = 0
     private var comboTimer = 0f
     private var guardrailActive = false
@@ -112,11 +114,13 @@ class GameEngine(
     private var powerupsSinceControl = 0
     private var aimNormalized = 0f
     private var aimNormalizedTarget = 0f
-    private var aimAngle = 1.34f
-    private var aimDirection = 1f
+    private var aimAngle = (Math.PI.toFloat() * 0.5f)
     private var aimHasInput = false
     private var isDragging = false
     private val aimSmoothingRate = 18f
+    private var debugAutoPlayEnabled = false
+    private var debugAutoPlayActionTimer = 0f
+    private var debugAutoPlayWave = 0f
     private var volleyBallCount = 3
     private var volleyQueuedBalls = 0
     private var volleyLaunchTimer = 0f
@@ -151,7 +155,6 @@ class GameEngine(
     private var streakBonusActive = false
     private val streakBonusPerBrick = 20
     private val aimMinAngle = 0.30f
-    private val aimMaxAngle = 1.34f
 
     init {
         themePool = LevelThemes.baseThemes().toMutableList()
@@ -214,6 +217,9 @@ class GameEngine(
         if (state == GameState.PAUSED || state == GameState.GAME_OVER) {
             return
         }
+        if (debugAutoPlayEnabled) {
+            updateDebugAutoPlay(delta)
+        }
         updateTimers(dt)
         updatePaddle(delta)
         updateAim(delta)
@@ -250,6 +256,58 @@ class GameEngine(
         }
         if (shieldBreakPulse > 0f) {
             shieldBreakPulse = max(0f, shieldBreakPulse - dt * 2.4f)
+        }
+    }
+
+    fun setDebugAutoPlay(enabled: Boolean) {
+        debugAutoPlayEnabled = enabled
+        if (!enabled) {
+            debugAutoPlayActionTimer = 0f
+            return
+        }
+        debugAutoPlayActionTimer = 0f
+        debugAutoPlayWave = 0f
+    }
+
+    private fun updateDebugAutoPlay(dt: Float) {
+        if (dt <= 0f) return
+        debugAutoPlayActionTimer -= dt
+        val minX = paddle.width / 2f
+        val maxX = worldWidth - paddle.width / 2f
+
+        when (state) {
+            GameState.READY -> {
+                if (config.mode == GameMode.VOLLEY) {
+                    debugAutoPlayWave += dt
+                    val swing = kotlin.math.sin(debugAutoPlayWave * 1.3f) * worldWidth * 0.22f
+                    paddle.targetX = (worldWidth * 0.5f + swing).coerceIn(minX, maxX)
+                } else {
+                    val anchorX = balls.firstOrNull()?.x ?: worldWidth * 0.5f
+                    paddle.targetX = anchorX.coerceIn(minX, maxX)
+                }
+                if (debugAutoPlayActionTimer <= 0f) {
+                    launchBall()
+                    debugAutoPlayActionTimer = if (config.mode == GameMode.VOLLEY) 0.34f else 0.22f
+                }
+            }
+            GameState.RUNNING -> {
+                if (config.mode != GameMode.VOLLEY) {
+                    val incoming = balls.minByOrNull { it.y }
+                    if (incoming != null) {
+                        val lead = (incoming.vx * 0.17f).coerceIn(-8f, 8f)
+                        paddle.targetX = (incoming.x + lead).coerceIn(minX, maxX)
+                    }
+                }
+                if (magnetActive && balls.any { it.stuckToPaddle } && debugAutoPlayActionTimer <= 0f) {
+                    releaseStuckBalls()
+                    debugAutoPlayActionTimer = 0.24f
+                }
+                if (activeEffects.containsKey(PowerUpType.LASER) && laserCooldown <= 0f && debugAutoPlayActionTimer <= 0f) {
+                    shootLaser()
+                    debugAutoPlayActionTimer = 0.16f
+                }
+            }
+            else -> Unit
         }
     }
 
@@ -347,6 +405,30 @@ class GameEngine(
                     val size = 0.3f + twinkle * 0.4f
                     renderer.drawCircle(x, y, size, fillColor(tempColor, 0.6f, 0.8f, 1f, alpha))
                 }
+            }
+        }
+
+        if (config.mode == GameMode.VOLLEY) {
+            val turnPulse = (kotlin.math.sin(time * 2.4f) * 0.5f + 0.5f)
+            val accentAlpha = 0.08f + turnPulse * 0.08f
+            val laneY = paddle.y + paddle.height * 0.5f + 1.8f
+            renderer.drawRect(
+                0f,
+                laneY,
+                worldWidth,
+                0.3f,
+                fillColor(tempColor, theme.accent[0], theme.accent[1], theme.accent[2], 0.2f + accentAlpha)
+            )
+            for (i in 0 until 6) {
+                val y = worldHeight * 0.58f + i * worldHeight * 0.055f
+                val alpha = (0.03f + (i % 2) * 0.015f + turnPulse * 0.01f).coerceIn(0.02f, 0.08f)
+                renderer.drawRect(
+                    0f,
+                    y,
+                    worldWidth,
+                    0.22f,
+                    fillColor(tempColor, theme.paddle[0], theme.paddle[1], theme.paddle[2], alpha)
+                )
             }
         }
 
@@ -832,9 +914,8 @@ class GameEngine(
 
     private fun renderAimGuide(renderer: Renderer2D) {
         val ball = balls.firstOrNull() ?: return
-        val dir = resolveAimDirection()
-        val angle = aimAngle.coerceIn(aimMinAngle, aimMaxAngle)
-        var dx = kotlin.math.cos(angle) * dir
+        val angle = aimAngle.coerceIn(aimMinAngle, Math.PI.toFloat() - aimMinAngle)
+        var dx = kotlin.math.cos(angle)
         var dy = kotlin.math.sin(angle)
         val startX = ball.x
         val startY = ball.y
@@ -1224,27 +1305,23 @@ class GameEngine(
         val center = worldWidth * 0.5f
         val sourceX = if (isDragging) paddle.targetX else paddle.x
         val delta = (sourceX - center) / center
-        aimNormalizedTarget = delta.coerceIn(-1.2f, 1.2f)
+        aimNormalizedTarget = delta.coerceIn(-1f, 1f)
     }
 
-    private fun applyAimFromNormalized(normalized: Float, keepCurrentDirectionIfCentered: Boolean = true) {
-        val deadZone = 0.02f
-        val clamped = normalized.coerceIn(-1.2f, 1.2f)
-        if (abs(clamped) > deadZone) {
-            aimDirection = if (clamped >= 0f) 1f else -1f
-        } else if (!keepCurrentDirectionIfCentered) {
-            aimDirection = if (paddle.x >= worldWidth * 0.5f) 1f else -1f
-        }
-        aimHasInput = isDragging || abs(clamped) > deadZone
-        val strength = abs(clamped).coerceIn(0f, 1f)
-        // Small offsets stay closer to vertical; larger offsets flatten the launch.
-        aimAngle = aimMaxAngle - (aimMaxAngle - aimMinAngle) * strength
+    private fun applyAimFromNormalized(normalized: Float) {
+        val clamped = normalized.coerceIn(-1f, 1f)
+        aimHasInput = isDragging || abs(clamped) > 0.001f
+        val eased = clamped
+        val centerAngle = Math.PI.toFloat() * 0.5f
+        val maxDeflection = (centerAngle - aimMinAngle).coerceAtLeast(0.2f)
+        val signedDeflection = eased * maxDeflection
+        aimAngle = (centerAngle - signedDeflection).coerceIn(aimMinAngle, Math.PI.toFloat() - aimMinAngle)
     }
 
     private fun syncAimForLaunch() {
         updateAimFromPaddle()
         aimNormalized = aimNormalizedTarget
-        applyAimFromNormalized(aimNormalized, keepCurrentDirectionIfCentered = false)
+        applyAimFromNormalized(aimNormalized)
     }
 
     private fun updateAim(dt: Float) {
@@ -1259,10 +1336,6 @@ class GameEngine(
             aimNormalized += (aimNormalizedTarget - aimNormalized) * lerpFactor
         }
         applyAimFromNormalized(aimNormalized)
-    }
-
-    private fun resolveAimDirection(): Float {
-        return if (aimDirection == 0f) 1f else aimDirection
     }
 
     fun handleTouch(event: MotionEvent, viewWidth: Float, viewHeight: Float) {
@@ -1362,6 +1435,8 @@ class GameEngine(
             powerupDropsSinceLaser = 0
             powerupTipShown.clear()
             recentPowerups.clear()
+            runBricksBroken = 0
+            runLivesLost = 0
         }
         powerupsSinceOffense = 0
         powerupsSinceDefense = 0
@@ -1379,8 +1454,7 @@ class GameEngine(
         aimHasInput = false
         aimNormalized = 0f
         aimNormalizedTarget = 0f
-        aimAngle = aimMaxAngle
-        aimDirection = if (levelIndex % 2 == 0) 1f else -1f
+        aimAngle = Math.PI.toFloat() * 0.5f
         volleyTurnActive = false
         volleyQueuedBalls = 0
         volleyLaunchTimer = 0f
@@ -1501,7 +1575,7 @@ class GameEngine(
         val baseBrickHeight = (areaHeight - spacing * (rows - 1)) / rows
         val baseBrickWidth = (worldWidth - spacing * (cols + 1)) / cols
         val rowStep = baseBrickHeight + spacing * 0.5f
-        val volleyOffset = if (config.mode == GameMode.VOLLEY) volleyAdvanceRows * rowStep else 0f
+        val volleyOffset = if (config.mode == GameMode.VOLLEY) -volleyAdvanceRows * rowStep else 0f
         val sizeScale = (if (config.mode.invaders) invaderScale else 1f) * globalBrickScale
         val brickHeight = baseBrickHeight * sizeScale
         val brickWidth = baseBrickWidth * sizeScale
@@ -1668,7 +1742,7 @@ class GameEngine(
         val baseBrickHeight = (areaHeight - spacing * (rows - 1)) / rows
         val baseBrickWidth = (worldWidth - spacing * (cols + 1)) / cols
         val rowStep = baseBrickHeight + spacing * 0.5f
-        val volleyOffset = if (config.mode == GameMode.VOLLEY) volleyAdvanceRows * rowStep else 0f
+        val volleyOffset = if (config.mode == GameMode.VOLLEY) -volleyAdvanceRows * rowStep else 0f
         val sizeScale = (if (config.mode.invaders) invaderScale else 1f) * globalBrickScale
         val brickHeight = baseBrickHeight * sizeScale
         val brickWidth = baseBrickWidth * sizeScale
@@ -1956,12 +2030,11 @@ class GameEngine(
     }
 
     private fun launchBallWithAim(ball: Ball, angleOffset: Float = 0f) {
-        val dir = resolveAimDirection()
         val levelBoost = (1f + levelIndex * speedBoostSlope()).coerceAtMost(speedBoostCap())
         val speed = config.mode.launchSpeed * levelBoost
-        val angle = (aimAngle + angleOffset).coerceIn(aimMinAngle, aimMaxAngle)
-        ball.vx = speed * kotlin.math.cos(angle) * dir
-        ball.vy = speed * kotlin.math.sin(angle)
+        val angle = (aimAngle + angleOffset).coerceIn(aimMinAngle, Math.PI.toFloat() - aimMinAngle)
+        ball.vx = speed * kotlin.math.cos(angle)
+        ball.vy = (speed * kotlin.math.sin(angle)).coerceAtLeast(speed * 0.18f)
         ball.stuckToPaddle = false
     }
 
@@ -1996,6 +2069,7 @@ class GameEngine(
         volleyReturnAnchorX = Float.NaN
 
         launchBallWithAim(firstBall)
+        audio.play(GameSound.BOUNCE, 0.45f, 1.08f)
         aimHasInput = false
         aimNormalized = 0f
         aimNormalizedTarget = 0f
@@ -2009,6 +2083,7 @@ class GameEngine(
         while (volleyQueuedBalls > 0 && volleyLaunchTimer <= 0f) {
             spawnBall(spawnX = volleyLaunchX.coerceIn(paddle.width / 2f, worldWidth - paddle.width / 2f))
             balls.lastOrNull()?.let { launchBallWithAim(it) }
+            audio.play(GameSound.BOUNCE, 0.28f, 1.12f)
             volleyQueuedBalls -= 1
             volleyLaunchTimer += 0.065f
         }
@@ -2122,9 +2197,12 @@ class GameEngine(
         volleyTurnActive = false
         volleyTurnCount += 1
         volleyAdvanceRows += 1
+        audio.play(GameSound.BRICK_MOVING, 0.36f, 0.88f)
+        renderer?.triggerScreenShake(0.7f, 0.07f)
         if (volleyTurnCount % 2 == 0 && volleyBallCount < 18) {
             volleyBallCount += 1
             listener.onTip("Volley +1 ball (${volleyBallCount} total).")
+            audio.play(GameSound.POWERUP, 0.32f, 1.1f)
         }
 
         relayoutBricks()
@@ -2156,7 +2234,7 @@ class GameEngine(
     private fun spawnVolleyTopRow() {
         val layout = currentLayout ?: return
         val cols = (layout.cols + layoutColBoost).coerceAtLeast(6)
-        val spawnRow = volleyAdvanceRows
+        val spawnRow = -volleyAdvanceRows
         val occupied = HashSet<Int>(cols)
         bricks.forEach { brick ->
             if (brick.alive && brick.gridY == spawnRow) {
@@ -2300,6 +2378,7 @@ class GameEngine(
 
             if (destroyed) {
                 updateDailyChallenges(ChallengeType.BRICKS_DESTROYED)
+                runBricksBroken += 1
                 spawnBrickDestructionFx(brick, ball.x, ball.y, intensity = 1f)
 
                 if (brick.type == BrickType.BOSS) {
@@ -2397,6 +2476,7 @@ class GameEngine(
             if (destroyed) {
                 addScore(brick.scoreValue)
                 updateDailyChallenges(ChallengeType.BRICKS_DESTROYED)
+                runBricksBroken += 1
 
                 // Visual effects
                 renderer?.triggerScreenShake(2f, 0.15f)
@@ -3073,7 +3153,13 @@ class GameEngine(
             logger?.logLevelComplete(levelIndex, score, elapsedSeconds, remaining)
             levelClearFlash = 1.0f
             renderer?.triggerLevelClearFlash()
-            val summary = GameSummary(score, levelIndex + 1, elapsedSeconds.toInt())
+            val summary = GameSummary(
+                score = score,
+                level = levelIndex + 1,
+                durationSeconds = elapsedSeconds.toInt(),
+                bricksBroken = runBricksBroken,
+                livesLost = runLivesLost
+            )
             state = GameState.PAUSED
             stateBeforePause = GameState.PAUSED
             listener.onLevelComplete(summary)
@@ -3087,13 +3173,13 @@ class GameEngine(
         lostLifeThisLevel = true
 
         if (config.mode.godMode) {
-            aimDirection = if (paddle.x >= worldWidth * 0.5f) 1f else -1f
             spawnBall()
             state = GameState.READY
             syncAimForLaunch()
             return
         }
         lives -= 1
+        runLivesLost += 1
         listener.onLivesUpdated(lives)
         audio.play(GameSound.LIFE, 0.9f)
         audio.haptic(GameHaptic.HEAVY)
@@ -3109,7 +3195,6 @@ class GameEngine(
             if (config.mode.invaders) {
                 enemyShots.clear()
             }
-            aimDirection = if (paddle.x >= worldWidth * 0.5f) 1f else -1f
             spawnBall()
             state = GameState.READY
             syncAimForLaunch()
@@ -3117,7 +3202,13 @@ class GameEngine(
     }
 
     private fun triggerGameOver() {
-        val summary = GameSummary(score, levelIndex + 1, elapsedSeconds.toInt())
+        val summary = GameSummary(
+            score = score,
+            level = levelIndex + 1,
+            durationSeconds = elapsedSeconds.toInt(),
+            bricksBroken = runBricksBroken,
+            livesLost = runLivesLost
+        )
         audio.play(GameSound.GAME_OVER, 1f)
         audio.haptic(GameHaptic.HEAVY)
         audio.stopMusic() // Stop background music on game over
@@ -3186,6 +3277,7 @@ class GameEngine(
             if (destroyed) {
                 addScore(neighbor.scoreValue)
                 updateDailyChallenges(ChallengeType.BRICKS_DESTROYED)
+                runBricksBroken += 1
                 spawnBrickDestructionFx(neighbor, brick.centerX, brick.centerY, intensity = 0.92f)
                 maybeSpawnPowerup(neighbor)
             }
