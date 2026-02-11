@@ -55,7 +55,7 @@ class GameRenderer(
     }
 
     override fun onSurfaceCreated(unused: javax.microedition.khronos.opengles.GL10?, config: javax.microedition.khronos.egl.EGLConfig?) {
-        GLES20.glClearColor(0.04f, 0.07f, 0.13f, 1f)
+        GLES20.glClearColor(0.015f, 0.02f, 0.035f, 1f)
         renderer2D.init()
         // Music now starts when gameplay begins (ball launch) - not on activity load
     }

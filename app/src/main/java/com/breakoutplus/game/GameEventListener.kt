@@ -16,6 +16,7 @@ interface GameEventListener {
     fun onFpsUpdate(fps: Int)
     fun onShieldUpdated(current: Int, max: Int)
     fun onLaserFired(cooldownSeconds: Float)
+    fun onVolleyBallsUpdated(volleyBalls: Int)
     fun onThemeUnlocked(themeName: String)
     fun onCosmeticUnlocked(newTier: Int)
     fun onGameOver(summary: GameSummary)

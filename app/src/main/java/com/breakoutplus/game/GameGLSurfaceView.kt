@@ -21,6 +21,11 @@ class GameGLSurfaceView @JvmOverloads constructor(
     private var targetFps: Float = 0f
     private var surfaceReady = false
 
+    private fun queueRendererAction(action: (GameRenderer) -> Unit) {
+        val renderer = rendererImpl ?: return
+        queueEvent { action(renderer) }
+    }
+
     init {
         setEGLContextClientVersion(2)
         preserveEGLContextOnPause = true
@@ -48,62 +53,74 @@ class GameGLSurfaceView @JvmOverloads constructor(
             renderMode = RENDERMODE_WHEN_DIRTY
             framePacer.start()
         } else {
-            rendererImpl?.reset(config)
+            queueRendererAction { it.reset(config) }
             framePacer.start()
         }
-        rendererImpl?.setTargetFrameRate(targetFps)
+        queueRendererAction { it.setTargetFrameRate(targetFps) }
     }
 
     fun pauseGame() {
         framePacer.stop()
-        rendererImpl?.pause()
+        queueRendererAction { it.pause() }
         renderMode = RENDERMODE_WHEN_DIRTY
         requestRender()
     }
 
     fun resumeGame() {
-        rendererImpl?.resume()
+        queueRendererAction { it.resume() }
         renderMode = RENDERMODE_WHEN_DIRTY
         framePacer.start()
     }
 
     fun restartGame() {
-        rendererImpl?.restart()
+        queueRendererAction { it.restart() }
     }
 
     fun nextLevel() {
-        rendererImpl?.nextLevel()
+        queueRendererAction { it.nextLevel() }
     }
 
     fun setTargetFrameRate(fps: Float) {
         targetFps = if (fps.isFinite() && fps > 0f) fps else 0f
         framePacer.setTargetFps(targetFps)
-        rendererImpl?.setTargetFrameRate(targetFps)
+        queueRendererAction { it.setTargetFrameRate(targetFps) }
         applySurfaceFrameRate()
     }
 
     fun applySettings(settings: com.breakoutplus.SettingsManager.Settings) {
-        rendererImpl?.updateSettings(settings)
+        queueRendererAction { it.updateSettings(settings) }
     }
 
     fun applyUnlocks(unlocks: com.breakoutplus.UnlockManager.UnlockState) {
-        rendererImpl?.updateUnlocks(unlocks)
+        queueRendererAction { it.updateUnlocks(unlocks) }
     }
 
     fun fireLaser() {
-        rendererImpl?.fireLaser()
+        queueRendererAction { it.fireLaser() }
     }
 
     fun debugSpawnPowerup(type: PowerUpType) {
-        rendererImpl?.debugSpawnPowerup(type)
+        queueRendererAction { it.debugSpawnPowerup(type) }
     }
 
     fun setDebugAutoPlay(enabled: Boolean) {
-        rendererImpl?.setDebugAutoPlay(enabled)
+        queueRendererAction { it.setDebugAutoPlay(enabled) }
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        rendererImpl?.handleTouch(event, width.toFloat(), height.toFloat())
+        val renderer = rendererImpl
+        if (renderer != null) {
+            val copy = MotionEvent.obtain(event)
+            val viewWidth = width.toFloat()
+            val viewHeight = height.toFloat()
+            queueEvent {
+                try {
+                    renderer.handleTouch(copy, viewWidth, viewHeight)
+                } finally {
+                    copy.recycle()
+                }
+            }
+        }
         if (event.action == MotionEvent.ACTION_UP) {
             performClick()
         }

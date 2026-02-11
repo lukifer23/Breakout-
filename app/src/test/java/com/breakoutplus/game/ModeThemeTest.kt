@@ -41,6 +41,6 @@ class ModeThemeTest {
             levelIndex = 1,
             availableThemeNames = setOf("Cobalt", "Neon", "Vapor")
         )
-        assertEquals("Neon", chosen.name)
+        assertEquals("Vapor", chosen.name)
     }
 }

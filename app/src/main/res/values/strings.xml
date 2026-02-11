@@ -48,6 +48,7 @@
     <string name="label_level_format">Level %1$d</string>
     <string name="label_score_format">Score %1$d</string>
     <string name="label_lives_format">Lives %1$d</string>
+    <string name="label_volley_balls_format">Balls %1$d</string>
     <string name="label_fps_format">FPS: %1$d</string>
     <string name="label_combo_format">Combo x%1$d</string>
     <string name="label_journey_format">Journey %1$d-%2$d</string>

@@ -9,7 +9,7 @@ object ModeTheme {
     private val endlessRotation = listOf("Neon", "Sunset", "Cobalt", "Aurora", "Forest", "Lava", "Circuit", "Vapor", "Ember")
     private val godRotation = listOf("Aurora", "Forest", "Cobalt")
     private val rushRotation = listOf("Lava", "Ember", "Sunset")
-    private val volleyRotation = listOf("Circuit", "Cobalt", "Neon", "Vapor")
+    private val volleyRotation = listOf("Circuit", "Lava", "Cobalt", "Ember", "Vapor")
     private val survivalRotation = listOf("Forest", "Circuit", "Cobalt")
 
     private val fallbackByMode = mapOf(
@@ -29,6 +29,9 @@ object ModeTheme {
         }
 
         val unlocked = availableThemeNames.toSet()
+        val orderedUnlocked = (LevelThemes.baseThemes() + LevelThemes.bonusThemes() + listOf(LevelThemes.DEFAULT))
+            .map { it.name }
+            .filter { it in unlocked }
         val rotation = when (mode) {
             GameMode.CLASSIC -> classicRotation
             GameMode.TIMED -> timedRotation
@@ -47,7 +50,7 @@ object ModeTheme {
             if (fallback in unlocked) {
                 fallback
             } else {
-                unlocked.firstOrNull() ?: fallback
+                orderedUnlocked.firstOrNull() ?: fallback
             }
         }
         return LevelThemes.themeByName(chosenName) ?: LevelThemes.DEFAULT

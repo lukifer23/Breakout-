@@ -342,18 +342,39 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         scheduleHudUpdate()
     }
 
+    override fun onVolleyBallsUpdated(volleyBalls: Int) {
+        runOnUiThread {
+            if (config.mode == GameMode.VOLLEY) {
+                binding.hudLives.text = getString(R.string.label_volley_balls_format, volleyBalls)
+            }
+        }
+    }
+
     override fun onTimeUpdated(secondsRemaining: Int) {
         runOnUiThread {
             val minutes = secondsRemaining / 60
             val seconds = secondsRemaining % 60
             val isCountdown = config.mode.timeLimitSeconds > 0
             binding.hudTime.visibility = android.view.View.VISIBLE
-            binding.hudTime.text = if (isCountdown) {
-                getString(R.string.label_time_format, minutes, seconds)
-            } else {
-                getString(R.string.label_elapsed_format, minutes, seconds)
+
+            // Mode-specific time display
+            val timeText = when (config.mode) {
+                GameMode.SURVIVAL -> {
+                    // Show speed multiplier for survival mode
+                    val speedMultiplier = 1f + (secondsRemaining * 0.02f).coerceAtMost(1.4f)
+                    String.format("Speed: %.1fx", speedMultiplier)
+                }
+                else -> {
+                    if (isCountdown) {
+                        getString(R.string.label_time_format, minutes, seconds)
+                    } else {
+                        getString(R.string.label_elapsed_format, minutes, seconds)
+                    }
+                }
             }
-            if (isCountdown && secondsRemaining <= 10) {
+
+            binding.hudTime.text = timeText
+            if (isCountdown && secondsRemaining <= 10 && config.mode != GameMode.SURVIVAL) {
                 binding.hudTime.setTextColor(androidx.core.content.ContextCompat.getColor(this, R.color.bp_red))
             } else {
                 binding.hudTime.setTextColor(androidx.core.content.ContextCompat.getColor(this, R.color.bp_white))
@@ -507,9 +528,15 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         dialog.setCancelable(false)
         dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
         dialog.window?.setLayout(
-            android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+            (resources.displayMetrics.widthPixels * 0.9f).toInt().coerceAtMost(600),
             android.view.ViewGroup.LayoutParams.WRAP_CONTENT
         )
+        // Position in upper half to avoid paddle area
+        val window = dialog.window
+        val params = window?.attributes
+        params?.gravity = android.view.Gravity.TOP or android.view.Gravity.CENTER_HORIZONTAL
+        params?.y = (resources.displayMetrics.heightPixels * 0.2f).toInt()
+        window?.attributes = params
 
         val title = view.findViewById<android.widget.TextView>(R.id.highScoreTitle)
         val meta = view.findViewById<android.widget.TextView>(R.id.highScoreMeta)

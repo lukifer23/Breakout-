@@ -16,6 +16,8 @@ class Renderer2D {
 
     private var offsetX = 0f
     private var offsetY = 0f
+    private var worldWidth = 100f
+    private var worldHeight = 160f
 
     fun init() {
         shader.build()
@@ -29,13 +31,31 @@ class Renderer2D {
         GLES20.glViewport(0, 0, width, height)
     }
 
-    fun setWorldSize(worldWidth: Float, worldHeight: Float) {
-        Matrix.orthoM(projectionMatrix, 0, 0f, worldWidth, 0f, worldHeight, -1f, 1f)
+    fun setWorldSize(width: Float, height: Float) {
+        worldWidth = width
+        worldHeight = height
+        Matrix.orthoM(projectionMatrix, 0, 0f, width, 0f, height, -1f, 1f)
     }
 
     fun setOffset(x: Float, y: Float) {
         offsetX = x
         offsetY = y
+    }
+
+    // Simple frustum culling - check if a circle is visible on screen
+    fun isCircleVisible(x: Float, y: Float, radius: Float): Boolean {
+        val left = x - radius
+        val right = x + radius
+        val bottom = y - radius
+        val top = y + radius
+        return right >= 0f && left <= worldWidth && top >= 0f && bottom <= worldHeight
+    }
+
+    // Simple frustum culling - check if a rect is visible on screen
+    fun isRectVisible(x: Float, y: Float, width: Float, height: Float): Boolean {
+        val right = x + width
+        val top = y + height
+        return right >= 0f && x <= worldWidth && top >= 0f && y <= worldHeight
     }
 
     fun drawRect(x: Float, y: Float, width: Float, height: Float, color: FloatArray) {
@@ -58,6 +78,30 @@ class Renderer2D {
         shader.setUniformMatrix("u_MVPMatrix", mvpMatrix)
         shader.setUniformColor("u_Color", color)
         circleMesh.draw(shader)
+    }
+
+    // Batched circle drawing to reduce shader switches and matrix calculations
+    private val circleBatch = mutableListOf<CircleDraw>()
+    private data class CircleDraw(val x: Float, val y: Float, val radius: Float, val color: FloatArray)
+
+    fun drawCircleBatch(x: Float, y: Float, radius: Float, color: FloatArray) {
+        circleBatch.add(CircleDraw(x, y, radius, color))
+    }
+
+    fun flushCircleBatch() {
+        if (circleBatch.isEmpty()) return
+
+        shader.use()
+        circleBatch.forEach { circle ->
+            Matrix.setIdentityM(modelMatrix, 0)
+            Matrix.translateM(modelMatrix, 0, circle.x + offsetX, circle.y + offsetY, 0f)
+            Matrix.scaleM(modelMatrix, 0, circle.radius, circle.radius, 1f)
+            Matrix.multiplyMM(mvpMatrix, 0, projectionMatrix, 0, modelMatrix, 0)
+            shader.setUniformMatrix("u_MVPMatrix", mvpMatrix)
+            shader.setUniformColor("u_Color", circle.color)
+            circleMesh.draw(shader)
+        }
+        circleBatch.clear()
     }
 
     fun drawBeam(x: Float, y: Float, width: Float, height: Float, color: FloatArray) {
