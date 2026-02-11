@@ -39,7 +39,7 @@
 		1A2B3C4D5E6F7890AB123474 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB123475 /* SettingsView.swift */; };
 		1A2B3C4D5E6F7890AB123476 /* ScoreboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB123477 /* ScoreboardView.swift */; };
 		1A2B3C4D5E6F7890AB123478 /* HowToView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB123479 /* HowToView.swift */; };
-		1A2B3C4D5E6F7890AB12347B /* PrivacyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB12347C /* PrivacyView.swift */; };
+		1A2B3C4D5E6F7890AB12347B /* PrivacyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB123483 /* PrivacyView.swift */; };
 		1A2B3C4D5E6F7890AB12347D /* DailyChallengesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB12347E /* DailyChallengesView.swift */; };
 		1A2B3C4D5E6F7890AB12347F /* DailyChallengeStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB123480 /* DailyChallengeStore.swift */; };
 		1A2B3C4D5E6F7890AB123481 /* EnemyShot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB123482 /* EnemyShot.swift */; };
@@ -81,7 +81,7 @@
 		1A2B3C4D5E6F7890AB123475 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Views/SettingsView.swift; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F7890AB123477 /* ScoreboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Views/ScoreboardView.swift; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F7890AB123479 /* HowToView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Views/HowToView.swift; sourceTree = SOURCE_ROOT; };
-		1A2B3C4D5E6F7890AB12347C /* PrivacyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Views/PrivacyView.swift; sourceTree = SOURCE_ROOT; };
+		1A2B3C4D5E6F7890AB123483 /* PrivacyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Views/PrivacyView.swift; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F7890AB12347E /* DailyChallengesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Views/DailyChallengesView.swift; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F7890AB123480 /* DailyChallengeStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Services/DailyChallengeStore.swift; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F7890AB123482 /* EnemyShot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Core/Models/EnemyShot.swift; sourceTree = SOURCE_ROOT; };
@@ -155,7 +155,7 @@
 						1A2B3C4D5E6F7890AB12349C /* ScoreboardStore.swift */,
 						1A2B3C4D5E6F7890AB1234A3 /* AudioManager.swift */,
 						1A2B3C4D5E6F7890AB1234A4 /* Haptics.swift */,
-						1A2B3C4D5E6F7890AB123480 /* DailyChallengeStore.swift */,
+						1A2B3C4D5E6F7890AB12347F /* DailyChallengeStore.swift */,
 						1A2B3C4D5E6F7890AB123483 /* ProgressionStore.swift */,
 						1A2B3C4D5E6F7890AB123484 /* LifetimeStatsStore.swift */,
 					);
@@ -197,7 +197,7 @@
 				1A2B3C4D5E6F7890AB123475 /* SettingsView.swift */,
 				1A2B3C4D5E6F7890AB123477 /* ScoreboardView.swift */,
 				1A2B3C4D5E6F7890AB123479 /* HowToView.swift */,
-				1A2B3C4D5E6F7890AB12347C /* PrivacyView.swift */,
+				1A2B3C4D5E6F7890AB123483 /* PrivacyView.swift */,
 				1A2B3C4D5E6F7890AB12347E /* DailyChallengesView.swift */,
 			);
 			path = Views;
@@ -212,7 +212,7 @@
 					1A2B3C4D5E6F7890AB12346B /* PowerUp.swift */,
 					1A2B3C4D5E6F7890AB12346D /* LevelTheme.swift */,
 					1A2B3C4D5E6F7890AB12349E /* Beam.swift */,
-					1A2B3C4D5E6F7890AB123482 /* EnemyShot.swift */,
+					1A2B3C4D5E6F7890AB123481 /* EnemyShot.swift */,
 			);
 				path = Models;
 				sourceTree = "<group>";

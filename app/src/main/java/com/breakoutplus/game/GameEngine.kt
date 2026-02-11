@@ -1674,7 +1674,7 @@ class GameEngine(
             godModeTipShown = true
         }
         if (config.mode == GameMode.VOLLEY) {
-            volleyBallCount = if (first) 3 else (volleyBallCount + 1).coerceAtMost(18)
+            volleyBallCount = if (first) 4 else volleyBallCount.coerceIn(4, 18)
             listener.onVolleyBallsUpdated(volleyBallCount)
         }
 
@@ -1764,7 +1764,8 @@ class GameEngine(
     private fun buildBricks(layout: LevelFactory.LevelLayout) {
         bricks.clear()
         val rows = layout.rows + layoutRowBoost
-        val cols = layout.cols + layoutColBoost
+        val requestedCols = layout.cols + layoutColBoost
+        val cols = if (config.mode == GameMode.VOLLEY) effectiveVolleyColumns(requestedCols) else requestedCols
         val spacing = brickSpacing
         val areaTop = worldHeight * brickAreaTopRatio
         val areaBottom = worldHeight * brickAreaBottomRatio
@@ -1774,17 +1775,23 @@ class GameEngine(
         val sizeScale = (if (config.mode.invaders) invaderScale else 1f) * globalBrickScale
         val brickHeight = baseBrickHeight * sizeScale
         val brickWidth = baseBrickWidth * sizeScale
-        val colOffset = layoutColBoost / 2
+        val colOffset = if (config.mode == GameMode.VOLLEY) 0 else layoutColBoost / 2
         val occupied = HashSet<Long>(layout.bricks.size * 2)
         fun key(col: Int, row: Int): Long = (col.toLong() shl 32) or (row.toLong() and 0xffffffffL)
         layout.bricks.forEach { spec ->
-            val cellX = spacing + (spec.col + colOffset) * (baseBrickWidth + spacing)
+            val sourceCol = spec.col + colOffset
+            val gridX = if (config.mode == GameMode.VOLLEY) {
+                remapVolleyColumn(sourceCol, requestedCols, cols)
+            } else {
+                sourceCol
+            }
+            if (!occupied.add(key(gridX, spec.row))) return@forEach
+            val cellX = spacing + gridX * (baseBrickWidth + spacing)
             val visualRow = if (config.mode == GameMode.VOLLEY) spec.row + volleyAdvanceRows else spec.row
             val cellY = areaBottom + (rows - 1 - visualRow) * (baseBrickHeight + spacing * 0.5f)
             val rawX = cellX + (baseBrickWidth - brickWidth) * 0.5f
             val x = if (config.mode.invaders) compressInvaderX(rawX, brickWidth) else rawX
             val y = cellY + (baseBrickHeight - brickHeight) * 0.5f
-            val gridX = spec.col + colOffset
             val (resolvedType, resolvedHitPoints) = resolveBrickSpecForMode(spec.type, spec.hitPoints)
             val brick = Brick(
                 gridX = gridX,
@@ -1820,7 +1827,6 @@ class GameEngine(
             }
 
             bricks.add(brick)
-            occupied.add(key(gridX, spec.row))
         }
 
         if (layoutRowBoost > 0 && !config.mode.invaders) {
@@ -1941,11 +1947,24 @@ class GameEngine(
         return fallbackType to scaledHp
     }
 
+    private fun effectiveVolleyColumns(requestedCols: Int): Int {
+        val clampedRequested = requestedCols.coerceAtLeast(6)
+        val target = if (currentAspectRatio <= 1.5f) 9 else 8
+        return min(clampedRequested, target)
+    }
+
+    private fun remapVolleyColumn(col: Int, originalCols: Int, targetCols: Int): Int {
+        if (targetCols >= originalCols) return col.coerceIn(0, targetCols - 1)
+        val ratio = (col.toFloat() + 0.5f) / originalCols.toFloat().coerceAtLeast(1f)
+        return (ratio * targetCols).toInt().coerceIn(0, targetCols - 1)
+    }
+
     private fun relayoutBricks() {
         val layout = currentLayout ?: return
         if (bricks.isEmpty()) return
         val rows = layout.rows + layoutRowBoost
-        val cols = layout.cols + layoutColBoost
+        val requestedCols = layout.cols + layoutColBoost
+        val cols = if (config.mode == GameMode.VOLLEY) effectiveVolleyColumns(requestedCols) else requestedCols
         val spacing = brickSpacing
         val areaTop = worldHeight * brickAreaTopRatio
         val areaBottom = worldHeight * brickAreaBottomRatio
@@ -2433,7 +2452,7 @@ class GameEngine(
         volleyAdvanceRows += 1
         audio.play(GameSound.BRICK_MOVING, 0.36f, 0.88f)
         renderer?.triggerScreenShake(0.7f, 0.07f)
-        if (volleyTurnCount % 2 == 0 && volleyBallCount < 18) {
+        if (shouldAwardVolleyBall(volleyTurnCount) && volleyBallCount < 18) {
             volleyBallCount += 1
             listener.onVolleyBallsUpdated(volleyBallCount)
             listener.onTip("Volley +1 ball (${volleyBallCount} total).")
@@ -2466,9 +2485,17 @@ class GameEngine(
         updatePowerupStatus()
     }
 
+    private fun shouldAwardVolleyBall(turnCount: Int): Boolean {
+        return when {
+            turnCount <= 3 -> true
+            turnCount <= 10 -> turnCount % 2 == 0
+            else -> turnCount % 3 == 0
+        }
+    }
+
     private fun spawnVolleyTopRow() {
         val layout = currentLayout ?: return
-        val cols = (layout.cols + layoutColBoost).coerceAtLeast(6)
+        val cols = effectiveVolleyColumns(layout.cols + layoutColBoost)
         val spawnRow = -volleyAdvanceRows
         val occupied = HashSet<Int>(cols)
         bricks.forEach { brick ->
@@ -2484,7 +2511,7 @@ class GameEngine(
         val density = (0.72f + levelIndex * 0.011f + volleyTurnCount * 0.004f - congestionPenalty - earlyEase)
             .coerceIn(0.5f, 0.88f)
 
-        val ballRelief = ((volleyBallCount - 3).coerceAtLeast(0) * 0.04f).coerceAtMost(0.24f)
+        val ballRelief = ((volleyBallCount - 4).coerceAtLeast(0) * 0.04f).coerceAtMost(0.24f)
         val hpScale = (1f + levelIndex * 0.06f + volleyTurnCount * 0.024f - ballRelief).coerceAtLeast(0.85f)
 
         val danger = (volleyTurnCount / 10f).coerceIn(0f, 1f)
