@@ -113,6 +113,14 @@ class GameEngine {
     private var sensitivity: Float = 0.7
     private var paddleTargetX: Float = 50
     private var dailyChallengesEnabled = false
+    private var aimNormalized: Float = 0
+    private var aimNormalizedTarget: Float = 0
+    private var aimAngle: Float = .pi * 0.5
+    private var aimHasInput = false
+    private var isDragging = false
+    private let aimSmoothingRate: Float = 18
+    private let aimCenterDeadZone: Float = 0.018
+    private let aimMinAngle: Float = 0.30
 
     // Invaders mode state
     // private var enemyShots: [EnemyShot] = [] // TODO: Uncomment when EnemyShot added to Xcode project
@@ -139,6 +147,17 @@ class GameEngine {
 
     weak var delegate: GameEngineDelegate?
 
+    var aimGuideAngle: Float {
+        aimAngle
+    }
+
+    var shouldShowAimGuide: Bool {
+        if case .ready = state {
+            return balls.contains { abs($0.vx) < 0.001 && abs($0.vy) < 0.001 }
+        }
+        return false
+    }
+
     init(gameMode: GameMode, sensitivity: Float = 0.7) {
         self.gameMode = gameMode
         self.sensitivity = sensitivity
@@ -147,6 +166,7 @@ class GameEngine {
         self.lives = gameMode.baseLives
         self.timeRemaining = gameMode.timeLimitSeconds
 
+        resetAim()
         resetLevel()
     }
 
@@ -175,12 +195,14 @@ class GameEngine {
         // Update game objects
         if state == .ready {
             attachReadyBallsToPaddle()
+            updateAimFromPaddle()
         }
         updateBalls(dt)
         updateBricks(dt)
         updatePowerups(dt)
         updateBeams(dt)
         updatePaddle(dt)
+        updateAim(Float(dtRaw))
 
         // Volley logic
         if gameMode == .volley {
@@ -349,82 +371,97 @@ class GameEngine {
             ball.vx *= scale
             ball.vy *= scale
         }
+
+        // Keep trajectories readable by preventing near-horizontal stalls.
+        let minVerticalRatio: Float = 0.22
+        let minVy = target * minVerticalRatio
+        if abs(ball.vy) < minVy {
+            let signVy: Float = ball.vy == 0 ? 1 : (ball.vy > 0 ? 1 : -1)
+            let newVy = signVy * minVy
+            let signVx: Float = ball.vx == 0 ? 1 : (ball.vx > 0 ? 1 : -1)
+            let newVx = sqrt(max(0, target * target - newVy * newVy)) * signVx
+            ball.vy = newVy
+            ball.vx = newVx
+        }
     }
 
     private func speedBoostSlope() -> Float {
         switch gameMode {
-        case .classic: return 0.015
-        case .timed: return 0.020
-        case .endless: return 0.017
-        case .god: return 0.010
-        case .rush: return 0.023
+        case .classic: return 0.014
+        case .timed: return 0.019
+        case .endless: return 0.018
+        case .god: return 0.008
+        case .rush: return 0.020
         case .volley: return 0.012
-        case .survival: return 0.028
-        case .invaders: return 0.016
+        case .tunnel: return 0.015
+        case .survival: return 0.029
+        case .invaders: return 0.017
         }
     }
 
     private func speedBoostCap() -> Float {
         switch gameMode {
-        case .classic: return 1.35
-        case .timed: return 1.45
-        case .endless: return 1.4
-        case .god: return 1.25
-        case .rush: return 1.5
+        case .classic: return 1.33
+        case .timed: return 1.43
+        case .endless: return 1.46
+        case .god: return 1.18
+        case .rush: return 1.48
         case .volley: return 1.34
-        case .survival: return 1.6
-        case .invaders: return 1.4
+        case .tunnel: return 1.38
+        case .survival: return 1.64
+        case .invaders: return 1.44
         }
     }
 
     private func minSpeedFactor() -> Float {
         switch gameMode {
-        case .classic: return 0.6
-        case .timed: return 0.7
-        case .endless: return 0.65
-        case .god: return 0.5
-        case .rush: return 0.72
+        case .classic: return 0.58
+        case .timed: return 0.67
+        case .endless: return 0.64
+        case .god: return 0.48
+        case .rush: return 0.70
         case .volley: return 0.58
-        case .survival: return 0.75
-        case .invaders: return 0.6
+        case .tunnel: return 0.60
+        case .survival: return 0.76
+        case .invaders: return 0.62
         }
     }
 
     private func maxSpeedFactor() -> Float {
         switch gameMode {
-        case .classic: return 1.6
-        case .timed: return 1.75
-        case .endless: return 1.7
-        case .god: return 1.45
-        case .rush: return 1.85
+        case .classic: return 1.58
+        case .timed: return 1.74
+        case .endless: return 1.76
+        case .god: return 1.36
+        case .rush: return 1.78
         case .volley: return 1.52
-        case .survival: return 1.9
-        case .invaders: return 1.6
+        case .tunnel: return 1.60
+        case .survival: return 1.92
+        case .invaders: return 1.66
         }
     }
 
     private func difficultyForMode() -> Float {
-        let base: Float
-        let slope: Float
         switch gameMode {
         case .classic:
-            base = 1.0; slope = 0.075
+            return min(3.0, 1.0 + Float(levelIndex) * 0.072)
         case .timed:
-            base = 1.05; slope = 0.095
+            return min(3.0, 1.06 + Float(levelIndex) * 0.092)
         case .endless:
-            base = 1.0; slope = 0.085
+            return min(3.0, 1.03 + Float(levelIndex) * 0.094)
         case .god:
-            base = 0.9; slope = 0.05
+            return min(3.0, 0.86 + Float(levelIndex) * 0.04)
         case .rush:
-            base = 1.1; slope = 0.11
+            return min(3.0, 1.06 + Float(levelIndex) * 0.09)
         case .volley:
-            base = 1.0; slope = 0.062
+            return min(3.0, 1.0 + Float(levelIndex) * 0.062)
+        case .tunnel:
+            return min(3.0, 1.04 + Float(levelIndex) * 0.078)
         case .survival:
-            base = 1.15; slope = 0.12
+            return min(3.0, 1.2 + Float(levelIndex) * 0.125)
         case .invaders:
-            base = 1.05; slope = 0.08
+            return min(3.0, 1.08 + Float(levelIndex) * 0.085)
         }
-        return min(3.0, base + Float(levelIndex) * slope)
     }
 
     private func updateBricks(_ deltaTime: TimeInterval) {
@@ -975,34 +1012,40 @@ class GameEngine {
     }
 
     func launchBall() {
+        syncAimForLaunch()
+        attachReadyBallsToPaddle()
+
         if gameMode == .volley && state == .ready {
             launchVolleyTurn()
             return
         }
 
-        guard let index = balls.firstIndex(where: { $0.vy == 0 }), index < balls.count else { return }
+        guard let index = balls.firstIndex(where: { abs($0.vy) < 0.001 && abs($0.vx) < 0.001 }), index < balls.count else { return }
 
         var ball = balls[index]
-        let angle = Double.random(in: .pi/6...(5 * .pi / 6)) // 30-150 degrees
-        let levelBoost = min(Double(speedBoostCap()), 1.0 + Double(levelIndex) * Double(speedBoostSlope()))
-        let speed = Double(gameMode.launchSpeed) * levelBoost
-        ball.vx = Float(speed * cos(angle))
-        ball.vy = Float(abs(speed * sin(angle))) // Always up
+        let levelBoost = min(speedBoostCap(), 1 + Float(levelIndex) * speedBoostSlope())
+        let speed = Float(gameMode.launchSpeed) * levelBoost
+        let angle = aimAngle.clamped(to: aimMinAngle...(Float.pi - aimMinAngle))
+        ball.vx = speed * Float(Darwin.cos(Double(angle)))
+        ball.vy = max(speed * Float(Darwin.sin(Double(angle))), speed * 0.18)
         balls[index] = ball
+        aimHasInput = false
+        aimNormalized = 0
+        aimNormalizedTarget = 0
         if state == .ready {
             state = .running
         }
     }
 
-    private func launchBallWithAim(_ ball: Ball) {
+    private func launchBallWithAim(_ ball: Ball, angleOffset: Float = 0) {
         guard let index = balls.firstIndex(where: { $0.id == ball.id }) else { return }
 
         var updatedBall = ball
-        let angle = Double.random(in: .pi/6...(5 * .pi / 6)) // 30-150 degrees
-        let levelBoost = min(Double(speedBoostCap()), 1.0 + Double(levelIndex) * Double(speedBoostSlope()))
-        let speed = Double(gameMode.launchSpeed) * levelBoost
-        updatedBall.vx = Float(speed * cos(angle))
-        updatedBall.vy = Float(abs(speed * sin(angle))) // Always up
+        let levelBoost = min(speedBoostCap(), 1 + Float(levelIndex) * speedBoostSlope())
+        let speed = Float(gameMode.launchSpeed) * levelBoost
+        let angle = (aimAngle + angleOffset).clamped(to: aimMinAngle...(Float.pi - aimMinAngle))
+        updatedBall.vx = speed * Float(Darwin.cos(Double(angle)))
+        updatedBall.vy = max(speed * Float(Darwin.sin(Double(angle))), speed * 0.18)
         balls[index] = updatedBall
     }
 
@@ -1045,10 +1088,118 @@ class GameEngine {
 
     func movePaddle(to x: Float) {
         paddleTargetX = max(paddle.width / 2, min(worldWidth - paddle.width / 2, x))
+        if case .ready = state {
+            paddle.x = paddleTargetX
+            paddleVelocity = 0
+            attachReadyBallsToPaddle()
+        }
+        updateAimFromPaddle()
+    }
+
+    func beginDrag(at x: Float) {
+        isDragging = true
+        movePaddle(to: x)
+        aimNormalized = aimNormalizedTarget
+        applyAimFromNormalized(aimNormalized)
+    }
+
+    func drag(to x: Float) {
+        movePaddle(to: x)
+        isDragging = true
+        aimNormalized = aimNormalizedTarget
+        applyAimFromNormalized(aimNormalized)
+    }
+
+    func endDrag(at x: Float) {
+        movePaddle(to: x)
+        syncAimForLaunch()
+        isDragging = false
+    }
+
+    private func resetAim() {
+        aimHasInput = false
+        aimNormalized = 0
+        aimNormalizedTarget = 0
+        aimAngle = .pi * 0.5
+        isDragging = false
+    }
+
+    private func updateAimFromPaddle() {
+        let center = worldWidth * 0.5
+        let sourceX = isDragging ? paddleTargetX : paddle.x
+        let delta = (sourceX - center) / center
+        aimNormalizedTarget = delta.clamped(to: -1...1)
+    }
+
+    private func applyAimFromNormalized(_ normalized: Float) {
+        let clamped = normalized.clamped(to: -1...1)
+        let stabilized: Float = abs(clamped) < aimCenterDeadZone ? 0 : clamped
+        aimHasInput = isDragging || abs(stabilized) > 0.001
+        let eased = stabilized * (0.8 + abs(stabilized) * 0.2)
+        let centerAngle: Float = .pi * 0.5
+        let maxDeflection = max(0.2, centerAngle - aimMinAngle)
+        let signedDeflection = eased * maxDeflection
+        aimAngle = (centerAngle - signedDeflection).clamped(to: aimMinAngle...(Float.pi - aimMinAngle))
+    }
+
+    private func syncAimForLaunch() {
+        updateAimFromPaddle()
+        aimNormalized = aimNormalizedTarget
+        applyAimFromNormalized(aimNormalized)
+    }
+
+    private func updateAim(_ dt: Float) {
+        if isDragging {
+            aimNormalized = aimNormalizedTarget
+        } else {
+            let lerpFactor: Float
+            if dt > 0 {
+                lerpFactor = 1 - Float(Foundation.exp(Double(-aimSmoothingRate * dt)))
+            } else {
+                lerpFactor = 1
+            }
+            aimNormalized += (aimNormalizedTarget - aimNormalized) * lerpFactor
+        }
+        applyAimFromNormalized(aimNormalized)
     }
 
     func setSensitivity(_ newSensitivity: Float) {
         sensitivity = max(0.0, min(1.0, newSensitivity))
+    }
+
+    func updateViewport(aspectRatio: Float) {
+        let clampedAspect = aspectRatio.clamped(to: 1.35...2.4)
+        let newHeight = worldWidth * clampedAspect
+        if abs(newHeight - worldHeight) < 0.25 {
+            return
+        }
+
+        let oldHeight = worldHeight
+        worldHeight = newHeight
+        let yScale = newHeight / max(1, oldHeight)
+
+        for i in 0..<balls.count {
+            balls[i].y *= yScale
+        }
+        for i in 0..<bricks.count {
+            bricks[i].y *= yScale
+        }
+        for i in 0..<powerups.count {
+            powerups[i].y *= yScale
+        }
+        for i in 0..<beams.count {
+            beams[i].y *= yScale
+        }
+        for i in 0..<enemyShots.count {
+            enemyShots[i].y *= yScale
+        }
+
+        paddle.y = 8
+        paddleTargetX = paddleTargetX.clamped(to: paddle.width / 2...worldWidth - paddle.width / 2)
+        if case .ready = state {
+            attachReadyBallsToPaddle()
+        }
+        updateAimFromPaddle()
     }
 
     func enableDailyChallenges(_ enabled: Bool) {
@@ -1089,7 +1240,7 @@ class GameEngine {
 
         // Apply movement to invader bricks
         for i in 0..<bricks.count {
-            if bricks[i].type != .unbreakable { // Assume unbreakable bricks are invaders for now
+            if bricks[i].type == .invader {
                 bricks[i].x += invaderDirection * invaderSpeed * Float(deltaTime)
                 // Keep within bounds
                 bricks[i].x = max(bricks[i].width/2, min(worldWidth - bricks[i].width/2, bricks[i].x))
@@ -1176,6 +1327,9 @@ class GameEngine {
 
         launchBallWithAim(firstBall)
         emit(.sound(.bounce, volume: 0.45))
+        aimHasInput = false
+        aimNormalized = 0
+        aimNormalizedTarget = 0
         state = .running
     }
 
@@ -1248,7 +1402,7 @@ class GameEngine {
         bricks.removeAll()
         powerups.removeAll()
         beams.removeAll()
-        // enemyShots.removeAll() // TODO: Uncomment when EnemyShot added to Xcode project
+        enemyShots.removeAll()
         comboCount = 0
         comboTimer = 0
         activeEffects.removeAll()
@@ -1264,6 +1418,8 @@ class GameEngine {
         state = .ready
         paddleVelocity = 0
         lastPaddleX = paddle.x
+        paddleTargetX = paddle.x
+        resetAim()
 
         // Reset invader state
         if gameMode.invaders {
@@ -1284,6 +1440,7 @@ class GameEngine {
         }
 
         spawnBall()
+        updateAimFromPaddle()
     }
 
     private func generateLevel() {
@@ -1291,6 +1448,7 @@ class GameEngine {
             index: levelIndex,
             worldWidth: worldWidth,
             worldHeight: worldHeight,
+            mode: gameMode,
             endless: gameMode.endless,
             difficulty: difficultyForMode()
         )
@@ -1329,12 +1487,15 @@ class GameEngine {
 
     func pause() {
         if case .paused = state { return }
+        isDragging = false
         state = .paused(previous: state)
     }
 
     func resume() {
         if case .paused(let previous) = state {
             state = previous
+            isDragging = false
+            updateAimFromPaddle()
         }
     }
 

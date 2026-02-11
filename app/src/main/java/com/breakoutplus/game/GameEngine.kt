@@ -6,6 +6,7 @@ import com.breakoutplus.UnlockManager
 import com.breakoutplus.game.LevelFactory.buildLevel
 import java.util.ArrayDeque
 import kotlin.math.abs
+import kotlin.math.atan2
 import kotlin.math.ceil
 import kotlin.math.exp
 import kotlin.math.max
@@ -64,6 +65,7 @@ class GameEngine(
     private var laserCooldown = 0f
     private val laserCooldownDuration = 0.4f
     private var speedMultiplier = 1f
+    private var timeWarpMultiplier = 1f
     private var fireballActive = false
     private var magnetActive = false
     private var gravityWellActive = false
@@ -123,6 +125,8 @@ class GameEngine(
     private var aimHasInput = false
     private var isDragging = false
     private var activePointerId = MotionEvent.INVALID_POINTER_ID
+    private var touchWorldX = 0f
+    private var touchWorldY = 0f
     private val aimSmoothingRate = 18f
     private val aimCenterDeadZone = 0.018f
     private var debugAutoPlayEnabled = false
@@ -136,6 +140,13 @@ class GameEngine(
     private var volleyAdvanceRows = 0
     private var volleyLaunchX = worldWidth * 0.5f
     private var volleyReturnAnchorX = Float.NaN
+
+    private var tunnelShotsFired = 0
+    private var tunnelGateFlash = 0f
+
+    // Spatial hash for brick collisions
+    private val spatialHashCellSize = 8f
+    private val spatialHash = mutableMapOf<Pair<Int, Int>, MutableList<Brick>>()
 
     private var theme: LevelTheme = LevelThemes.DEFAULT
     private var themePool: MutableList<LevelTheme> = LevelThemes.baseThemes().toMutableList()
@@ -247,16 +258,19 @@ class GameEngine(
         }
 
         if (state == GameState.RUNNING) {
+            val ballDt = dt / timeWarpMultiplier  // Balls move at normal speed during TIME_WARP
+            val worldDt = dt  // Other entities affected by TIME_WARP
+
             if (config.mode == GameMode.VOLLEY) {
-                updateVolleyLaunchQueue(dt)
+                updateVolleyLaunchQueue(ballDt)
             }
-            updateBalls(dt)
-            updateBallTrails(dt)
-            updateBeams(dt)
-            updatePowerups(dt)
-            updateInvaderShots(dt)
-            updateParticles(dt)
-            updateWaves(dt)
+            updateBalls(ballDt)
+            updateBallTrails(ballDt)
+            updateBeams(worldDt)
+            updatePowerups(worldDt)
+            updateInvaderShots(worldDt)
+            updateParticles(worldDt)
+            updateWaves(worldDt)
             checkLevelCompletion()
             if (config.mode == GameMode.VOLLEY && state == GameState.RUNNING) {
                 resolveVolleyTurnIfReady()
@@ -639,6 +653,25 @@ class GameEngine(
 
         powerups.forEach { power ->
             renderPowerup(renderer, power)
+
+            // Magnet indicator: show attraction line when magnet is active
+            if (magnetActive) {
+                val dx = paddle.x - power.x
+                val dy = paddle.y + paddle.height / 2f - power.y
+                val distance = kotlin.math.sqrt(dx * dx + dy * dy)
+                if (distance > 0.1f && distance < 25f) { // Only show for nearby powerups
+                    val steps = 8
+                    val lineAlpha = (0.15f * (1f - distance / 25f)).coerceIn(0.02f, 0.15f)
+                    val lineColor = fillColor(tempColor, 0.8f, 0.4f, 1f, lineAlpha)
+                    repeat(steps) { step ->
+                        val t = step.toFloat() / (steps - 1)
+                        val x = power.x + dx * t
+                        val y = power.y + dy * t
+                        val dotSize = 0.15f + (1f - t) * 0.1f
+                        renderer.drawCircle(x, y, dotSize, lineColor)
+                    }
+                }
+            }
         }
 
         beams.forEach { beam ->
@@ -893,12 +926,23 @@ class GameEngine(
             adjustColor(power.type.color, 0.25f + pulse * 0.2f, 0.6f)
         }
         renderer.drawRect(power.x - size * 0.6f, power.y - size * 0.6f, size * 1.2f, size * 1.2f, glowColor)
-        val ringAlpha = 0.08f + pulse * 0.12f
+        // Rotating ring effect - simple pulsing ring
+        val ringPulse = (kotlin.math.sin(time * 2.5f) * 0.5f + 0.5f)
+        val ringSize = size * (0.75f + ringPulse * 0.15f)
+        val ringAlpha = 0.12f + pulse * 0.08f
+        renderer.drawCircle(
+            power.x,
+            power.y,
+            ringSize,
+            fillColor(tempColor, power.type.color[0], power.type.color[1], power.type.color[2], ringAlpha)
+        )
+
+        val innerRingAlpha = 0.08f + pulse * 0.12f
         renderer.drawCircle(
             power.x,
             power.y,
             size * 0.62f,
-            fillColor(tempColor, power.type.color[0], power.type.color[1], power.type.color[2], ringAlpha)
+            fillColor(tempColor, power.type.color[0], power.type.color[1], power.type.color[2], innerRingAlpha)
         )
 
         // Main powerup body with gradient
@@ -1016,6 +1060,29 @@ class GameEngine(
                 renderer.drawRect(power.x - size * 0.08f, power.y + size * 0.18f, size * 0.16f, size * 0.06f, glyphSoft)
                 renderer.drawRect(power.x - size * 0.22f, power.y - size * 0.08f, size * 0.44f, size * 0.16f, glyphSoft)
             }
+            PowerUpType.RICOCHET -> {
+                // Bouncing arrows
+                renderer.drawRect(power.x - size * 0.18f, power.y - size * 0.02f, size * 0.12f, size * 0.04f, glyph)
+                renderer.drawRect(power.x - size * 0.06f, power.y - size * 0.14f, size * 0.04f, size * 0.12f, glyph)
+                renderer.drawRect(power.x + size * 0.02f, power.y + size * 0.02f, size * 0.12f, size * 0.04f, glyphSoft)
+                renderer.drawRect(power.x + size * 0.1f, power.y + size * 0.06f, size * 0.04f, size * 0.12f, glyphSoft)
+            }
+            PowerUpType.TIME_WARP -> {
+                // Clock/spiral
+                renderer.drawCircle(power.x, power.y, size * 0.18f, glyph)
+                renderer.drawRect(power.x - size * 0.02f, power.y - size * 0.18f, size * 0.04f, size * 0.12f, glyphSoft)
+                renderer.drawRect(power.x - size * 0.18f, power.y - size * 0.02f, size * 0.12f, size * 0.04f, glyphSoft)
+                renderer.drawRect(power.x + size * 0.06f, power.y + size * 0.06f, size * 0.08f, size * 0.08f, glyph)
+            }
+            PowerUpType.DOUBLE_SCORE -> {
+                // Star/X shape
+                renderer.drawRect(power.x - size * 0.02f, power.y - size * 0.18f, size * 0.04f, size * 0.36f, glyph)
+                renderer.drawRect(power.x - size * 0.18f, power.y - size * 0.02f, size * 0.36f, size * 0.04f, glyph)
+                renderer.drawRect(power.x - size * 0.12f, power.y - size * 0.12f, size * 0.08f, size * 0.08f, glyphSoft)
+                renderer.drawRect(power.x + size * 0.04f, power.y - size * 0.12f, size * 0.08f, size * 0.08f, glyphSoft)
+                renderer.drawRect(power.x - size * 0.12f, power.y + size * 0.04f, size * 0.08f, size * 0.08f, glyphSoft)
+                renderer.drawRect(power.x + size * 0.04f, power.y + size * 0.04f, size * 0.08f, size * 0.08f, glyphSoft)
+            }
         }
     }
 
@@ -1032,7 +1099,7 @@ class GameEngine(
         for (i in 1..arrowSteps) {
             val t = i.toFloat() / arrowSteps.toFloat()
             val size = 0.42f + t * 0.34f
-            val alpha = (0.35f + t * 0.55f).coerceIn(0f, 0.9f)
+            val alpha = (0.5f + t * 0.5f).coerceIn(0f, 1f) // Increased base alpha from 0.35f to 0.5f
             renderer.drawCircle(
                 startX + dx * arrowLength * t,
                 startY + dy * arrowLength * t,
@@ -1053,15 +1120,23 @@ class GameEngine(
                 .toInt()
                 .coerceIn(6, 16)
             val segmentAlpha = (0.38f - segment * 0.08f).coerceAtLeast(0.14f)
+            val isFirstBounce = segment == 0
+            val segmentColor = if (isFirstBounce) {
+                // First bounce in contrasting color (dimmer version of accent)
+                fillColor(tempColor, theme.accent[0] * 0.6f, theme.accent[1] * 0.6f, theme.accent[2] * 0.6f, 1f)
+            } else {
+                fillColor(tempColor, theme.accent[0], theme.accent[1], theme.accent[2], 1f)
+            }
             for (i in 1..steps) {
                 val t = i.toFloat() / steps.toFloat()
                 val alpha = (segmentAlpha * (1f - t)).coerceIn(0f, segmentAlpha)
                 val size = 0.32f + (1f - t) * 0.18f
+                val finalColor = fillColor(tempColor, segmentColor[0], segmentColor[1], segmentColor[2], alpha)
                 renderer.drawCircle(
                     segStartX + dx * segmentLength * t,
                     segStartY + dy * segmentLength * t,
                     size,
-                    fillColor(tempColor, theme.accent[0], theme.accent[1], theme.accent[2], alpha)
+                    finalColor
                 )
             }
             val impactX = segStartX + dx * segmentLength
@@ -1432,6 +1507,29 @@ class GameEngine(
         aimNormalizedTarget = delta.coerceIn(-1f, 1f)
     }
 
+    private fun updateAimFromTouch() {
+        val ball = balls.firstOrNull() ?: return updateAimFromPaddle()
+
+        // Use direct finger-to-ball aiming when ball is stuck to paddle in READY state
+        if (state == GameState.READY && ball.stuckToPaddle) {
+            val dx = touchWorldX - ball.x
+            val dy = touchWorldY - ball.y
+            val distance = sqrt(dx * dx + dy * dy)
+            if (distance > 0.1f) {
+                val angle = atan2(dy, dx)
+                // Convert angle to normalized aim value
+                val centerAngle = Math.PI.toFloat() * 0.5f
+                val maxDeflection = (centerAngle - aimMinAngle).coerceAtLeast(0.2f)
+                val deflection = (centerAngle - angle).coerceIn(-maxDeflection, maxDeflection)
+                aimNormalizedTarget = (deflection / maxDeflection).coerceIn(-1f, 1f)
+                return
+            }
+        }
+
+        // Fall back to paddle-relative aiming
+        updateAimFromPaddle()
+    }
+
     private fun applyAimFromNormalized(normalized: Float) {
         val clamped = normalized.coerceIn(-1f, 1f)
         val stabilized = if (abs(clamped) < aimCenterDeadZone) 0f else clamped
@@ -1498,11 +1596,8 @@ class GameEngine(
             ) {
                 shootLaser()
             }
-            if (event.actionMasked == MotionEvent.ACTION_UP || event.actionMasked == MotionEvent.ACTION_CANCEL) {
-                isDragging = false
-                activePointerId = MotionEvent.INVALID_POINTER_ID
-            }
-            return
+            // Allow paddle movement in VOLLEY RUNNING state
+            // Continue with normal touch handling below
         }
 
         val clampWorldX = { screenX: Float ->
@@ -1546,12 +1641,15 @@ class GameEngine(
             MotionEvent.ACTION_DOWN -> {
                 activePointerId = actionPointerId
                 val downX = pointerWorldX(activePointerId) ?: trackedX
+                val downY = pointerWorldY(activePointerId) ?: trackedY
+                touchWorldX = downX
+                touchWorldY = downY
                 updatePaddleFromTouch(
                     downX,
                     snapImmediately = state == GameState.READY || balls.any { it.stuckToPaddle }
                 )
                 isDragging = true
-                updateAimFromPaddle()
+                updateAimFromTouch()
                 aimNormalized = aimNormalizedTarget
                 applyAimFromNormalized(aimNormalized)
             }
@@ -1560,12 +1658,15 @@ class GameEngine(
                     activePointerId = actionPointerId
                 }
                 val moveX = pointerWorldX(activePointerId) ?: trackedX
+                val moveY = pointerWorldY(activePointerId) ?: trackedY
+                touchWorldX = moveX
+                touchWorldY = moveY
                 updatePaddleFromTouch(
                     moveX,
                     snapImmediately = state == GameState.READY || balls.any { it.stuckToPaddle }
                 )
                 isDragging = true
-                updateAimFromPaddle()
+                updateAimFromTouch()
                 aimNormalized = aimNormalizedTarget
                 applyAimFromNormalized(aimNormalized)
             }
@@ -1671,6 +1772,7 @@ class GameEngine(
             runLivesLost = 0
         }
         powerupsSinceOffense = 0
+        buildSpatialHash()
         powerupsSinceDefense = 0
         powerupsSinceControl = 0
         guardrailActive = config.mode.godMode
@@ -1807,6 +1909,40 @@ class GameEngine(
             listener.onTip(level.tip)
         }
         logger?.logLevelStart(levelIndex, theme.name)
+    }
+
+    private fun buildSpatialHash() {
+        spatialHash.clear()
+        for (brick in bricks) {
+            if (!brick.alive) continue
+            val minX = (brick.x / spatialHashCellSize).toInt()
+            val maxX = ((brick.x + brick.width) / spatialHashCellSize).toInt()
+            val minY = (brick.y / spatialHashCellSize).toInt()
+            val maxY = ((brick.y + brick.height) / spatialHashCellSize).toInt()
+
+            for (cellX in minX..maxX) {
+                for (cellY in minY..maxY) {
+                    val cellKey = cellX to cellY
+                    spatialHash.getOrPut(cellKey) { mutableListOf() }.add(brick)
+                }
+            }
+        }
+    }
+
+    private fun getNearbyBricks(ball: Ball): List<Brick> {
+        val result = mutableListOf<Brick>()
+        val ballMinX = ((ball.x - ball.radius) / spatialHashCellSize).toInt()
+        val ballMaxX = ((ball.x + ball.radius) / spatialHashCellSize).toInt()
+        val ballMinY = ((ball.y - ball.radius) / spatialHashCellSize).toInt()
+        val ballMaxY = ((ball.y + ball.radius) / spatialHashCellSize).toInt()
+
+        for (cellX in ballMinX..ballMaxX) {
+            for (cellY in ballMinY..ballMaxY) {
+                val cellKey = cellX to cellY
+                spatialHash[cellKey]?.let { result.addAll(it) }
+            }
+        }
+        return result.distinct() // Remove duplicates from overlapping cells
     }
 
     private fun buildBricks(layout: LevelFactory.LevelLayout) {
@@ -2337,6 +2473,11 @@ class GameEngine(
         ball.vx = speed * kotlin.math.cos(angle)
         ball.vy = (speed * kotlin.math.sin(angle)).coerceAtLeast(speed * 0.18f)
         ball.stuckToPaddle = false
+
+        // Track tunnel shots fired
+        if (config.mode == GameMode.TUNNEL) {
+            tunnelShotsFired += 1
+        }
     }
 
     private fun releaseStuckBalls() {
@@ -2432,10 +2573,18 @@ class GameEngine(
                     ball.x = ball.radius
                     ball.vx = abs(ball.vx)
                     audio.play(GameSound.BOUNCE, 0.6f)
+                    ball.ricochetBounces?.let { bounces ->
+                        ball.ricochetBounces = bounces - 1
+                        if (bounces <= 1) ball.ricochetBounces = null
+                    }
                 } else if (ball.x + ball.radius > worldWidth) {
                     ball.x = worldWidth - ball.radius
                     ball.vx = -abs(ball.vx)
                     audio.play(GameSound.BOUNCE, 0.6f)
+                    ball.ricochetBounces?.let { bounces ->
+                        ball.ricochetBounces = bounces - 1
+                        if (bounces <= 1) ball.ricochetBounces = null
+                    }
                 }
 
                 if (ball.y + ball.radius > worldHeight) {
@@ -2703,7 +2852,8 @@ class GameEngine(
     }
 
     private fun handleBrickCollision(ball: Ball) {
-        for (brick in bricks) {
+        val nearbyBricks = getNearbyBricks(ball)
+        for (brick in nearbyBricks) {
             if (!brick.alive) continue
             if (!circleIntersectsRect(ball, brick)) continue
 
@@ -2940,6 +3090,9 @@ class GameEngine(
             PowerUpType.BALL_SPLITTER -> "Splitter: duplicates balls."
             PowerUpType.FREEZE -> "Freeze: slows everything."
             PowerUpType.PIERCE -> "Pierce: balls ignore armor."
+            PowerUpType.RICOCHET -> "Ricochet: balls bounce twice off walls."
+            PowerUpType.TIME_WARP -> "Time Warp: slows time but keeps ball speed."
+            PowerUpType.DOUBLE_SCORE -> "2x Score: double points for limited time."
         }
         listener.onTip(message)
     }
@@ -3197,12 +3350,14 @@ class GameEngine(
                 entry.setValue(remaining)
             }
         }
-        speedMultiplier = when {
+        val baseSpeedMultiplier = when {
             activeEffects.containsKey(PowerUpType.FREEZE) -> 0.1f
             activeEffects.containsKey(PowerUpType.SLOW) -> 0.8f
             activeEffects.containsKey(PowerUpType.OVERDRIVE) -> 1.2f
             else -> 1f
         }
+        timeWarpMultiplier = if (activeEffects.containsKey(PowerUpType.TIME_WARP)) 0.7f else 1f
+        speedMultiplier = baseSpeedMultiplier * timeWarpMultiplier
         if (ballStyleDirty) {
             syncBallStyles()
         }
@@ -3372,6 +3527,21 @@ class GameEngine(
                 activeEffects[type] = 12f
                 syncBallStyles()
             }
+            PowerUpType.RICOCHET -> {
+                // Give balls extra wall bounces before losing effect
+                balls.forEach { ball ->
+                    ball.ricochetBounces = (ball.ricochetBounces ?: 0) + 2
+                }
+                activeEffects[type] = 15f
+            }
+            PowerUpType.TIME_WARP -> {
+                // Slow down bricks/enemies but keep ball speed normal
+                activeEffects[type] = 10f
+            }
+            PowerUpType.DOUBLE_SCORE -> {
+                // 2x score multiplier
+                activeEffects[type] = 8f
+            }
         }
         audio.haptic(GameHaptic.MEDIUM)
         updatePowerupStatus()
@@ -3397,6 +3567,75 @@ class GameEngine(
                 lastPowerupStatus = status
                 listener.onPowerupStatus(status)
             }
+            if (lastPowerupSnapshot.isNotEmpty() || combo != lastComboReported) {
+                lastPowerupSnapshot = emptyList()
+                lastComboReported = combo
+                listener.onPowerupsUpdated(emptyList(), combo)
+            }
+            return
+        }
+        if (config.mode == GameMode.TUNNEL) {
+            val segments = mutableListOf<String>()
+            activeEffects[PowerUpType.LASER]?.let { segments.add("Laser ${it.toInt()}s") }
+            activeEffects[PowerUpType.FIREBALL]?.let { segments.add("Fireball ${it.toInt()}s") }
+            activeEffects[PowerUpType.PIERCE]?.let { segments.add("Pierce ${it.toInt()}s") }
+            activeEffects[PowerUpType.SHIELD]?.let { segments.add("Shield ${it.toInt()}s") }
+            activeEffects[PowerUpType.GUARDRAIL]?.let { segments.add("Guardrail ${it.toInt()}s") }
+            activeEffects[PowerUpType.WIDE_PADDLE]?.let { segments.add("Wide ${it.toInt()}s") }
+            activeEffects[PowerUpType.MAGNET]?.let { segments.add("Magnet ${it.toInt()}s") }
+            activeEffects[PowerUpType.SLOW]?.let { segments.add("Slow ${it.toInt()}s") }
+            activeEffects[PowerUpType.FREEZE]?.let { segments.add("Freeze ${it.toInt()}s") }
+            activeEffects[PowerUpType.GRAVITY_WELL]?.let { segments.add("Grav ${it.toInt()}s") }
+            activeEffects[PowerUpType.OVERDRIVE]?.let { segments.add("Overdrive ${it.toInt()}s") }
+            activeEffects[PowerUpType.RICOCHET]?.let { segments.add("Ricochet ${it.toInt()}s") }
+            activeEffects[PowerUpType.TIME_WARP]?.let { segments.add("Time Warp ${it.toInt()}s") }
+            activeEffects[PowerUpType.DOUBLE_SCORE]?.let { segments.add("2x Score ${it.toInt()}s") }
+            segments.add("Shots: $tunnelShotsFired")
+            if (combo >= 2) {
+                segments.add("Combo x$combo")
+            }
+            val status = segments.joinToString(" • ")
+            if (status != lastPowerupStatus) {
+                lastPowerupStatus = status
+                listener.onPowerupStatus(status)
+            }
+            return
+        }
+        if (config.mode == GameMode.SURVIVAL) {
+            val segments = mutableListOf<String>()
+            activeEffects[PowerUpType.LASER]?.let { segments.add("Laser ${it.toInt()}s") }
+            activeEffects[PowerUpType.FIREBALL]?.let { segments.add("Fireball ${it.toInt()}s") }
+            activeEffects[PowerUpType.PIERCE]?.let { segments.add("Pierce ${it.toInt()}s") }
+            activeEffects[PowerUpType.SHIELD]?.let { segments.add("Shield ${it.toInt()}s") }
+            activeEffects[PowerUpType.GUARDRAIL]?.let { segments.add("Guardrail ${it.toInt()}s") }
+            activeEffects[PowerUpType.WIDE_PADDLE]?.let { segments.add("Wide ${it.toInt()}s") }
+            activeEffects[PowerUpType.MAGNET]?.let { segments.add("Magnet ${it.toInt()}s") }
+            activeEffects[PowerUpType.SLOW]?.let { segments.add("Slow ${it.toInt()}s") }
+            activeEffects[PowerUpType.FREEZE]?.let { segments.add("Freeze ${it.toInt()}s") }
+            activeEffects[PowerUpType.GRAVITY_WELL]?.let { segments.add("Grav ${it.toInt()}s") }
+            activeEffects[PowerUpType.OVERDRIVE]?.let { segments.add("Overdrive ${it.toInt()}s") }
+            activeEffects[PowerUpType.RICOCHET]?.let { segments.add("Ricochet ${it.toInt()}s") }
+            activeEffects[PowerUpType.TIME_WARP]?.let { segments.add("Time Warp ${it.toInt()}s") }
+            activeEffects[PowerUpType.DOUBLE_SCORE]?.let { segments.add("2x Score ${it.toInt()}s") }
+            segments.add("Speed: ${String.format("%.1f", speedMultiplier)}x")
+            if (combo >= 2) {
+                segments.add("Combo x$combo")
+            }
+            val status = segments.joinToString(" • ")
+            if (status != lastPowerupStatus) {
+                lastPowerupStatus = status
+                listener.onPowerupStatus(status)
+            }
+            return
+        }
+        if (config.mode == GameMode.ZEN) {
+            // Zen mode: minimal HUD, no scores or lives
+            val status = "Zen Mode"
+            if (status != lastPowerupStatus) {
+                lastPowerupStatus = status
+                listener.onPowerupStatus(status)
+            }
+            // Don't show powerup chips in zen mode
             if (lastPowerupSnapshot.isNotEmpty() || combo != lastComboReported) {
                 lastPowerupSnapshot = emptyList()
                 lastComboReported = combo
@@ -3453,7 +3692,8 @@ class GameEngine(
 
     private fun addScore(points: Int) {
         val boost = (1f + rewardScoreMultiplier).coerceAtLeast(1f)
-        val boosted = (points * boost).roundToInt()
+        val doubleScoreMultiplier = if (activeEffects.containsKey(PowerUpType.DOUBLE_SCORE)) 2f else 1f
+        val boosted = (points * boost * doubleScoreMultiplier).roundToInt()
         score += boosted
         if (streakBonusRemaining > 0) {
             score += streakBonusPerBrick
@@ -3875,7 +4115,10 @@ class GameEngine(
             PowerUpType.GRAVITY_WELL to 0.8f,
             PowerUpType.BALL_SPLITTER to 0.85f,
             PowerUpType.FREEZE to 0.75f,
-            PowerUpType.PIERCE to 0.9f
+            PowerUpType.PIERCE to 0.9f,
+            PowerUpType.RICOCHET to 0.8f,
+            PowerUpType.TIME_WARP to 0.7f,
+            PowerUpType.DOUBLE_SCORE to 0.6f
         )
         when (config.mode) {
             GameMode.TIMED -> {
@@ -4005,7 +4248,10 @@ class GameEngine(
             PowerUpType.MAGNET,
             PowerUpType.GRAVITY_WELL -> PowerupBucket.CONTROL
             PowerUpType.SHRINK,
-            PowerUpType.OVERDRIVE -> PowerupBucket.RISK
+            PowerUpType.OVERDRIVE,
+            PowerUpType.RICOCHET,
+            PowerUpType.TIME_WARP,
+            PowerUpType.DOUBLE_SCORE -> PowerupBucket.RISK
         }
     }
 
@@ -4235,7 +4481,8 @@ data class Ball(
     var isFireball: Boolean = false,
     var color: FloatArray = floatArrayOf(0.97f, 0.97f, 1f, 1f),
     var stuckToPaddle: Boolean = false,
-    var stickOffset: Float = 0f
+    var stickOffset: Float = 0f,
+    var ricochetBounces: Int? = null
 ) {
     val defaultColor: FloatArray = floatArrayOf(0.97f, 0.97f, 1f, 1f)
     val trail: ArrayDeque<TrailPoint> = ArrayDeque()
@@ -4551,7 +4798,10 @@ enum class PowerUpType(val displayName: String, val color: FloatArray) {
     GRAVITY_WELL("Gravity Well", floatArrayOf(0.4f, 0.6f, 1f, 1f)),
     BALL_SPLITTER("Ball Splitter", floatArrayOf(1f, 0.8f, 0.2f, 1f)),
     FREEZE("Freeze", floatArrayOf(0.3f, 0.8f, 1f, 1f)),
-    PIERCE("Pierce", floatArrayOf(0.9f, 0.5f, 0.1f, 1f))
+    PIERCE("Pierce", floatArrayOf(0.9f, 0.5f, 0.1f, 1f)),
+    RICOCHET("Ricochet", floatArrayOf(0.6f, 0.8f, 1f, 1f)),
+    TIME_WARP("Time Warp", floatArrayOf(0.4f, 0.9f, 0.7f, 1f)),
+    DOUBLE_SCORE("2x Score", floatArrayOf(1f, 0.8f, 0.3f, 1f))
 }
 
 data class Beam(

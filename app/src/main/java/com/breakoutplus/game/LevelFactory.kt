@@ -310,10 +310,124 @@ object LevelFactory {
             ),
             theme = LevelThemes.VAPOR,
             tip = "Boss bricks require multiple hits - plan your approach."
+        ),
+        // Pattern 17: Diamond formation
+        LevelLayout(
+            rows = 8,
+            cols = 10,
+            bricks = parse(
+                listOf(
+                    "...NNN....",
+                    "..NRRRN...",
+                    ".N.....N..",
+                    "N..AAA..N.",
+                    "N..AAA..N.",
+                    ".N.....N..",
+                    "..NRRRN...",
+                    "...NNN...."
+                )
+            ),
+            theme = LevelThemes.COBALT,
+            tip = "Diamond core requires precision targeting."
+        ),
+        // Pattern 18: Spiral cascade
+        LevelLayout(
+            rows = 8,
+            cols = 10,
+            bricks = parse(
+                listOf(
+                    "N.........",
+                    "RN........",
+                    "ARN.......",
+                    "EARN......",
+                    ".EARN.....",
+                    "..EARN....",
+                    "...EARN...",
+                    "....EARN.."
+                )
+            ),
+            theme = LevelThemes.SUNSET,
+            tip = "Follow the spiral for maximum combo potential."
+        ),
+        // Pattern 19: Pillar defense
+        LevelLayout(
+            rows = 8,
+            cols = 10,
+            bricks = parse(
+                listOf(
+                    "N..N..N..N",
+                    "R..R..R..R",
+                    "A..A..A..A",
+                    "N..N..N..N",
+                    "R..R..R..R",
+                    "A..A..A..A",
+                    "N..N..N..N",
+                    "R..R..R..R"
+                )
+            ),
+            theme = LevelThemes.AURORA,
+            tip = "Pillar formations create strategic routing challenges."
+        ),
+        // Pattern 20: Grid gaps
+        LevelLayout(
+            rows = 8,
+            cols = 10,
+            bricks = parse(
+                listOf(
+                    "N.N.N.N.N.",
+                    ".N.N.N.N.N",
+                    "N.N.N.N.N.",
+                    ".N.N.N.N.N",
+                    "N.N.N.N.N.",
+                    ".N.N.N.N.N",
+                    "N.N.N.N.N.",
+                    ".N.N.N.N.N"
+                )
+            ),
+            theme = LevelThemes.NEON,
+            tip = "Grid patterns reward careful angle selection."
+        ),
+        // Pattern 21: Cascade waterfall
+        LevelLayout(
+            rows = 8,
+            cols = 10,
+            bricks = parse(
+                listOf(
+                    "....N.....",
+                    "...NRN....",
+                    "..N...N...",
+                    ".NR...RN..",
+                    "N..R.R..N.",
+                    ".NR...RN..",
+                    "..N...N...",
+                    "...NRN...."
+                )
+            ),
+            theme = LevelThemes.CIRCUIT,
+            tip = "Cascade patterns flow like water - find the current."
+        ),
+        // Pattern 22: Concentric rings
+        LevelLayout(
+            rows = 8,
+            cols = 10,
+            bricks = parse(
+                listOf(
+                    "...NNN....",
+                    "..N...N...",
+                    ".N..E..N..",
+                    "N..R.R..N.",
+                    "N..R.R..N.",
+                    ".N..E..N..",
+                    "..N...N...",
+                    "...NNN...."
+                )
+            ),
+            theme = LevelThemes.VAPOR,
+            tip = "Ring formations require working from outside in."
         )
     )
 
-    private val patternFillStartLevel = 0
+    private val patternFillStartLevel = 3
 
     fun buildLevel(
         index: Int,
@@ -332,7 +446,7 @@ object LevelFactory {
             val scaled = scaleLayout(base, difficulty)
             val themedLayout = scaled.copy(theme = resolvedTheme)
             if (index >= patternFillStartLevel) {
-                fillPatternGaps(themedLayout, difficulty, seed = index * 31 + 7)
+                fillPatternGaps(themedLayout, difficulty, index, seed = index * 31 + 7)
             } else {
                 themedLayout
             }
@@ -398,16 +512,22 @@ object LevelFactory {
         return bricks
     }
 
-    private fun fillPatternGaps(layout: LevelLayout, difficulty: Float, seed: Int): LevelLayout {
+    private fun fillPatternGaps(layout: LevelLayout, difficulty: Float, levelIndex: Int, seed: Int): LevelLayout {
         val existing = layout.bricks.associateBy { it.col to it.row }
         val random = kotlin.random.Random(seed)
         val bricks = layout.bricks.toMutableList()
         val intensity = ((difficulty - 1f) / 2f).coerceIn(0f, 1f)
+        // Gradual density ramp based on level ranges
+        val baseDensity = when {
+            levelIndex <= 6 -> 0.47f + (levelIndex - 3) * 0.04f // Levels 4-6: 47% to 55%
+            levelIndex <= 10 -> 0.55f + (levelIndex - 6) * 0.0375f // Levels 7-10: 55% to 70%
+            else -> 0.78f // Levels 11+: 78%
+        }.coerceIn(0.4f, 0.88f)
         for (row in 0 until layout.rows) {
             for (col in 0 until layout.cols) {
                 if (existing.containsKey(col to row)) continue
                 val rowRatio = if (layout.rows > 1) row.toFloat() / (layout.rows - 1).toFloat() else 0f
-                val density = (0.78f + intensity * 0.09f - rowRatio * 0.08f).coerceIn(0.64f, 0.88f)
+                val density = (baseDensity + intensity * 0.09f - rowRatio * 0.08f).coerceIn(0.4f, 0.88f)
                 if (random.nextFloat() > density) continue
                 val typeRoll = random.nextFloat()
                 val type = when {
@@ -635,12 +755,15 @@ object LevelFactory {
         val occupied = mutableSetOf<Pair<Int, Int>>()
 
         // Choose a procedural template based on level
-        val templateType = (index + kotlin.random.Random(index).nextInt(3)) % 4
+        val templateType = (index + kotlin.random.Random(index).nextInt(5)) % 7
         when (templateType) {
             0 -> generateSymmetricLayout(rows, cols, index, difficulty, bricks, occupied)
             1 -> generateClusterLayout(rows, cols, index, difficulty, bricks, occupied)
             2 -> generateWaveLayout(rows, cols, index, difficulty, bricks, occupied)
             3 -> generateFortressLayout(rows, cols, index, difficulty, bricks, occupied)
+            4 -> generateMazeLayout(rows, cols, index, difficulty, bricks, occupied)
+            5 -> generateScatterLayout(rows, cols, index, difficulty, bricks, occupied)
+            6 -> generateMirrorLayout(rows, cols, index, difficulty, bricks, occupied)
         }
 
         // Add special brick types based on difficulty and level
@@ -833,6 +956,99 @@ object LevelFactory {
                     val hp = (baseHp * difficulty).toInt().coerceAtLeast(1)
                     bricks.add(BrickSpec(col, row, type, hp))
                     occupied.add(col to row)
+                }
+            }
+        }
+    }
+
+    private fun generateMazeLayout(rows: Int, cols: Int, index: Int, difficulty: Float,
+                                 bricks: MutableList<BrickSpec>, occupied: MutableSet<Pair<Int, Int>>) {
+        val random = kotlin.random.Random(index * 31)
+        val mazeDensity = 0.35f + (index * 0.005f).coerceAtMost(0.25f)
+
+        // Create maze-like corridors
+        for (row in 0 until rows) {
+            for (col in 0 until cols) {
+                if (occupied.contains(col to row)) continue
+
+                // Create corridors with some randomness
+                val inCorridor = (row % 3 == 0 || col % 4 == 0) ||
+                                (row % 3 == 1 && random.nextFloat() < 0.3f) ||
+                                (col % 4 == 1 && random.nextFloat() < 0.2f)
+
+                if (inCorridor && random.nextFloat() < mazeDensity) {
+                    val type = if (random.nextFloat() < 0.2f) BrickType.REINFORCED else BrickType.NORMAL
+                    val baseHp = if (type == BrickType.REINFORCED) 2 else 1
+                    val hp = (baseHp * difficulty).toInt().coerceAtLeast(1)
+                    bricks.add(BrickSpec(col, row, type, hp))
+                    occupied.add(col to row)
+                }
+            }
+        }
+    }
+
+    private fun generateScatterLayout(rows: Int, cols: Int, index: Int, difficulty: Float,
+                                    bricks: MutableList<BrickSpec>, occupied: MutableSet<Pair<Int, Int>>) {
+        val random = kotlin.random.Random(index * 37)
+        val scatterCount = 12 + (index / 3).coerceAtMost(8) // 12-20 scattered bricks
+        val specialChance = 0.25f + (index * 0.005f).coerceAtMost(0.2f)
+
+        repeat(scatterCount) {
+            var attempts = 0
+            while (attempts < 10) {
+                val col = random.nextInt(cols)
+                val row = random.nextInt(rows)
+                if (!occupied.contains(col to row)) {
+                    val type = when {
+                        random.nextFloat() < specialChance -> BrickType.EXPLOSIVE
+                        random.nextFloat() < 0.3f -> BrickType.REINFORCED
+                        random.nextFloat() < 0.15f -> BrickType.ARMORED
+                        else -> BrickType.NORMAL
+                    }
+                    val baseHp = when (type) {
+                        BrickType.NORMAL -> 1
+                        BrickType.REINFORCED -> 2
+                        BrickType.ARMORED -> 3
+                        BrickType.EXPLOSIVE -> 1
+                        else -> 1
+                    }
+                    val hp = (baseHp * difficulty).toInt().coerceAtLeast(1)
+                    bricks.add(BrickSpec(col, row, type, hp))
+                    occupied.add(col to row)
+                    break
+                }
+                attempts++
+            }
+        }
+    }
+
+    private fun generateMirrorLayout(rows: Int, cols: Int, index: Int, difficulty: Float,
+                                   bricks: MutableList<BrickSpec>, occupied: MutableSet<Pair<Int, Int>>) {
+        val random = kotlin.random.Random(index * 41)
+        val mirrorType = random.nextInt(2) // 0=horizontal, 1=diagonal
+
+        // Generate bricks on one side, mirror to the other
+        val halfCols = cols / 2
+        for (row in 0 until rows) {
+            for (col in 0 until halfCols) {
+                if (occupied.contains(col to row)) continue
+
+                if (random.nextFloat() < 0.6f) {
+                    val type = if (random.nextFloat() < 0.2f) BrickType.REINFORCED else BrickType.NORMAL
+                    val baseHp = if (type == BrickType.REINFORCED) 2 else 1
+                    val hp = (baseHp * difficulty).toInt().coerceAtLeast(1)
+
+                    // Place on left side
+                    bricks.add(BrickSpec(col, row, type, hp))
+                    occupied.add(col to row)
+
+                    // Mirror to right side
+                    val mirrorCol = cols - 1 - col
+                    if (mirrorCol != col && !occupied.contains(mirrorCol to row)) {
+                        val mirrorRow = if (mirrorType == 1) rows - 1 - row else row // diagonal vs horizontal mirror
+                        bricks.add(BrickSpec(mirrorCol, mirrorRow, type, hp))
+                        occupied.add(mirrorCol to mirrorRow)
+                    }
                 }
             }
         }

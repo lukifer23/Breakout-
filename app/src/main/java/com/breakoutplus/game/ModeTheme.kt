@@ -44,6 +44,7 @@ object ModeTheme {
             GameMode.TUNNEL -> tunnelRotation
             GameMode.SURVIVAL -> survivalRotation
             GameMode.INVADERS -> listOf("Invaders")
+            GameMode.ZEN -> godRotation // Same as GOD mode for relaxing themes
         }
         val filtered = rotation.filter { it in unlocked }
         val chosenName = if (filtered.isNotEmpty()) {

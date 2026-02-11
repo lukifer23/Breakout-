@@ -42,73 +42,77 @@ struct SettingsView: View {
                     .cornerRadius(10)
                 }
 
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Audio")
-                        .foregroundColor(.white.opacity(0.9))
-                        .font(.system(size: 14, weight: .semibold))
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack(spacing: 16) {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Audio")
+                                .foregroundColor(.white.opacity(0.9))
+                                .font(.system(size: 14, weight: .semibold))
 
-                    ToggleRow(title: "Sound Effects", subtitle: "Bounce, brick, powerup cues", isOn: $soundEnabled)
-                    ToggleRow(title: "Music", subtitle: "Background loop", isOn: $musicEnabled)
+                            ToggleRow(title: "Sound Effects", subtitle: "Bounce, brick, powerup cues", isOn: $soundEnabled)
+                            ToggleRow(title: "Music", subtitle: "Background loop", isOn: $musicEnabled)
 
-                    SliderRow(title: "Master", value: $masterVolume)
-                    SliderRow(title: "Effects", value: $effectsVolume)
-                    SliderRow(title: "Music", value: $musicVolume)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
+                            SliderRow(title: "Master", value: $masterVolume)
+                            SliderRow(title: "Effects", value: $effectsVolume)
+                            SliderRow(title: "Music", value: $musicVolume)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
 
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Controls")
-                        .foregroundColor(.white.opacity(0.9))
-                        .font(.system(size: 14, weight: .semibold))
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Controls")
+                                .foregroundColor(.white.opacity(0.9))
+                                .font(.system(size: 14, weight: .semibold))
 
-                    ToggleRow(title: "Left Handed", subtitle: "Swap pause and fire button positions", isOn: $leftHanded)
-                    ToggleRow(title: "Tips", subtitle: "Show quick in-game hints", isOn: $tipsEnabled)
+                            ToggleRow(title: "Left Handed", subtitle: "Swap pause and fire button positions", isOn: $leftHanded)
+                            ToggleRow(title: "Tips", subtitle: "Show quick in-game hints", isOn: $tipsEnabled)
 
-                    SliderRow(title: "Sensitivity", value: $sensitivity)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
+                            SliderRow(title: "Sensitivity", value: $sensitivity)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
 
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Accessibility")
-                        .foregroundColor(.white.opacity(0.9))
-                        .font(.system(size: 14, weight: .semibold))
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Accessibility")
+                                .foregroundColor(.white.opacity(0.9))
+                                .font(.system(size: 14, weight: .semibold))
 
-                    ToggleRow(title: "Vibration", subtitle: "Haptics on major impacts", isOn: $vibrationEnabled)
+                            ToggleRow(title: "Vibration", subtitle: "Haptics on major impacts", isOn: $vibrationEnabled)
 
-                    Button("Privacy Policy") {
-                        gameViewModel.navigateToPrivacy()
+                            Button("Privacy Policy") {
+                                gameViewModel.navigateToPrivacy()
+                            }
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(Color(hex: "31E1F7"))
+                            .padding(.horizontal, 18)
+                            .padding(.vertical, 12)
+                            .background(Color(hex: "1A1F26"))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color(hex: "31E1F7").opacity(0.25), lineWidth: 1)
+                            )
+                            .cornerRadius(12)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("Advanced")
+                                .foregroundColor(.white.opacity(0.9))
+                                .font(.system(size: 14, weight: .semibold))
+
+                            Button("Reset Scoreboard") {
+                                scoreboard.reset()
+                            }
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 18)
+                            .padding(.vertical, 12)
+                            .background(Color(hex: "2A323D"))
+                            .cornerRadius(12)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(Color(hex: "31E1F7"))
-                    .padding(.horizontal, 18)
-                    .padding(.vertical, 12)
-                    .background(Color(hex: "1A1F26"))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color(hex: "31E1F7").opacity(0.25), lineWidth: 1)
-                    )
-                    .cornerRadius(12)
+                    .padding(.top, 4)
+                    .padding(.bottom, 16)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("Advanced")
-                        .foregroundColor(.white.opacity(0.9))
-                        .font(.system(size: 14, weight: .semibold))
-
-                    Button("Reset Scoreboard") {
-                        scoreboard.reset()
-                    }
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 18)
-                    .padding(.vertical, 12)
-                    .background(Color(hex: "2A323D"))
-                    .cornerRadius(12)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-                Spacer()
             }
             .padding(.horizontal, 20)
             .padding(.top, 60)

@@ -8,6 +8,7 @@ import com.breakoutplus.databinding.ActivityMainBinding
 
 class MainActivity : FoldAwareActivity() {
     private lateinit var binding: ActivityMainBinding
+    private var clickEnabled = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
@@ -17,22 +18,38 @@ class MainActivity : FoldAwareActivity() {
         setFoldAwareRoot(binding.root)
 
         binding.buttonPlay.setOnClickListener {
+            if (!clickEnabled) return@setOnClickListener
+            clickEnabled = false
             startActivity(Intent(this, ModeSelectActivity::class.java))
+            overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
         }
         binding.buttonChallenges.setOnClickListener {
+            if (!clickEnabled) return@setOnClickListener
+            clickEnabled = false
             startActivity(Intent(this, DailyChallengesActivity::class.java))
         }
         binding.buttonScoreboard.setOnClickListener {
+            if (!clickEnabled) return@setOnClickListener
+            clickEnabled = false
             startActivity(Intent(this, ScoreboardActivity::class.java))
         }
         binding.buttonSettings.setOnClickListener {
+            if (!clickEnabled) return@setOnClickListener
+            clickEnabled = false
             startActivity(Intent(this, SettingsActivity::class.java))
         }
         binding.buttonHowTo.setOnClickListener {
+            if (!clickEnabled) return@setOnClickListener
+            clickEnabled = false
             startActivity(Intent(this, HowToActivity::class.java))
         }
 
         animateIntro()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        clickEnabled = true
     }
 
     private fun animateIntro() {

@@ -81,7 +81,7 @@ class Renderer2D {
     }
 
     // Batched circle drawing to reduce shader switches and matrix calculations
-    private val circleBatch = mutableListOf<CircleDraw>()
+    private val circleBatch = ArrayList<CircleDraw>(300) // Pre-allocated for up to 300 circles
     private data class CircleDraw(val x: Float, val y: Float, val radius: Float, val color: FloatArray)
 
     fun drawCircleBatch(x: Float, y: Float, radius: Float, color: FloatArray) {

@@ -14,98 +14,98 @@ struct MenuView: View {
         ZStack {
             Color(hex: "0F1419").edgesIgnoringSafeArea(.all)
 
-            VStack(spacing: 30) {
-                // Title
-                VStack(spacing: 10) {
-                    Text("BREAKOUT")
-                        .font(.system(size: 48, weight: .bold))
-                        .foregroundColor(Color(hex: "31E1F7"))
+            GeometryReader { geometry in
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack(spacing: 26) {
+                        // Title
+                        VStack(spacing: 10) {
+                            Text("BREAKOUT")
+                                .font(.system(size: 48, weight: .bold))
+                                .foregroundColor(Color(hex: "31E1F7"))
 
-                    Text("+")
-                        .font(.system(size: 36, weight: .bold))
-                        .foregroundColor(Color(hex: "FF4FD8"))
-                        .offset(y: -8)
+                            Text("+")
+                                .font(.system(size: 36, weight: .bold))
+                                .foregroundColor(Color(hex: "FF4FD8"))
+                                .offset(y: -8)
 
-                    Text("PREMIUM")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(Color(hex: "FFFFFF").opacity(0.7))
-                }
+                            Text("PREMIUM")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(Color(hex: "FFFFFF").opacity(0.7))
+                        }
 
-                Text("Pick a mode tailored to your play style.")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.white.opacity(0.6))
-                    .padding(.top, 4)
+                        Text("Pick a mode tailored to your play style.")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.white.opacity(0.6))
 
-                Spacer()
+                        // Game Mode Buttons
+                        VStack(spacing: 15) {
+                            ForEach(GameMode.allCases) { mode in
+                                GameModeButton(mode: mode) {
+                                    gameViewModel.startGame(mode: mode)
+                                }
+                            }
+                        }
 
-                // Game Mode Buttons
-                VStack(spacing: 15) {
-                    ForEach(GameMode.allCases) { mode in
-                        GameModeButton(mode: mode) {
-                            gameViewModel.startGame(mode: mode)
+                        // Bottom buttons
+                        VStack(spacing: 12) {
+                            HStack(spacing: 20) {
+                                Button(action: {
+                                    gameViewModel.navigateToDailyChallenges()
+                                }) {
+                                    Text("Challenges")
+                                        .font(.system(size: 16, weight: .medium))
+                                        .foregroundColor(Color(hex: "31E1F7"))
+                                        .padding(.horizontal, 20)
+                                        .padding(.vertical, 10)
+                                        .background(Color(hex: "1A1F26"))
+                                        .cornerRadius(8)
+                                }
+
+                                Button(action: {
+                                    gameViewModel.navigateToScoreboard()
+                                }) {
+                                    Text("Scores")
+                                        .font(.system(size: 16, weight: .medium))
+                                        .foregroundColor(Color(hex: "31E1F7"))
+                                        .padding(.horizontal, 20)
+                                        .padding(.vertical, 10)
+                                        .background(Color(hex: "1A1F26"))
+                                        .cornerRadius(8)
+                                }
+                            }
+
+                            HStack(spacing: 20) {
+                                Button(action: {
+                                    gameViewModel.navigateToSettings()
+                                }) {
+                                    Text("Settings")
+                                        .font(.system(size: 16, weight: .medium))
+                                        .foregroundColor(Color(hex: "31E1F7"))
+                                        .padding(.horizontal, 20)
+                                        .padding(.vertical, 10)
+                                        .background(Color(hex: "1A1F26"))
+                                        .cornerRadius(8)
+                                }
+
+                                Button(action: {
+                                    gameViewModel.navigateToHowTo()
+                                }) {
+                                    Text("How To")
+                                        .font(.system(size: 16, weight: .medium))
+                                        .foregroundColor(Color(hex: "31E1F7"))
+                                        .padding(.horizontal, 20)
+                                        .padding(.vertical, 10)
+                                        .background(Color(hex: "1A1F26"))
+                                        .cornerRadius(8)
+                                }
+                            }
                         }
                     }
-                }
-
-                Spacer()
-
-                // Bottom buttons
-                VStack(spacing: 12) {
-                    HStack(spacing: 20) {
-                        Button(action: {
-                            gameViewModel.navigateToDailyChallenges()
-                        }) {
-                            Text("Challenges")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(Color(hex: "31E1F7"))
-                                .padding(.horizontal, 20)
-                                .padding(.vertical, 10)
-                                .background(Color(hex: "1A1F26"))
-                                .cornerRadius(8)
-                        }
-
-                        Button(action: {
-                            gameViewModel.navigateToScoreboard()
-                        }) {
-                            Text("Scores")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(Color(hex: "31E1F7"))
-                                .padding(.horizontal, 20)
-                                .padding(.vertical, 10)
-                                .background(Color(hex: "1A1F26"))
-                                .cornerRadius(8)
-                        }
-                    }
-
-                    HStack(spacing: 20) {
-                        Button(action: {
-                            gameViewModel.navigateToSettings()
-                        }) {
-                            Text("Settings")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(Color(hex: "31E1F7"))
-                                .padding(.horizontal, 20)
-                                .padding(.vertical, 10)
-                                .background(Color(hex: "1A1F26"))
-                                .cornerRadius(8)
-                        }
-
-                        Button(action: {
-                            gameViewModel.navigateToHowTo()
-                        }) {
-                            Text("How To")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(Color(hex: "31E1F7"))
-                                .padding(.horizontal, 20)
-                                .padding(.vertical, 10)
-                                .background(Color(hex: "1A1F26"))
-                                .cornerRadius(8)
-                        }
-                    }
+                    .padding(.vertical, 40)
+                    .padding(.horizontal, 20)
+                    .frame(minHeight: geometry.size.height, alignment: .top)
                 }
             }
-            .padding(.vertical, 50)
-            .padding(.horizontal, 20)
         }
     }
 }
@@ -122,6 +122,7 @@ struct GameModeButton: View {
         case .god: return Color(hex: "FF4FD8")
         case .rush: return Color(hex: "FF5D5D")
         case .volley: return Color(hex: "4ECDC4") // Teal for volley
+        case .tunnel: return Color(hex: "4AA3FF")
         case .survival: return Color(hex: "FF8A3D")
         case .invaders: return Color(hex: "9C6ADE") // Purple/violet for invaders
         }

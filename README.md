@@ -18,8 +18,8 @@ An Android-first brickbreaker tuned for foldables and modern phones. Breakout+ s
 Breakout+ elevates the classic brickbreaker genre with modern mobile optimizations and innovative gameplay mechanics. Built from the ground up for foldable devices, it leverages the unique form factor for enhanced gameplay experiences across folded and unfolded states.
 
 ### Key Features
-- **Platform Focus**: Native Android (release target) with iOS kept separate/in development
-- **GPU Acceleration**: OpenGL ES 2.0 (Android) / Metal (iOS) rendering at 60+ FPS
+- **Platform Focus**: Android release target with active iOS parity work
+- **GPU Acceleration**: OpenGL ES 2.0 (Android) / SpriteKit-backed rendering (iOS) at 60+ FPS target
 - **Advanced Physics**: Accurate collision detection with momentum preservation
 - **Multiple Game Modes**: Classic, Timed Challenge, Endless, God Mode, Level Rush, Volley, Tunnel Siege, Survival, and Invaders
 - **Dynamic Brick System**: 10 brick types with unique behaviors (moving, spawning, phase, boss, invader)
@@ -52,7 +52,7 @@ Key principles:
 4. Install APK: `adb install -r app/build/outputs/apk/debug/app-debug.apk`
 
 ### iOS: iPhone & iPad
-**Status**: iOS codebase present; Android release is current priority and iOS parity is paused.
+**Status**: Active parity work in progress (CLI build + simulator run verified).
 
 #### CLI-Only Development Setup (No Xcode GUI Required)
 1. Ensure Xcode 15+ is installed
@@ -61,9 +61,9 @@ Key principles:
 4. Install: `xcrun simctl install booted "$(find ~/Library/Developer/Xcode/DerivedData -name 'BreakoutPlus.app' -type d | head -1)"`
 5. Launch: `xcrun simctl launch booted com.breakoutplus.ios`
 
-**iOS Note**: Keep iOS implementation separate from Android release work unless parity work is explicitly resumed.
+**iOS Note**: iOS and Android implementations remain separate codepaths while gameplay parity and polish continue.
 
-Breakout+ is a GPU-accelerated brickbreaker built for foldables, tuned for the Samsung Galaxy Z Fold 7. It uses OpenGL ES for the game loop, fold-aware UI layout, and a full set of modes, powerups, audio, and multi-hit bricks.
+Breakout+ is a GPU-accelerated brickbreaker built for foldables and modern phones. Android uses OpenGL ES; iOS uses SwiftUI + SpriteKit with matching gameplay systems and mode support.
 
 ## Highlights
 - OpenGL ES 2.0 rendering via `GLSurfaceView` for hardware acceleration.
@@ -72,7 +72,7 @@ Breakout+ is a GPU-accelerated brickbreaker built for foldables, tuned for the S
 - Foldable-optimized layouts (`sw600dp`, `sw720dp`) plus hinge-aware padding using Jetpack WindowManager.
 - Multiple modes: Classic, Timed Challenge, Endless, God Mode, Level Rush (55s per level with aggressive pacing), Volley (turn-based chain launch), Tunnel Siege (fortress ring with a narrow breach lane), Survival, Invaders.
 - Powerups: Multi-ball, Laser, Guardrail, Shield, Extra life, Wide paddle, Shrink, Slow motion, Overdrive, Fireball, Magnet, Gravity Well, Ball Splitter, Freeze, Pierce.
-- Brick variations: Standard, Reinforced, Armored, Explosive, Unbreakable, Moving, Spawning, Phase, Boss.
+- Brick variations: Standard, Reinforced, Armored, Explosive, Unbreakable, Moving, Spawning, Phase, Boss, Invader.
 - Combo system: Score multipliers (x1.5-5x) for consecutive brick breaks within 2 seconds.
 - Journey chapters: Every 10 levels form a named chapter with XP progression.
 - Visual themes: 6 distinct themes (Neon, Sunset, Cobalt, Aurora, Forest, Lava) with unique color palettes and animated backgrounds.
@@ -223,21 +223,24 @@ Build the bundle required for Play Store uploads:
 ```
 Output: `app/build/outputs/bundle/release/app-release.aab`
 
-### iOS (Xcode)
+### iOS (CLI-first)
 
 #### Prerequisites
 - Xcode 15+, iOS 15+, Swift 5.9+, macOS
 
-#### Build and Run
-1. Open `ios/BreakoutPlus/BreakoutPlus.xcodeproj` in Xcode
-2. Select iOS Simulator or device
-3. Build: ⌘+B, Run: ⌘+R
-
-#### Alternative: Swift Package Manager
+#### Build and Run (No Xcode GUI)
 ```bash
-cd ios
-swift build
+./ios/run_ios_sim.sh --simulator "iPhone 17 Pro"
 ```
+
+#### Manual CLI Build (Simulator)
+```bash
+xcodebuild -project ios/BreakoutPlus/BreakoutPlus.xcodeproj \
+  -scheme BreakoutPlus -configuration Debug \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.2' build
+```
+
+Use `xcrun simctl list devices` to choose an installed simulator name if needed.
 
 ### Regenerate Audio
 All sound effects are procedurally generated:

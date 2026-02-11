@@ -53,6 +53,9 @@ final class AudioManager {
 
         ensureConfigured()
         applyMusicVolume()
+        if !musicEnabled {
+            pauseMusic()
+        }
     }
 
     func startMusicIfEnabled() {
@@ -139,4 +142,3 @@ final class AudioManager {
         min(1.0, max(0.0, v))
     }
 }
-

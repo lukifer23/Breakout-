@@ -52,6 +52,9 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     @Volatile private var pendingScore: Int? = null
     @Volatile private var pendingLives: Int? = null
     @Volatile private var pendingFps: Int? = null
+    @Volatile private var pendingVolleyBalls: Int? = null
+    @Volatile private var pendingShieldCurrent: Int? = null
+    @Volatile private var pendingShieldMax: Int? = null
     private val uiHandler = Handler(Looper.getMainLooper())
     private var pendingNextLevelRunnable: Runnable? = null
     private var levelAdvanceInProgress = false
@@ -156,6 +159,12 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             binding.gameSurface.setDebugAutoPlay(false)
         }
         super.onPause()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        pendingNextLevelRunnable?.let { uiHandler.removeCallbacks(it) }
+        pendingNextLevelRunnable = null
     }
 
     private fun refreshSettings() {
@@ -265,6 +274,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
                 hideOverlay(binding.endOverlay)
                 endOverlayState = EndOverlayState.NONE
                 val advanceRunnable = Runnable {
+                    if (isFinishing || isDestroyed) return@Runnable
                     pendingNextLevelRunnable = null
                     binding.gameSurface.resumeGame()
                     binding.gameSurface.nextLevel()
@@ -310,29 +320,52 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     private fun applyWindowInsets() {
         val baseTop = binding.hudContainer.paddingTop
         val baseBottom = binding.hudContainer.paddingBottom
+        val baseSurfaceParams = binding.gameSurface.layoutParams as ConstraintLayout.LayoutParams
+
+        // Apply initial insets synchronously if available
+        ViewCompat.getRootWindowInsets(binding.root)?.let { initialInsets ->
+            val bars = initialInsets.getInsets(
+                WindowInsetsCompat.Type.systemBars() or
+                    WindowInsetsCompat.Type.displayCutout() or
+                    WindowInsetsCompat.Type.systemGestures()
+            )
+            maxInsetTop = bars.top
+            maxInsetBottom = bars.bottom
+            val topPadding = baseTop + maxInsetTop
+            binding.hudContainer.setPadding(
+                binding.hudContainer.paddingLeft,
+                topPadding,
+                binding.hudContainer.paddingRight,
+                baseBottom
+            )
+            val desiredBottomMargin = baseSurfaceBottomMargin + maxInsetBottom
+            baseSurfaceParams.bottomMargin = desiredBottomMargin
+            binding.gameSurface.layoutParams = baseSurfaceParams
+        }
+
+        // Set listener for dynamic changes, but only update if insets actually change
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { _, insets ->
             val bars = insets.getInsets(
                 WindowInsetsCompat.Type.systemBars() or
                     WindowInsetsCompat.Type.displayCutout() or
                     WindowInsetsCompat.Type.systemGestures()
             )
-            if (bars.top > maxInsetTop) maxInsetTop = bars.top
-            if (bars.bottom > maxInsetBottom) maxInsetBottom = bars.bottom
+            val insetsChanged = bars.top != maxInsetTop || bars.bottom != maxInsetBottom
+            if (!insetsChanged) return@setOnApplyWindowInsetsListener insets
+
+            maxInsetTop = bars.top
+            maxInsetBottom = bars.bottom
             val topPadding = baseTop + maxInsetTop
-            if (binding.hudContainer.paddingTop != topPadding || binding.hudContainer.paddingBottom != baseBottom) {
-                binding.hudContainer.setPadding(
-                    binding.hudContainer.paddingLeft,
-                    topPadding,
-                    binding.hudContainer.paddingRight,
-                    baseBottom
-                )
-            }
+            binding.hudContainer.setPadding(
+                binding.hudContainer.paddingLeft,
+                topPadding,
+                binding.hudContainer.paddingRight,
+                baseBottom
+            )
             val params = binding.gameSurface.layoutParams as ConstraintLayout.LayoutParams
             val desiredBottomMargin = baseSurfaceBottomMargin + maxInsetBottom
-            if (params.bottomMargin != desiredBottomMargin) {
-                params.bottomMargin = desiredBottomMargin
-                binding.gameSurface.layoutParams = params
-            }
+            params.bottomMargin = desiredBottomMargin
+            binding.gameSurface.layoutParams = params
             insets
         }
     }
@@ -352,11 +385,8 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     }
 
     override fun onVolleyBallsUpdated(volleyBalls: Int) {
-        runOnUiThread {
-            if (config.mode == GameMode.VOLLEY) {
-                binding.hudLives.text = getString(R.string.label_volley_balls_format, volleyBalls)
-            }
-        }
+        pendingVolleyBalls = volleyBalls
+        scheduleHudUpdate()
     }
 
     override fun onTimeUpdated(secondsRemaining: Int) {
@@ -622,7 +652,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     }
 
     private fun showTooltip() {
-        hideOverlay(binding.tooltipOverlay)
+        showOverlay(binding.tooltipOverlay)
     }
 
     private fun hideTooltip() {
@@ -676,7 +706,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
                     .setDuration(UiMotion.BANNER_OUT_DURATION)
                     .setInterpolator(UiMotion.EMPHASIS_OUT)
                     .withEndAction {
-                        banner.visibility = View.GONE
+                        banner.visibility = View.INVISIBLE
                         banner.alpha = 1f
                         banner.scaleX = 1f
                         banner.scaleY = 1f
@@ -880,8 +910,18 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
                 pendingScore = null
             }
             pendingLives?.let {
-                binding.hudLives.text = getString(R.string.label_lives_format, it)
+                if (config.mode == GameMode.VOLLEY) {
+                    binding.hudLives.text = getString(R.string.label_volley_balls_format, it)
+                } else {
+                    binding.hudLives.text = getString(R.string.label_lives_format, it)
+                }
                 pendingLives = null
+            }
+            pendingVolleyBalls?.let {
+                if (config.mode == GameMode.VOLLEY) {
+                    binding.hudLives.text = getString(R.string.label_volley_balls_format, it)
+                }
+                pendingVolleyBalls = null
             }
             val fps = pendingFps
             if (fps != null && config.settings.showFpsCounter) {
@@ -916,6 +956,9 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             PowerUpType.BALL_SPLITTER -> "SPLIT"
             PowerUpType.FREEZE -> "FRZ"
             PowerUpType.PIERCE -> "PRC"
+            PowerUpType.RICOCHET -> "RICO"
+            PowerUpType.TIME_WARP -> "WARP"
+            PowerUpType.DOUBLE_SCORE -> "2X"
         }
     }
 

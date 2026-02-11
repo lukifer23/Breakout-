@@ -122,5 +122,17 @@ enum class GameMode(
         rush = false,
         invaders = true,
         launchSpeed = 78.2f
+    ),
+    ZEN(
+        displayName = "Zen Mode",
+        description = "Relaxing brick-breaking without pressure. No scores or lives to worry about.",
+        meta = "No scores • No lives • Relaxed",
+        baseLives = 99,
+        timeLimitSeconds = 0,
+        endless = false,
+        godMode = true,
+        rush = false,
+        invaders = false,
+        launchSpeed = 72.25f  // Same as GOD mode
     );
 }

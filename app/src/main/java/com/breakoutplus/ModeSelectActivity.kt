@@ -12,6 +12,7 @@ import com.breakoutplus.game.GameMode
 
 class ModeSelectActivity : FoldAwareActivity() {
     private lateinit var binding: ActivityModeSelectBinding
+    private var clickEnabled = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -19,10 +20,30 @@ class ModeSelectActivity : FoldAwareActivity() {
         setContentView(binding.root)
         setFoldAwareRoot(binding.root)
 
-        binding.buttonModeBack.setOnClickListener { finish() }
+        binding.buttonModeBack.setOnClickListener {
+            finish()
+            overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_right)
+        }
 
         renderModes()
         animateEntry()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        clickEnabled = true
+    }
+
+    override fun onPause() {
+        super.onPause()
+        // Cancel all ongoing animations to prevent them from running after activity is paused
+        for (i in 0 until binding.modeList.childCount) {
+            val child = binding.modeList.getChildAt(i)
+            child.animate().cancel()
+        }
+        binding.modeTitle.animate().cancel()
+        binding.modeSubtitle.animate().cancel()
+        binding.modeFooter.animate().cancel()
     }
 
     private fun renderModes() {
@@ -36,7 +57,8 @@ class ModeSelectActivity : FoldAwareActivity() {
             GameMode.VOLLEY,
             GameMode.TUNNEL,
             GameMode.SURVIVAL,
-            GameMode.INVADERS
+            GameMode.INVADERS,
+            GameMode.ZEN
         )
         modes.forEachIndexed { index, mode ->
             val cardBinding = ItemModeCardBinding.inflate(inflater, binding.modeList, false)
@@ -53,6 +75,7 @@ class ModeSelectActivity : FoldAwareActivity() {
                 GameMode.TUNNEL -> R.color.bp_gold
                 GameMode.SURVIVAL -> R.color.bp_orange
                 GameMode.INVADERS -> R.color.bp_violet
+                GameMode.ZEN -> R.color.bp_gray
             }
             val accentColor = ContextCompat.getColor(this, accentRes)
             (cardBinding.root as? MaterialCardView)?.strokeColor = accentColor
@@ -60,7 +83,10 @@ class ModeSelectActivity : FoldAwareActivity() {
             cardBinding.modeCardAccent.setBackgroundColor(accentColor)
             cardBinding.modeCardStart.backgroundTintList = ColorStateList.valueOf(accentColor)
             cardBinding.modeCardStart.setOnClickListener {
+                if (!clickEnabled) return@setOnClickListener
+                clickEnabled = false
                 startActivity(Intent(this, GameActivity::class.java).putExtra(GameActivity.EXTRA_MODE, mode.name))
+                overridePendingTransition(R.anim.fade_in, R.anim.fade_out)
             }
 
             // Add entrance animation

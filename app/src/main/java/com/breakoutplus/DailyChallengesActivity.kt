@@ -20,11 +20,17 @@ class DailyChallengesActivity : FoldAwareActivity() {
         animateEntry()
     }
 
+    override fun onResume() {
+        super.onResume()
+        // Refresh challenges in case the date changed while the app was in background
+        renderChallenges()
+    }
+
     private fun renderChallenges() {
         val challenges = DailyChallengeStore.load(this)
         binding.challengesList.removeAllViews()
         val inflater = LayoutInflater.from(this)
-        challenges.forEach { challenge ->
+        challenges.forEachIndexed { index, challenge ->
             val row = ItemDailyChallengeBinding.inflate(inflater, binding.challengesList, false)
             row.challengeTitle.text = challenge.title
             row.challengeDescription.text = challenge.description
@@ -42,7 +48,24 @@ class DailyChallengesActivity : FoldAwareActivity() {
             }
             val statusColor = if (challenge.completed) R.color.bp_green else R.color.bp_gold
             row.challengeStatus.setTextColor(ContextCompat.getColor(this, statusColor))
-            binding.challengesList.addView(row.root)
+
+            // Add entrance animation
+            val rowView = row.root
+            rowView.alpha = 0f
+            rowView.translationY = 30f
+            rowView.scaleX = 0.98f
+            rowView.scaleY = 0.98f
+            rowView.animate()
+                .alpha(1f)
+                .translationY(0f)
+                .scaleX(1f)
+                .scaleY(1f)
+                .setDuration(UiMotion.LIST_ITEM_DURATION)
+                .setStartDelay(UiMotion.stagger(index, step = 52L))
+                .setInterpolator(UiMotion.EMPHASIS_OUT)
+                .start()
+
+            binding.challengesList.addView(rowView)
         }
     }
 

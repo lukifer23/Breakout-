@@ -9,7 +9,7 @@
 import Foundation
 
 enum GameMode: String, CaseIterable, Identifiable, Codable {
-    case classic, timed, endless, god, rush, volley, survival, invaders
+    case classic, timed, endless, god, rush, volley, tunnel, survival, invaders
 
     var id: String { rawValue }
 
@@ -21,6 +21,7 @@ enum GameMode: String, CaseIterable, Identifiable, Codable {
         case .god: return "God Mode"
         case .rush: return "Level Rush"
         case .volley: return "Volley"
+        case .tunnel: return "Tunnel Siege"
         case .survival: return "Survival"
         case .invaders: return "Invaders"
         }
@@ -34,6 +35,7 @@ enum GameMode: String, CaseIterable, Identifiable, Codable {
         case .god: return "Practice mode. No life loss, perfect for experimentation."
         case .rush: return "Beat each stage before the timer expires."
         case .volley: return "Aim once, launch a chain of balls, then brace for descending rows."
+        case .tunnel: return "Break through a fortified ring and route shots through a narrow entry tunnel."
         case .survival: return "One life. Speed ramps faster as you climb."
         case .invaders: return "Breakout meets space invaders. Bounce shots to clear ships while dodging fire."
         }
@@ -47,6 +49,7 @@ enum GameMode: String, CaseIterable, Identifiable, Codable {
         case .god: return "Infinite lives • No timer"
         case .rush: return "Lives 1 • 0:55 per level • Hardcore"
         case .volley: return "Lives 1 • Turn-based • Chain shots"
+        case .tunnel: return "Lives 2 • Precision routing • Fortress"
         case .survival: return "Lives 1 • No timer • High speed"
         case .invaders: return "Shielded paddle • Enemy fire • No timer"
         }
@@ -58,6 +61,7 @@ enum GameMode: String, CaseIterable, Identifiable, Codable {
         case .timed: return 2
         case .god: return 99
         case .rush, .volley, .survival: return 1
+        case .tunnel: return 2
         }
     }
 
@@ -100,14 +104,15 @@ enum GameMode: String, CaseIterable, Identifiable, Codable {
 
     var launchSpeed: Float {
         switch self {
-        case .classic: return 58.275  // 55.5 * 1.05
-        case .timed: return 66.15     // 63.0 * 1.05
-        case .endless: return 61.425  // 58.5 * 1.05
-        case .god: return 51.975      // 49.5 * 1.05
-        case .rush: return 69.3       // 66.0 * 1.05
-        case .volley: return 82.0     // Matches Android
-        case .survival: return 92.5   // Matches Android
-        case .invaders: return 78.2   // Matches Android
+        case .classic: return 76.5
+        case .timed: return 91.8
+        case .endless: return 85.0
+        case .god: return 72.25
+        case .rush: return 90.0
+        case .volley: return 82.0
+        case .tunnel: return 79.5
+        case .survival: return 92.5
+        case .invaders: return 78.2
         }
     }
 }

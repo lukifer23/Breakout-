@@ -105,12 +105,12 @@ class SettingsActivity : FoldAwareActivity() {
 
         binding.buttonResetScores.setOnClickListener {
             androidx.appcompat.app.AlertDialog.Builder(this)
-                .setTitle("Reset Scores")
-                .setMessage("This will permanently delete all saved scores. Are you sure?")
-                .setPositiveButton("Reset") { _, _ ->
+                .setTitle(getString(R.string.label_reset_scores_title))
+                .setMessage(getString(R.string.label_reset_scores_message))
+                .setPositiveButton(getString(R.string.label_reset_scores_confirm)) { _, _ ->
                     ScoreboardManager.reset(this)
                 }
-                .setNegativeButton("Cancel", null)
+                .setNegativeButton(getString(R.string.label_back), null)
                 .show()
         }
 

@@ -66,7 +66,7 @@ class GameAudioManager(private val context: Context, private var settings: Setti
             mediaPlayer = MediaPlayer.create(context, R.raw.music_loop)
             mediaPlayer?.isLooping = true
         }
-        if (mediaPlayer != null) {
+        if (mediaPlayer != null && !mediaPlayer!!.isPlaying) {
             val musicVol = settings.musicVolume * settings.masterVolume
             mediaPlayer?.setVolume(musicVol, musicVol)
             mediaPlayer?.start()

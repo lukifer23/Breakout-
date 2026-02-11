@@ -13,6 +13,7 @@
 		1A2B3C4D5E6F7890AB12345C /* GameMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB12345D /* GameMode.swift */; };
 		1A2B3C4D5E6F7890AB12345E /* BrickType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB12345F /* BrickType.swift */; };
 		1A2B3C4D5E6F7890AB123460 /* PowerUpType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB123461 /* PowerUpType.swift */; };
+		1A2B3C4D5E6F7890AB1234C4 /* DailyChallenge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB1234C5 /* DailyChallenge.swift */; };
 		1A2B3C4D5E6F7890AB123462 /* GameEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB123463 /* GameEngine.swift */; };
 		1A2B3C4D5E6F7890AB123464 /* Ball.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB123465 /* Ball.swift */; };
 		1A2B3C4D5E6F7890AB123466 /* Brick.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB123467 /* Brick.swift */; };
@@ -34,8 +35,8 @@
 		1A2B3C4D5E6F7890AB123474 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB123475 /* SettingsView.swift */; };
 		1A2B3C4D5E6F7890AB123476 /* ScoreboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB123477 /* ScoreboardView.swift */; };
 		1A2B3C4D5E6F7890AB123478 /* HowToView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB123479 /* HowToView.swift */; };
-		1A2B3C4D5E6F7890AB12347A /* PrivacyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB12347B /* PrivacyView.swift */; };
-		1A2B3C4D5E6F7890AB12347C /* DailyChallengesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB12347D /* DailyChallengesView.swift */; };
+		1A2B3C4D5E6F7890AB1234C1 /* PrivacyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB1234C2 /* PrivacyView.swift */; };
+		1A2B3C4D5E6F7890AB1234C3 /* DailyChallengesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB12347D /* DailyChallengesView.swift */; };
 		1A2B3C4D5E6F7890AB1234AF /* music_loop.wav in Resources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB1234B0 /* music_loop.wav */; };
 		1A2B3C4D5E6F7890AB1234B1 /* sfx_bounce.wav in Resources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB1234B2 /* sfx_bounce.wav */; };
 		1A2B3C4D5E6F7890AB1234B3 /* sfx_brick.wav in Resources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB1234B4 /* sfx_brick.wav */; };
@@ -55,6 +56,7 @@
 		1A2B3C4D5E6F7890AB12345D /* GameMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Models/GameMode.swift; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F7890AB12345F /* BrickType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Models/BrickType.swift; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F7890AB123461 /* PowerUpType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Models/PowerUpType.swift; sourceTree = SOURCE_ROOT; };
+		1A2B3C4D5E6F7890AB1234C5 /* DailyChallenge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Models/DailyChallenge.swift; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F7890AB123463 /* GameEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Core/GameEngine.swift; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F7890AB123465 /* Ball.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Core/Models/Ball.swift; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F7890AB123467 /* Brick.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Core/Models/Brick.swift; sourceTree = SOURCE_ROOT; };
@@ -76,7 +78,7 @@
 		1A2B3C4D5E6F7890AB123475 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Views/SettingsView.swift; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F7890AB123477 /* ScoreboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Views/ScoreboardView.swift; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F7890AB123479 /* HowToView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Views/HowToView.swift; sourceTree = SOURCE_ROOT; };
-		1A2B3C4D5E6F7890AB12347B /* PrivacyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Views/PrivacyView.swift; sourceTree = SOURCE_ROOT; };
+		1A2B3C4D5E6F7890AB1234C2 /* PrivacyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Views/PrivacyView.swift; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F7890AB12347D /* DailyChallengesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Views/DailyChallengesView.swift; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F7890AB1234B0 /* music_loop.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = BreakoutPlus/Resources/Audio/music_loop.wav; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F7890AB1234B2 /* sfx_bounce.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = BreakoutPlus/Resources/Audio/sfx_bounce.wav; sourceTree = SOURCE_ROOT; };
@@ -109,6 +111,7 @@
 				1A2B3C4D5E6F7890AB12345D /* GameMode.swift */,
 				1A2B3C4D5E6F7890AB12345F /* BrickType.swift */,
 				1A2B3C4D5E6F7890AB123461 /* PowerUpType.swift */,
+				1A2B3C4D5E6F7890AB1234C5 /* DailyChallenge.swift */,
 				1A2B3C4D5E6F7890AB123463 /* GameEngine.swift */,
 				1A2B3C4D5E6F7890AB123465 /* Ball.swift */,
 				1A2B3C4D5E6F7890AB123467 /* Brick.swift */,
@@ -130,7 +133,7 @@
 				1A2B3C4D5E6F7890AB123475 /* SettingsView.swift */,
 				1A2B3C4D5E6F7890AB123477 /* ScoreboardView.swift */,
 				1A2B3C4D5E6F7890AB123479 /* HowToView.swift */,
-				1A2B3C4D5E6F7890AB12347B /* PrivacyView.swift */,
+				1A2B3C4D5E6F7890AB1234C2 /* PrivacyView.swift */,
 				1A2B3C4D5E6F7890AB12347D /* DailyChallengesView.swift */,
 				1A2B3C4D5E6F7890AB1234B0 /* music_loop.wav */,
 				1A2B3C4D5E6F7890AB1234B2 /* sfx_bounce.wav */,
@@ -236,6 +239,7 @@
 				1A2B3C4D5E6F7890AB12345C /* GameMode.swift in Sources */,
 				1A2B3C4D5E6F7890AB12345E /* BrickType.swift in Sources */,
 				1A2B3C4D5E6F7890AB123460 /* PowerUpType.swift in Sources */,
+				1A2B3C4D5E6F7890AB1234C4 /* DailyChallenge.swift in Sources */,
 				1A2B3C4D5E6F7890AB123462 /* GameEngine.swift in Sources */,
 				1A2B3C4D5E6F7890AB123464 /* Ball.swift in Sources */,
 				1A2B3C4D5E6F7890AB123466 /* Brick.swift in Sources */,
@@ -257,8 +261,8 @@
 				1A2B3C4D5E6F7890AB123474 /* SettingsView.swift in Sources */,
 				1A2B3C4D5E6F7890AB123476 /* ScoreboardView.swift in Sources */,
 				1A2B3C4D5E6F7890AB123478 /* HowToView.swift in Sources */,
-				1A2B3C4D5E6F7890AB12347A /* PrivacyView.swift in Sources */,
-				1A2B3C4D5E6F7890AB12347C /* DailyChallengesView.swift in Sources */,
+				1A2B3C4D5E6F7890AB1234C1 /* PrivacyView.swift in Sources */,
+				1A2B3C4D5E6F7890AB1234C3 /* DailyChallengesView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -318,7 +322,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -375,7 +379,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;

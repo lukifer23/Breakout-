@@ -18,6 +18,9 @@
     <string name="label_left_handed">Left Handed Mode</string>
     <string name="label_dark_mode">Dark Mode</string>
     <string name="label_confirm_reset">Reset Scores</string>
+    <string name="label_reset_scores_title">Reset Scores</string>
+    <string name="label_reset_scores_message">This will permanently delete all saved scores. Are you sure?</string>
+    <string name="label_reset_scores_confirm">Reset</string>
     <string name="label_logging">Enable Game Logging</string>
     <string name="label_high_refresh">High Refresh Rate</string>
     <string name="label_privacy_policy">Privacy Policy</string>
