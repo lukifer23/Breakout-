@@ -1348,12 +1348,13 @@ class GameEngine(
     private fun applyLayoutTuning(aspectRatio: Float, preserveRowBoost: Boolean) {
         val tallness = ((aspectRatio - 1.25f) / 0.85f).coerceIn(0f, 1f)
         val isWide = aspectRatio < 1.45f
-        brickAreaTopRatio = lerp(0.992f, 0.972f, tallness)
-        brickAreaBottomRatio = lerp(0.7f, 0.62f, tallness)
-        brickSpacing = lerp(0.28f, 0.33f, tallness)
+        // Shared "zoomed-out" baseline for all modes: smaller bricks, more distance to the paddle,
+        // and consistent spacing so switching modes doesn't feel like a camera jump.
+        brickAreaTopRatio = lerp(0.99f, 0.972f, tallness)
+        brickAreaBottomRatio = lerp(0.72f, 0.66f, tallness)
+        brickSpacing = lerp(0.3f, 0.36f, tallness)
         if (!preserveRowBoost) {
             val densityBoost = (levelIndex / 6).coerceAtMost(2)
-            // One extra row/column globally for denser playfields.
             val baseRowBoost = (if (isWide) 4 else 3) + densityBoost
             val baseColBoost = (if (isWide) 4 else 3) + densityBoost
             when (config.mode) {
@@ -1366,8 +1367,8 @@ class GameEngine(
                     layoutColBoost = (baseColBoost - 1).coerceAtLeast(1)
                 }
                 GameMode.GOD -> {
-                    layoutRowBoost = 0
-                    layoutColBoost = 0
+                    layoutRowBoost = (baseRowBoost - 1).coerceAtLeast(1)
+                    layoutColBoost = (baseColBoost - 1).coerceAtLeast(1)
                 }
                 GameMode.VOLLEY -> {
                     layoutRowBoost = 0
@@ -1382,7 +1383,7 @@ class GameEngine(
                     layoutColBoost = baseColBoost + 1
                 }
                 GameMode.ENDLESS -> {
-                    layoutRowBoost = baseRowBoost
+                    layoutRowBoost = baseRowBoost + 1
                     layoutColBoost = baseColBoost + 1
                 }
                 else -> {
@@ -1392,27 +1393,27 @@ class GameEngine(
             }
         }
         // Smaller bricks overall to avoid an overly zoomed-in feel.
-        globalBrickScale = lerp(0.81f, 0.79f, tallness)
+        globalBrickScale = lerp(0.8f, 0.77f, tallness)
         if (config.mode == GameMode.RUSH) {
-            globalBrickScale = (globalBrickScale + 0.045f).coerceAtMost(0.915f)
-            brickSpacing = (brickSpacing + 0.04f).coerceAtMost(0.44f)
+            globalBrickScale = (globalBrickScale + 0.03f).coerceAtMost(0.88f)
+            brickSpacing = (brickSpacing + 0.03f).coerceAtMost(0.42f)
         } else if (config.mode == GameMode.VOLLEY) {
-            globalBrickScale = (globalBrickScale + 0.02f).coerceAtMost(0.9f)
-            brickAreaBottomRatio = (brickAreaBottomRatio - 0.02f).coerceAtLeast(0.58f)
+            globalBrickScale = (globalBrickScale + 0.015f).coerceAtMost(0.865f)
+            brickAreaBottomRatio = (brickAreaBottomRatio - 0.015f).coerceAtLeast(0.63f)
         } else if (config.mode == GameMode.TUNNEL) {
             // Tunnel should occupy more vertical space so the fortress reads clearly.
-            globalBrickScale = (globalBrickScale + 0.055f).coerceAtMost(0.94f)
-            brickAreaBottomRatio = (brickAreaBottomRatio - 0.14f).coerceAtLeast(0.5f)
-            brickSpacing = (brickSpacing + 0.015f).coerceAtMost(0.42f)
+            globalBrickScale = (globalBrickScale + 0.03f).coerceAtMost(0.9f)
+            brickAreaBottomRatio = (brickAreaBottomRatio - 0.06f).coerceAtLeast(0.58f)
+            brickSpacing = (brickSpacing + 0.02f).coerceAtMost(0.42f)
         } else if (config.mode == GameMode.TIMED) {
-            globalBrickScale = (globalBrickScale + 0.015f).coerceAtMost(0.895f)
+            globalBrickScale = (globalBrickScale + 0.01f).coerceAtMost(0.86f)
         } else if (config.mode == GameMode.SURVIVAL) {
-            globalBrickScale = (globalBrickScale - 0.015f).coerceAtLeast(0.82f)
+            globalBrickScale = (globalBrickScale - 0.01f).coerceAtLeast(0.75f)
         }
         if (config.mode.invaders) {
-            brickAreaBottomRatio = (brickAreaBottomRatio + lerp(0.03f, 0.05f, tallness)).coerceAtMost(0.78f)
+            brickAreaBottomRatio = (brickAreaBottomRatio + lerp(0.035f, 0.05f, tallness)).coerceAtMost(0.79f)
             brickSpacing = brickSpacing * 0.95f
-            invaderScale = lerp(0.52f, 0.49f, tallness)
+            invaderScale = lerp(0.5f, 0.47f, tallness)
             invaderRowDrift = lerp(0.8f, 0.65f, tallness)
             invaderRowPhaseOffset = lerp(0.45f, 0.6f, tallness)
             if (!preserveRowBoost) {
