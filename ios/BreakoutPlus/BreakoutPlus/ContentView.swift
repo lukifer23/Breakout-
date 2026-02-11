@@ -26,11 +26,9 @@ struct ContentView: View {
             case .howTo:
                 HowToView()
             case .privacy:
-                // PrivacyView() - needs to be added to Xcode project
-                Text("Privacy Policy - Content implemented in PrivacyView.swift")
+                PrivacyView()
             case .dailyChallenges:
-                // DailyChallengesView() - needs to be added to Xcode project
-                Text("Daily Challenges - Implementation complete")
+                DailyChallengesView()
             }
         }
         .navigationBarHidden(true)

@@ -104,9 +104,9 @@ object ModeBalance {
     )
 
     private val invaderPacing = InvaderPacing(
-        baseSpeed = 21.5f,
-        speedPerLevel = 1.35f,
-        speedCap = 32f,
+        baseSpeed = 8.2f,
+        speedPerLevel = 0.62f,
+        speedCap = 14.5f,
         baseShotCooldown = 1.5f,
         shotCooldownPerLevel = 0.055f,
         shotCooldownMin = 0.52f,

@@ -10,6 +10,8 @@ import SwiftUI
 struct ScoreboardView: View {
     @EnvironmentObject var gameViewModel: GameViewModel
     @ObservedObject private var store = ScoreboardStore.shared
+    @ObservedObject private var progression = ProgressionStore.shared
+    @ObservedObject private var lifetime = LifetimeStatsStore.shared
     @State private var selectedMode: GameMode = .classic
 
     var body: some View {
@@ -72,11 +74,65 @@ struct ScoreboardView: View {
                         .padding(.vertical, 6)
                     }
 
+                    // Journey Progress
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Journey")
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundColor(.white)
+
+                        let chapter = progression.chapterForLevel(progression.bestLevel)
+                        let stage = progression.stageForLevel(progression.bestLevel)
+                        Text("Chapter \(chapter)-\(stage) • \(progression.totalXp) XP")
+                            .foregroundColor(.white.opacity(0.8))
+                            .font(.system(size: 14))
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.vertical, 12)
+                    .padding(.horizontal, 16)
+                    .background(Color(hex: "1A1F26"))
+                    .cornerRadius(12)
+
+                    // Lifetime Stats
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Lifetime Stats")
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundColor(.white)
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("\(lifetime.stats.totalBricksBroken) bricks broken")
+                                .foregroundColor(.white.opacity(0.8))
+                                .font(.system(size: 14))
+
+                            Text("\(lifetime.stats.totalLivesLost) lives lost")
+                                .foregroundColor(.white.opacity(0.8))
+                                .font(.system(size: 14))
+
+                            let hours = lifetime.stats.playTimeHours
+                            let minutes = lifetime.stats.playTimeMinutes
+                            Text("\(hours)h \(minutes)m play time")
+                                .foregroundColor(.white.opacity(0.8))
+                                .font(.system(size: 14))
+
+                            Text("\(lifetime.stats.longestRunSeconds)s longest run")
+                                .foregroundColor(.white.opacity(0.8))
+                                .font(.system(size: 14))
+
+                            Text("\(lifetime.stats.averageScore) avg score")
+                                .foregroundColor(.white.opacity(0.8))
+                                .font(.system(size: 14))
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.vertical, 12)
+                    .padding(.horizontal, 16)
+                    .background(Color(hex: "1A1F26"))
+                    .cornerRadius(12)
+
                     HStack {
-                        Button("Reset \(selectedMode.displayName)") {
-                            // Note: This resets all scores, not just this mode
-                            // Could be enhanced to reset per mode if needed
+                        Button("Reset All Data") {
                             store.reset()
+                            progression.reset()
+                            lifetime.reset()
                         }
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(.white)
@@ -108,10 +164,10 @@ private struct ScoreRow: View {
                 .frame(width: 44, alignment: .leading)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(entry.mode.displayName)
+                Text(entry.name)
                     .foregroundColor(.white)
                     .font(.system(size: 16, weight: .semibold))
-                Text("Level \(entry.level) • \(formatDuration(entry.durationSeconds))")
+                Text("\(entry.mode.displayName) • Level \(entry.level) • \(formatDuration(entry.durationSeconds))")
                     .foregroundColor(.white.opacity(0.6))
                     .font(.system(size: 13))
             }

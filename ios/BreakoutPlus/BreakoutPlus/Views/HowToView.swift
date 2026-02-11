@@ -87,7 +87,8 @@ struct HowToView: View {
                             "Timed: 2:30 to maximize score.",
                             "Endless: infinite levels with scaling challenge.",
                             "God Mode: infinite lives for practice.",
-                            "Rush: 45 seconds per level, one life.",
+                            "Rush: 55 seconds per level, one life.",
+                            "Volley: aim once, launch a chain of balls, then brace for descending rows.",
                             "Survival: one life with faster speed ramps.",
                             "Invaders: bounce shots to clear ships while dodging fire."
                         ])

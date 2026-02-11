@@ -9,7 +9,7 @@
 import Foundation
 
 enum GameMode: String, CaseIterable, Identifiable, Codable {
-    case classic, timed, endless, god, rush, survival, invaders
+    case classic, timed, endless, god, rush, volley, survival, invaders
 
     var id: String { rawValue }
 
@@ -20,6 +20,7 @@ enum GameMode: String, CaseIterable, Identifiable, Codable {
         case .endless: return "Endless"
         case .god: return "God Mode"
         case .rush: return "Level Rush"
+        case .volley: return "Volley"
         case .survival: return "Survival"
         case .invaders: return "Invaders"
         }
@@ -32,6 +33,7 @@ enum GameMode: String, CaseIterable, Identifiable, Codable {
         case .endless: return "Infinite levels with scaling speed and brick density."
         case .god: return "Practice mode. No life loss, perfect for experimentation."
         case .rush: return "Beat each stage before the timer expires."
+        case .volley: return "Aim once, launch a chain of balls, then brace for descending rows."
         case .survival: return "One life. Speed ramps faster as you climb."
         case .invaders: return "Breakout meets space invaders. Bounce shots to clear ships while dodging fire."
         }
@@ -43,7 +45,8 @@ enum GameMode: String, CaseIterable, Identifiable, Codable {
         case .timed: return "Lives 2 • 2:30 timer • Fast"
         case .endless: return "Lives 3 • No timer • Scaling"
         case .god: return "Infinite lives • No timer"
-        case .rush: return "Lives 1 • 0:45 per level • Hardcore"
+        case .rush: return "Lives 1 • 0:55 per level • Hardcore"
+        case .volley: return "Lives 1 • Turn-based • Chain shots"
         case .survival: return "Lives 1 • No timer • High speed"
         case .invaders: return "Shielded paddle • Enemy fire • No timer"
         }
@@ -54,14 +57,15 @@ enum GameMode: String, CaseIterable, Identifiable, Codable {
         case .classic, .endless, .invaders: return 3
         case .timed: return 2
         case .god: return 99
-        case .rush, .survival: return 1
+        case .rush, .volley, .survival: return 1
         }
     }
 
     var timeLimitSeconds: Int {
         switch self {
         case .timed: return 150  // 2:30
-        case .rush: return 45    // 0:45 per level
+        case .rush: return 55    // 0:55 per level
+        case .volley: return 0   // No timer
         default: return 0        // No timer
         }
     }
@@ -101,6 +105,7 @@ enum GameMode: String, CaseIterable, Identifiable, Codable {
         case .endless: return 61.425  // 58.5 * 1.05
         case .god: return 51.975      // 49.5 * 1.05
         case .rush: return 69.3       // 66.0 * 1.05
+        case .volley: return 82.0     // Matches Android
         case .survival: return 92.5   // Matches Android
         case .invaders: return 78.2   // Matches Android
         }

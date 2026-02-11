@@ -424,7 +424,7 @@ class GameScene: SKScene, GameEngineDelegate {
     private var paddleNode: SKSpriteNode!
     private var powerupNodes: [SKNode] = []
     private var beamNodes: [SKNode] = []
-    // private var enemyShotNodes: [SKNode] = [] // TODO: Uncomment when EnemyShot added to Xcode project
+    private var enemyShotNodes: [SKShapeNode] = []
     private var flashNode: SKSpriteNode?
     private var lastBrickSnapshot: [UUID: (alive: Bool, hp: Int)] = [:]
 
@@ -464,7 +464,7 @@ class GameScene: SKScene, GameEngineDelegate {
 
     private func setupGame() {
         gameEngine = GameEngine(gameMode: viewModel.selectedGameMode, sensitivity: Float(viewModel.sensitivity))
-        // gameEngine.enableDailyChallenges(true) // TODO: Uncomment when DailyChallenge added
+        gameEngine.enableDailyChallenges(true)
         gameEngine.delegate = self
 
         AudioManager.shared.configure(
@@ -773,29 +773,28 @@ class GameScene: SKScene, GameEngineDelegate {
         }
 
         // Update enemy shots (Invaders mode)
-        // TODO: Uncomment when EnemyShot added to Xcode project
-        // while enemyShotNodes.count < gameEngine.enemyShots.count {
-        //     let shotPath = CGPath(ellipseIn: CGRect(x: -6, y: -6, width: 12, height: 12), transform: nil)
-        //     let shotNode = SKShapeNode(path: shotPath)
-        //     shotNode.fillColor = UIColor(red: 1.0, green: 0.3, blue: 0.0, alpha: 1.0)
-        //     shotNode.strokeColor = UIColor(red: 1.0, green: 0.6, blue: 0.0, alpha: 1.0)
-        //     shotNode.lineWidth = 1
-        //     addChild(shotNode)
-        //     enemyShotNodes.append(shotNode)
-        // }
-        //
-        // while enemyShotNodes.count > gameEngine.enemyShots.count {
-        //     enemyShotNodes.last?.removeFromParent()
-        //     enemyShotNodes.removeLast()
-        // }
-        //
-        // for (index, shot) in gameEngine.enemyShots.enumerated() {
-        //     if index < enemyShotNodes.count {
-        //         let shotX = CGFloat(shot.x / gameEngine.worldWidth) * size.width
-        //         let shotY = CGFloat(shot.y / gameEngine.worldHeight) * size.height
-        //         enemyShotNodes[index].position = CGPoint(x: shotX, y: shotY)
-        //     }
-        // }
+        while enemyShotNodes.count < gameEngine.enemyShots.count {
+            let shotPath = CGPath(ellipseIn: CGRect(x: -3, y: -3, width: 6, height: 6), transform: nil)
+            let shotNode = SKShapeNode(path: shotPath)
+            shotNode.fillColor = UIColor(red: 1.0, green: 0.3, blue: 0.0, alpha: 1.0)
+            shotNode.strokeColor = UIColor(red: 1.0, green: 0.0, blue: 0.0, alpha: 1.0)
+            shotNode.lineWidth = 1
+            addChild(shotNode)
+            enemyShotNodes.append(shotNode)
+        }
+
+        while enemyShotNodes.count > gameEngine.enemyShots.count {
+            enemyShotNodes.last?.removeFromParent()
+            enemyShotNodes.removeLast()
+        }
+
+        for (index, shot) in gameEngine.enemyShots.enumerated() {
+            if index < enemyShotNodes.count {
+                let shotX = CGFloat(shot.x / gameEngine.worldWidth) * size.width
+                let shotY = CGFloat(shot.y / gameEngine.worldHeight) * size.height
+                enemyShotNodes[index].position = CGPoint(x: shotX, y: shotY)
+            }
+        }
     }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -917,6 +916,9 @@ class GameScene: SKScene, GameEngineDelegate {
             self.viewModel.lastSummary = summary
             self.viewModel.showLevelComplete = true
             self.viewModel.isPaused = false
+            // Update progression
+            ProgressionStore.shared.addXp(ProgressionStore.shared.xpForLevel(summary.level))
+            ProgressionStore.shared.updateBestLevel(summary.level)
         }
     }
 
@@ -928,8 +930,16 @@ class GameScene: SKScene, GameEngineDelegate {
             ScoreboardStore.shared.add(
                 score: summary.score,
                 mode: self.viewModel.selectedGameMode,
+                name: "Player",  // TODO: Prompt for name
                 level: summary.level,
                 durationSeconds: summary.durationSeconds
+            )
+            // Update lifetime stats
+            LifetimeStatsStore.shared.recordRun(
+                bricksBroken: summary.bricksBroken,
+                livesLost: summary.livesLost,
+                durationSeconds: summary.durationSeconds,
+                score: summary.score
             )
             AudioManager.shared.pauseMusic()
         }
@@ -953,12 +963,12 @@ class GameScene: SKScene, GameEngineDelegate {
         for node in brickNodes { node.removeFromParent() }
         for node in powerupNodes { node.removeFromParent() }
         for node in beamNodes { node.removeFromParent() }
-        // for node in enemyShotNodes { node.removeFromParent() } // TODO: Uncomment when EnemyShot added to Xcode project
+        for node in enemyShotNodes { node.removeFromParent() }
         ballNodes.removeAll()
         brickNodes.removeAll()
         powerupNodes.removeAll()
         beamNodes.removeAll()
-        // enemyShotNodes.removeAll() // TODO: Uncomment when EnemyShot added to Xcode project
+        enemyShotNodes.removeAll()
 
         gameEngine.restart()
         AudioManager.shared.startMusicIfEnabled()

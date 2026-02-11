@@ -4,7 +4,7 @@
 
 **Playability: Feature Complete iOS Port** ✅
 
-SwiftUI + SpriteKit implementation with full feature parity to Android: 6 game modes, 9 brick types, 13 powerups, 6 themes, settings parity, per-mode scoreboard, powerup timers, daily challenges framework, and privacy policy.
+SwiftUI + SpriteKit implementation with full feature parity to Android: 8 game modes, 10 brick types, 15 powerups, 6 themes, settings parity, per-mode scoreboard, powerup timers, daily challenges, progression tracking, lifetime stats, and privacy policy.
 
 ## What's Built
 
@@ -14,9 +14,9 @@ SwiftUI + SpriteKit implementation with full feature parity to Android: 6 game m
 - **SpriteKit Integration**: GameScene with real-time rendering
 
 ### ✅ Game Models (Direct Ports)
-- **GameMode**: All 6 modes (Classic, Timed, Endless, God, Rush, **Invaders**)
-- **BrickType**: 9 brick types with behaviors
-- **PowerUpType**: 13 powerup types with effects
+- **GameMode**: All 8 modes (Classic, Timed, Endless, God, Rush, Volley, Survival, **Invaders**)
+- **BrickType**: 10 brick types with behaviors
+- **PowerUpType**: 15 powerup types with effects
 - **LevelTheme**: 6 themes with unique palettes (**including Invaders theme**)
 
 ### ✅ Core Engine
@@ -28,7 +28,7 @@ SwiftUI + SpriteKit implementation with full feature parity to Android: 6 game m
 
 ### ✅ UI Framework
 - **SplashView**: Animated launch screen
-- **MenuView**: Game mode selection (6 modes) + navigation buttons
+- **MenuView**: Game mode selection (8 modes) + navigation buttons
 - **GameView**: SpriteKit game scene with enhanced HUD (powerup chips with timers) + Pause/Resume + Fire button
 - **Overlays**: Pause, level complete, and game over
 - **Settings**: Full parity (sound/music/vibration/tips + **left-handed toggle** + **sensitivity slider** + **Privacy Policy button**)
@@ -49,6 +49,9 @@ SwiftUI + SpriteKit implementation with full feature parity to Android: 6 game m
 - Xcode 15+
 - iOS simulator/device supported by your Xcode install
 - Swift 5.9+
+
+### CLI-Only Development
+This iOS port is developed using command-line tools only. The Xcode GUI is not required - all builds use `xcodebuild` and simulator management uses `xcrun simctl`.
 
 ### CLI Build (Simulator)
 From repo root:
@@ -127,21 +130,23 @@ cd ios/BreakoutPlus
 
 ### Complete Feature Set
 - ✅ Ball physics and paddle control with sensitivity
-- ✅ Brick destruction and scoring (all 9 types)
+- ✅ Brick destruction and scoring (all 10 types)
 - ✅ Patterned levels + endless procedural generation
-- ✅ Powerup system (all 13 types with HUD timers)
+- ✅ Powerup system (all 15 types with HUD timers)
 - ✅ Combo system with multipliers
-- ✅ All 6 game modes (including Invaders framework)
+- ✅ All 8 game modes (including Volley and Invaders)
 - ✅ Visual themes (6 including Invaders)
 - ✅ Settings parity (left-handed, sensitivity, privacy)
 - ✅ Per-mode scoreboard (top 10 per mode)
-- ✅ Daily challenges framework
+- ✅ Progression tracking (XP, levels, chapters)
+- ✅ Lifetime statistics (bricks broken, play time, etc.)
+- ✅ Daily challenges system
 - ✅ Lives, pause, level complete, and game over logic
 
 ## Integration Notes
-- **Xcode Project Updates Needed**: Add PrivacyView.swift, DailyChallengesView.swift, EnemyShot.swift to project for full UI integration
-- **Enemy Rendering**: Invaders enemy shots framework ready, needs Xcode project integration
-- **Daily Challenges**: Complete backend implemented, needs UI integration
+- **All Swift files integrated**: PrivacyView, DailyChallengesView, EnemyShot, and all supporting files added to Xcode target
+- **Enemy Rendering**: Invaders enemy shots fully implemented and active
+- **Daily Challenges**: Complete system with backend and UI fully functional
 - **Build Status**: CLI builds successfully with all features implemented
 
 ## Architecture Decisions

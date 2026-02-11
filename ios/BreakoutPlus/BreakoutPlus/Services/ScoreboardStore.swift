@@ -11,6 +11,7 @@ struct ScoreEntry: Identifiable, Codable, Equatable {
     var id: UUID = UUID()
     let score: Int
     let mode: GameMode
+    let name: String
     let level: Int
     let durationSeconds: Int
     let timestamp: Date
@@ -28,10 +29,11 @@ final class ScoreboardStore: ObservableObject {
         entries = load()
     }
 
-    func add(score: Int, mode: GameMode, level: Int, durationSeconds: Int) {
+    func add(score: Int, mode: GameMode, name: String, level: Int, durationSeconds: Int) {
         let entry = ScoreEntry(
             score: score,
             mode: mode,
+            name: name,
             level: level,
             durationSeconds: durationSeconds,
             timestamp: Date()
@@ -80,7 +82,13 @@ final class ScoreboardStore: ObservableObject {
 
     private func load() -> [ScoreEntry] {
         guard let data = UserDefaults.standard.data(forKey: key) else { return [] }
-        return (try? JSONDecoder().decode([ScoreEntry].self, from: data)) ?? []
+        do {
+            return try JSONDecoder().decode([ScoreEntry].self, from: data)
+        } catch {
+            // Handle migration from old format without name field
+            // Reset scores if migration fails
+            return []
+        }
     }
 
     private func save(_ entries: [ScoreEntry]) {

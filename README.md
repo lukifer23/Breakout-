@@ -52,16 +52,16 @@ Key principles:
 4. Install APK: `adb install -r app/build/outputs/apk/debug/app-debug.apk`
 
 ### iOS: iPhone & iPad
-**Status**: Playable MVP (v0.1.0) - CLI-buildable, simulator-tested
+**Status**: Complete iOS Port (v1.0.0) - CLI-buildable, simulator-tested, full Android parity
 
-#### CLI Development Setup
+#### CLI-Only Development Setup (No Xcode GUI Required)
 1. Ensure Xcode 15+ is installed
 2. Build: `cd ios/BreakoutPlus && xcodebuild -scheme BreakoutPlus -sdk iphonesimulator -configuration Debug build`
 3. Boot simulator: `xcrun simctl boot <device-id>`
 4. Install: `xcrun simctl install booted "$(find ~/Library/Developer/Xcode/DerivedData -name 'BreakoutPlus.app' -type d | head -1)"`
 5. Launch: `xcrun simctl launch booted com.breakoutplus.ios`
 
-**Current iOS Features**: Core gameplay, ball physics, brick destruction, powerups, all game modes, SpriteKit rendering
+**Complete iOS Features**: Full Android parity - 8 game modes, 10 brick types, 15 powerups, progression system, lifetime stats, daily challenges, privacy policy, SpriteKit rendering
 
 Breakout+ is a GPU-accelerated brickbreaker built for foldables, tuned for the Samsung Galaxy Z Fold 7. It uses OpenGL ES for the game loop, fold-aware UI layout, and a full set of modes, powerups, audio, and multi-hit bricks.
 

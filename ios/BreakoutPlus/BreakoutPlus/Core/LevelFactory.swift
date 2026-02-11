@@ -115,11 +115,11 @@ enum LevelFactory {
             rows: 6,
             cols: 12,
             lines: [
-                "RRRRRRRRRRRR",
-                "RAAARAAARAAAR",
-                "RRRRRRRRRRRR",
+                "IIIIIIIIIIII",
+                "IAAAIAAAIAAAI",
+                "IIIIIIIIIIII",
                 "NAAANAAANAAAN",
-                "RRRRRRRRRRRR",
+                "IIIIIIIIIIII",
                 "..U......U.."
             ],
             theme: .invaders,
@@ -197,6 +197,7 @@ enum LevelFactory {
         case "S": return .spawning
         case "P": return .phase
         case "B": return .boss
+        case "I": return .invader
         default: return nil
         }
     }

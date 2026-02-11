@@ -37,6 +37,8 @@ struct GameSummary: Equatable {
     let score: Int
     let level: Int
     let durationSeconds: Int
+    let bricksBroken: Int
+    let livesLost: Int
 }
 
 struct PowerupStatus: Equatable {
@@ -69,7 +71,7 @@ class GameEngine {
     private(set) var bricks: [Brick] = []
     private(set) var powerups: [PowerUp] = []
     private(set) var beams: [Beam] = []
-    // private(set) var enemyShots: [EnemyShot] = [] // TODO: Uncomment when EnemyShot added to Xcode project
+    private(set) var enemyShots: [EnemyShot] = []
     private(set) var paddle: Paddle
     private(set) var currentTheme: LevelTheme = .neon
     private(set) var currentTip: String = ""
@@ -82,6 +84,8 @@ class GameEngine {
     private(set) var comboCount = 0
     private(set) var comboTimer: TimeInterval = 0
     private(set) var state: GameState = .ready
+    private var runBricksBroken = 0
+    private var runLivesLost = 0
 
     // Settings
     private(set) var gameMode: GameMode
@@ -108,6 +112,7 @@ class GameEngine {
     private let shrinkPaddleScale: Float = 0.7
     private var sensitivity: Float = 0.7
     private var paddleTargetX: Float = 50
+    private var dailyChallengesEnabled = false
 
     // Invaders mode state
     // private var enemyShots: [EnemyShot] = [] // TODO: Uncomment when EnemyShot added to Xcode project
@@ -121,6 +126,16 @@ class GameEngine {
     private var invaderRowPhase: Float = 0
     private var invaderRowDrift: Float = 0.75
     private var invaderRowPhaseOffset: Float = 0.5
+
+    // Volley mode state
+    private var volleyTurnActive = false
+    private var volleyBallCount = 3
+    private var volleyQueuedBalls = 0
+    private var volleyLaunchTimer: TimeInterval = 0
+    private var volleyLaunchX: Float = 0
+    private var volleyReturnAnchorX: Float = Float.nan
+    private var volleyTurnCount = 0
+    private var volleyAdvanceRows = 0
 
     weak var delegate: GameEngineDelegate?
 
@@ -166,10 +181,16 @@ class GameEngine {
         updatePowerups(dt)
         updateBeams(dt)
         updatePaddle(dt)
-        // Invaders logic commented out until EnemyShot is added to Xcode project
-        // if gameMode.invaders {
-        //     updateInvaders(dt)
-        // }
+
+        // Volley logic
+        if gameMode == .volley {
+            updateVolleyLaunchQueue(dt)
+        }
+
+        // Invaders logic
+        if gameMode.invaders {
+            updateInvaders(dt)
+        }
 
         // Handle collisions
         handleCollisions()
@@ -177,6 +198,11 @@ class GameEngine {
         // Check win/lose conditions
         checkLevelCompletion()
         checkGameOver()
+
+        // Volley turn resolution
+        if gameMode == .volley && state == .running {
+            resolveVolleyTurnIfReady()
+        }
     }
 
     private func attachReadyBallsToPaddle() {
@@ -513,15 +539,15 @@ class GameEngine {
         }
 
         // Enemy shot-paddle collisions (Invaders mode)
-        // if gameMode.invaders && !enemyShots.isEmpty {
-        //     for i in stride(from: enemyShots.count - 1, through: 0, by: -1) {
-        //         let shot = enemyShots[i]
-        //         if shot.intersects(paddle) {
-        //             handleEnemyShotHit()
-        //             enemyShots.remove(at: i)
-        //         }
-        //     }
-        // } // TODO: Uncomment when EnemyShot added to Xcode project
+        if gameMode.invaders && !enemyShots.isEmpty {
+            for i in stride(from: enemyShots.count - 1, through: 0, by: -1) {
+                let shot = enemyShots[i]
+                if shot.intersects(paddle) {
+                    handleEnemyShotHit()
+                    enemyShots.remove(at: i)
+                }
+            }
+        }
     }
 
     private func handleBrickCollision(_ ball: inout Ball, _ brick: inout Brick) {
@@ -544,14 +570,15 @@ class GameEngine {
         if brick.hitPoints <= 0 {
             brick.alive = false
             score += brick.scoreValue
+            runBricksBroken += 1
             delegate?.onScoreChanged(newScore: score)
-            // updateDailyChallenge(.bricksDestroyed) // TODO: Uncomment when DailyChallenge added
+            updateDailyChallenge(.bricksDestroyed)
 
             // Combo system
             comboCount += 1
             comboTimer = 2.0 // 2 seconds to maintain combo
             delegate?.onComboAchieved(count: comboCount)
-            // updateDailyChallenge(.comboMultiplier, value: comboCount) // TODO: Uncomment when DailyChallenge added
+            updateDailyChallenge(.comboMultiplier, value: comboCount)
 
             let dropChance: Double
             switch brick.type {
@@ -671,6 +698,7 @@ class GameEngine {
                     if bricks[i].hitPoints <= 0 {
                         bricks[i].alive = false
                         score += bricks[i].scoreValue
+                        runBricksBroken += 1
                     }
                 }
             }
@@ -715,7 +743,7 @@ class GameEngine {
 
     private func activatePowerup(_ type: PowerUpType) {
         delegate?.onPowerupActivated(type: type)
-        // updateDailyChallenge(.powerupsCollected) // TODO: Uncomment when DailyChallenge added
+        updateDailyChallenge(.powerupsCollected)
         if !type.isInstant {
             activeEffects[type] = type.duration
         }
@@ -908,6 +936,7 @@ class GameEngine {
 
         if balls.isEmpty && lives > 0 {
             lives -= 1
+            runLivesLost += 1
             delegate?.onLivesChanged(newLives: lives)
             emit(.sound(.life, volume: 0.7))
             emit(.haptic(.warning))
@@ -940,6 +969,11 @@ class GameEngine {
     }
 
     func launchBall() {
+        if gameMode == .volley && state == .ready {
+            launchVolleyTurn()
+            return
+        }
+
         guard let index = balls.firstIndex(where: { $0.vy == 0 }), index < balls.count else { return }
 
         var ball = balls[index]
@@ -999,32 +1033,30 @@ class GameEngine {
         sensitivity = max(0.0, min(1.0, newSensitivity))
     }
 
-    // TODO: Uncomment when DailyChallenge models added to Xcode project
-    // func enableDailyChallenges(_ enabled: Bool) {
-    //     dailyChallengesEnabled = enabled
-    // }
+    func enableDailyChallenges(_ enabled: Bool) {
+        dailyChallengesEnabled = enabled
+    }
 
-    // private func updateDailyChallenge(_ type: ChallengeType, value: Int = 1) {
-    //     if dailyChallengesEnabled {
-    //         DailyChallengeStore.shared.updateProgress(type: type, value: value)
-    //     }
-    // }
+    private func updateDailyChallenge(_ type: ChallengeType, value: Int = 1) {
+        if dailyChallengesEnabled {
+            DailyChallengeStore.shared.updateProgress(type: type, value: value)
+        }
+    }
 
-    // TODO: Uncomment when EnemyShot added to Xcode project
-    // private func updateInvaders(_ deltaTime: TimeInterval) {
-    //     // Move invader bricks
-    //     updateInvaderFormation(deltaTime)
-    //
-    //     // Update enemy shots
-    //     updateEnemyShots(deltaTime)
-    //
-    //     // Fire new shots
-    //     invaderShotTimer += deltaTime
-    //     if invaderShotTimer >= invaderShotCooldown {
-    //         fireInvaderShot()
-    //         invaderShotTimer = 0
-    //     }
-    // }
+    private func updateInvaders(_ deltaTime: TimeInterval) {
+        // Move invader bricks
+        updateInvaderFormation(deltaTime)
+
+        // Update enemy shots
+        updateEnemyShots(deltaTime)
+
+        // Fire new shots
+        invaderShotTimer += deltaTime
+        if invaderShotTimer >= invaderShotCooldown {
+            fireInvaderShot()
+            invaderShotTimer = 0
+        }
+    }
 
     private func updateInvaderFormation(_ deltaTime: TimeInterval) {
         // Simple left-right movement for invader bricks
@@ -1047,45 +1079,144 @@ class GameEngine {
         }
     }
 
-    // TODO: Uncomment when EnemyShot added to Xcode project
-    // private func updateEnemyShots(_ deltaTime: TimeInterval) {
-    //     enemyShots = enemyShots.filter { shot in
-    //         shot.y += shot.vy * Float(deltaTime)
-    //         return shot.y > -shot.radius // Remove shots that go off screen
-    //     }
-    // }
+    private func updateEnemyShots(_ deltaTime: TimeInterval) {
+        enemyShots = enemyShots.filter { shot in
+            shot.y += shot.vy * Float(deltaTime)
+            return shot.y > -shot.radius // Remove shots that go off screen
+        }
+    }
 
-    // private func fireInvaderShot() {
-    //     // Find a random invader brick to shoot from
-    //     let invaderBricks = bricks.filter { $0.type != .unbreakable } // Temporary: use unbreakable as invaders
-    //     guard let shooter = invaderBricks.randomElement() else { return }
-    //
-    //     let shot = EnemyShot(
-    //         x: shooter.x,
-    //         y: shooter.y - shooter.height/2,
-    //         vx: 0,
-    //         vy: -60 // Shoot downward
-    //     )
-    //     enemyShots.append(shot)
-    // }
+    private func updateVolleyLaunchQueue(_ deltaTime: TimeInterval) {
+        if !volleyTurnActive || volleyQueuedBalls <= 0 { return }
+        volleyLaunchTimer -= deltaTime
+        while volleyQueuedBalls > 0 && volleyLaunchTimer <= 0 {
+            spawnBall(spawnX: volleyLaunchX)
+            balls.lastOrNull()?.let { launchBallWithAim($0) }
+            emit(.sound(.bounce, volume: 0.28))
+            volleyQueuedBalls -= 1
+            volleyLaunchTimer += 0.065
+        }
+    }
 
-    // private func handleEnemyShotHit() {
-    //     if shieldCharges > 0 {
-    //         shieldCharges -= 1
-    //         emit(.sound(.powerup, volume: 0.6)) // Shield absorb sound
-    //         emit(.haptic(.medium))
-    //     } else {
-    //         // Shield broken, lose life
-    //         lives -= 1
-    //         emit(.sound(.life, volume: 0.8))
-    //         emit(.haptic(.medium))
-    //         delegate?.onLivesChanged(lives)
-    //         if lives <= 0 {
-    //             state = .gameOver
-    //             delegate?.onGameOver(summary: makeSummary())
-    //         }
-    //     }
-    // }
+    private func resolveVolleyTurnIfReady() {
+        if !volleyTurnActive { return }
+        if volleyQueuedBalls > 0 || !balls.isEmpty { return }
+
+        volleyTurnActive = false
+        volleyTurnCount += 1
+        volleyAdvanceRows += 1
+        emit(.sound(.brickMoving, volume: 0.36))
+        triggerScreenShake(0.7, 0.07)
+
+        // Increase ball count every 2 volleys
+        if volleyTurnCount % 2 == 0 && volleyBallCount < 18 {
+            volleyBallCount += 1
+            delegate?.onTip("Volley +1 ball (\(volleyBallCount) total).")
+            emit(.sound(.powerup, volume: 0.32))
+        }
+
+        relayoutBricks()
+        if hasVolleyBreach() {
+            delegate?.onTip("Breach! Bricks reached the launch line.")
+            triggerGameOver()
+            return
+        }
+
+        spawnVolleyTopRow()
+        relayoutBricks()
+        if hasVolleyBreach() {
+            delegate?.onTip("Breach! Bricks reached the launch line.")
+            triggerGameOver()
+            return
+        }
+
+        let launchX = volleyReturnAnchorX.isFinite ? volleyReturnAnchorX : paddle.x
+        paddle.x = launchX.clamped(to: paddle.width/2...worldWidth - paddle.width/2)
+        paddle.targetX = paddle.x
+        spawnBall(paddle.x)
+        attachReadyBallsToPaddle()
+        state = .ready
+        updatePowerupStatus()
+    }
+
+    private func launchVolleyTurn() {
+        guard let firstBall = balls.first(where: { $0.vy == 0 }) else { return }
+        if firstBall.vx != 0 || firstBall.vy != 0 { return }
+
+        volleyTurnActive = true
+        volleyQueuedBalls = volleyBallCount - 1
+        volleyLaunchTimer = 0
+        volleyLaunchX = paddle.x
+        volleyReturnAnchorX = Float.nan
+
+        launchBallWithAim(firstBall)
+        emit(.sound(.bounce, volume: 0.45))
+        state = .running
+    }
+
+    private func hasVolleyBreach() -> Bool {
+        let launchLineY = paddle.y + 8 // Launch line is a bit above paddle
+        return bricks.contains { $0.alive && $0.y < launchLineY }
+    }
+
+    private func spawnVolleyTopRow() {
+        // Add a new row of bricks at the top
+        let rowY = worldHeight * 0.75 + Float(volleyAdvanceRows) * 6
+        for col in 0..<12 {
+            let x = Float(col) * (worldWidth / 12) + (worldWidth / 24)
+            let brick = Brick(x: x, y: rowY, width: worldWidth / 12 - 1, height: 5, type: .normal, hitPoints: 1)
+            bricks.append(brick)
+        }
+    }
+
+    private func relayoutBricks() {
+        // Move all bricks down by volleyAdvanceRows * brick height
+        let moveDown = Float(volleyAdvanceRows) * 6
+        for i in 0..<bricks.count {
+            bricks[i].y -= moveDown
+        }
+        volleyAdvanceRows = 0
+    }
+
+    private func triggerScreenShake(_ intensity: Float, _ duration: Float) {
+        // Simple screen shake effect - could be implemented in GameView
+        delegate?.onFeedback(.sound(.explosion, volume: 0.4))
+    }
+
+    private func fireInvaderShot() {
+        // Find a random invader brick to shoot from
+        let invaderBricks = bricks.filter { $0.type == .invader } // Use invader type
+        guard let shooter = invaderBricks.randomElement() else { return }
+
+        let shot = EnemyShot(
+            x: shooter.x,
+            y: shooter.y - shooter.height/2,
+            radius: 2.0,
+            vx: 0,
+            vy: -60, // Shoot downward
+            color: [1.0, 0.0, 0.0, 1.0] // Red shots
+        )
+        enemyShots.append(shot)
+    }
+
+    private func handleEnemyShotHit() {
+        if shieldCharges > 0 {
+            shieldCharges -= 1
+            emit(.sound(.powerup, volume: 0.6)) // Shield absorb sound
+            emit(.haptic(.medium))
+        } else {
+            // Shield broken, lose life
+            runLivesLost += 1
+            lives -= 1
+            emit(.sound(.life, volume: 0.8))
+            emit(.haptic(.medium))
+            delegate?.onLivesChanged(newLives: lives)
+            if lives <= 0 {
+                state = .gameOver
+                delegate?.onGameOver(summary: makeSummary())
+            }
+        }
+    }
 
     private func resetLevel() {
         balls.removeAll()
@@ -1155,6 +1286,16 @@ class GameEngine {
         levelIndex = 0
         lives = gameMode.baseLives
         timeRemaining = gameMode.timeLimitSeconds
+        runBricksBroken = 0
+        runLivesLost = 0
+        volleyTurnActive = false
+        volleyBallCount = 3
+        volleyQueuedBalls = 0
+        volleyLaunchTimer = 0
+        volleyLaunchX = 0
+        volleyReturnAnchorX = Float.nan
+        volleyTurnCount = 0
+        volleyAdvanceRows = 0
         delegate?.onScoreChanged(newScore: score)
         delegate?.onLivesChanged(newLives: lives)
         delegate?.onLevelChanged(newLevel: 1)
@@ -1185,7 +1326,7 @@ class GameEngine {
     }
 
     private func makeSummary() -> GameSummary {
-        GameSummary(score: score, level: levelIndex + 1, durationSeconds: Int(elapsedSeconds.rounded(.down)))
+        GameSummary(score: score, level: levelIndex + 1, durationSeconds: Int(elapsedSeconds.rounded(.down)), bricksBroken: runBricksBroken, livesLost: runLivesLost)
     }
 
     private func emit(_ event: GameFeedbackEvent) {
@@ -1198,5 +1339,17 @@ class GameEngine {
             break
         }
         delegate?.onFeedback(event)
+    }
+}
+
+extension Float {
+    func clamped(to range: ClosedRange<Float>) -> Float {
+        return min(max(self, range.lowerBound), range.upperBound)
+    }
+}
+
+extension Array {
+    func lastOrNull() -> Element? {
+        return isEmpty ? nil : last
     }
 }

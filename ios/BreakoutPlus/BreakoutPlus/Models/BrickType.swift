@@ -10,7 +10,7 @@ import Foundation
 
 enum BrickType: String, CaseIterable {
     case normal, reinforced, armored, explosive, unbreakable
-    case moving, spawning, phase, boss
+    case moving, spawning, phase, boss, invader
 
     var baseHitPoints: Int {
         switch self {
@@ -23,6 +23,7 @@ enum BrickType: String, CaseIterable {
         case .spawning: return 2
         case .phase: return 3
         case .boss: return 6
+        case .invader: return 1
         }
     }
 
@@ -37,6 +38,7 @@ enum BrickType: String, CaseIterable {
         case .spawning: return 35
         case .phase: return 40
         case .boss: return 100
+        case .invader: return 15
         }
     }
 
@@ -53,6 +55,6 @@ enum BrickType: String, CaseIterable {
     }
 
     var hasSpecialBehavior: Bool {
-        return self == .moving || self == .spawning || self == .phase || self == .boss
+        return self == .moving || self == .spawning || self == .phase || self == .boss || self == .invader
     }
 }

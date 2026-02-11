@@ -101,6 +101,9 @@ class GameEngine(
     private var invaderRowPhase = 0f
     private var invaderRowDrift = 0.75f
     private var invaderRowPhaseOffset = 0.5f
+    private val invaderFormationCompression = 0.74f
+    private var invaderTurnSoundCooldown = 0f
+    private val invaderTurnSoundMinInterval = 0.32f
     private var shieldHitPulse = 0f
     private var shieldHitX = 0f
     private var shieldHitColor = floatArrayOf(0.8f, 0.95f, 1f, 1f)
@@ -1694,6 +1697,7 @@ class GameEngine(
             invaderPauseTimer = if (invaderWaveStyle == 2) invaderBaseShotCooldown * 1.2f else 0f
             invaderBurstCount = 0
             invaderShotTimer = invaderShotCooldown * (0.6f + random.nextFloat() * 0.8f)
+            invaderTurnSoundCooldown = 0f
             invaderShieldMax = (invaderPacing.shieldBase + levelIndex * invaderPacing.shieldPerLevel)
                 .coerceAtMost(invaderPacing.shieldCap)
             invaderShield = invaderShieldMax
@@ -1706,6 +1710,7 @@ class GameEngine(
             invaderShield = 0f
             invaderShieldMax = 0f
             invaderShieldAlerted = false
+            invaderTurnSoundCooldown = 0f
             listener.onShieldUpdated(0, 0)
             val forcedTheme = ModeTheme.themeFor(
                 mode = config.mode,
@@ -1776,9 +1781,11 @@ class GameEngine(
             val cellX = spacing + (spec.col + colOffset) * (baseBrickWidth + spacing)
             val visualRow = if (config.mode == GameMode.VOLLEY) spec.row + volleyAdvanceRows else spec.row
             val cellY = areaBottom + (rows - 1 - visualRow) * (baseBrickHeight + spacing * 0.5f)
-            val x = cellX + (baseBrickWidth - brickWidth) * 0.5f
+            val rawX = cellX + (baseBrickWidth - brickWidth) * 0.5f
+            val x = if (config.mode.invaders) compressInvaderX(rawX, brickWidth) else rawX
             val y = cellY + (baseBrickHeight - brickHeight) * 0.5f
             val gridX = spec.col + colOffset
+            val (resolvedType, resolvedHitPoints) = resolveBrickSpecForMode(spec.type, spec.hitPoints)
             val brick = Brick(
                 gridX = gridX,
                 gridY = spec.row,
@@ -1786,15 +1793,15 @@ class GameEngine(
                 y = y,
                 width = brickWidth,
                 height = brickHeight,
-                hitPoints = spec.hitPoints,
-                maxHitPoints = spec.hitPoints,
-                type = spec.type
+                hitPoints = resolvedHitPoints,
+                maxHitPoints = resolvedHitPoints,
+                type = resolvedType
             )
             brick.baseX = x
             brick.baseY = y
 
             // Set up special properties for dynamic bricks
-            when (spec.type) {
+            when (resolvedType) {
                 BrickType.MOVING -> {
                     // Velocity will be initialized in updateBricks
                 }
@@ -1923,6 +1930,17 @@ class GameEngine(
         }
     }
 
+    private fun resolveBrickSpecForMode(type: BrickType, hitPoints: Int): Pair<BrickType, Int> {
+        if (config.mode != GameMode.VOLLEY || type != BrickType.UNBREAKABLE) {
+            return type to hitPoints
+        }
+        // Volley must remain fully breakable: convert unbreakables into durable breakable bricks.
+        val fallbackType = if (levelIndex >= 4) BrickType.ARMORED else BrickType.REINFORCED
+        val baseHp = baseHitPoints(fallbackType)
+        val scaledHp = (baseHp * (1f + levelIndex * 0.06f)).roundToInt().coerceIn(baseHp, 9)
+        return fallbackType to scaledHp
+    }
+
     private fun relayoutBricks() {
         val layout = currentLayout ?: return
         if (bricks.isEmpty()) return
@@ -1942,7 +1960,8 @@ class GameEngine(
             if (brick.gridX < 0 || visualRow < 0) return@forEach
             val cellX = spacing + brick.gridX * (baseBrickWidth + spacing)
             val cellY = areaBottom + (rows - 1 - visualRow) * (baseBrickHeight + spacing * 0.5f)
-            val x = cellX + (baseBrickWidth - brickWidth) * 0.5f
+            val rawX = cellX + (baseBrickWidth - brickWidth) * 0.5f
+            val x = if (config.mode.invaders) compressInvaderX(rawX, brickWidth) else rawX
             val y = cellY + (baseBrickHeight - brickHeight) * 0.5f
             brick.x = x
             brick.y = y
@@ -2151,6 +2170,7 @@ class GameEngine(
         val invaders = collectAliveInvaders()
         if (invaders.isEmpty()) return
         invaderRowPhase += dt * (0.55f + levelIndex * 0.015f)
+        invaderTurnSoundCooldown = max(0f, invaderTurnSoundCooldown - dt)
         val leftBound = 0.6f
         val rightBound = worldWidth - 0.6f
 
@@ -2158,30 +2178,38 @@ class GameEngine(
             return kotlin.math.sin(invaderRowPhase + row * invaderRowPhaseOffset) * invaderRowDrift
         }
 
-        var nextOffset = invaderFormationOffset + invaderSpeed * invaderDirection * dt
-        var minX = Float.POSITIVE_INFINITY
-        var maxX = Float.NEGATIVE_INFINITY
+        var minBaseX = Float.POSITIVE_INFINITY
+        var maxBaseX = Float.NEGATIVE_INFINITY
         invaders.forEach { invader ->
-            val x = invader.baseX + nextOffset
-            minX = min(minX, x)
-            maxX = max(maxX, x + invader.width)
+            val x = invader.baseX + rowDrift(invader.gridY)
+            minBaseX = min(minBaseX, x)
+            maxBaseX = max(maxBaseX, x + invader.width)
         }
-        val driftPadding = invaderRowDrift * 1.1f
-        minX -= driftPadding
-        maxX += driftPadding
 
-        if (minX < leftBound) {
-            nextOffset += leftBound - minX
-            if (invaderDirection != 1f) {
-                invaderDirection = 1f
-                audio.play(GameSound.BRICK_MOVING, 0.25f)
+        val minOffsetAllowed = leftBound - minBaseX
+        val maxOffsetAllowed = rightBound - maxBaseX
+
+        val nextOffset = if (minOffsetAllowed > maxOffsetAllowed) {
+            (minOffsetAllowed + maxOffsetAllowed) * 0.5f
+        } else {
+            var proposed = invaderFormationOffset + invaderSpeed * invaderDirection * dt
+            if (proposed < minOffsetAllowed) {
+                val overshoot = minOffsetAllowed - proposed
+                proposed = minOffsetAllowed + overshoot
+                if (invaderDirection < 0f) {
+                    invaderDirection = 1f
+                    playInvaderTurnSound()
+                }
             }
-        } else if (maxX > rightBound) {
-            nextOffset -= maxX - rightBound
-            if (invaderDirection != -1f) {
-                invaderDirection = -1f
-                audio.play(GameSound.BRICK_MOVING, 0.25f)
+            if (proposed > maxOffsetAllowed) {
+                val overshoot = proposed - maxOffsetAllowed
+                proposed = maxOffsetAllowed - overshoot
+                if (invaderDirection > 0f) {
+                    invaderDirection = -1f
+                    playInvaderTurnSound()
+                }
             }
+            proposed.coerceIn(minOffsetAllowed, maxOffsetAllowed)
         }
 
         invaderFormationOffset = nextOffset
@@ -2189,6 +2217,19 @@ class GameEngine(
             val drift = rowDrift(invader.gridY)
             invader.x = invader.baseX + invaderFormationOffset + drift
         }
+    }
+
+    private fun playInvaderTurnSound() {
+        if (invaderTurnSoundCooldown > 0f) return
+        audio.play(GameSound.BRICK_MOVING, 0.12f, 0.92f)
+        invaderTurnSoundCooldown = invaderTurnSoundMinInterval
+    }
+
+    private fun compressInvaderX(rawX: Float, brickWidth: Float): Float {
+        val center = worldWidth * 0.5f
+        val brickCenter = rawX + brickWidth * 0.5f
+        val compressedCenter = center + (brickCenter - center) * invaderFormationCompression
+        return compressedCenter - brickWidth * 0.5f
     }
 
     private fun attachBallToPaddle() {
@@ -2436,18 +2477,38 @@ class GameEngine(
             }
         }
 
-        val density = (0.68f + levelIndex * 0.015f + volleyTurnCount * 0.006f).coerceIn(0.64f, 0.9f)
-        val hpScale = 1f + levelIndex * 0.07f + volleyTurnCount * 0.03f
+        val aliveBricks = bricks.count { it.alive }
+        val softCap = (cols * 5).coerceAtLeast(24)
+        val congestionPenalty = ((aliveBricks - softCap).coerceAtLeast(0) / softCap.toFloat()).coerceIn(0f, 0.38f)
+        val earlyEase = if (volleyTurnCount < 3) 0.12f - volleyTurnCount * 0.03f else 0f
+        val density = (0.72f + levelIndex * 0.011f + volleyTurnCount * 0.004f - congestionPenalty - earlyEase)
+            .coerceIn(0.5f, 0.88f)
+
+        val ballRelief = ((volleyBallCount - 3).coerceAtLeast(0) * 0.04f).coerceAtMost(0.24f)
+        val hpScale = (1f + levelIndex * 0.06f + volleyTurnCount * 0.024f - ballRelief).coerceAtLeast(0.85f)
+
+        val danger = (volleyTurnCount / 10f).coerceIn(0f, 1f)
+        val explosiveChance = (0.035f + danger * 0.05f).coerceAtMost(0.1f)
+        val reinforcedChance = (0.11f + danger * 0.09f).coerceAtMost(0.23f)
+        val armoredChance = if (volleyTurnCount < 2) 0f else (0.06f + danger * 0.08f).coerceAtMost(0.17f)
+
+        val forcedGapPrimary = random.nextInt(cols)
+        val forcedGapSecondary = if (volleyTurnCount < 4 && cols >= 8) {
+            (forcedGapPrimary + (cols / 3).coerceAtLeast(2)) % cols
+        } else {
+            -1
+        }
         var spawned = 0
 
         for (col in 0 until cols) {
+            if (col == forcedGapPrimary || col == forcedGapSecondary) continue
             if (occupied.contains(col)) continue
             if (random.nextFloat() > density) continue
             val typeRoll = random.nextFloat()
             val type = when {
-                typeRoll < 0.08f -> BrickType.EXPLOSIVE
-                typeRoll < 0.2f -> BrickType.REINFORCED
-                typeRoll < 0.3f -> BrickType.ARMORED
+                typeRoll < explosiveChance -> BrickType.EXPLOSIVE
+                typeRoll < explosiveChance + reinforcedChance -> BrickType.REINFORCED
+                typeRoll < explosiveChance + reinforcedChance + armoredChance -> BrickType.ARMORED
                 else -> BrickType.NORMAL
             }
             val baseHp = baseHitPoints(type)
@@ -2652,7 +2713,7 @@ class GameEngine(
                     BrickType.SPAWNING -> GameSound.BRICK_SPAWNING
                     BrickType.PHASE -> GameSound.BRICK_PHASE
                     BrickType.BOSS -> GameSound.BRICK_BOSS
-                    BrickType.INVADER -> GameSound.BRICK_MOVING
+                    BrickType.INVADER -> GameSound.BRICK_NORMAL
                 }
 
                 // Calculate dynamic rate with combo scaling and random variation
@@ -2706,7 +2767,7 @@ class GameEngine(
                     BrickType.SPAWNING -> GameSound.BRICK_SPAWNING
                     BrickType.PHASE -> GameSound.BRICK_PHASE
                     BrickType.BOSS -> GameSound.BRICK_BOSS
-                    BrickType.INVADER -> GameSound.BRICK_MOVING
+                    BrickType.INVADER -> GameSound.BRICK_NORMAL
                 }
                 audio.play(brickSound, 0.4f, brickSoundRate(brick.type)) // Softer for beam hits
                 maybeSpawnPowerup(brick)
