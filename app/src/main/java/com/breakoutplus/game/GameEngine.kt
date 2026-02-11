@@ -218,7 +218,8 @@ class GameEngine(
             GameMode.TIMED -> 1.04f
             else -> 1.0f
         }
-        val base = worldWidth * 0.225f
+        // Slightly narrower baseline to support a more zoomed-out visual feel.
+        val base = worldWidth * 0.21f
         return base * aspectBoost * modeBoost
     }
 
@@ -519,7 +520,12 @@ class GameEngine(
         for (brick in bricks) {
             if (!brick.alive) continue
             if (!renderer.isRectVisible(brick.x, brick.y, brick.width, brick.height)) continue
-            val color = brick.currentColor(theme)
+            val color = if (config.mode == GameMode.TUNNEL && brick.type == BrickType.UNBREAKABLE) {
+                // Keep tunnel walls visually distinct from regular bricks.
+                floatArrayOf(0.76f, 0.83f, 0.93f, 1f)
+            } else {
+                brick.currentColor(theme)
+            }
 
             if (brick.type == BrickType.INVADER) {
                 drawInvaderShip(renderer, brick, color)
@@ -567,7 +573,29 @@ class GameEngine(
             when (brick.type) {
                 BrickType.REINFORCED -> drawStripe(renderer, brick, adjustColor(color, 0.85f, 1f), 1)
                 BrickType.ARMORED -> drawStripe(renderer, brick, adjustColor(color, 0.78f, 1f), 2)
-                BrickType.UNBREAKABLE -> drawStripe(renderer, brick, adjustColor(color, 0.7f, 1f), 3)
+                BrickType.UNBREAKABLE -> {
+                    drawStripe(renderer, brick, adjustColor(color, 0.66f, 1f), 3)
+                    if (config.mode == GameMode.TUNNEL) {
+                        val lock = adjustColor(color, 0.48f, 1f)
+                        val cap = adjustColor(color, 1.12f, 0.95f)
+                        val barWidth = brick.width * 0.14f
+                        val barHeight = brick.height * 0.5f
+                        renderer.drawRect(
+                            brick.centerX - barWidth * 0.5f,
+                            brick.centerY - barHeight * 0.5f,
+                            barWidth,
+                            barHeight,
+                            lock
+                        )
+                        renderer.drawRect(
+                            brick.centerX - brick.width * 0.24f,
+                            brick.centerY - brick.height * 0.06f,
+                            brick.width * 0.48f,
+                            brick.height * 0.12f,
+                            cap
+                        )
+                    }
+                }
                 BrickType.MOVING -> {
                     // Add movement indicator
                     val indicatorColor = adjustColor(color, 1.3f, 0.8f)
@@ -1320,13 +1348,14 @@ class GameEngine(
     private fun applyLayoutTuning(aspectRatio: Float, preserveRowBoost: Boolean) {
         val tallness = ((aspectRatio - 1.25f) / 0.85f).coerceIn(0f, 1f)
         val isWide = aspectRatio < 1.45f
-        brickAreaTopRatio = lerp(0.99f, 0.965f, tallness)
-        brickAreaBottomRatio = lerp(0.70f, 0.62f, tallness)
-        brickSpacing = lerp(0.32f, 0.36f, tallness)
+        brickAreaTopRatio = lerp(0.992f, 0.972f, tallness)
+        brickAreaBottomRatio = lerp(0.7f, 0.62f, tallness)
+        brickSpacing = lerp(0.28f, 0.33f, tallness)
         if (!preserveRowBoost) {
             val densityBoost = (levelIndex / 6).coerceAtMost(2)
-            val baseRowBoost = (if (isWide) 3 else 2) + densityBoost
-            val baseColBoost = (if (isWide) 3 else 2) + densityBoost
+            // One extra row/column globally for denser playfields.
+            val baseRowBoost = (if (isWide) 4 else 3) + densityBoost
+            val baseColBoost = (if (isWide) 4 else 3) + densityBoost
             when (config.mode) {
                 GameMode.RUSH -> {
                     layoutRowBoost = (baseRowBoost - 2).coerceAtLeast(0)
@@ -1344,6 +1373,10 @@ class GameEngine(
                     layoutRowBoost = 0
                     layoutColBoost = 0
                 }
+                GameMode.TUNNEL -> {
+                    layoutRowBoost = 0
+                    layoutColBoost = 0
+                }
                 GameMode.SURVIVAL -> {
                     layoutRowBoost = baseRowBoost + 1
                     layoutColBoost = baseColBoost + 1
@@ -1358,13 +1391,19 @@ class GameEngine(
                 }
             }
         }
-        globalBrickScale = lerp(0.88f, 0.86f, tallness)
+        // Smaller bricks overall to avoid an overly zoomed-in feel.
+        globalBrickScale = lerp(0.81f, 0.79f, tallness)
         if (config.mode == GameMode.RUSH) {
             globalBrickScale = (globalBrickScale + 0.045f).coerceAtMost(0.915f)
             brickSpacing = (brickSpacing + 0.04f).coerceAtMost(0.44f)
         } else if (config.mode == GameMode.VOLLEY) {
             globalBrickScale = (globalBrickScale + 0.02f).coerceAtMost(0.9f)
             brickAreaBottomRatio = (brickAreaBottomRatio - 0.02f).coerceAtLeast(0.58f)
+        } else if (config.mode == GameMode.TUNNEL) {
+            // Tunnel should occupy more vertical space so the fortress reads clearly.
+            globalBrickScale = (globalBrickScale + 0.055f).coerceAtMost(0.94f)
+            brickAreaBottomRatio = (brickAreaBottomRatio - 0.14f).coerceAtLeast(0.5f)
+            brickSpacing = (brickSpacing + 0.015f).coerceAtMost(0.42f)
         } else if (config.mode == GameMode.TIMED) {
             globalBrickScale = (globalBrickScale + 0.015f).coerceAtMost(0.895f)
         } else if (config.mode == GameMode.SURVIVAL) {
@@ -1717,13 +1756,21 @@ class GameEngine(
                 levelIndex = levelIndex,
                 availableThemeNames = themePool.asSequence().map { it.name }.toSet()
             )
-            buildLevel(
-                index = levelIndex,
-                difficulty = difficulty,
-                endless = config.mode.endless,
-                themePool = themePool,
-                forcedTheme = forcedTheme
-            )
+            if (config.mode == GameMode.TUNNEL) {
+                LevelFactory.buildTunnelLevel(
+                    index = levelIndex,
+                    difficulty = difficulty,
+                    theme = forcedTheme
+                )
+            } else {
+                buildLevel(
+                    index = levelIndex,
+                    difficulty = difficulty,
+                    endless = config.mode.endless,
+                    themePool = themePool,
+                    forcedTheme = forcedTheme
+                )
+            }
         }
         currentLayout = level
         theme = level.theme
@@ -1949,7 +1996,7 @@ class GameEngine(
 
     private fun effectiveVolleyColumns(requestedCols: Int): Int {
         val clampedRequested = requestedCols.coerceAtLeast(6)
-        val target = if (currentAspectRatio <= 1.5f) 9 else 8
+        val target = if (currentAspectRatio <= 1.5f) 10 else 9
         return min(clampedRequested, target)
     }
 
@@ -2343,7 +2390,7 @@ class GameEngine(
     }
 
     private fun spawnBall(spawnX: Float = paddle.x) {
-        val ball = Ball(spawnX, paddle.y + 5f, 1.0f, 0f, 0f)
+        val ball = Ball(spawnX, paddle.y + 5f, 0.92f, 0f, 0f)
         if (fireballActive) {
             ball.isFireball = true
             ball.color = PowerUpType.FIREBALL.color
@@ -3859,6 +3906,14 @@ class GameEngine(
                 weights[PowerUpType.LIFE] = 0.15f
                 weights[PowerUpType.SHRINK] = 0.1f
                 weights[PowerUpType.OVERDRIVE] = 0.1f
+            }
+            GameMode.TUNNEL -> {
+                weights[PowerUpType.PIERCE] = (weights[PowerUpType.PIERCE] ?: 0f) + 0.34f
+                weights[PowerUpType.FIREBALL] = (weights[PowerUpType.FIREBALL] ?: 0f) + 0.22f
+                weights[PowerUpType.LASER] = (weights[PowerUpType.LASER] ?: 0f) + 0.12f
+                weights[PowerUpType.GUARDRAIL] = (weights[PowerUpType.GUARDRAIL] ?: 0f) + 0.14f
+                weights[PowerUpType.SHRINK]?.let { weights[PowerUpType.SHRINK] = it * 0.7f }
+                weights[PowerUpType.OVERDRIVE]?.let { weights[PowerUpType.OVERDRIVE] = it * 0.72f }
             }
             GameMode.INVADERS -> {
                 weights[PowerUpType.SHIELD] = (weights[PowerUpType.SHIELD] ?: 0f) + 0.3f

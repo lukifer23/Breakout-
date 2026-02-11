@@ -4,7 +4,7 @@ An Android-first brickbreaker tuned for foldables and modern phones. Breakout+ s
 
 ## Goals
 
-**Product Goal**: Deliver Breakout+ as a premier foldable-first brickbreaker for Samsung Galaxy Z Fold devices and modern Android hardware. Achieve 60+ FPS gameplay through GPU acceleration, provide a complete feature set (10 brick types, 15 powerups, 8 game modes, base + unlockable visual themes), and maintain a full CLI-only development workflow.
+**Product Goal**: Deliver Breakout+ as a premier foldable-first brickbreaker for Samsung Galaxy Z Fold devices and modern Android hardware. Achieve 60+ FPS gameplay through GPU acceleration, provide a complete feature set (10 brick types, 15 powerups, 9 game modes, base + unlockable visual themes), and maintain a full CLI-only development workflow.
 
 **Key Success Criteria**:
 - Smooth 60 FPS gameplay on Z Fold 7 (folded and unfolded)
@@ -21,7 +21,7 @@ Breakout+ elevates the classic brickbreaker genre with modern mobile optimizatio
 - **Platform Focus**: Native Android (release target) with iOS kept separate/in development
 - **GPU Acceleration**: OpenGL ES 2.0 (Android) / Metal (iOS) rendering at 60+ FPS
 - **Advanced Physics**: Accurate collision detection with momentum preservation
-- **Multiple Game Modes**: Classic, Timed Challenge, Endless, God Mode, Level Rush, Volley, Survival, and Invaders
+- **Multiple Game Modes**: Classic, Timed Challenge, Endless, God Mode, Level Rush, Volley, Tunnel Siege, Survival, and Invaders
 - **Dynamic Brick System**: 10 brick types with unique behaviors (moving, spawning, phase, boss, invader)
 - **Comprehensive Powerups**: 15 distinct powerups with visual effects and timers
 - **Combo System**: Score multipliers for consecutive brick destruction
@@ -52,7 +52,7 @@ Key principles:
 4. Install APK: `adb install -r app/build/outputs/apk/debug/app-debug.apk`
 
 ### iOS: iPhone & iPad
-**Status**: Complete iOS Port (v1.0.0) - CLI-buildable, simulator-tested, full Android parity
+**Status**: iOS codebase present; Android release is current priority and iOS parity is paused.
 
 #### CLI-Only Development Setup (No Xcode GUI Required)
 1. Ensure Xcode 15+ is installed
@@ -61,7 +61,7 @@ Key principles:
 4. Install: `xcrun simctl install booted "$(find ~/Library/Developer/Xcode/DerivedData -name 'BreakoutPlus.app' -type d | head -1)"`
 5. Launch: `xcrun simctl launch booted com.breakoutplus.ios`
 
-**Complete iOS Features**: Full Android parity - 8 game modes, 10 brick types, 15 powerups, progression system, lifetime stats, daily challenges, privacy policy, SpriteKit rendering
+**iOS Note**: Keep iOS implementation separate from Android release work unless parity work is explicitly resumed.
 
 Breakout+ is a GPU-accelerated brickbreaker built for foldables, tuned for the Samsung Galaxy Z Fold 7. It uses OpenGL ES for the game loop, fold-aware UI layout, and a full set of modes, powerups, audio, and multi-hit bricks.
 
@@ -70,7 +70,7 @@ Breakout+ is a GPU-accelerated brickbreaker built for foldables, tuned for the S
 - Vsync-paced rendering using Choreographer-driven frame pacing with surface frame-rate hints.
 - Optimized for modern mobile GPUs with simple geometry (rects/circles) for consistent performance and frame pacing stability.
 - Foldable-optimized layouts (`sw600dp`, `sw720dp`) plus hinge-aware padding using Jetpack WindowManager.
-- Multiple modes: Classic, Timed Challenge, Endless, God Mode, Level Rush (55s per level with aggressive pacing), Volley (turn-based chain launch), Survival, Invaders.
+- Multiple modes: Classic, Timed Challenge, Endless, God Mode, Level Rush (55s per level with aggressive pacing), Volley (turn-based chain launch), Tunnel Siege (fortress ring with a narrow breach lane), Survival, Invaders.
 - Powerups: Multi-ball, Laser, Guardrail, Shield, Extra life, Wide paddle, Shrink, Slow motion, Overdrive, Fireball, Magnet, Gravity Well, Ball Splitter, Freeze, Pierce.
 - Brick variations: Standard, Reinforced, Armored, Explosive, Unbreakable, Moving, Spawning, Phase, Boss.
 - Combo system: Score multipliers (x1.5-5x) for consecutive brick breaks within 2 seconds.
@@ -94,6 +94,7 @@ Breakout+ is a GPU-accelerated brickbreaker built for foldables, tuned for the S
 - **God Mode**: Practice mode with infinite lives, no penalties
 - **Level Rush**: Beat each stage before the 55-second timer expires with aggressive pacing tuned for fairness
 - **Volley**: Aim once, launch a chain of balls, then survive descending rows
+- **Tunnel Siege**: Breach a fortified ring through a narrow tunnel entry and clear the inner core
 - **Survival**: One life with faster speed ramps
 - **Invaders**: Breakout + invader fleet combat with enemy fire and shield management
 
@@ -140,6 +141,7 @@ Breakout+ is a GPU-accelerated brickbreaker built for foldables, tuned for the S
 - **God Mode**: No life loss for practice or testing.
 - **Level Rush**: 55 seconds per stage, one life.
 - **Volley**: Turn-based chain launch; rows descend every volley.
+- **Tunnel Siege**: Unbreakable fortress ring with a narrow breach lane into the core.
 - **Survival**: One life with faster speed ramps.
 - **Invaders**: Moving alien fleets fire back while your shield absorbs hits.
 

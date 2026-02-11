@@ -478,6 +478,102 @@ object LevelFactory {
         )
     }
 
+    fun buildTunnelLevel(index: Int, difficulty: Float, theme: LevelTheme): LevelLayout {
+        val rows = (11 + (index / 5).coerceAtMost(2)).coerceIn(11, 13)
+        val cols = (12 + (index / 6).coerceAtMost(2)).coerceIn(12, 14)
+        val fortressLeft = 2
+        val fortressRight = cols - 3
+        val fortressTop = 1
+        val fortressBottom = rows - 5
+        val wallThickness = if (index >= 7) 2 else 1
+        val gateWidth = if (index >= 9) 2 else 1
+        val gateCenter = (cols / 2 + (index % 3 - 1)).coerceIn(fortressLeft + 2, fortressRight - 2)
+        val gateStart = (gateCenter - gateWidth / 2).coerceIn(fortressLeft + 1, fortressRight - gateWidth)
+        val gateEnd = gateStart + gateWidth - 1
+        val tunnelLeftWall = (gateStart - 1).coerceAtLeast(0)
+        val tunnelRightWall = (gateEnd + 1).coerceAtMost(cols - 1)
+        val levelScale = 1f + index * 0.05f
+        val bricks = mutableListOf<BrickSpec>()
+        val occupied = HashSet<Pair<Int, Int>>(rows * cols)
+
+        fun addBrick(col: Int, row: Int, type: BrickType, hp: Int) {
+            if (col !in 0 until cols || row !in 0 until rows) return
+            if (!occupied.add(col to row)) return
+            bricks.add(BrickSpec(col, row, type, hp))
+        }
+
+        // Fortress shell: only unbreakable wall bricks with one gate opening.
+        repeat(wallThickness) { layer ->
+            val left = fortressLeft + layer
+            val right = fortressRight - layer
+            val top = fortressTop + layer
+            val bottom = fortressBottom - layer
+            if (left >= right || top >= bottom) return@repeat
+            val gateLayerStart = (gateStart + layer).coerceAtMost(gateEnd)
+            val gateLayerEnd = (gateEnd - layer).coerceAtLeast(gateStart)
+            for (row in top..bottom) {
+                for (col in left..right) {
+                    val onFortressEdge = row == top || row == bottom || col == left || col == right
+                    val isGate = row == bottom && col in gateLayerStart..gateLayerEnd
+                    if (onFortressEdge && !isGate) {
+                        addBrick(col, row, BrickType.UNBREAKABLE, 999)
+                    }
+                }
+            }
+        }
+
+        // Entry tunnel walls from gate down to the launch zone.
+        for (row in (fortressBottom + 1) until rows) {
+            addBrick(tunnelLeftWall, row, BrickType.UNBREAKABLE, 999)
+            addBrick(tunnelRightWall, row, BrickType.UNBREAKABLE, 999)
+        }
+
+        // Fill fortress interior with breakable bricks only.
+        val coreTop = fortressTop + wallThickness
+        val coreBottomExclusive = fortressBottom - wallThickness + 1
+        val coreLeft = fortressLeft + wallThickness
+        val coreRightExclusive = fortressRight - wallThickness + 1
+        for (row in coreTop until coreBottomExclusive) {
+            for (col in coreLeft until coreRightExclusive) {
+                // Keep a narrow open channel near the gate to preserve the "small entry point" identity.
+                if (col in gateStart..gateEnd && row >= fortressBottom - 2) continue
+                val seed = index * 131 + row * 41 + col * 17
+                val inGateLane = col in gateStart..gateEnd
+                val density = (if (inGateLane) 0.62f else 0.92f) + index * 0.006f
+                if (kotlin.random.Random(seed).nextFloat() > density.coerceAtMost(0.96f)) continue
+                val typeRoll = kotlin.random.Random(seed + 19).nextFloat()
+                val type = when {
+                    typeRoll < 0.08f -> BrickType.EXPLOSIVE
+                    typeRoll < 0.33f -> BrickType.REINFORCED
+                    typeRoll < 0.47f -> BrickType.ARMORED
+                    else -> BrickType.NORMAL
+                }
+                val baseHp = when (type) {
+                    BrickType.NORMAL -> 1
+                    BrickType.REINFORCED -> 2
+                    BrickType.ARMORED -> 3
+                    BrickType.EXPLOSIVE -> 1
+                    BrickType.UNBREAKABLE -> 999
+                    BrickType.MOVING -> 2
+                    BrickType.SPAWNING -> 2
+                    BrickType.PHASE -> 3
+                    BrickType.BOSS -> 6
+                    BrickType.INVADER -> 1
+                }
+                val hp = max(1, (baseHp * levelScale * difficulty).roundToInt())
+                addBrick(col, row, type, hp)
+            }
+        }
+
+        return LevelLayout(
+            rows = rows,
+            cols = cols,
+            bricks = bricks,
+            theme = theme,
+            tip = "Tunnel Siege: only the gate is open. Thread shots through the tunnel."
+        )
+    }
+
     private fun generateProceduralLevel(
         index: Int,
         difficulty: Float,

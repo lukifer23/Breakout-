@@ -394,7 +394,6 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     override fun onLevelUpdated(level: Int) {
         runOnUiThread {
             binding.hudLevel.text = getString(R.string.label_level_format, level)
-            showLevelBanner(level)
             updateJourneyLabel(level)
             updateHudMeta()
         }
@@ -624,7 +623,6 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
 
     private fun showTooltip() {
         hideOverlay(binding.tooltipOverlay)
-        showBanner(getString(R.string.label_welcome_banner))
     }
 
     private fun hideTooltip() {

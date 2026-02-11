@@ -105,6 +105,6 @@
     <string name="label_howto_bricks_header">▼ Brick Types</string>
     <string name="label_howto_bricks_list">• Standard: one hit\n• Reinforced: two hits\n• Armored: three hits\n• Explosive: damages surrounding bricks\n• Unbreakable: requires fireball/laser\n• Moving: slides horizontally\n• Spawning: breaks into child bricks\n• Phase: changes phases with new HP\n• Boss: multi-phase heavyweight brick</string>
     <string name="label_howto_modes_header">▼ Game Modes</string>
-    <string name="label_howto_modes_list">Classic: Standard breakout progression.\nTimed Challenge: Score high in 2:30.\nEndless: Infinite levels with scaling difficulty.\nGod Mode: Practice without losing lives.\nLevel Rush: Beat each stage before time expires.\nVolley: Launch a chain, then survive descending rows.\nSurvival: One life with faster speed ramps.\nInvaders: Bounce shots to clear ships while dodging fire.</string>
+    <string name="label_howto_modes_list">Classic: Standard breakout progression.\nTimed Challenge: Score high in 2:30.\nEndless: Infinite levels with scaling difficulty.\nGod Mode: Practice without losing lives.\nLevel Rush: Beat each stage before time expires.\nVolley: Launch a chain, then survive descending rows.\nTunnel Siege: Break through a fortress ring via a narrow entry lane.\nSurvival: One life with faster speed ramps.\nInvaders: Bounce shots to clear ships while dodging fire.</string>
     <string name="label_choose_mode">Choose Mode</string>
 </resources>

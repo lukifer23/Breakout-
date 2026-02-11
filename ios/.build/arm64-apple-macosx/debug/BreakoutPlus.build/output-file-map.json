@@ -23,6 +23,13 @@
     "swift-dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/GameEngine.swiftdeps",
     "diagnostics": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/GameEngine.dia"
   },
+  "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Core/LevelFactory.swift": {
+    "dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/LevelFactory.d",
+    "object": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/LevelFactory.swift.o",
+    "swiftmodule": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/LevelFactory~partial.swiftmodule",
+    "swift-dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/LevelFactory.swiftdeps",
+    "diagnostics": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/LevelFactory.dia"
+  },
   "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Core/Models/Ball.swift": {
     "dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/Ball.d",
     "object": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/Ball.swift.o",
@@ -30,12 +37,26 @@
     "swift-dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/Ball.swiftdeps",
     "diagnostics": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/Ball.dia"
   },
+  "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Core/Models/Beam.swift": {
+    "dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/Beam.d",
+    "object": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/Beam.swift.o",
+    "swiftmodule": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/Beam~partial.swiftmodule",
+    "swift-dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/Beam.swiftdeps",
+    "diagnostics": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/Beam.dia"
+  },
   "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Core/Models/Brick.swift": {
     "dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/Brick.d",
     "object": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/Brick.swift.o",
     "swiftmodule": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/Brick~partial.swiftmodule",
     "swift-dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/Brick.swiftdeps",
     "diagnostics": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/Brick.dia"
+  },
+  "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Core/Models/EnemyShot.swift": {
+    "dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/EnemyShot.d",
+    "object": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/EnemyShot.swift.o",
+    "swiftmodule": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/EnemyShot~partial.swiftmodule",
+    "swift-dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/EnemyShot.swiftdeps",
+    "diagnostics": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/EnemyShot.dia"
   },
   "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Core/Models/LevelTheme.swift": {
     "dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/LevelTheme.d",
@@ -65,6 +86,13 @@
     "swift-dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/BrickType.swiftdeps",
     "diagnostics": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/BrickType.dia"
   },
+  "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Models/DailyChallenge.swift": {
+    "dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/DailyChallenge.d",
+    "object": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/DailyChallenge.swift.o",
+    "swiftmodule": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/DailyChallenge~partial.swiftmodule",
+    "swift-dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/DailyChallenge.swiftdeps",
+    "diagnostics": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/DailyChallenge.dia"
+  },
   "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Models/GameMode.swift": {
     "dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/GameMode.d",
     "object": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/GameMode.swift.o",
@@ -79,12 +107,61 @@
     "swift-dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/PowerUpType.swiftdeps",
     "diagnostics": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/PowerUpType.dia"
   },
+  "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Services/AudioManager.swift": {
+    "dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/AudioManager.d",
+    "object": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/AudioManager.swift.o",
+    "swiftmodule": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/AudioManager~partial.swiftmodule",
+    "swift-dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/AudioManager.swiftdeps",
+    "diagnostics": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/AudioManager.dia"
+  },
+  "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Services/DailyChallengeStore.swift": {
+    "dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/DailyChallengeStore.d",
+    "object": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/DailyChallengeStore.swift.o",
+    "swiftmodule": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/DailyChallengeStore~partial.swiftmodule",
+    "swift-dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/DailyChallengeStore.swiftdeps",
+    "diagnostics": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/DailyChallengeStore.dia"
+  },
+  "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Services/Haptics.swift": {
+    "dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/Haptics.d",
+    "object": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/Haptics.swift.o",
+    "swiftmodule": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/Haptics~partial.swiftmodule",
+    "swift-dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/Haptics.swiftdeps",
+    "diagnostics": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/Haptics.dia"
+  },
+  "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Services/LifetimeStatsStore.swift": {
+    "dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/LifetimeStatsStore.d",
+    "object": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/LifetimeStatsStore.swift.o",
+    "swiftmodule": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/LifetimeStatsStore~partial.swiftmodule",
+    "swift-dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/LifetimeStatsStore.swiftdeps",
+    "diagnostics": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/LifetimeStatsStore.dia"
+  },
+  "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Services/ProgressionStore.swift": {
+    "dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/ProgressionStore.d",
+    "object": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/ProgressionStore.swift.o",
+    "swiftmodule": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/ProgressionStore~partial.swiftmodule",
+    "swift-dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/ProgressionStore.swiftdeps",
+    "diagnostics": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/ProgressionStore.dia"
+  },
+  "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Services/ScoreboardStore.swift": {
+    "dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/ScoreboardStore.d",
+    "object": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/ScoreboardStore.swift.o",
+    "swiftmodule": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/ScoreboardStore~partial.swiftmodule",
+    "swift-dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/ScoreboardStore.swiftdeps",
+    "diagnostics": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/ScoreboardStore.dia"
+  },
   "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/ViewModels/GameViewModel.swift": {
     "dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/GameViewModel.d",
     "object": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/GameViewModel.swift.o",
     "swiftmodule": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/GameViewModel~partial.swiftmodule",
     "swift-dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/GameViewModel.swiftdeps",
     "diagnostics": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/GameViewModel.dia"
+  },
+  "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Views/DailyChallengesView.swift": {
+    "dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/DailyChallengesView.d",
+    "object": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/DailyChallengesView.swift.o",
+    "swiftmodule": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/DailyChallengesView~partial.swiftmodule",
+    "swift-dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/DailyChallengesView.swiftdeps",
+    "diagnostics": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/DailyChallengesView.dia"
   },
   "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Views/GameView.swift": {
     "dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/GameView.d",
@@ -106,6 +183,13 @@
     "swiftmodule": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/MenuView~partial.swiftmodule",
     "swift-dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/MenuView.swiftdeps",
     "diagnostics": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/MenuView.dia"
+  },
+  "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Views/PrivacyView.swift": {
+    "dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/PrivacyView.d",
+    "object": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/PrivacyView.swift.o",
+    "swiftmodule": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/PrivacyView~partial.swiftmodule",
+    "swift-dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/PrivacyView.swiftdeps",
+    "diagnostics": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/PrivacyView.dia"
   },
   "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Views/ScoreboardView.swift": {
     "dependencies": "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/ScoreboardView.d",

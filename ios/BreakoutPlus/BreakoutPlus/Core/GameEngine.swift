@@ -358,6 +358,7 @@ class GameEngine {
         case .endless: return 0.017
         case .god: return 0.010
         case .rush: return 0.023
+        case .volley: return 0.012
         case .survival: return 0.028
         case .invaders: return 0.016
         }
@@ -370,6 +371,7 @@ class GameEngine {
         case .endless: return 1.4
         case .god: return 1.25
         case .rush: return 1.5
+        case .volley: return 1.34
         case .survival: return 1.6
         case .invaders: return 1.4
         }
@@ -382,6 +384,7 @@ class GameEngine {
         case .endless: return 0.65
         case .god: return 0.5
         case .rush: return 0.72
+        case .volley: return 0.58
         case .survival: return 0.75
         case .invaders: return 0.6
         }
@@ -394,6 +397,7 @@ class GameEngine {
         case .endless: return 1.7
         case .god: return 1.45
         case .rush: return 1.85
+        case .volley: return 1.52
         case .survival: return 1.9
         case .invaders: return 1.6
         }
@@ -413,6 +417,8 @@ class GameEngine {
             base = 0.9; slope = 0.05
         case .rush:
             base = 1.1; slope = 0.11
+        case .volley:
+            base = 1.0; slope = 0.062
         case .survival:
             base = 1.15; slope = 0.12
         case .invaders:
@@ -988,6 +994,18 @@ class GameEngine {
         }
     }
 
+    private func launchBallWithAim(_ ball: Ball) {
+        guard let index = balls.firstIndex(where: { $0.id == ball.id }) else { return }
+
+        var updatedBall = ball
+        let angle = Double.random(in: .pi/6...(5 * .pi / 6)) // 30-150 degrees
+        let levelBoost = min(Double(speedBoostCap()), 1.0 + Double(levelIndex) * Double(speedBoostSlope()))
+        let speed = Double(gameMode.launchSpeed) * levelBoost
+        updatedBall.vx = Float(speed * cos(angle))
+        updatedBall.vy = Float(abs(speed * sin(angle))) // Always up
+        balls[index] = updatedBall
+    }
+
     private func updatePowerupStatus() {
         let status = activeEffects.map { (type, remaining) in
             let charges = type == .shield ? shieldCharges : 0
@@ -1080,9 +1098,12 @@ class GameEngine {
     }
 
     private func updateEnemyShots(_ deltaTime: TimeInterval) {
-        enemyShots = enemyShots.filter { shot in
-            shot.y += shot.vy * Float(deltaTime)
-            return shot.y > -shot.radius // Remove shots that go off screen
+        enemyShots = enemyShots.map { shot in
+            var updatedShot = shot
+            updatedShot.y += shot.vy * Float(deltaTime)
+            return updatedShot
+        }.filter { shot in
+            shot.y > -shot.radius // Remove shots that go off screen
         }
     }
 
@@ -1090,8 +1111,11 @@ class GameEngine {
         if !volleyTurnActive || volleyQueuedBalls <= 0 { return }
         volleyLaunchTimer -= deltaTime
         while volleyQueuedBalls > 0 && volleyLaunchTimer <= 0 {
-            spawnBall(spawnX: volleyLaunchX)
-            balls.lastOrNull()?.let { launchBallWithAim($0) }
+            // Spawn ball at volley launch position
+            spawnBall()
+            if let lastBall = balls.last {
+                launchBallWithAim(lastBall)
+            }
             emit(.sound(.bounce, volume: 0.28))
             volleyQueuedBalls -= 1
             volleyLaunchTimer += 0.065
@@ -1105,35 +1129,36 @@ class GameEngine {
         volleyTurnActive = false
         volleyTurnCount += 1
         volleyAdvanceRows += 1
-        emit(.sound(.brickMoving, volume: 0.36))
+        emit(.sound(.bounce, volume: 0.36))
         triggerScreenShake(0.7, 0.07)
 
         // Increase ball count every 2 volleys
         if volleyTurnCount % 2 == 0 && volleyBallCount < 18 {
             volleyBallCount += 1
-            delegate?.onTip("Volley +1 ball (\(volleyBallCount) total).")
+            delegate?.onTip(message: "Volley +1 ball (\(volleyBallCount) total).")
             emit(.sound(.powerup, volume: 0.32))
         }
 
         relayoutBricks()
         if hasVolleyBreach() {
-            delegate?.onTip("Breach! Bricks reached the launch line.")
-            triggerGameOver()
+            delegate?.onTip(message: "Breach! Bricks reached the launch line.")
+            state = .gameOver
+            delegate?.onGameOver(summary: makeSummary())
             return
         }
 
         spawnVolleyTopRow()
         relayoutBricks()
         if hasVolleyBreach() {
-            delegate?.onTip("Breach! Bricks reached the launch line.")
-            triggerGameOver()
+            delegate?.onTip(message: "Breach! Bricks reached the launch line.")
+            state = .gameOver
+            delegate?.onGameOver(summary: makeSummary())
             return
         }
 
         let launchX = volleyReturnAnchorX.isFinite ? volleyReturnAnchorX : paddle.x
         paddle.x = launchX.clamped(to: paddle.width/2...worldWidth - paddle.width/2)
-        paddle.targetX = paddle.x
-        spawnBall(paddle.x)
+        spawnBall()
         attachReadyBallsToPaddle()
         state = .ready
         updatePowerupStatus()
@@ -1191,10 +1216,10 @@ class GameEngine {
         let shot = EnemyShot(
             x: shooter.x,
             y: shooter.y - shooter.height/2,
-            radius: 2.0,
             vx: 0,
             vy: -60, // Shoot downward
-            color: [1.0, 0.0, 0.0, 1.0] // Red shots
+            radius: 2.0,
+            color: (red: 1.0, green: 0.0, blue: 0.0) // Red shots
         )
         enemyShots.append(shot)
     }

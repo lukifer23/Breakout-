@@ -33,7 +33,7 @@ struct LifetimeStats {
 final class LifetimeStatsStore: ObservableObject {
     static let shared = LifetimeStatsStore()
 
-    @Published private(set) var stats: LifetimeStats
+    @Published private(set) var stats: LifetimeStats!
 
     private let bricksKey = "breakoutplus.lifetime.bricks_broken"
     private let livesKey = "breakoutplus.lifetime.lives_lost"
@@ -44,11 +44,11 @@ final class LifetimeStatsStore: ObservableObject {
     private let totalScoreKey = "breakoutplus.lifetime.total_score"
 
     private init() {
-        stats = load()
+        self.stats = load()
     }
 
     func recordRun(bricksBroken: Int, livesLost: Int, durationSeconds: Int, score: Int) {
-        let current = stats
+        let current = stats!
 
         let newStats = LifetimeStats(
             totalBricksBroken: current.totalBricksBroken + bricksBroken,

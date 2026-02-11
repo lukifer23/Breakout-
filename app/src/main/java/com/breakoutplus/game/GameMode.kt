@@ -87,6 +87,18 @@ enum class GameMode(
         invaders = false,
         launchSpeed = 82f
     ),
+    TUNNEL(
+        displayName = "Tunnel Siege",
+        description = "Break through a fortified ring and route shots through a narrow entry tunnel.",
+        meta = "Lives 2 • Precision routing • Fortress",
+        baseLives = 2,
+        timeLimitSeconds = 0,
+        endless = false,
+        godMode = false,
+        rush = false,
+        invaders = false,
+        launchSpeed = 79.5f
+    ),
     SURVIVAL(
         displayName = "Survival",
         description = "One life. Speed ramps faster as you climb.",

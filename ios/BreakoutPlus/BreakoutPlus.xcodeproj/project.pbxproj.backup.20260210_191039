@@ -19,32 +19,32 @@
 		1A2B3C4D5E6F7890AB123468 /* Paddle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB123469 /* Paddle.swift */; };
 		1A2B3C4D5E6F7890AB12346A /* PowerUp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB12346B /* PowerUp.swift */; };
 		1A2B3C4D5E6F7890AB12346C /* LevelTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB12346D /* LevelTheme.swift */; };
-		1A2B3C4D5E6F7890AB12349D /* ScoreboardStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB12349C /* ScoreboardStore.swift */; };
-		1A2B3C4D5E6F7890AB12349F /* Beam.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB12349E /* Beam.swift */; };
-		1A2B3C4D5E6F7890AB1234A1 /* LevelFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB1234A0 /* LevelFactory.swift */; };
-		1A2B3C4D5E6F7890AB1234A5 /* AudioManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB1234A3 /* AudioManager.swift */; };
-		1A2B3C4D5E6F7890AB1234A6 /* Haptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB1234A4 /* Haptics.swift */; };
-		1A2B3C4D5E6F7890AB1234A7 /* DailyChallengeStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB1234A8 /* DailyChallengeStore.swift */; };
-		1A2B3C4D5E6F7890AB1234A9 /* ProgressionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB1234AA /* ProgressionStore.swift */; };
-		1A2B3C4D5E6F7890AB1234AB /* LifetimeStatsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB1234AC /* LifetimeStatsStore.swift */; };
-		1A2B3C4D5E6F7890AB1234AD /* EnemyShot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB1234AE /* EnemyShot.swift */; };
+			1A2B3C4D5E6F7890AB12349D /* ScoreboardStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB12349C /* ScoreboardStore.swift */; };
+			1A2B3C4D5E6F7890AB12349F /* Beam.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB12349E /* Beam.swift */; };
+				1A2B3C4D5E6F7890AB1234A1 /* LevelFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB1234A0 /* LevelFactory.swift */; };
+			1A2B3C4D5E6F7890AB1234A5 /* AudioManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB1234A3 /* AudioManager.swift */; };
+			1A2B3C4D5E6F7890AB1234A6 /* Haptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB1234A4 /* Haptics.swift */; };
+			1A2B3C4D5E6F7890AB1234AF /* music_loop.wav in Resources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB1234A7 /* music_loop.wav */; };
+			1A2B3C4D5E6F7890AB1234B0 /* sfx_bounce.wav in Resources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB1234A8 /* sfx_bounce.wav */; };
+			1A2B3C4D5E6F7890AB1234B1 /* sfx_brick.wav in Resources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB1234A9 /* sfx_brick.wav */; };
+			1A2B3C4D5E6F7890AB1234B2 /* sfx_explosion.wav in Resources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB1234AA /* sfx_explosion.wav */; };
+			1A2B3C4D5E6F7890AB1234B3 /* sfx_gameover.wav in Resources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB1234AB /* sfx_gameover.wav */; };
+			1A2B3C4D5E6F7890AB1234B4 /* sfx_laser.wav in Resources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB1234AC /* sfx_laser.wav */; };
+			1A2B3C4D5E6F7890AB1234B5 /* sfx_life.wav in Resources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB1234AD /* sfx_life.wav */; };
+			1A2B3C4D5E6F7890AB1234B6 /* sfx_powerup.wav in Resources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB1234AE /* sfx_powerup.wav */; };
+			1A2B3C4D5E6F7890AB1234C1 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB1234C0 /* Assets.xcassets */; };
 		1A2B3C4D5E6F7890AB12346E /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB12346F /* SplashView.swift */; };
 		1A2B3C4D5E6F7890AB123470 /* MenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB123471 /* MenuView.swift */; };
 		1A2B3C4D5E6F7890AB123472 /* GameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB123473 /* GameView.swift */; };
 		1A2B3C4D5E6F7890AB123474 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB123475 /* SettingsView.swift */; };
 		1A2B3C4D5E6F7890AB123476 /* ScoreboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB123477 /* ScoreboardView.swift */; };
 		1A2B3C4D5E6F7890AB123478 /* HowToView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB123479 /* HowToView.swift */; };
-		1A2B3C4D5E6F7890AB12347A /* PrivacyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB12347B /* PrivacyView.swift */; };
-		1A2B3C4D5E6F7890AB12347C /* DailyChallengesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB12347D /* DailyChallengesView.swift */; };
-		1A2B3C4D5E6F7890AB1234AF /* music_loop.wav in Resources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB1234B0 /* music_loop.wav */; };
-		1A2B3C4D5E6F7890AB1234B1 /* sfx_bounce.wav in Resources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB1234B2 /* sfx_bounce.wav */; };
-		1A2B3C4D5E6F7890AB1234B3 /* sfx_brick.wav in Resources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB1234B4 /* sfx_brick.wav */; };
-		1A2B3C4D5E6F7890AB1234B5 /* sfx_explosion.wav in Resources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB1234B6 /* sfx_explosion.wav */; };
-		1A2B3C4D5E6F7890AB1234B7 /* sfx_gameover.wav in Resources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB1234B8 /* sfx_gameover.wav */; };
-		1A2B3C4D5E6F7890AB1234B9 /* sfx_laser.wav in Resources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB1234BA /* sfx_laser.wav */; };
-		1A2B3C4D5E6F7890AB1234BB /* sfx_life.wav in Resources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB1234BC /* sfx_life.wav */; };
-		1A2B3C4D5E6F7890AB1234BD /* sfx_powerup.wav in Resources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB1234BE /* sfx_powerup.wav */; };
-		1A2B3C4D5E6F7890AB1234BF /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB1234C0 /* Assets.xcassets */; };
+		1A2B3C4D5E6F7890AB12347B /* PrivacyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB123483 /* PrivacyView.swift */; };
+		1A2B3C4D5E6F7890AB12347D /* DailyChallengesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB12347E /* DailyChallengesView.swift */; };
+		1A2B3C4D5E6F7890AB12347F /* DailyChallengeStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB123480 /* DailyChallengeStore.swift */; };
+		1A2B3C4D5E6F7890AB123481 /* EnemyShot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB123482 /* EnemyShot.swift */; };
+		1A2B3C4D5E6F7890AB123485 /* ProgressionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB123483 /* ProgressionStore.swift */; };
+		1A2B3C4D5E6F7890AB123486 /* LifetimeStatsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890AB123484 /* LifetimeStatsStore.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -61,32 +61,32 @@
 		1A2B3C4D5E6F7890AB123469 /* Paddle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Core/Models/Paddle.swift; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F7890AB12346B /* PowerUp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Core/Models/PowerUp.swift; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F7890AB12346D /* LevelTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Core/Models/LevelTheme.swift; sourceTree = SOURCE_ROOT; };
-		1A2B3C4D5E6F7890AB12349C /* ScoreboardStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Services/ScoreboardStore.swift; sourceTree = SOURCE_ROOT; };
-		1A2B3C4D5E6F7890AB12349E /* Beam.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Core/Models/Beam.swift; sourceTree = SOURCE_ROOT; };
-		1A2B3C4D5E6F7890AB1234A0 /* LevelFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Core/LevelFactory.swift; sourceTree = SOURCE_ROOT; };
-		1A2B3C4D5E6F7890AB1234A3 /* AudioManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Services/AudioManager.swift; sourceTree = SOURCE_ROOT; };
-		1A2B3C4D5E6F7890AB1234A4 /* Haptics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Services/Haptics.swift; sourceTree = SOURCE_ROOT; };
-		1A2B3C4D5E6F7890AB1234A8 /* DailyChallengeStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Services/DailyChallengeStore.swift; sourceTree = SOURCE_ROOT; };
-		1A2B3C4D5E6F7890AB1234AA /* ProgressionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Services/ProgressionStore.swift; sourceTree = SOURCE_ROOT; };
-		1A2B3C4D5E6F7890AB1234AC /* LifetimeStatsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Services/LifetimeStatsStore.swift; sourceTree = SOURCE_ROOT; };
-		1A2B3C4D5E6F7890AB1234AE /* EnemyShot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Core/Models/EnemyShot.swift; sourceTree = SOURCE_ROOT; };
+			1A2B3C4D5E6F7890AB12349C /* ScoreboardStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Services/ScoreboardStore.swift; sourceTree = SOURCE_ROOT; };
+			1A2B3C4D5E6F7890AB12349E /* Beam.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Core/Models/Beam.swift; sourceTree = SOURCE_ROOT; };
+			1A2B3C4D5E6F7890AB1234A0 /* LevelFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Core/LevelFactory.swift; sourceTree = SOURCE_ROOT; };
+			1A2B3C4D5E6F7890AB1234A3 /* AudioManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Services/AudioManager.swift; sourceTree = SOURCE_ROOT; };
+			1A2B3C4D5E6F7890AB1234A4 /* Haptics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Services/Haptics.swift; sourceTree = SOURCE_ROOT; };
+			1A2B3C4D5E6F7890AB1234A7 /* music_loop.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = BreakoutPlus/Resources/Audio/music_loop.wav; sourceTree = SOURCE_ROOT; };
+			1A2B3C4D5E6F7890AB1234A8 /* sfx_bounce.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = BreakoutPlus/Resources/Audio/sfx_bounce.wav; sourceTree = SOURCE_ROOT; };
+			1A2B3C4D5E6F7890AB1234A9 /* sfx_brick.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = BreakoutPlus/Resources/Audio/sfx_brick.wav; sourceTree = SOURCE_ROOT; };
+			1A2B3C4D5E6F7890AB1234AA /* sfx_explosion.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = BreakoutPlus/Resources/Audio/sfx_explosion.wav; sourceTree = SOURCE_ROOT; };
+			1A2B3C4D5E6F7890AB1234AB /* sfx_gameover.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = BreakoutPlus/Resources/Audio/sfx_gameover.wav; sourceTree = SOURCE_ROOT; };
+			1A2B3C4D5E6F7890AB1234AC /* sfx_laser.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = BreakoutPlus/Resources/Audio/sfx_laser.wav; sourceTree = SOURCE_ROOT; };
+			1A2B3C4D5E6F7890AB1234AD /* sfx_life.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = BreakoutPlus/Resources/Audio/sfx_life.wav; sourceTree = SOURCE_ROOT; };
+			1A2B3C4D5E6F7890AB1234AE /* sfx_powerup.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = BreakoutPlus/Resources/Audio/sfx_powerup.wav; sourceTree = SOURCE_ROOT; };
+			1A2B3C4D5E6F7890AB1234C0 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = BreakoutPlus/Resources/Assets.xcassets; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F7890AB12346F /* SplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Views/SplashView.swift; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F7890AB123471 /* MenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Views/MenuView.swift; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F7890AB123473 /* GameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Views/GameView.swift; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F7890AB123475 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Views/SettingsView.swift; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F7890AB123477 /* ScoreboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Views/ScoreboardView.swift; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F7890AB123479 /* HowToView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Views/HowToView.swift; sourceTree = SOURCE_ROOT; };
-		1A2B3C4D5E6F7890AB12347B /* PrivacyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Views/PrivacyView.swift; sourceTree = SOURCE_ROOT; };
-		1A2B3C4D5E6F7890AB12347D /* DailyChallengesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Views/DailyChallengesView.swift; sourceTree = SOURCE_ROOT; };
-		1A2B3C4D5E6F7890AB1234B0 /* music_loop.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = BreakoutPlus/Resources/Audio/music_loop.wav; sourceTree = SOURCE_ROOT; };
-		1A2B3C4D5E6F7890AB1234B2 /* sfx_bounce.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = BreakoutPlus/Resources/Audio/sfx_bounce.wav; sourceTree = SOURCE_ROOT; };
-		1A2B3C4D5E6F7890AB1234B4 /* sfx_brick.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = BreakoutPlus/Resources/Audio/sfx_brick.wav; sourceTree = SOURCE_ROOT; };
-		1A2B3C4D5E6F7890AB1234B6 /* sfx_explosion.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = BreakoutPlus/Resources/Audio/sfx_explosion.wav; sourceTree = SOURCE_ROOT; };
-		1A2B3C4D5E6F7890AB1234B8 /* sfx_gameover.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = BreakoutPlus/Resources/Audio/sfx_gameover.wav; sourceTree = SOURCE_ROOT; };
-		1A2B3C4D5E6F7890AB1234BA /* sfx_laser.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = BreakoutPlus/Resources/Audio/sfx_laser.wav; sourceTree = SOURCE_ROOT; };
-		1A2B3C4D5E6F7890AB1234BC /* sfx_life.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = BreakoutPlus/Resources/Audio/sfx_life.wav; sourceTree = SOURCE_ROOT; };
-		1A2B3C4D5E6F7890AB1234BE /* sfx_powerup.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = BreakoutPlus/Resources/Audio/sfx_powerup.wav; sourceTree = SOURCE_ROOT; };
-		1A2B3C4D5E6F7890AB1234C0 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = BreakoutPlus/Resources/Assets.xcassets; sourceTree = SOURCE_ROOT; };
+		1A2B3C4D5E6F7890AB123483 /* PrivacyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Views/PrivacyView.swift; sourceTree = SOURCE_ROOT; };
+		1A2B3C4D5E6F7890AB12347E /* DailyChallengesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Views/DailyChallengesView.swift; sourceTree = SOURCE_ROOT; };
+		1A2B3C4D5E6F7890AB123480 /* DailyChallengeStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Services/DailyChallengeStore.swift; sourceTree = SOURCE_ROOT; };
+		1A2B3C4D5E6F7890AB123482 /* EnemyShot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Core/Models/EnemyShot.swift; sourceTree = SOURCE_ROOT; };
+		1A2B3C4D5E6F7890AB123483 /* ProgressionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Services/ProgressionStore.swift; sourceTree = SOURCE_ROOT; };
+		1A2B3C4D5E6F7890AB123484 /* LifetimeStatsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutPlus/Services/LifetimeStatsStore.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -103,48 +103,26 @@
 		1A2B3C4D5E6F7890AB12347C /* BreakoutPlus */ = {
 			isa = PBXGroup;
 			children = (
-				1A2B3C4D5E6F7890AB123457 /* BreakoutPlusApp.swift */,
-				1A2B3C4D5E6F7890AB123459 /* ContentView.swift */,
-				1A2B3C4D5E6F7890AB12345B /* GameViewModel.swift */,
-				1A2B3C4D5E6F7890AB12345D /* GameMode.swift */,
-				1A2B3C4D5E6F7890AB12345F /* BrickType.swift */,
-				1A2B3C4D5E6F7890AB123461 /* PowerUpType.swift */,
-				1A2B3C4D5E6F7890AB123463 /* GameEngine.swift */,
-				1A2B3C4D5E6F7890AB123465 /* Ball.swift */,
-				1A2B3C4D5E6F7890AB123467 /* Brick.swift */,
-				1A2B3C4D5E6F7890AB123469 /* Paddle.swift */,
-				1A2B3C4D5E6F7890AB12346B /* PowerUp.swift */,
-				1A2B3C4D5E6F7890AB12346D /* LevelTheme.swift */,
-				1A2B3C4D5E6F7890AB12349C /* ScoreboardStore.swift */,
-				1A2B3C4D5E6F7890AB12349E /* Beam.swift */,
-				1A2B3C4D5E6F7890AB1234A0 /* LevelFactory.swift */,
-				1A2B3C4D5E6F7890AB1234A3 /* AudioManager.swift */,
-				1A2B3C4D5E6F7890AB1234A4 /* Haptics.swift */,
-				1A2B3C4D5E6F7890AB1234A8 /* DailyChallengeStore.swift */,
-				1A2B3C4D5E6F7890AB1234AA /* ProgressionStore.swift */,
-				1A2B3C4D5E6F7890AB1234AC /* LifetimeStatsStore.swift */,
-				1A2B3C4D5E6F7890AB1234AE /* EnemyShot.swift */,
-				1A2B3C4D5E6F7890AB12346F /* SplashView.swift */,
-				1A2B3C4D5E6F7890AB123471 /* MenuView.swift */,
-				1A2B3C4D5E6F7890AB123473 /* GameView.swift */,
-				1A2B3C4D5E6F7890AB123475 /* SettingsView.swift */,
-				1A2B3C4D5E6F7890AB123477 /* ScoreboardView.swift */,
-				1A2B3C4D5E6F7890AB123479 /* HowToView.swift */,
-				1A2B3C4D5E6F7890AB12347B /* PrivacyView.swift */,
-				1A2B3C4D5E6F7890AB12347D /* DailyChallengesView.swift */,
-				1A2B3C4D5E6F7890AB1234B0 /* music_loop.wav */,
-				1A2B3C4D5E6F7890AB1234B2 /* sfx_bounce.wav */,
-				1A2B3C4D5E6F7890AB1234B4 /* sfx_brick.wav */,
-				1A2B3C4D5E6F7890AB1234B6 /* sfx_explosion.wav */,
-				1A2B3C4D5E6F7890AB1234B8 /* sfx_gameover.wav */,
-				1A2B3C4D5E6F7890AB1234BA /* sfx_laser.wav */,
-				1A2B3C4D5E6F7890AB1234BC /* sfx_life.wav */,
-				1A2B3C4D5E6F7890AB1234BE /* sfx_powerup.wav */,
-				1A2B3C4D5E6F7890AB1234C0 /* Assets.xcassets */,
+				1A2B3C4D5E6F7890AB12347D /* BreakoutPlus */,
+				1A2B3C4D5E6F7890AB12347E /* Products */,
 			);
-			path = BreakoutPlus;
 			sourceTree = "<group>";
 		};
+			1A2B3C4D5E6F7890AB12347D /* BreakoutPlus */ = {
+				isa = PBXGroup;
+					children = (
+						1A2B3C4D5E6F7890AB123457 /* BreakoutPlusApp.swift */,
+						1A2B3C4D5E6F7890AB123459 /* ContentView.swift */,
+						1A2B3C4D5E6F7890AB12347F /* ViewModels */,
+						1A2B3C4D5E6F7890AB123480 /* Models */,
+						1A2B3C4D5E6F7890AB1234A2 /* Services */,
+						1A2B3C4D5E6F7890AB1234B7 /* Resources */,
+						1A2B3C4D5E6F7890AB123481 /* Core */,
+						1A2B3C4D5E6F7890AB123482 /* Views */,
+					);
+				path = BreakoutPlus;
+				sourceTree = "<group>";
+			};
 		1A2B3C4D5E6F7890AB12347E /* Products */ = {
 			isa = PBXGroup;
 			children = (
@@ -153,12 +131,98 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		1A2B3C4D5E6F7890AB12347F /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				1A2B3C4D5E6F7890AB12345B /* GameViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+			1A2B3C4D5E6F7890AB123480 /* Models */ = {
+				isa = PBXGroup;
+				children = (
+					1A2B3C4D5E6F7890AB12345D /* GameMode.swift */,
+					1A2B3C4D5E6F7890AB12345F /* BrickType.swift */,
+					1A2B3C4D5E6F7890AB123461 /* PowerUpType.swift */,
+				);
+				path = Models;
+				sourceTree = "<group>";
+			};
+				1A2B3C4D5E6F7890AB1234A2 /* Services */ = {
+					isa = PBXGroup;
+					children = (
+						1A2B3C4D5E6F7890AB12349C /* ScoreboardStore.swift */,
+						1A2B3C4D5E6F7890AB1234A3 /* AudioManager.swift */,
+						1A2B3C4D5E6F7890AB1234A4 /* Haptics.swift */,
+						1A2B3C4D5E6F7890AB12347F /* DailyChallengeStore.swift */,
+						1A2B3C4D5E6F7890AB123483 /* ProgressionStore.swift */,
+						1A2B3C4D5E6F7890AB123484 /* LifetimeStatsStore.swift */,
+					);
+					path = Services;
+					sourceTree = "<group>";
+				};
+				1A2B3C4D5E6F7890AB1234B7 /* Resources */ = {
+					isa = PBXGroup;
+					children = (
+						1A2B3C4D5E6F7890AB1234A7 /* music_loop.wav */,
+						1A2B3C4D5E6F7890AB1234A8 /* sfx_bounce.wav */,
+						1A2B3C4D5E6F7890AB1234A9 /* sfx_brick.wav */,
+						1A2B3C4D5E6F7890AB1234AA /* sfx_explosion.wav */,
+						1A2B3C4D5E6F7890AB1234AB /* sfx_gameover.wav */,
+					1A2B3C4D5E6F7890AB1234AC /* sfx_laser.wav */,
+					1A2B3C4D5E6F7890AB1234AD /* sfx_life.wav */,
+					1A2B3C4D5E6F7890AB1234AE /* sfx_powerup.wav */,
+					1A2B3C4D5E6F7890AB1234C0 /* Assets.xcassets */,
+				);
+				path = Resources;
+				sourceTree = "<group>";
+			};
+			1A2B3C4D5E6F7890AB123481 /* Core */ = {
+				isa = PBXGroup;
+				children = (
+					1A2B3C4D5E6F7890AB123463 /* GameEngine.swift */,
+					1A2B3C4D5E6F7890AB1234A0 /* LevelFactory.swift */,
+					1A2B3C4D5E6F7890AB123483 /* Models */,
+				);
+				path = Core;
+				sourceTree = "<group>";
+			};
+		1A2B3C4D5E6F7890AB123482 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				1A2B3C4D5E6F7890AB12346F /* SplashView.swift */,
+				1A2B3C4D5E6F7890AB123471 /* MenuView.swift */,
+				1A2B3C4D5E6F7890AB123473 /* GameView.swift */,
+				1A2B3C4D5E6F7890AB123475 /* SettingsView.swift */,
+				1A2B3C4D5E6F7890AB123477 /* ScoreboardView.swift */,
+				1A2B3C4D5E6F7890AB123479 /* HowToView.swift */,
+				1A2B3C4D5E6F7890AB123483 /* PrivacyView.swift */,
+				1A2B3C4D5E6F7890AB12347E /* DailyChallengesView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+			1A2B3C4D5E6F7890AB123483 /* Models */ = {
+				isa = PBXGroup;
+			children = (
+					1A2B3C4D5E6F7890AB123465 /* Ball.swift */,
+					1A2B3C4D5E6F7890AB123467 /* Brick.swift */,
+					1A2B3C4D5E6F7890AB123469 /* Paddle.swift */,
+					1A2B3C4D5E6F7890AB12346B /* PowerUp.swift */,
+					1A2B3C4D5E6F7890AB12346D /* LevelTheme.swift */,
+					1A2B3C4D5E6F7890AB12349E /* Beam.swift */,
+					1A2B3C4D5E6F7890AB123481 /* EnemyShot.swift */,
+			);
+				path = Models;
+				sourceTree = "<group>";
+			};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		1A2B3C4D5E6F7890AB123455 /* BreakoutPlus */ = {
+		1A2B3C4D5E6F7890AB123484 /* BreakoutPlus */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 1A2B3C4D5E6F7890AB123488 /* Build configuration list for PBXNativeTarget "BreakoutPlus" */;
+			buildConfigurationList = 1A2B3C4D5E6F7890AB12348B /* Build configuration list for PBXNativeTarget "BreakoutPlus" */;
 			buildPhases = (
 				1A2B3C4D5E6F7890AB123485 /* Sources */,
 				1A2B3C4D5E6F7890AB12347B /* Frameworks */,
@@ -169,27 +233,27 @@
 			dependencies = (
 			);
 			name = BreakoutPlus;
-			productName = BreakoutPlus;
+			productName = "$(TARGET_NAME)";
 			productReference = 1A2B3C4D5E6F7890AB123456 /* BreakoutPlus.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		1A2B3C4D5E6F7890AB123454 /* Project object */ = {
+		1A2B3C4D5E6F7890AB123487 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				BuildIndependentTargetsInParallel = YES;
-				LastUpgradeCheck = 1600;
-				ORGANIZATIONNAME = "BreakoutPlus";
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1500;
+				LastUpgradeCheck = 1500;
 				TargetAttributes = {
-					1A2B3C4D5E6F7890AB123455 = {
-						CreatedOnToolsVersion = 16.0;
+					1A2B3C4D5E6F7890AB123484 = {
+						CreatedOnToolsVersion = 15.0;
 					};
 				};
 			};
-			buildConfigurationList = 1A2B3C4D5E6F7890AB12344A /* Build configuration list for PBXProject "BreakoutPlus" */;
-			compatibilityVersion = "Xcode 16.0";
+			buildConfigurationList = 1A2B3C4D5E6F7890AB123489 /* Build configuration list for PBXProject "BreakoutPlus" */;
+			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -198,38 +262,39 @@
 			);
 			mainGroup = 1A2B3C4D5E6F7890AB12347C;
 			productRefGroup = 1A2B3C4D5E6F7890AB12347E /* Products */;
+			productDirPath = "";
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				1A2B3C4D5E6F7890AB123455 /* BreakoutPlus */,
+				1A2B3C4D5E6F7890AB123484 /* BreakoutPlus */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		1A2B3C4D5E6F7890AB123486 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				1A2B3C4D5E6F7890AB1234AF /* music_loop.wav in Resources */,
-				1A2B3C4D5E6F7890AB1234B1 /* sfx_bounce.wav in Resources */,
-				1A2B3C4D5E6F7890AB1234B3 /* sfx_brick.wav in Resources */,
-				1A2B3C4D5E6F7890AB1234B5 /* sfx_explosion.wav in Resources */,
-				1A2B3C4D5E6F7890AB1234B7 /* sfx_gameover.wav in Resources */,
-				1A2B3C4D5E6F7890AB1234B9 /* sfx_laser.wav in Resources */,
-				1A2B3C4D5E6F7890AB1234BB /* sfx_life.wav in Resources */,
-				1A2B3C4D5E6F7890AB1234BD /* sfx_powerup.wav in Resources */,
-				1A2B3C4D5E6F7890AB1234BF /* Assets.xcassets in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
+			1A2B3C4D5E6F7890AB123486 /* Resources */ = {
+				isa = PBXResourcesBuildPhase;
+				buildActionMask = 2147483647;
+				files = (
+					1A2B3C4D5E6F7890AB1234AF /* music_loop.wav in Resources */,
+					1A2B3C4D5E6F7890AB1234B0 /* sfx_bounce.wav in Resources */,
+					1A2B3C4D5E6F7890AB1234B1 /* sfx_brick.wav in Resources */,
+					1A2B3C4D5E6F7890AB1234B2 /* sfx_explosion.wav in Resources */,
+					1A2B3C4D5E6F7890AB1234B3 /* sfx_gameover.wav in Resources */,
+					1A2B3C4D5E6F7890AB1234B4 /* sfx_laser.wav in Resources */,
+					1A2B3C4D5E6F7890AB1234B5 /* sfx_life.wav in Resources */,
+					1A2B3C4D5E6F7890AB1234B6 /* sfx_powerup.wav in Resources */,
+					1A2B3C4D5E6F7890AB1234C1 /* Assets.xcassets in Resources */,
+				);
+				runOnlyForDeploymentPostprocessing = 0;
+			};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		1A2B3C4D5E6F7890AB123485 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
+			1A2B3C4D5E6F7890AB123485 /* Sources */ = {
+				isa = PBXSourcesBuildPhase;
+				buildActionMask = 2147483647;
+				files = (
 				1A2B3C4D5E6F7890AB12347A /* BreakoutPlusApp.swift in Sources */,
 				1A2B3C4D5E6F7890AB123458 /* ContentView.swift in Sources */,
 				1A2B3C4D5E6F7890AB12345A /* GameViewModel.swift in Sources */,
@@ -241,36 +306,34 @@
 				1A2B3C4D5E6F7890AB123466 /* Brick.swift in Sources */,
 				1A2B3C4D5E6F7890AB123468 /* Paddle.swift in Sources */,
 				1A2B3C4D5E6F7890AB12346A /* PowerUp.swift in Sources */,
-				1A2B3C4D5E6F7890AB12346C /* LevelTheme.swift in Sources */,
-				1A2B3C4D5E6F7890AB12349D /* ScoreboardStore.swift in Sources */,
-				1A2B3C4D5E6F7890AB12349F /* Beam.swift in Sources */,
-				1A2B3C4D5E6F7890AB1234A1 /* LevelFactory.swift in Sources */,
-				1A2B3C4D5E6F7890AB1234A5 /* AudioManager.swift in Sources */,
-				1A2B3C4D5E6F7890AB1234A6 /* Haptics.swift in Sources */,
-				1A2B3C4D5E6F7890AB1234A7 /* DailyChallengeStore.swift in Sources */,
-				1A2B3C4D5E6F7890AB1234A9 /* ProgressionStore.swift in Sources */,
-				1A2B3C4D5E6F7890AB1234AB /* LifetimeStatsStore.swift in Sources */,
-				1A2B3C4D5E6F7890AB1234AD /* EnemyShot.swift in Sources */,
-				1A2B3C4D5E6F7890AB12346E /* SplashView.swift in Sources */,
-				1A2B3C4D5E6F7890AB123470 /* MenuView.swift in Sources */,
-				1A2B3C4D5E6F7890AB123472 /* GameView.swift in Sources */,
+					1A2B3C4D5E6F7890AB12346C /* LevelTheme.swift in Sources */,
+						1A2B3C4D5E6F7890AB12349D /* ScoreboardStore.swift in Sources */,
+						1A2B3C4D5E6F7890AB1234A5 /* AudioManager.swift in Sources */,
+						1A2B3C4D5E6F7890AB1234A6 /* Haptics.swift in Sources */,
+						1A2B3C4D5E6F7890AB12349F /* Beam.swift in Sources */,
+						1A2B3C4D5E6F7890AB1234A1 /* LevelFactory.swift in Sources */,
+					1A2B3C4D5E6F7890AB12346E /* SplashView.swift in Sources */,
+					1A2B3C4D5E6F7890AB123470 /* MenuView.swift in Sources */,
+					1A2B3C4D5E6F7890AB123472 /* GameView.swift in Sources */,
 				1A2B3C4D5E6F7890AB123474 /* SettingsView.swift in Sources */,
 				1A2B3C4D5E6F7890AB123476 /* ScoreboardView.swift in Sources */,
 				1A2B3C4D5E6F7890AB123478 /* HowToView.swift in Sources */,
-				1A2B3C4D5E6F7890AB12347A /* PrivacyView.swift in Sources */,
-				1A2B3C4D5E6F7890AB12347C /* DailyChallengesView.swift in Sources */,
+				1A2B3C4D5E6F7890AB12347B /* PrivacyView.swift in Sources */,
+				1A2B3C4D5E6F7890AB12347D /* DailyChallengesView.swift in Sources */,
+				1A2B3C4D5E6F7890AB12347F /* DailyChallengeStore.swift in Sources */,
+				1A2B3C4D5E6F7890AB123481 /* EnemyShot.swift in Sources */,
+				1A2B3C4D5E6F7890AB123485 /* ProgressionStore.swift in Sources */,
+				1A2B3C4D5E6F7890AB123486 /* LifetimeStatsStore.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
-		1A2B3C4D5E6F7890AB12344B /* Debug */ = {
+		1A2B3C4D5E6F7890AB123488 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
@@ -318,22 +381,20 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
 			name = Debug;
 		};
-		1A2B3C4D5E6F7890AB12344C /* Release */ = {
+		1A2B3C4D5E6F7890AB12348A /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
@@ -375,29 +436,25 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
-				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
 		};
-		1A2B3C4D5E6F7890AB123489 /* Debug */ = {
+		1A2B3C4D5E6F7890AB12348C /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "";
+				DEVELOPMENT_ASSET_PATHS = "\"BreakoutPlus/Preview Content\"";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = BreakoutPlus;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.games";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -406,28 +463,26 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.breakoutplus.ios;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
+				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
-		1A2B3C4D5E6F7890AB12348A /* Release */ = {
+		1A2B3C4D5E6F7890AB12348D /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "";
+				DEVELOPMENT_ASSET_PATHS = "\"BreakoutPlus/Preview Content\"";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = BreakoutPlus;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.games";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -436,9 +491,10 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.breakoutplus.ios;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
+				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -448,26 +504,25 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		1A2B3C4D5E6F7890AB12344A /* Build configuration list for PBXProject "BreakoutPlus" */ = {
+		1A2B3C4D5E6F7890AB123489 /* Build configuration list for PBXProject "BreakoutPlus" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				1A2B3C4D5E6F7890AB12344B /* Debug */,
-				1A2B3C4D5E6F7890AB12344C /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		1A2B3C4D5E6F7890AB123488 /* Build configuration list for PBXNativeTarget "BreakoutPlus" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				1A2B3C4D5E6F7890AB123489 /* Debug */,
+				1A2B3C4D5E6F7890AB123488 /* Debug */,
 				1A2B3C4D5E6F7890AB12348A /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		1A2B3C4D5E6F7890AB12348B /* Build configuration list for PBXNativeTarget "BreakoutPlus" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1A2B3C4D5E6F7890AB12348C /* Debug */,
+				1A2B3C4D5E6F7890AB12348D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
-
 	};
-	rootObject = 1A2B3C4D5E6F7890AB123454 /* Project object */;
+	rootObject = 1A2B3C4D5E6F7890AB123487 /* Project object */;
 }

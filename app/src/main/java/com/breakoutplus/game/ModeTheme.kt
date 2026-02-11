@@ -10,6 +10,7 @@ object ModeTheme {
     private val godRotation = listOf("Aurora", "Forest", "Cobalt")
     private val rushRotation = listOf("Lava", "Ember", "Sunset")
     private val volleyRotation = listOf("Circuit", "Lava", "Cobalt", "Ember", "Vapor")
+    private val tunnelRotation = listOf("Cobalt", "Circuit", "Forest", "Ember")
     private val survivalRotation = listOf("Forest", "Circuit", "Cobalt")
 
     private val fallbackByMode = mapOf(
@@ -19,6 +20,7 @@ object ModeTheme {
         GameMode.GOD to "Aurora",
         GameMode.RUSH to "Lava",
         GameMode.VOLLEY to "Circuit",
+        GameMode.TUNNEL to "Cobalt",
         GameMode.SURVIVAL to "Forest",
         GameMode.INVADERS to "Invaders"
     )
@@ -39,6 +41,7 @@ object ModeTheme {
             GameMode.GOD -> godRotation
             GameMode.RUSH -> rushRotation
             GameMode.VOLLEY -> volleyRotation
+            GameMode.TUNNEL -> tunnelRotation
             GameMode.SURVIVAL -> survivalRotation
             GameMode.INVADERS -> listOf("Invaders")
         }

@@ -83,6 +83,15 @@ object ModeBalance {
             difficultySlope = 0.062f,
             dropChanceModeBoost = -0.08f
         ),
+        GameMode.TUNNEL to Pacing(
+            speedBoostSlope = 0.015f,
+            speedBoostCap = 1.38f,
+            minSpeedFactor = 0.6f,
+            maxSpeedFactor = 1.6f,
+            difficultyBase = 1.04f,
+            difficultySlope = 0.078f,
+            dropChanceModeBoost = 0.015f
+        ),
         GameMode.SURVIVAL to Pacing(
             speedBoostSlope = 0.029f,
             speedBoostCap = 1.64f,

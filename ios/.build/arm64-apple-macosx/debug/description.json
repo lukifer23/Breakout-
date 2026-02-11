@@ -17,8 +17,8 @@
 
   ],
   "swiftCommands" : {
-    "C.BreakoutPlus-arm64-apple-macosx26.0-debug.module" : {
-      "executable" : "/Library/Developer/CommandLineTools/usr/bin/swiftc",
+    "C.BreakoutPlus-arm64-apple-macosx-debug.module" : {
+      "executable" : "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
       "fileList" : "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/sources",
       "importPath" : "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/Modules",
       "inputs" : [
@@ -36,11 +36,23 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Core/LevelFactory.swift"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Core/Models/Ball.swift"
         },
         {
           "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Core/Models/Beam.swift"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Core/Models/Brick.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Core/Models/EnemyShot.swift"
         },
         {
           "kind" : "file",
@@ -60,6 +72,10 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Models/DailyChallenge.swift"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Models/GameMode.swift"
         },
         {
@@ -68,7 +84,35 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Services/AudioManager.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Services/DailyChallengeStore.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Services/Haptics.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Services/LifetimeStatsStore.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Services/ProgressionStore.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Services/ScoreboardStore.swift"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/ViewModels/GameViewModel.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Views/DailyChallengesView.swift"
         },
         {
           "kind" : "file",
@@ -84,6 +128,10 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Views/PrivacyView.swift"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Views/ScoreboardView.swift"
         },
         {
@@ -96,7 +144,7 @@
         },
         {
           "kind" : "file",
-          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt"
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt"
         },
         {
           "kind" : "file",
@@ -110,18 +158,30 @@
         "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/BreakoutPlusApp.swift.o",
         "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/ContentView.swift.o",
         "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/GameEngine.swift.o",
+        "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/LevelFactory.swift.o",
         "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/Ball.swift.o",
+        "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/Beam.swift.o",
         "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/Brick.swift.o",
+        "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/EnemyShot.swift.o",
         "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/LevelTheme.swift.o",
         "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/Paddle.swift.o",
         "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/PowerUp.swift.o",
         "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/BrickType.swift.o",
+        "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/DailyChallenge.swift.o",
         "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/GameMode.swift.o",
         "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/PowerUpType.swift.o",
+        "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/AudioManager.swift.o",
+        "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/DailyChallengeStore.swift.o",
+        "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/Haptics.swift.o",
+        "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/LifetimeStatsStore.swift.o",
+        "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/ProgressionStore.swift.o",
+        "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/ScoreboardStore.swift.o",
         "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/GameViewModel.swift.o",
+        "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/DailyChallengesView.swift.o",
         "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/GameView.swift.o",
         "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/HowToView.swift.o",
         "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/MenuView.swift.o",
+        "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/PrivacyView.swift.o",
         "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/ScoreboardView.swift.o",
         "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/SettingsView.swift.o",
         "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/SplashView.swift.o"
@@ -149,19 +209,31 @@
         "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/include/BreakoutPlus-Swift.h",
         "-swift-version",
         "5",
-        "-I",
-        "/Library/Developer/CommandLineTools/Library/Developer/Frameworks",
-        "-L",
-        "/Library/Developer/CommandLineTools/Library/Developer/Frameworks",
         "-plugin-path",
-        "/Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/testing",
+        "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing",
         "-sdk",
-        "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk",
+        "-F",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-F",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+        "-I",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+        "-L",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
         "-g",
         "-Xcc",
         "-isysroot",
         "-Xcc",
-        "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk",
+        "-Xcc",
+        "-F",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-Xcc",
+        "-F",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
         "-Xcc",
         "-fPIC",
         "-Xcc",
@@ -183,11 +255,23 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/LevelFactory.swift.o"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/Ball.swift.o"
         },
         {
           "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/Beam.swift.o"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/Brick.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/EnemyShot.swift.o"
         },
         {
           "kind" : "file",
@@ -207,6 +291,10 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/DailyChallenge.swift.o"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/GameMode.swift.o"
         },
         {
@@ -215,7 +303,35 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/AudioManager.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/DailyChallengeStore.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/Haptics.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/LifetimeStatsStore.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/ProgressionStore.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/ScoreboardStore.swift.o"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/GameViewModel.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/DailyChallengesView.swift.o"
         },
         {
           "kind" : "file",
@@ -228,6 +344,10 @@
         {
           "kind" : "file",
           "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/MenuView.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/PrivacyView.swift.o"
         },
         {
           "kind" : "file",
@@ -251,18 +371,30 @@
         "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/BreakoutPlusApp.swift",
         "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/ContentView.swift",
         "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Core/GameEngine.swift",
+        "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Core/LevelFactory.swift",
         "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Core/Models/Ball.swift",
+        "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Core/Models/Beam.swift",
         "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Core/Models/Brick.swift",
+        "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Core/Models/EnemyShot.swift",
         "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Core/Models/LevelTheme.swift",
         "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Core/Models/Paddle.swift",
         "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Core/Models/PowerUp.swift",
         "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Models/BrickType.swift",
+        "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Models/DailyChallenge.swift",
         "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Models/GameMode.swift",
         "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Models/PowerUpType.swift",
+        "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Services/AudioManager.swift",
+        "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Services/DailyChallengeStore.swift",
+        "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Services/Haptics.swift",
+        "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Services/LifetimeStatsStore.swift",
+        "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Services/ProgressionStore.swift",
+        "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Services/ScoreboardStore.swift",
         "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/ViewModels/GameViewModel.swift",
+        "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Views/DailyChallengesView.swift",
         "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Views/GameView.swift",
         "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Views/HowToView.swift",
         "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Views/MenuView.swift",
+        "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Views/PrivacyView.swift",
         "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Views/ScoreboardView.swift",
         "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Views/SettingsView.swift",
         "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Views/SplashView.swift"
@@ -276,25 +408,37 @@
   },
   "swiftTargetScanArgs" : {
     "BreakoutPlus" : [
-      "/Library/Developer/CommandLineTools/usr/bin/swiftc",
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
       "-module-name",
       "BreakoutPlus",
       "-c",
       "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/BreakoutPlusApp.swift",
       "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/ContentView.swift",
       "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Core/GameEngine.swift",
+      "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Core/LevelFactory.swift",
       "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Core/Models/Ball.swift",
+      "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Core/Models/Beam.swift",
       "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Core/Models/Brick.swift",
+      "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Core/Models/EnemyShot.swift",
       "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Core/Models/LevelTheme.swift",
       "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Core/Models/Paddle.swift",
       "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Core/Models/PowerUp.swift",
       "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Models/BrickType.swift",
+      "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Models/DailyChallenge.swift",
       "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Models/GameMode.swift",
       "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Models/PowerUpType.swift",
+      "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Services/AudioManager.swift",
+      "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Services/DailyChallengeStore.swift",
+      "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Services/Haptics.swift",
+      "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Services/LifetimeStatsStore.swift",
+      "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Services/ProgressionStore.swift",
+      "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Services/ScoreboardStore.swift",
       "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/ViewModels/GameViewModel.swift",
+      "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Views/DailyChallengesView.swift",
       "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Views/GameView.swift",
       "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Views/HowToView.swift",
       "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Views/MenuView.swift",
+      "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Views/PrivacyView.swift",
       "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Views/ScoreboardView.swift",
       "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Views/SettingsView.swift",
       "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Views/SplashView.swift",
@@ -322,25 +466,37 @@
       "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/include/BreakoutPlus-Swift.h",
       "-swift-version",
       "5",
-      "-I",
-      "/Library/Developer/CommandLineTools/Library/Developer/Frameworks",
-      "-L",
-      "/Library/Developer/CommandLineTools/Library/Developer/Frameworks",
       "-plugin-path",
-      "/Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/testing",
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing",
       "-sdk",
-      "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk",
+      "-F",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-F",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+      "-I",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-L",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
       "-g",
       "-Xcc",
       "-isysroot",
       "-Xcc",
-      "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk",
+      "-Xcc",
+      "-F",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-Xcc",
+      "-F",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
       "-Xcc",
       "-fPIC",
       "-Xcc",
       "-g",
       "-driver-use-frontend-path",
-      "/Library/Developer/CommandLineTools/usr/bin/swiftc"
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc"
     ]
   },
   "targetDependencyMap" : {
@@ -381,11 +537,23 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Core/LevelFactory.swift"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Core/Models/Ball.swift"
         },
         {
           "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Core/Models/Beam.swift"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Core/Models/Brick.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Core/Models/EnemyShot.swift"
         },
         {
           "kind" : "file",
@@ -405,6 +573,10 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Models/DailyChallenge.swift"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Models/GameMode.swift"
         },
         {
@@ -413,7 +585,35 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Services/AudioManager.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Services/DailyChallengeStore.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Services/Haptics.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Services/LifetimeStatsStore.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Services/ProgressionStore.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Services/ScoreboardStore.swift"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/ViewModels/GameViewModel.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Views/DailyChallengesView.swift"
         },
         {
           "kind" : "file",
@@ -426,6 +626,10 @@
         {
           "kind" : "file",
           "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Views/MenuView.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/admin/Downloads/VSCode/Android Game/ios/BreakoutPlus/BreakoutPlus/Views/PrivacyView.swift"
         },
         {
           "kind" : "file",
@@ -442,7 +646,7 @@
       ],
       "outputFilePath" : "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/BreakoutPlus.build/sources"
     },
-    "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt" : {
+    "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt" : {
       "alwaysOutOfDate" : true,
       "inputs" : [
         {
@@ -451,10 +655,10 @@
         },
         {
           "kind" : "file",
-          "name" : "/Library/Developer/CommandLineTools/usr/bin/swiftc"
+          "name" : "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc"
         }
       ],
-      "outputFilePath" : "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt"
+      "outputFilePath" : "/Users/admin/Downloads/VSCode/Android Game/ios/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt"
     }
   }
 }
