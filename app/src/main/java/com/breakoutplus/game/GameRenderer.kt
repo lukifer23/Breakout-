@@ -6,6 +6,7 @@ import android.opengl.GLSurfaceView
 import android.view.MotionEvent
 import com.breakoutplus.SettingsManager
 import kotlin.math.cos
+import kotlin.math.max
 import kotlin.math.sin
 
 class GameRenderer(
@@ -34,11 +35,15 @@ class GameRenderer(
     private var fixedStepSeconds = 1f / 120f
     private var simulationAccumulator = 0f
     private var debugAutoPlayEnabled = false
+    private val shakeAmplitudeScale = 0.34f
+    private val maxShakeAmplitude = 1.15f
 
     fun triggerScreenShake(intensity: Float = 3f, duration: Float = 0.2f) {
-        shakeIntensity = intensity
-        screenShakeDuration = duration.coerceAtLeast(0.01f)
-        screenShake = screenShakeDuration
+        val clampedIntensity = intensity.coerceIn(0f, 2.4f)
+        val clampedDuration = duration.coerceIn(0.03f, 0.24f)
+        shakeIntensity = max(shakeIntensity * 0.82f, clampedIntensity)
+        screenShakeDuration = max(screenShakeDuration * 0.78f, clampedDuration)
+        screenShake = max(screenShake, clampedDuration)
     }
 
     fun triggerComboFlash() {
@@ -84,7 +89,7 @@ class GameRenderer(
         if (screenShake > 0f) {
             screenShake -= delta
             if (screenShake < 0f) screenShake = 0f
-            shakePhase += delta * 48f
+            shakePhase += delta * 34f
         }
         if (comboFlash > 0f) {
             comboFlash -= delta * 2f
@@ -113,13 +118,12 @@ class GameRenderer(
 
         // Apply screen shake to renderer
         if (screenShake > 0f) {
-            val densityScale = context.resources.displayMetrics.density.coerceAtMost(1.5f)
             val decay = if (screenShakeDuration > 0f) {
                 (screenShake / screenShakeDuration).coerceIn(0f, 1f)
             } else {
                 0f
             }
-            val amplitude = shakeIntensity * densityScale * decay
+            val amplitude = (shakeIntensity * decay * shakeAmplitudeScale).coerceAtMost(maxShakeAmplitude)
             val shakeX = sin(shakePhase) * amplitude
             val shakeY = cos(shakePhase * 1.37f) * amplitude * 0.82f
             renderer2D.setOffset(shakeX, shakeY)

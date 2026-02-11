@@ -50,6 +50,7 @@ class GameEngine(
     private var score = 0
     private var levelIndex = 0
     private var lives = config.mode.baseLives
+    private var awaitingNextLevel = false
     private var timeRemaining = config.mode.timeLimitSeconds.toFloat()
     private var lastReportedSecond = -1
     private var elapsedSeconds = 0f
@@ -1419,6 +1420,33 @@ class GameEngine(
         applyAimFromNormalized(aimNormalized)
     }
 
+    private fun clampPaddleX(worldX: Float): Float {
+        return worldX.coerceIn(paddle.width / 2f, worldWidth - paddle.width / 2f)
+    }
+
+    private fun syncStuckBallsToPaddle() {
+        balls.forEach { ball ->
+            if (!ball.stuckToPaddle) return@forEach
+            val minX = paddle.x - paddle.width / 2f + ball.radius
+            val maxX = paddle.x + paddle.width / 2f - ball.radius
+            ball.x = (paddle.x + ball.stickOffset).coerceIn(minX, maxX)
+            ball.y = paddle.y + paddle.height / 2f + ball.radius + 0.5f
+            ball.vx = 0f
+            ball.vy = 0f
+        }
+    }
+
+    private fun updatePaddleFromTouch(worldX: Float, snapImmediately: Boolean) {
+        val clamped = clampPaddleX(worldX)
+        paddle.targetX = clamped
+        if (!snapImmediately) return
+        paddle.x = clamped
+        if (state == GameState.READY) {
+            attachBallToPaddle()
+        }
+        syncStuckBallsToPaddle()
+    }
+
     fun handleTouch(event: MotionEvent, viewWidth: Float, viewHeight: Float) {
         if (state == GameState.PAUSED || state == GameState.GAME_OVER) return
         if (config.mode == GameMode.VOLLEY && state == GameState.RUNNING) {
@@ -1435,7 +1463,7 @@ class GameEngine(
         }
 
         val clampWorldX = { screenX: Float ->
-            (screenX / viewWidth * worldWidth).coerceIn(paddle.width / 2f, worldWidth - paddle.width / 2f)
+            clampPaddleX(screenX / viewWidth * worldWidth)
         }
         val clampWorldY = { screenY: Float ->
             worldHeight - (screenY / viewHeight * worldHeight)
@@ -1475,7 +1503,10 @@ class GameEngine(
             MotionEvent.ACTION_DOWN -> {
                 activePointerId = actionPointerId
                 val downX = pointerWorldX(activePointerId) ?: trackedX
-                paddle.targetX = downX
+                updatePaddleFromTouch(
+                    downX,
+                    snapImmediately = state == GameState.READY || balls.any { it.stuckToPaddle }
+                )
                 isDragging = true
                 updateAimFromPaddle()
                 aimNormalized = aimNormalizedTarget
@@ -1486,7 +1517,10 @@ class GameEngine(
                     activePointerId = actionPointerId
                 }
                 val moveX = pointerWorldX(activePointerId) ?: trackedX
-                paddle.targetX = moveX
+                updatePaddleFromTouch(
+                    moveX,
+                    snapImmediately = state == GameState.READY || balls.any { it.stuckToPaddle }
+                )
                 isDragging = true
                 updateAimFromPaddle()
                 aimNormalized = aimNormalizedTarget
@@ -1503,7 +1537,10 @@ class GameEngine(
                     }
                     if (replacementIndex >= 0) {
                         activePointerId = event.getPointerId(replacementIndex)
-                        paddle.targetX = clampWorldX(event.getX(replacementIndex))
+                        updatePaddleFromTouch(
+                            clampWorldX(event.getX(replacementIndex)),
+                            snapImmediately = state == GameState.READY || balls.any { it.stuckToPaddle }
+                        )
                         isDragging = true
                         updateAimFromPaddle()
                         aimNormalized = aimNormalizedTarget
@@ -1517,7 +1554,7 @@ class GameEngine(
             }
             MotionEvent.ACTION_UP -> {
                 val upX = pointerWorldX(actionPointerId) ?: trackedX
-                paddle.targetX = upX
+                updatePaddleFromTouch(upX, snapImmediately = true)
                 syncAimForLaunch()
                 if (state == GameState.READY) {
                     // Launch on tap/release for intuitive starts.
@@ -1554,29 +1591,33 @@ class GameEngine(
     }
 
     fun pause() {
-        stateBeforePause = state
+        if (state != GameState.PAUSED) {
+            stateBeforePause = state
+        }
         state = GameState.PAUSED
     }
 
     fun resume() {
         if (state == GameState.PAUSED) {
-            // Validate stateBeforePause is a valid state (not PAUSED or GAME_OVER)
+            // Restore the exact gameplay state if known; otherwise remain paused.
             state = when (stateBeforePause) {
-                GameState.READY, GameState.RUNNING -> stateBeforePause
-                else -> GameState.READY // Fallback to READY if invalid
+                GameState.READY, GameState.RUNNING, GameState.GAME_OVER -> stateBeforePause
+                else -> GameState.PAUSED
             }
         }
     }
 
     fun nextLevel() {
-        if (state == GameState.GAME_OVER) return
+        if (!awaitingNextLevel || state == GameState.GAME_OVER) return
         levelIndex += 1
+        awaitingNextLevel = false
         resetLevel(first = false)
     }
 
     private fun resetLevel(first: Boolean) {
         state = GameState.READY
         stateBeforePause = GameState.READY
+        awaitingNextLevel = false
         combo = 0
         lostLifeThisLevel = false
         if (first) {
@@ -2163,6 +2204,7 @@ class GameEngine(
 
     private fun launchBall() {
         syncAimForLaunch()
+        attachBallToPaddle()
         if (config.mode == GameMode.VOLLEY) {
             launchVolleyTurn()
             return
@@ -3339,6 +3381,7 @@ class GameEngine(
                 bricksBroken = runBricksBroken,
                 livesLost = runLivesLost
             )
+            awaitingNextLevel = true
             state = GameState.PAUSED
             stateBeforePause = GameState.PAUSED
             listener.onLevelComplete(summary)
@@ -3388,6 +3431,7 @@ class GameEngine(
             bricksBroken = runBricksBroken,
             livesLost = runLivesLost
         )
+        awaitingNextLevel = false
         audio.play(GameSound.GAME_OVER, 1f)
         audio.haptic(GameHaptic.HEAVY)
         audio.stopMusic() // Stop background music on game over
@@ -3771,6 +3815,22 @@ class GameEngine(
                     else -> 0.25f
                 }
                 weights[type]?.let { weights[type] = it * penalty }
+            }
+            val recent = recentPowerups.toList()
+            val last = recent.lastOrNull()
+            if (last != null) {
+                weights[last]?.let { weights[last] = it * 0.35f }
+            }
+            if (recent.size >= 2 && recent[recent.lastIndex] == recent[recent.lastIndex - 1]) {
+                val repeatedBucket = powerupBucket(recent[recent.lastIndex])
+                weights.keys.toList().forEach { type ->
+                    val current = weights[type] ?: return@forEach
+                    weights[type] = if (powerupBucket(type) == repeatedBucket) {
+                        current * 0.42f
+                    } else {
+                        current * 1.16f
+                    }
+                }
             }
         }
         val total = weights.values.sum().coerceAtLeast(0.01f)

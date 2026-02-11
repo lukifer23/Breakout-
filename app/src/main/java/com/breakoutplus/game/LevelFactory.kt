@@ -407,7 +407,7 @@ object LevelFactory {
             for (col in 0 until layout.cols) {
                 if (existing.containsKey(col to row)) continue
                 val rowRatio = if (layout.rows > 1) row.toFloat() / (layout.rows - 1).toFloat() else 0f
-                val density = (0.75f + intensity * 0.07f - rowRatio * 0.1f).coerceIn(0.6f, 0.82f)
+                val density = (0.78f + intensity * 0.09f - rowRatio * 0.08f).coerceIn(0.64f, 0.88f)
                 if (random.nextFloat() > density) continue
                 val typeRoll = random.nextFloat()
                 val type = when {
@@ -507,7 +507,7 @@ object LevelFactory {
         // Add special brick types based on difficulty and level
         addSpecialBricks(rows, cols, index, difficulty, bricks, occupied)
 
-        val minimumBricks = (rows * cols * 0.4f).roundToInt()
+        val minimumBricks = (rows * cols * 0.48f).roundToInt()
         if (bricks.size < minimumBricks) {
             fillRemainingSpaces(rows, cols, index, difficulty, bricks, occupied, minimumBricks)
         }
@@ -737,7 +737,7 @@ object LevelFactory {
                 if (occupied.contains(col to row)) continue
 
                 val rowRatio = row.toFloat() / (rows - 1).coerceAtLeast(1)
-                val fillChance = (0.6f - rowRatio * 0.3f).coerceIn(0.2f, 0.7f)
+                val fillChance = (0.7f - rowRatio * 0.22f).coerceIn(0.35f, 0.82f)
                 if (random.nextFloat() > fillChance) continue
 
                 val type = if (random.nextFloat() < 0.15f) BrickType.REINFORCED else BrickType.NORMAL

@@ -53,14 +53,14 @@ abstract class FoldAwareActivity : AppCompatActivity() {
         val padding = basePadding ?: Rect(0, 0, 0, 0)
         val foldingFeature = info.displayFeatures.filterIsInstance<FoldingFeature>().firstOrNull()
         if (foldingFeature == null || !foldingFeature.isSeparating) {
-            root.setPadding(padding.left, padding.top, padding.right, padding.bottom)
+            setPaddingIfChanged(root, padding.left, padding.top, padding.right, padding.bottom)
             return
         }
 
         val bounds = foldingFeature.bounds
         val hingeSize = if (foldingFeature.orientation == FoldingFeature.Orientation.VERTICAL) bounds.width() else bounds.height()
         if (hingeSize <= 0) {
-            root.setPadding(padding.left, padding.top, padding.right, padding.bottom)
+            setPaddingIfChanged(root, padding.left, padding.top, padding.right, padding.bottom)
             return
         }
         val maxPad = (root.resources.displayMetrics.density * 24f).toInt()
@@ -69,6 +69,18 @@ abstract class FoldAwareActivity : AppCompatActivity() {
         val newRight = padding.right + if (foldingFeature.orientation == FoldingFeature.Orientation.VERTICAL) extra else 0
         val newTop = padding.top + if (foldingFeature.orientation == FoldingFeature.Orientation.HORIZONTAL) extra else 0
         val newBottom = padding.bottom + if (foldingFeature.orientation == FoldingFeature.Orientation.HORIZONTAL) extra else 0
-        root.setPaddingRelative(newLeft, newTop, newRight, newBottom)
+        setPaddingIfChanged(root, newLeft, newTop, newRight, newBottom)
+    }
+
+    private fun setPaddingIfChanged(root: View, left: Int, top: Int, right: Int, bottom: Int) {
+        if (
+            root.paddingLeft == left &&
+            root.paddingTop == top &&
+            root.paddingRight == right &&
+            root.paddingBottom == bottom
+        ) {
+            return
+        }
+        root.setPadding(left, top, right, bottom)
     }
 }

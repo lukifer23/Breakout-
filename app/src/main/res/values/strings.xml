@@ -83,6 +83,7 @@
     <string name="label_score_level_default">Score 0 • Level 1</string>
     <string name="label_welcome_title">Welcome to Breakout+!</string>
     <string name="label_welcome_body">• Drag to move and aim\n• Release to launch the ball\n• Collect powerups for special abilities\n• Two-finger tap or FIRE button fires lasers</string>
+    <string name="label_welcome_banner">Drag to move and aim. Release to launch. Use FIRE when Laser is active.</string>
     <string name="label_got_it">Got it!</string>
     <string name="label_score_level_mode_default">Score 0 • Level 1 • Mode Classic</string>
     <string name="label_enter_name">Enter your name</string>

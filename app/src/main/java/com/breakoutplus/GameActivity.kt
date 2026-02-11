@@ -137,7 +137,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         refreshSettings()
         applyFrameRatePreference()
         binding.gameSurface.onResume()
-        if (binding.pauseOverlay.visibility != View.VISIBLE) {
+        if (shouldResumeGameplay()) {
             binding.gameSurface.resumeGame()
         }
     }
@@ -238,9 +238,11 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         levelAdvanceInProgress = false
         hideOverlay(binding.endOverlay)
         hideOverlay(binding.pauseOverlay)
+        hideOverlay(binding.tooltipOverlay)
         endOverlayState = EndOverlayState.NONE
         binding.buttonEndPrimary.isEnabled = true
         binding.buttonEndSecondary.isEnabled = true
+        binding.gameSurface.resumeGame()
         binding.gameSurface.restartGame()
         playGameFade()
     }
@@ -264,6 +266,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
                 endOverlayState = EndOverlayState.NONE
                 val advanceRunnable = Runnable {
                     pendingNextLevelRunnable = null
+                    binding.gameSurface.resumeGame()
                     binding.gameSurface.nextLevel()
                     playGameFade()
                     levelAdvanceInProgress = false
@@ -315,15 +318,21 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             )
             if (bars.top > maxInsetTop) maxInsetTop = bars.top
             if (bars.bottom > maxInsetBottom) maxInsetBottom = bars.bottom
-            binding.hudContainer.setPadding(
-                binding.hudContainer.paddingLeft,
-                baseTop + maxInsetTop,
-                binding.hudContainer.paddingRight,
-                baseBottom
-            )
+            val topPadding = baseTop + maxInsetTop
+            if (binding.hudContainer.paddingTop != topPadding || binding.hudContainer.paddingBottom != baseBottom) {
+                binding.hudContainer.setPadding(
+                    binding.hudContainer.paddingLeft,
+                    topPadding,
+                    binding.hudContainer.paddingRight,
+                    baseBottom
+                )
+            }
             val params = binding.gameSurface.layoutParams as ConstraintLayout.LayoutParams
-            params.bottomMargin = baseSurfaceBottomMargin + maxInsetBottom
-            binding.gameSurface.layoutParams = params
+            val desiredBottomMargin = baseSurfaceBottomMargin + maxInsetBottom
+            if (params.bottomMargin != desiredBottomMargin) {
+                params.bottomMargin = desiredBottomMargin
+                binding.gameSurface.layoutParams = params
+            }
             insets
         }
     }
@@ -614,11 +623,18 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     }
 
     private fun showTooltip() {
-        showOverlay(binding.tooltipOverlay)
+        hideOverlay(binding.tooltipOverlay)
+        showBanner(getString(R.string.label_welcome_banner))
     }
 
     private fun hideTooltip() {
         hideOverlay(binding.tooltipOverlay)
+    }
+
+    private fun shouldResumeGameplay(): Boolean {
+        return binding.pauseOverlay.visibility != View.VISIBLE &&
+            binding.endOverlay.visibility != View.VISIBLE &&
+            binding.tooltipOverlay.visibility != View.VISIBLE
     }
 
     private fun showOverlay(view: View) {
