@@ -2,6 +2,7 @@ package com.breakoutplus
 
 import android.content.Intent
 import android.content.pm.ApplicationInfo
+import android.content.res.Configuration
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -54,6 +55,8 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     @Volatile private var pendingVolleyBalls: Int? = null
     private var hudScale: Float = 1f
     private var hudChipTextPx: Float = 0f
+    private var lastHudAvailWidthPx: Int = -1
+    private var lastHudAvailHeightPx: Int = -1
     private var levelAdvanceInProgress = false
     private var debugAutoPlaySession = false
     private var debugAutoPlayStopRunnable: Runnable? = null
@@ -64,6 +67,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         setContentView(binding.root)
         setFoldAwareRoot(binding.root)
         configureSystemUi()
+        observeViewportChanges()
         applyResponsiveHudSizing()
         baseSurfaceBottomMargin =
             (binding.gameSurface.layoutParams as ConstraintLayout.LayoutParams).bottomMargin
@@ -162,6 +166,11 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
 
     override fun onDestroy() {
         super.onDestroy()
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        binding.root.post { applyResponsiveHudSizing() }
     }
 
     private fun refreshSettings() {
@@ -360,6 +369,20 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
 
     private fun configureSystemUi() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
+    }
+
+    private fun observeViewportChanges() {
+        binding.root.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+            val availWidth = (binding.root.width - binding.root.paddingLeft - binding.root.paddingRight)
+                .coerceAtLeast(0)
+            val availHeight = (binding.root.height - binding.root.paddingTop - binding.root.paddingBottom)
+                .coerceAtLeast(0)
+            if (availWidth <= 0 || availHeight <= 0) return@addOnLayoutChangeListener
+            if (availWidth == lastHudAvailWidthPx && availHeight == lastHudAvailHeightPx) return@addOnLayoutChangeListener
+            lastHudAvailWidthPx = availWidth
+            lastHudAvailHeightPx = availHeight
+            applyResponsiveHudSizing()
+        }
     }
 
     override fun onScoreUpdated(score: Int) {
@@ -782,7 +805,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
 
     private fun buildPowerupChip(status: PowerupStatus): android.widget.TextView {
         val chip = android.widget.TextView(this)
-        val chipScale = hudScale.coerceIn(0.9f, 1.24f)
+        val chipScale = hudScale.coerceIn(0.82f, 1.24f)
         val chipTextSize = if (hudChipTextPx > 0f) hudChipTextPx else resources.getDimension(R.dimen.bp_hud_mode_size)
         chip.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, chipTextSize)
         chip.setTypeface(android.graphics.Typeface.DEFAULT_BOLD)
@@ -836,8 +859,12 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     private fun applyResponsiveHudSizing() {
         val metrics = resources.displayMetrics
         if (metrics.density <= 0f) return
-        val widthDp = metrics.widthPixels / metrics.density
-        val heightDp = metrics.heightPixels / metrics.density
+        val widthPx = (binding.root.width - binding.root.paddingLeft - binding.root.paddingRight)
+            .takeIf { it > 0 } ?: metrics.widthPixels
+        val heightPx = (binding.root.height - binding.root.paddingTop - binding.root.paddingBottom)
+            .takeIf { it > 0 } ?: metrics.heightPixels
+        val widthDp = widthPx / metrics.density
+        val heightDp = heightPx / metrics.density
         val shortDp = minOf(widthDp, heightDp)
         val longDp = maxOf(widthDp, heightDp)
         val aspect = (longDp / shortDp).coerceAtLeast(1f)
@@ -846,23 +873,35 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             shortDp >= 840f -> 1.2f
             shortDp >= 720f -> 1.14f
             shortDp >= 600f -> 1.08f
-            shortDp <= 360f -> 0.92f
+            shortDp <= 340f -> 0.82f
+            shortDp <= 380f -> 0.86f
+            shortDp <= 420f -> 0.92f
             else -> 1f
         }
-        val tallFoldCompaction = if (aspect >= 2.05f) 0.95f else 1f
-        hudScale = (baseScale * tallFoldCompaction).coerceIn(0.9f, 1.24f)
+        val tallFoldCompaction = when {
+            aspect >= 2.3f -> 0.88f
+            aspect >= 2.05f -> 0.92f
+            else -> 1f
+        }
+        hudScale = (baseScale * tallFoldCompaction).coerceIn(0.82f, 1.24f)
         hudChipTextPx = resources.getDimension(R.dimen.bp_hud_mode_size) * hudScale
 
         val reservedRatio = when {
-            shortDp >= 720f -> 0.245f
-            shortDp >= 600f -> 0.235f
-            aspect >= 2.0f -> 0.21f
+            shortDp >= 840f -> 0.23f
+            shortDp >= 720f -> 0.225f
+            shortDp >= 600f -> 0.215f
+            aspect >= 2.3f -> 0.165f
+            aspect >= 2.0f -> 0.182f
             else -> 0.225f
         }
-        val reservedHeightDp = (heightDp * reservedRatio).coerceIn(136f, if (shortDp >= 720f) 240f else 198f)
+        val reservedHeightDp = (heightDp * reservedRatio)
+            .coerceIn(118f, if (shortDp >= 720f) 228f else 188f)
         val hudParams = binding.hudContainer.layoutParams as ConstraintLayout.LayoutParams
-        hudParams.height = dp(reservedHeightDp)
-        binding.hudContainer.layoutParams = hudParams
+        val targetHeightPx = dp(reservedHeightDp)
+        if (hudParams.height != targetHeightPx) {
+            hudParams.height = targetHeightPx
+            binding.hudContainer.layoutParams = hudParams
+        }
 
         val scoreSize = resources.getDimension(R.dimen.bp_hud_score_size) * hudScale
         val statSize = resources.getDimension(R.dimen.bp_hud_stat_size) * hudScale
@@ -877,11 +916,11 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         binding.hudFps.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, modeSize)
         binding.hudLevelBanner.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, bannerSize)
 
-        val actionMin = (44f * hudScale).coerceIn(42f, 60f)
+        val actionMin = (44f * hudScale).coerceIn(38f, 60f)
         binding.buttonPause.minimumWidth = dp(actionMin)
         binding.buttonPause.minimumHeight = dp(actionMin)
-        binding.buttonLaser.minimumWidth = dp((76f * hudScale).coerceIn(72f, 104f))
-        binding.buttonLaser.minimumHeight = dp((42f * hudScale).coerceIn(40f, 56f))
+        binding.buttonLaser.minimumWidth = dp((76f * hudScale).coerceIn(64f, 104f))
+        binding.buttonLaser.minimumHeight = dp((42f * hudScale).coerceIn(36f, 56f))
 
         val shieldWidthDp = (shortDp * 0.24f).coerceIn(116f, 186f)
         val shieldParams = binding.hudShieldBar.layoutParams as android.widget.LinearLayout.LayoutParams

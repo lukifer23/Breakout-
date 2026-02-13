@@ -154,6 +154,8 @@ class GameEngine(
     private var spatialHashDirty = true
     private var dynamicBrickLayout = false
     private var pendingInitialLayoutRetune = true
+    private var lastResizeWidthPx = 0
+    private var lastResizeHeightPx = 0
 
     private var theme: LevelTheme = LevelThemes.DEFAULT
     private var themePool: MutableList<LevelTheme> = LevelThemes.baseThemes().toMutableList()
@@ -207,6 +209,19 @@ class GameEngine(
 
     fun onResize(width: Int, height: Int) {
         if (width <= 0 || height <= 0) return
+        val significantLayoutShift = if (lastResizeWidthPx > 0 && lastResizeHeightPx > 0) {
+            val widthDelta = kotlin.math.abs(width - lastResizeWidthPx) / lastResizeWidthPx.toFloat()
+            val heightDelta = kotlin.math.abs(height - lastResizeHeightPx) / lastResizeHeightPx.toFloat()
+            widthDelta >= 0.06f || heightDelta >= 0.06f
+        } else {
+            false
+        }
+        val pristineBoard =
+            state == GameState.READY &&
+                runBricksBroken == 0 &&
+                balls.size <= 1 &&
+                elapsedSeconds <= 2f
+        val shouldRetuneStructure = pristineBoard && (pendingInitialLayoutRetune || significantLayoutShift)
         worldWidth = 100f
         worldHeight = worldWidth * (height.toFloat() / width.toFloat())
         paddle.y = 8f
@@ -214,20 +229,13 @@ class GameEngine(
         basePaddleWidth = resolveBasePaddleWidth(currentAspectRatio)
         paddle.width = basePaddleWidth
         paddle.height = 2.6f
-        val initialBoardRetune =
-            pendingInitialLayoutRetune &&
-                state == GameState.READY &&
-                levelIndex == 0 &&
-                runBricksBroken == 0 &&
-                elapsedSeconds <= 0.05f
-        applyLayoutTuning(currentAspectRatio, preserveRowBoost = !initialBoardRetune)
+        applyLayoutTuning(currentAspectRatio, preserveRowBoost = !shouldRetuneStructure)
         syncPaddleWidthFromEffects()
         paddle.targetX = paddle.x.coerceIn(paddle.width / 2f, worldWidth - paddle.width / 2f)
         updateAimFromPaddle()
         updateAim(0f)
-        // On first resize, retune the level structure for the real device aspect.
-        // During active gameplay we keep structure stable and only relayout positions.
-        if (initialBoardRetune) {
+        // Retune structure when viewport meaningfully changes before a board is "in progress".
+        if (shouldRetuneStructure) {
             currentLayout?.let {
                 buildBricks(it)
                 buildSpatialHash()
@@ -236,6 +244,8 @@ class GameEngine(
         } else if (state == GameState.READY || state == GameState.PAUSED) {
             relayoutBricks()
         }
+        lastResizeWidthPx = width
+        lastResizeHeightPx = height
     }
 
     private fun resolveBasePaddleWidth(aspectRatio: Float): Float {
@@ -1467,11 +1477,44 @@ class GameEngine(
     private fun applyLayoutTuning(aspectRatio: Float, preserveRowBoost: Boolean) {
         val tallness = ((aspectRatio - 1.25f) / 0.85f).coerceIn(0f, 1f)
         val isWide = aspectRatio < 1.45f
+        val wideDensityRows = when {
+            aspectRatio < 1.26f -> 4
+            aspectRatio < 1.38f -> 3
+            aspectRatio < 1.52f -> 2
+            else -> 0
+        }
+        val tallDensityRows = when {
+            aspectRatio > 2.25f -> 2
+            aspectRatio > 1.95f -> 1
+            else -> 0
+        }
+        val wideDensityCols = when {
+            aspectRatio < 1.3f -> 2
+            aspectRatio < 1.45f -> 1
+            else -> 0
+        }
         // Shared "zoomed-out" baseline for all modes: smaller bricks, more distance to the paddle,
         // and consistent spacing so switching modes doesn't feel like a camera jump.
-        brickAreaTopRatio = lerp(0.99f, 0.972f, tallness)
+        brickAreaTopRatio = lerp(0.992f, 0.976f, tallness)
         brickAreaBottomRatio = lerp(0.72f, 0.66f, tallness)
+        val wideVerticalExpansion = when {
+            aspectRatio < 1.26f -> 0.12f
+            aspectRatio < 1.38f -> 0.1f
+            aspectRatio < 1.5f -> 0.08f
+            else -> 0f
+        }
+        val tallVerticalExpansion = when {
+            aspectRatio > 2.3f -> 0.05f
+            aspectRatio > 2.0f -> 0.03f
+            else -> 0f
+        }
+        brickAreaBottomRatio = (brickAreaBottomRatio - wideVerticalExpansion - tallVerticalExpansion).coerceIn(0.52f, 0.72f)
         brickSpacing = lerp(0.3f, 0.36f, tallness)
+        if (aspectRatio < 1.5f) {
+            brickSpacing = (brickSpacing - 0.04f).coerceAtLeast(0.24f)
+        } else if (aspectRatio > 2.1f) {
+            brickSpacing = (brickSpacing - 0.02f).coerceAtLeast(0.24f)
+        }
         if (!preserveRowBoost) {
             val densityBoost = (levelIndex / 6).coerceAtMost(2)
             val slateRowBoost = when {
@@ -1480,8 +1523,10 @@ class GameEngine(
                 else -> 0
             }
             val slateColBoost = if (aspectRatio < 1.38f) 1 else 0
-            val baseRowBoost = (if (isWide) 4 else 3) + densityBoost + slateRowBoost
-            val baseColBoost = (if (isWide) 4 else 3) + densityBoost + slateColBoost
+            val baseRowBoost =
+                (if (isWide) 4 else 3) + densityBoost + slateRowBoost + wideDensityRows + tallDensityRows
+            val baseColBoost =
+                (if (isWide) 4 else 3) + densityBoost + slateColBoost + wideDensityCols
             when (config.mode) {
                 GameMode.RUSH -> {
                     layoutRowBoost = (baseRowBoost - 2).coerceAtLeast(0)
@@ -1497,25 +1542,32 @@ class GameEngine(
                 }
                 GameMode.VOLLEY -> {
                     val volleyRowBase = when {
-                        aspectRatio < 1.35f -> 2
-                        aspectRatio < 1.6f -> 1
-                        else -> 0
+                        aspectRatio < 1.3f -> 3
+                        aspectRatio < 1.6f -> 2
+                        aspectRatio > 2.2f -> 1
+                        else -> 1
                     }
-                    layoutRowBoost = (volleyRowBase + densityBoost / 2).coerceAtLeast(0)
+                    layoutRowBoost = (volleyRowBase + densityBoost / 2 + wideDensityRows / 2 + tallDensityRows).coerceAtLeast(1)
                     layoutColBoost = when {
-                        aspectRatio < 1.4f -> 2
-                        aspectRatio < 1.7f -> 1
-                        else -> 0
+                        aspectRatio < 1.35f -> 3
+                        aspectRatio < 1.7f -> 2
+                        aspectRatio > 2.15f -> 1
+                        else -> 1
                     }
                 }
                 GameMode.TUNNEL -> {
                     val tunnelRowBase = when {
+                        aspectRatio < 1.3f -> 4
+                        aspectRatio < 1.6f -> 3
+                        aspectRatio > 2.2f -> 2
+                        else -> 2
+                    }
+                    layoutRowBoost = (tunnelRowBase + densityBoost / 2 + wideDensityRows / 2 + tallDensityRows).coerceAtLeast(2)
+                    layoutColBoost = when {
                         aspectRatio < 1.36f -> 2
-                        aspectRatio < 1.6f -> 1
+                        aspectRatio < 1.7f -> 1
                         else -> 0
                     }
-                    layoutRowBoost = (tunnelRowBase + densityBoost / 2).coerceAtLeast(0)
-                    layoutColBoost = if (aspectRatio < 1.42f) 1 else 0
                 }
                 GameMode.SURVIVAL -> {
                     layoutRowBoost = baseRowBoost + 1
@@ -1533,6 +1585,11 @@ class GameEngine(
         }
         // Smaller bricks overall to avoid an overly zoomed-in feel.
         globalBrickScale = lerp(0.8f, 0.77f, tallness)
+        if (aspectRatio < 1.4f) {
+            globalBrickScale = (globalBrickScale - 0.05f).coerceAtLeast(0.7f)
+        } else if (aspectRatio > 2.15f) {
+            globalBrickScale = (globalBrickScale - 0.03f).coerceAtLeast(0.72f)
+        }
         if (config.mode == GameMode.RUSH) {
             globalBrickScale = (globalBrickScale + 0.03f).coerceAtMost(0.88f)
             brickSpacing = (brickSpacing + 0.03f).coerceAtMost(0.42f)
