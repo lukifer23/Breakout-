@@ -1,319 +1,135 @@
 # Breakout+
 
-An Android-first brickbreaker tuned for foldables and modern phones. Breakout+ ships with advanced physics, multiple game modes, dynamic brick behaviors, and a deep powerup system with GPU-accelerated rendering at 60+ FPS.
+Android-first brick breaker built for modern phones and foldables, with a separate iOS port in the same repository.
 
-## Goals
+## Current Scope
+- Primary release focus: Android (`app/`)
+- iOS lives in `ios/` and remains a separate codepath
+- Development workflow supports full CLI build/test/deploy
 
-**Product Goal**: Deliver Breakout+ as a premier foldable-first brickbreaker for Samsung Galaxy Z Fold devices and modern Android hardware. Achieve 60+ FPS gameplay through GPU acceleration, provide a complete feature set (10 brick types, 15 powerups, 9 game modes, base + unlockable visual themes), and maintain a full CLI-only development workflow.
+## Android Feature Set
+- OpenGL ES 2.0 renderer (`GLSurfaceView` + custom `Renderer2D`)
+- Choreographer-paced rendering with fixed-step simulation in `GameRenderer`
+- 10 game modes
+- 10 brick types
+- 15 powerups
+- Journey progression (chapter/stage labels every 10 levels)
+- Daily challenges, per-mode scoreboard, lifetime stats
+- Fold-aware and large-screen layout handling
 
-**Key Success Criteria**:
-- Smooth 60 FPS gameplay on Z Fold 7 (folded and unfolded)
-- Reliable Android release quality with no gameplay regressions
-- Production-ready code with comprehensive documentation
-- CLI-only build and deployment capability
-- No stubs, mocks, or placeholder assets
+## Game Modes (10)
+- `CLASSIC`: standard progression, 3 lives
+- `TIMED`: 2:30 score attack
+- `ENDLESS`: infinite scaling levels
+- `GOD`: endless practice with no life loss
+- `RUSH`: 55s per level, 1 life
+- `VOLLEY`: turn-based chain launch, descending rows
+- `TUNNEL`: fortified ring + narrow gate lane
+- `SURVIVAL`: one life, faster scaling
+- `INVADERS`: moving fleet + enemy fire + shield system
+- `ZEN`: no lives/score pressure, continuous flow
 
-## About
+## Brick Types (10)
+- Normal, Reinforced, Armored, Explosive, Unbreakable
+- Moving, Spawning, Phase, Boss, Invader
 
-Breakout+ elevates the classic brickbreaker genre with modern mobile optimizations and innovative gameplay mechanics. Built from the ground up for foldable devices, it leverages the unique form factor for enhanced gameplay experiences across folded and unfolded states.
+## Powerups (15)
+- Multi-ball, Laser, Guardrail, Shield, Extra life
+- Wide paddle, Shrink, Slow, Overdrive, Fireball
+- Magnet, Gravity Well, Ball Splitter, Freeze, Pierce
 
-### Key Features
-- **Platform Focus**: Android release target with active iOS parity work
-- **GPU Acceleration**: OpenGL ES 2.0 (Android) / SpriteKit-backed rendering (iOS) at 60+ FPS target
-- **Advanced Physics**: Accurate collision detection with momentum preservation
-- **Multiple Game Modes**: Classic, Timed Challenge, Endless, God Mode, Level Rush, Volley, Tunnel Siege, Survival, and Invaders
-- **Dynamic Brick System**: 10 brick types with unique behaviors (moving, spawning, phase, boss, invader)
-- **Comprehensive Powerups**: 15 distinct powerups with visual effects and timers
-- **Combo System**: Score multipliers for consecutive brick destruction
-- **Journey Progression**: Chaptered levels (every 10 stages) with XP tracking
-- **Theme Variety**: 6 base themes plus unlockable bonus themes and mode-specific variants
-- **Audio System**: Procedural sound generation with individual volume controls
-- **Data Logging**: Built-in analytics for debugging
-- **Per-Mode Leaderboards**: Scoreboard supports each mode plus an all-modes view
-- **Lifetime Run Stats**: Scoreboard tracks cumulative bricks broken, lives lost, play time, best run duration, and average score
-- **Foldable Optimization**: Android version optimized for Samsung Galaxy Z Fold 7
+## Android Build & Run (CLI)
 
-Key principles:
-- **Foldable-first design**: Optimized layouts and hinge-aware UI for seamless folded/unfolded transitions
-- **Hardware acceleration**: OpenGL ES rendering for smooth 60 FPS gameplay
-- **Complete feature set**: Multiple game modes, powerups, brick variations, and full audio
-- **CLI-only development**: No Android Studio dependency, pure command-line workflow
-- **Production-ready**: All assets generated locally, no external dependencies
+### Prereqs
+- JDK 17
+- Android SDK with platform 35
+- `adb` on PATH
+- Ruby + Bundler (only if using Fastlane upload lanes)
 
-## Platforms
-
-### Android: Samsung Galaxy Z Fold 7
-**Status**: Active Android release development
-
-#### Setup Instructions
-1. Enable USB debugging in Developer Options
-2. Connect device via USB
-3. Verify connection: `adb devices`
-4. Install APK: `adb install -r app/build/outputs/apk/debug/app-debug.apk`
-
-### iOS: iPhone & iPad
-**Status**: Active parity work in progress (CLI build + simulator run verified).
-
-#### CLI-Only Development Setup (No Xcode GUI Required)
-1. Ensure Xcode 15+ is installed
-2. Build: `cd ios/BreakoutPlus && xcodebuild -scheme BreakoutPlus -sdk iphonesimulator -configuration Debug build`
-3. Boot simulator: `xcrun simctl boot <device-id>`
-4. Install: `xcrun simctl install booted "$(find ~/Library/Developer/Xcode/DerivedData -name 'BreakoutPlus.app' -type d | head -1)"`
-5. Launch: `xcrun simctl launch booted com.breakoutplus.ios`
-
-**iOS Note**: iOS and Android implementations remain separate codepaths while gameplay parity and polish continue.
-
-Breakout+ is a GPU-accelerated brickbreaker built for foldables and modern phones. Android uses OpenGL ES; iOS uses SwiftUI + SpriteKit with matching gameplay systems and mode support.
-
-## Highlights
-- OpenGL ES 2.0 rendering via `GLSurfaceView` for hardware acceleration.
-- Vsync-paced rendering using Choreographer-driven frame pacing with surface frame-rate hints.
-- Optimized for modern mobile GPUs with simple geometry (rects/circles) for consistent performance and frame pacing stability.
-- Foldable-optimized layouts (`sw600dp`, `sw720dp`) plus hinge-aware padding using Jetpack WindowManager.
-- Multiple modes: Classic, Timed Challenge, Endless, God Mode, Level Rush (55s per level with aggressive pacing), Volley (turn-based chain launch), Tunnel Siege (fortress ring with a narrow breach lane), Survival, Invaders.
-- Powerups: Multi-ball, Laser, Guardrail, Shield, Extra life, Wide paddle, Shrink, Slow motion, Overdrive, Fireball, Magnet, Gravity Well, Ball Splitter, Freeze, Pierce.
-- Brick variations: Standard, Reinforced, Armored, Explosive, Unbreakable, Moving, Spawning, Phase, Boss, Invader.
-- Combo system: Score multipliers (x1.5-5x) for consecutive brick breaks within 2 seconds.
-- Journey chapters: Every 10 levels form a named chapter with XP progression.
-- Visual themes: 6 distinct themes (Neon, Sunset, Cobalt, Aurora, Forest, Lava) with unique color palettes and animated backgrounds.
-- In-game HUD with score, lives, timer, level, combo indicators, and powerup chips with countdown timers (fixed top layout to avoid gameplay shifts).
-- Daily Challenges with tracked progress.
-- Advanced audio: Individual volume controls (Master/Effects/Music), context-aware sounds per brick type.
-- Enhanced visuals: Unique brick colors per theme, 3D bevel effects, animated powerups, particle systems.
-- Full set of screens: Splash (system), Title, Mode Select, Settings (volume controls), Scoreboard, How-To (expandable), Game.
-- Privacy Policy screen with in-app disclosure.
-- Audio: Android generates SFX/music locally; iOS uses bundled WAV SFX + looping music (still local assets, no placeholders).
-- Device smoke-test script for all gameplay modes: `tools/mode_smoke_test.sh`.
-
-## Features
-
-### Game Modes
-- **Classic**: Standard breakout progression with escalating difficulty
-- **Timed Challenge**: Score as high as possible in 2:30 with an accelerated pace
-- **Endless**: Infinite procedurally generated levels with scaling difficulty
-- **God Mode**: Practice mode with infinite lives, no penalties
-- **Level Rush**: Beat each stage before the 55-second timer expires with aggressive pacing tuned for fairness
-- **Volley**: Aim once, launch a chain of balls, then survive descending rows
-- **Tunnel Siege**: Breach a fortified ring through a narrow tunnel entry and clear the inner core
-- **Survival**: One life with faster speed ramps
-- **Invaders**: Breakout + invader fleet combat with enemy fire and shield management
-
-### Powerups (15 Total)
-- **Core**: Multi-ball, Laser, Guardrail, Shield, Extra life, Wide paddle, Shrink, Slow motion, Overdrive, Fireball
-- **Advanced**: Magnet (attracts powerups), Gravity Well (attractive force), Ball Splitter (creates extra balls), Freeze (time stop), Pierce (through bricks)
-
-### Brick Types (10 Total)
-- **Standard**: Normal (1 hit), Reinforced (2 hits), Armored (3 hits), Explosive (chain damage), Unbreakable (requires special attacks)
-- **Dynamic**: Moving (slides horizontally), Spawning (creates child bricks), Phase (multi-stage destruction), Boss (powerful multi-phase), Invader (fleet unit in Invaders mode)
-
-### Gameplay Systems
-- **Combo System**: x1.5-5x score multipliers for consecutive brick breaks within 2 seconds
-- **Dynamic Physics**: Mode-specific ball speeds, collision detection, momentum preservation
-- **Progressive Difficulty**: Scaling brick counts, hit points, and spawn rates per level
-- **Visual Themes**: 6 unique themes with distinct color palettes and animated backgrounds
-
-### Audio System
-- **Procedural Generation**: All SFX and music generated algorithmically
-- **Individual Controls**: Separate volume sliders for Master/Effects/Music
-- **Context-Aware**: Different sounds for each brick type and impact type
-- **Haptic Feedback**: Vibration for significant game events
-
-### Audio & Controls
-- Individual volume controls: Master, Effects, Music (independent of system volume)
-- Context-aware sound effects: Different sounds for each brick type and impact
-- Enhanced audio feedback: Haptic vibration, screen flash effects
-
-### Gameplay Balance
-- Optimized ball speed and physics for better gameplay feel
-- Increased powerup drop rates for more frequent special abilities
-- Fine-tuned ball and brick sizing for denser, more challenging layouts
-- Enhanced visual variety with improved brick color gradients
-
-## Controls
-- Drag anywhere to move the paddle.
-- Release drag or tap to launch the ball; the aim guide updates smoothly as you drag.
-- Two-finger tap or the on-screen **FIRE** button fires lasers when Laser powerup is active.
-
-## Modes
-- **Classic**: Standard progression with escalating difficulty.
-- **Timed Challenge**: 2:30 to score as high as possible.
-- **Endless**: Infinite levels with increasing speed and density.
-- **God Mode**: No life loss for practice or testing.
-- **Level Rush**: 55 seconds per stage, one life.
-- **Volley**: Turn-based chain launch; rows descend every volley.
-- **Tunnel Siege**: Unbreakable fortress ring with a narrow breach lane into the core.
-- **Survival**: One life with faster speed ramps.
-- **Invaders**: Moving alien fleets fire back while your shield absorbs hits.
-
-## Brick Types
-- **Standard**: One hit.
-- **Reinforced**: Two hits.
-- **Armored**: Three hits.
-- **Explosive**: Damages surrounding bricks on destruction.
-- **Unbreakable**: Requires Fireball or Laser barrages to break.
-- **Moving**: Slides horizontally while you play.
-- **Spawning**: Breaks into child bricks.
-- **Phase**: Changes phases with new HP totals.
-- **Boss**: Multi-phase heavyweight brick.
-- **Invader**: Fleet unit with shield phases and firing cadence in Invaders mode.
-
-## Powerups
-- **Multi-ball**: Adds two extra balls.
-- **Laser**: Paddle fires beams.
-- **Guardrail**: Temporary safety net.
-- **Shield**: Absorbs a miss.
-- **Extra Life**: +1 life.
-- **Wide Paddle**: Expands paddle.
-- **Shrink**: Temporarily reduces paddle width.
-- **Slow**: Slows time briefly.
-- **Overdrive**: Speeds up the action.
-- **Fireball**: Ball pierces bricks.
-- **Magnet**: Pulls powerups toward the paddle.
-- **Gravity Well**: Bends ball paths toward center.
-- **Ball Splitter**: Splits balls into more.
-- **Freeze**: Nearly stops time for a moment.
-- **Pierce**: Balls pass through bricks.
-
-## Build & Run
-
-### Android (CLI only)
-
-#### Prerequisites
-- JDK 17, Android SDK (API 35 installed), Python 3, ADB in PATH
-- Ruby 2.7+ and Bundler 2.x (for Fastlane uploads)
-
-#### Build APK
+### Build debug APK
 ```bash
-./gradlew assembleDebug
+./gradlew :app:assembleDebug
 ```
 
-#### Install to Device
+### Install + launch on device
 ```bash
 adb devices
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 adb shell am start -n com.breakoutplus.debug/com.breakoutplus.MainActivity
 ```
 
-#### Automated Device Mode Smoke Test
+### Build release artifacts
+```bash
+./gradlew :app:assembleRelease
+./gradlew :app:bundleRelease
+```
+
+## Validation Commands
+```bash
+./gradlew :app:compileDebugKotlin
+./gradlew :app:testDebugUnitTest
+./gradlew :app:lintDebug
+./gradlew :app:assembleDebug
+```
+
+## Automated Device Smoke Test
 ```bash
 tools/mode_smoke_test.sh
 ```
-For deeper gameplay probing, enable debug autoplay:
-```bash
-BP_AUTO_PLAY=1 BP_AUTO_PLAY_SECONDS=20 BP_MODE_WAIT=20 tools/mode_smoke_test.sh
-```
-
-#### Release APK (signed)
-Set signing environment variables, then build:
-```bash
-export BP_RELEASE_STORE_FILE="/absolute/path/to/keystore.jks"
-export BP_RELEASE_STORE_PASSWORD="your_store_password"
-export BP_RELEASE_KEY_ALIAS="your_key_alias"
-export BP_RELEASE_KEY_PASSWORD="your_key_password"
-./gradlew assembleRelease
-```
-Output: `app/build/outputs/apk/release/app-release.apk`
-
-If signing variables are not set, the release build will use the debug keystore for local testing.
-
-#### Play Store Bundle (AAB)
-Build the bundle required for Play Store uploads:
-```bash
-./gradlew bundleRelease
-```
-Output: `app/build/outputs/bundle/release/app-release.aab`
-
-### iOS (CLI-first)
-
-#### Prerequisites
-- Xcode 15+, iOS 15+, Swift 5.9+, macOS
-
-#### Build and Run (No Xcode GUI)
-```bash
-./ios/run_ios_sim.sh --simulator "iPhone 17 Pro"
-```
-
-#### Manual CLI Build (Simulator)
-```bash
-xcodebuild -project ios/BreakoutPlus/BreakoutPlus.xcodeproj \
-  -scheme BreakoutPlus -configuration Debug \
-  -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.2' build
-```
-
-Use `xcrun simctl list devices` to choose an installed simulator name if needed.
-
-### Regenerate Audio
-All sound effects are procedurally generated:
-```bash
-python3 tools/generate_sfx.py
-```
-
-### Troubleshooting
-- **SDK missing**: Install platform 35 via `sdkmanager "platforms;android-35"`
-- **ADB not found**: Device not connected or USB debugging disabled
-- **Build fails**: Ensure JDK 17 and correct Android SDK path
-
-## Foldable Optimization
-- `layout-sw600dp/` layouts increase spacing and scale on the Z Fold 7 open state.
-- `FoldAwareActivity` adjusts padding to avoid hinge overlap.
-- Game world scales to the available aspect ratio.
+Useful env vars:
+- `BP_SERIAL`
+- `BP_GAME_MODES`
+- `BP_MODE_WAIT`
+- `BP_AUTO_PLAY`
+- `BP_AUTO_PLAY_SECONDS`
 
 ## Project Layout
+```text
+app/src/main/java/com/breakoutplus/
+  MainActivity.kt
+  ModeSelectActivity.kt
+  GameActivity.kt
+  SettingsActivity.kt
+  ScoreboardActivity.kt
+  DailyChallengesActivity.kt
+  HowToActivity.kt
+  PrivacyActivity.kt
+  FoldAwareActivity.kt
+  ...
 
-### Android (Kotlin)
-```
-app/src/main/java/com/breakoutplus
-├── MainActivity.kt, GameActivity.kt, SettingsActivity.kt
-├── ScoreboardActivity.kt, ModeSelectActivity.kt, HowToActivity.kt
-├── DailyChallengesActivity.kt, PrivacyActivity.kt
-├── FoldAwareActivity.kt, SettingsManager.kt, ScoreboardManager.kt, DailyChallengeStore.kt
-└── game/
-    ├── GameGLSurfaceView.kt, GameRenderer.kt, GameEngine.kt
-    ├── LevelFactory.kt, Renderer2D.kt, GameAudioManager.kt
-    ├── GameMode.kt, BrickType.kt, PowerUpType.kt
-    └── GameLogger.kt
-```
+app/src/main/java/com/breakoutplus/game/
+  GameGLSurfaceView.kt
+  GameRenderer.kt
+  GameEngine.kt
+  LevelFactory.kt
+  GameMode.kt
+  ModeBalance.kt
+  Renderer2D.kt
+  GameAudioManager.kt
+  ...
 
-### iOS (Swift)
-```
-ios/BreakoutPlus/BreakoutPlus/
-├── BreakoutPlusApp.swift, ContentView.swift
-├── ViewModels/GameViewModel.swift
-├── Views/ (SplashView, MenuView, GameView, etc.)
-├── Core/GameEngine.swift
-├── Core/Models/ (Ball, Brick, Paddle, PowerUp, LevelTheme)
-└── Models/ (GameMode, BrickType, PowerUpType)
+Docs/
+ios/
 ```
 
 ## Docs Index
-Project docs live in `Docs/`:
-- **Requirements**: `Docs/REQUIREMENTS.md`
-- **Architecture**: `Docs/ARCHITECTURE.md`
-- **Design/UX**: `Docs/DESIGN.md`
-- **Gameplay**: `Docs/GAMEPLAY.md`
-- **Build/Run**: `Docs/BUILD.md`
-- **Testing**: `Docs/TESTING.md`
-- **Assets**: `Docs/ASSETS.md`
-- **Roadmap**: `Docs/ROADMAP.md`
-- **Data Safety**: `Docs/DATA_SAFETY.md`
-- **Privacy Policy**: `Docs/PRIVACY_POLICY.md`
-- **Release**: `Docs/RELEASE_CHECKLIST.md`, `Docs/STORE_LISTING.md`
-- **iOS Port**: `ios/README.md`, `ios/ARCHITECTURE.md`, `ios/ROADMAP.md`
-
-## Icon Variants
-The current icon is a neon orbit vector adaptive icon (cyan ring, hot pink ball, plus mark). If you want alternates, easy variants:
-- **Folded Edge**: Split gradient background suggesting the hinge.
-- **Minimal Plus**: Large “+” with a single brick row.
-Icon foregrounds live in `app/src/main/res/drawable/` as:
-- `ic_launcher_foreground_neon.xml`
-- `ic_launcher_foreground_fold.xml`
-- `ic_launcher_foreground_minimal.xml`
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+- `Docs/REQUIREMENTS.md`
+- `Docs/ARCHITECTURE.md`
+- `Docs/DESIGN.md`
+- `Docs/GAMEPLAY.md`
+- `Docs/BUILD.md`
+- `Docs/TESTING.md`
+- `Docs/ASSETS.md`
+- `Docs/ROADMAP.md`
+- `Docs/DATA_SAFETY.md`
+- `Docs/PRIVACY_POLICY.md`
+- `Docs/RELEASE_CHECKLIST.md`
+- `Docs/STORE_LISTING.md`
 
 ## Notes
-- The HUD timer counts down in timed modes and counts up otherwise.
-- Scores are stored locally in SharedPreferences.
-- All assets are generated or defined locally—no placeholders or stubs.
+- Debug build package: `com.breakoutplus.debug`
+- Release package: `com.breakoutplus`
+- Data is local-only (settings, scores, optional local logs)
+
+## License
+MIT (`LICENSE`)

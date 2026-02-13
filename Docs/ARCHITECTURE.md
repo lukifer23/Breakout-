@@ -1,77 +1,46 @@
 # Breakout+ Architecture
 
-## High-Level Overview
-- Rendering: OpenGL ES 2.0 via `GLSurfaceView`.
-- Game loop: `GameRenderer` drives update/render at continuous rate.
-- Core gameplay: `GameEngine` handles physics, collisions, levels, and powerups.
-- UI: Activities + XML layouts with foldable variants in `layout-sw600dp`.
-- Foldable support: `FoldAwareActivity` adds hinge-aware padding via WindowManager.
+## Android Runtime Flow
+1. `GameActivity` creates `GameConfig` (mode + settings + unlocks + challenge state).
+2. `GameGLSurfaceView` initializes `GameRenderer`.
+3. `GameGLSurfaceView.FramePacer` drives `requestRender()` via `Choreographer`.
+4. `GameRenderer` performs fixed-step simulation and render.
+5. `GameEngine` updates gameplay state and emits HUD/events through `GameEventListener`.
 
-## Main Modules
-- UI Activities: `app/src/main/java/com/breakoutplus/*.kt` (includes `DailyChallengesActivity`, `PrivacyActivity`)
-- Game Logic: `app/src/main/java/com/breakoutplus/game/*.kt`
-- Data: `SettingsManager`, `ScoreboardManager`, `DailyChallengeStore`
-- Resources: `app/src/main/res/`
-- Audio generation: `tools/generate_sfx.py`
+## Main Components
+- UI layer: `app/src/main/java/com/breakoutplus/*.kt`
+- Render surface: `GameGLSurfaceView.kt`
+- Render/sim loop: `GameRenderer.kt`
+- Core gameplay: `GameEngine.kt`
+- Layout generation: `LevelFactory.kt`
+- Mode tuning: `GameMode.kt`, `ModeBalance.kt`
+- Drawing primitives: `Renderer2D.kt`
+- Audio playback/feedback: `GameAudioManager.kt`
 
-## Data Flow
-1. `GameActivity` creates `GameConfig` from `GameMode` + settings.
-2. `GameGLSurfaceView` starts `GameRenderer` with config.
-3. `GameRenderer` runs the loop:
-   - `update(dt)` in `GameEngine`
-   - `render(renderer2D)` with `Renderer2D`
-4. `GameEngine` emits events through `GameEventListener` to update HUD and end screens.
+## Loop Details
+- Render mode: `RENDERMODE_WHEN_DIRTY` (not continuous).
+- Frame requests: Choreographer callback pacing in `FramePacer`.
+- Simulation: fixed-step (`setTargetFrameRate` controls step size; clamped to 45-240 FPS bounds).
+- Accumulator limit prevents runaway update bursts on frame drops.
 
-```mermaid
-flowchart TD
-    subgraph UI [UI Layer]
-        GameActivity[GameActivity]
-        GLSurfaceView[GameGLSurfaceView]
-        HUD[HUD Views]
-    end
+## State & Events
+- Core states: `READY`, `RUNNING`, `PAUSED`, `GAME_OVER`.
+- `GameEngine` owns gameplay entities and progression.
+- `GameEventListener` updates HUD, overlays, score/lives/time, mode-specific indicators.
 
-    subgraph Game [Game Layer]
-        GameRenderer[GameRenderer]
-        GameEngine[GameEngine]
-        Renderer2D[Renderer2D]
-    end
+## Data Persistence
+- `SettingsManager`: user settings in SharedPreferences.
+- `ScoreboardManager`: high scores by mode plus all-modes view.
+- `DailyChallengeStore`: local challenge progress.
+- `ProgressionManager` / `UnlockManager` / `LifetimeStatsManager`: progression and run stats.
 
-    subgraph Data [Data Layer]
-        SettingsManager[SettingsManager]
-        ScoreboardManager[ScoreboardManager]
-        DailyChallengeStore[DailyChallengeStore]
-        LevelFactory[LevelFactory]
-    end
+## Foldable/Large-Screen Strategy
+- Resource qualifiers for larger devices (`sw600dp`, `sw720dp`).
+- `FoldAwareActivity` applies hinge/inset-aware layout padding.
+- `GameActivity` applies responsive HUD scaling and reserved HUD height for varied aspect ratios.
 
-    GameActivity --> GameConfig[GameConfig]
-    GameConfig --> GLSurfaceView
-    GLSurfaceView --> GameRenderer
-    GameRenderer --> GameEngine
-    GameEngine --> Renderer2D
-    GameEngine --> LevelFactory
-    GameActivity --> SettingsManager
-    GameActivity --> ScoreboardManager
-    GameEngine -.-> GameEventListener[GameEventListener] -.-> HUD
-```
-
-## State Management
-- `GameState`: READY, RUNNING, PAUSED, GAME_OVER.
-- `GameMode`: controls base lives, timer, and special rules.
-- `SettingsManager`: persistent settings via SharedPreferences.
-- `ScoreboardManager`: stores top scores (JSON) in SharedPreferences.
-- `DailyChallengeStore`: daily challenge state and progress (local).
-
-## Rendering Pipeline
-- Orthographic projection in `Renderer2D`.
-- Rect mesh for bricks/paddle/powerups, circle mesh for balls/particles.
-- Themes provide color palettes per level.
-
-## Foldable Strategy
-- `layout-sw600dp` overrides for unfolded state.
-- `FoldAwareActivity` reads `WindowLayoutInfo` and adds hinge padding.
-
-## Performance
-- Continuous render loop.
-- Delta time clamped to avoid large jumps.
-- Simple geometry (rects/circles) for stable GPU throughput.
-- Render path reuses color buffers to reduce per-frame allocations.
+## Performance Notes
+- OpenGL ES 2.0 rendering path.
+- Spatial hash used for brick collision broad-phase.
+- Particle/wave caps limit FX overhead in high-action scenes.
+- Single-frame timestamp usage keeps animation oscillators coherent.

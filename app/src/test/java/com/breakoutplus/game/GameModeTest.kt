@@ -22,4 +22,11 @@ class GameModeTest {
         assertTrue(GameMode.VOLLEY.timeLimitSeconds == 0)
         assertTrue(GameMode.VOLLEY.launchSpeed > GameMode.GOD.launchSpeed)
     }
+
+    @Test
+    fun godMode_isEndlessPractice() {
+        assertTrue(GameMode.GOD.godMode)
+        assertTrue(GameMode.GOD.endless)
+        assertTrue(GameMode.GOD.baseLives >= 99)
+    }
 }

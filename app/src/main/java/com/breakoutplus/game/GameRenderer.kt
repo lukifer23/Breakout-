@@ -37,21 +37,23 @@ class GameRenderer(
     private var debugAutoPlayEnabled = false
     private val shakeAmplitudeScale = 0.34f
     private val maxShakeAmplitude = 1.15f
+    private val comboFlashDuration = 0.28f
+    private val levelClearFlashDuration = 0.72f
 
     fun triggerScreenShake(intensity: Float = 3f, duration: Float = 0.2f) {
         val clampedIntensity = intensity.coerceIn(0f, 2.4f)
         val clampedDuration = duration.coerceIn(0.03f, 0.24f)
         shakeIntensity = max(shakeIntensity * 0.82f, clampedIntensity)
-        screenShakeDuration = max(screenShakeDuration * 0.78f, clampedDuration)
+        screenShakeDuration = max(screenShakeDuration, clampedDuration)
         screenShake = max(screenShake, clampedDuration)
     }
 
     fun triggerComboFlash() {
-        comboFlash = 0.5f
+        comboFlash = max(comboFlash, comboFlashDuration)
     }
 
     fun triggerLevelClearFlash() {
-        levelClearFlash = 1.0f
+        levelClearFlash = max(levelClearFlash, levelClearFlashDuration)
     }
 
     fun setTargetFrameRate(fps: Float) {
@@ -66,6 +68,7 @@ class GameRenderer(
     }
 
     override fun onSurfaceChanged(unused: javax.microedition.khronos.opengles.GL10?, width: Int, height: Int) {
+        if (width <= 0 || height <= 0) return
         GLES20.glViewport(0, 0, width, height)
         renderer2D.setViewport(width, height)
         worldWidth = 100f
@@ -87,17 +90,14 @@ class GameRenderer(
 
         // Update visual effects
         if (screenShake > 0f) {
-            screenShake -= delta
-            if (screenShake < 0f) screenShake = 0f
-            shakePhase += delta * 34f
+            screenShake = (screenShake - delta).coerceAtLeast(0f)
+            shakePhase += delta * (24f + shakeIntensity * 10f)
         }
         if (comboFlash > 0f) {
-            comboFlash -= delta * 2f
-            if (comboFlash < 0f) comboFlash = 0f
+            comboFlash = (comboFlash - delta).coerceAtLeast(0f)
         }
         if (levelClearFlash > 0f) {
-            levelClearFlash -= delta * 1.5f
-            if (levelClearFlash < 0f) levelClearFlash = 0f
+            levelClearFlash = (levelClearFlash - delta).coerceAtLeast(0f)
         }
 
         if (!paused) {
@@ -123,23 +123,27 @@ class GameRenderer(
             } else {
                 0f
             }
-            val amplitude = (shakeIntensity * decay * shakeAmplitudeScale).coerceAtMost(maxShakeAmplitude)
+            val amplitude = (shakeIntensity * smoothStep(decay) * shakeAmplitudeScale).coerceAtMost(maxShakeAmplitude)
             val shakeX = sin(shakePhase) * amplitude
             val shakeY = cos(shakePhase * 1.37f) * amplitude * 0.82f
             renderer2D.setOffset(shakeX, shakeY)
         } else {
+            shakeIntensity = 0f
+            screenShakeDuration = 0f
             renderer2D.setOffset(0f, 0f)
         }
 
         engine.render(renderer2D)
 
         if (comboFlash > 0f) {
-            val alpha = (comboFlash * 0.35f).coerceIn(0f, 0.35f)
+            val t = (comboFlash / comboFlashDuration).coerceIn(0f, 1f)
+            val alpha = (smoothStep(t) * 0.33f).coerceIn(0f, 0.33f)
             renderer2D.drawRect(0f, 0f, worldWidth, worldHeight, floatArrayOf(0.9f, 0.98f, 1f, alpha))
         }
 
         if (levelClearFlash > 0f) {
-            val alpha = (levelClearFlash * 0.45f).coerceIn(0f, 0.45f)
+            val t = (levelClearFlash / levelClearFlashDuration).coerceIn(0f, 1f)
+            val alpha = (smoothStep(t) * 0.42f).coerceIn(0f, 0.42f)
             renderer2D.drawRect(0f, 0f, worldWidth, worldHeight, floatArrayOf(1f, 0.85f, 0.35f, alpha))
         }
 
@@ -220,5 +224,10 @@ class GameRenderer(
 
     fun release() {
         audioManager.release()
+    }
+
+    private fun smoothStep(value: Float): Float {
+        val t = value.coerceIn(0f, 1f)
+        return t * t * (3f - 2f * t)
     }
 }

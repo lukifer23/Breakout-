@@ -54,10 +54,10 @@ enum class GameMode(
     GOD(
         displayName = "God Mode",
         description = "Practice mode. No life loss, perfect for experimentation.",
-        meta = "Infinite lives • No timer",
+        meta = "Infinite lives • Endless levels",
         baseLives = 99,
         timeLimitSeconds = 0,
-        endless = false,
+        endless = true,
         godMode = true,
         rush = false,
         invaders = false,

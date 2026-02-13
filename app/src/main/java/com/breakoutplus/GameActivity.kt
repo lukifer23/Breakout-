@@ -3,8 +3,6 @@ package com.breakoutplus
 import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
 import android.view.View
 import androidx.constraintlayout.widget.ConstraintLayout
@@ -33,6 +31,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
 
     private lateinit var binding: ActivityGameBinding
     private lateinit var config: GameConfig
+    private var currentMode: GameMode = GameMode.CLASSIC
     private var currentModeLabel: String = "Classic"
     private var currentPowerupSummary: String = "Powerups: none"
     private var currentCombo: Int = 0
@@ -53,10 +52,8 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     @Volatile private var pendingLives: Int? = null
     @Volatile private var pendingFps: Int? = null
     @Volatile private var pendingVolleyBalls: Int? = null
-    @Volatile private var pendingShieldCurrent: Int? = null
-    @Volatile private var pendingShieldMax: Int? = null
-    private val uiHandler = Handler(Looper.getMainLooper())
-    private var pendingNextLevelRunnable: Runnable? = null
+    private var hudScale: Float = 1f
+    private var hudChipTextPx: Float = 0f
     private var levelAdvanceInProgress = false
     private var debugAutoPlaySession = false
     private var debugAutoPlayStopRunnable: Runnable? = null
@@ -67,6 +64,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         setContentView(binding.root)
         setFoldAwareRoot(binding.root)
         configureSystemUi()
+        applyResponsiveHudSizing()
         baseSurfaceBottomMargin =
             (binding.gameSurface.layoutParams as ConstraintLayout.LayoutParams).bottomMargin
         applyWindowInsets()
@@ -77,8 +75,10 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         val dailyChallenges = DailyChallengeStore.load(this)
         val unlocks = UnlockManager.load(this)
         config = GameConfig(mode, settings, dailyChallenges, unlocks)
+        currentMode = mode
         currentXpTotal = ProgressionManager.loadXp(this)
         updateJourneyLabel(1)
+        applyModeHud(mode)
 
         binding.gameSurface.start(config, this)
         applyFrameRatePreference()
@@ -137,6 +137,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
 
     override fun onResume() {
         super.onResume()
+        applyResponsiveHudSizing()
         refreshSettings()
         applyFrameRatePreference()
         binding.gameSurface.onResume()
@@ -148,8 +149,6 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     override fun onPause() {
         binding.gameSurface.pauseGame()
         binding.gameSurface.onPause()
-        pendingNextLevelRunnable?.let { uiHandler.removeCallbacks(it) }
-        pendingNextLevelRunnable = null
         levelAdvanceInProgress = false
         config.dailyChallenges?.let { DailyChallengeStore.save(this, it) }
         laserCooldownRunnable?.let { binding.buttonLaser.removeCallbacks(it) }
@@ -163,8 +162,6 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
 
     override fun onDestroy() {
         super.onDestroy()
-        pendingNextLevelRunnable?.let { uiHandler.removeCallbacks(it) }
-        pendingNextLevelRunnable = null
     }
 
     private fun refreshSettings() {
@@ -242,8 +239,6 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     }
 
     private fun restartGame() {
-        pendingNextLevelRunnable?.let { uiHandler.removeCallbacks(it) }
-        pendingNextLevelRunnable = null
         levelAdvanceInProgress = false
         hideOverlay(binding.endOverlay)
         hideOverlay(binding.pauseOverlay)
@@ -257,8 +252,6 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     }
 
     private fun exitToMenu() {
-        pendingNextLevelRunnable?.let { uiHandler.removeCallbacks(it) }
-        pendingNextLevelRunnable = null
         levelAdvanceInProgress = false
         finish()
         startActivity(Intent(this, MainActivity::class.java))
@@ -272,19 +265,12 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
                 binding.buttonEndPrimary.isEnabled = false
                 binding.buttonEndSecondary.isEnabled = false
                 hideOverlay(binding.endOverlay)
-                endOverlayState = EndOverlayState.NONE
-                val advanceRunnable = Runnable {
-                    if (isFinishing || isDestroyed) return@Runnable
-                    pendingNextLevelRunnable = null
-                    binding.gameSurface.resumeGame()
+                if (!isFinishing && !isDestroyed) {
                     binding.gameSurface.nextLevel()
                     playGameFade()
-                    levelAdvanceInProgress = false
-                    binding.buttonEndPrimary.isEnabled = true
-                    binding.buttonEndSecondary.isEnabled = true
                 }
-                pendingNextLevelRunnable = advanceRunnable
-                uiHandler.postDelayed(advanceRunnable, 260L)
+                endOverlayState = EndOverlayState.NONE
+                levelAdvanceInProgress = false
             }
             else -> restartGame()
         }
@@ -322,13 +308,9 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         val baseBottom = binding.hudContainer.paddingBottom
         val baseSurfaceParams = binding.gameSurface.layoutParams as ConstraintLayout.LayoutParams
 
-        // Apply initial insets synchronously if available
+        // Apply initial insets synchronously if available.
         ViewCompat.getRootWindowInsets(binding.root)?.let { initialInsets ->
-            val bars = initialInsets.getInsets(
-                WindowInsetsCompat.Type.systemBars() or
-                    WindowInsetsCompat.Type.displayCutout() or
-                    WindowInsetsCompat.Type.systemGestures()
-            )
+            val bars = stableSystemInsets(initialInsets)
             maxInsetTop = bars.top
             maxInsetBottom = bars.bottom
             val topPadding = baseTop + maxInsetTop
@@ -343,13 +325,9 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             binding.gameSurface.layoutParams = baseSurfaceParams
         }
 
-        // Set listener for dynamic changes, but only update if insets actually change
+        // Keep gameplay bounds stable across transient system bar animations.
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { _, insets ->
-            val bars = insets.getInsets(
-                WindowInsetsCompat.Type.systemBars() or
-                    WindowInsetsCompat.Type.displayCutout() or
-                    WindowInsetsCompat.Type.systemGestures()
-            )
+            val bars = stableSystemInsets(insets)
             val insetsChanged = bars.top != maxInsetTop || bars.bottom != maxInsetBottom
             if (!insetsChanged) return@setOnApplyWindowInsetsListener insets
 
@@ -367,6 +345,16 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             params.bottomMargin = desiredBottomMargin
             binding.gameSurface.layoutParams = params
             insets
+        }
+    }
+
+    private fun stableSystemInsets(insets: WindowInsetsCompat): androidx.core.graphics.Insets {
+        val stableTypes = WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            insets.getInsetsIgnoringVisibility(stableTypes)
+        } else {
+            @Suppress("DEPRECATION")
+            insets.getInsets(stableTypes)
         }
     }
 
@@ -391,6 +379,10 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
 
     override fun onTimeUpdated(secondsRemaining: Int) {
         runOnUiThread {
+            if (currentMode == GameMode.ZEN) {
+                binding.hudTime.visibility = View.GONE
+                return@runOnUiThread
+            }
             val minutes = secondsRemaining / 60
             val seconds = secondsRemaining % 60
             val isCountdown = config.mode.timeLimitSeconds > 0
@@ -431,7 +423,9 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
 
     override fun onModeUpdated(mode: GameMode) {
         runOnUiThread {
+            currentMode = mode
             currentModeLabel = mode.displayName
+            applyModeHud(mode)
             updateHudMeta()
             updateShieldVisibility(mode.invaders)
         }
@@ -532,6 +526,10 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
 
     override fun onGameOver(summary: GameSummary) {
         runOnUiThread {
+            if (config.mode == GameMode.ZEN) {
+                restartGame()
+                return@runOnUiThread
+            }
             levelAdvanceInProgress = false
             binding.buttonEndPrimary.isEnabled = true
             binding.buttonEndSecondary.isEnabled = true
@@ -642,6 +640,17 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             ProgressionManager.updateBestLevel(this, summary.level)
             currentXpTotal = ProgressionManager.addXp(this, ProgressionManager.xpForLevel(summary.level))
             updateHudMeta()
+            if (config.mode == GameMode.ZEN || config.mode == GameMode.GOD) {
+                endOverlayState = EndOverlayState.NONE
+                hideOverlay(binding.endOverlay)
+                showLevelBanner(summary.level + 1)
+                if (!isFinishing && !isDestroyed) {
+                    binding.gameSurface.nextLevel()
+                    playGameFade()
+                }
+                config.dailyChallenges?.let { DailyChallengeStore.save(this, it) }
+                return@runOnUiThread
+            }
             endOverlayState = EndOverlayState.LEVEL_COMPLETE
             binding.endTitle.text = getString(R.string.label_level_complete)
             animateEndStats(summary, getString(R.string.label_level_complete))
@@ -773,10 +782,17 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
 
     private fun buildPowerupChip(status: PowerupStatus): android.widget.TextView {
         val chip = android.widget.TextView(this)
-        chip.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, resources.getDimension(R.dimen.bp_hud_mode_size))
+        val chipScale = hudScale.coerceIn(0.9f, 1.24f)
+        val chipTextSize = if (hudChipTextPx > 0f) hudChipTextPx else resources.getDimension(R.dimen.bp_hud_mode_size)
+        chip.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, chipTextSize)
         chip.setTypeface(android.graphics.Typeface.DEFAULT_BOLD)
         chip.setSingleLine(true)
-        chip.setPadding(dp(10), dp(6), dp(10), dp(6))
+        chip.setPadding(
+            dp(10f * chipScale),
+            dp(6f * chipScale),
+            dp(10f * chipScale),
+            dp(6f * chipScale)
+        )
         chip.letterSpacing = 0.02f
 
         val label = if (status.type == PowerUpType.SHIELD && status.charges > 0) {
@@ -803,25 +819,85 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         val backgroundColor = ColorUtils.setAlphaComponent(color, 46)
         val strokeColor = ColorUtils.setAlphaComponent(color, 120)
         val drawable = android.graphics.drawable.GradientDrawable()
-        drawable.cornerRadius = dp(14).toFloat()
+        drawable.cornerRadius = dp(14f * chipScale).toFloat()
         drawable.setColor(backgroundColor)
-        drawable.setStroke(dp(1), strokeColor)
+        drawable.setStroke(dp(1f.coerceAtLeast(0.9f * chipScale)), strokeColor)
         chip.background = drawable
 
         val params = android.widget.LinearLayout.LayoutParams(
             android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
             android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
         )
-        params.marginEnd = dp(8)
+        params.marginEnd = dp(8f * chipScale)
         chip.layoutParams = params
         return chip
+    }
+
+    private fun applyResponsiveHudSizing() {
+        val metrics = resources.displayMetrics
+        if (metrics.density <= 0f) return
+        val widthDp = metrics.widthPixels / metrics.density
+        val heightDp = metrics.heightPixels / metrics.density
+        val shortDp = minOf(widthDp, heightDp)
+        val longDp = maxOf(widthDp, heightDp)
+        val aspect = (longDp / shortDp).coerceAtLeast(1f)
+
+        val baseScale = when {
+            shortDp >= 840f -> 1.2f
+            shortDp >= 720f -> 1.14f
+            shortDp >= 600f -> 1.08f
+            shortDp <= 360f -> 0.92f
+            else -> 1f
+        }
+        val tallFoldCompaction = if (aspect >= 2.05f) 0.95f else 1f
+        hudScale = (baseScale * tallFoldCompaction).coerceIn(0.9f, 1.24f)
+        hudChipTextPx = resources.getDimension(R.dimen.bp_hud_mode_size) * hudScale
+
+        val reservedRatio = when {
+            shortDp >= 720f -> 0.245f
+            shortDp >= 600f -> 0.235f
+            aspect >= 2.0f -> 0.21f
+            else -> 0.225f
+        }
+        val reservedHeightDp = (heightDp * reservedRatio).coerceIn(136f, if (shortDp >= 720f) 240f else 198f)
+        val hudParams = binding.hudContainer.layoutParams as ConstraintLayout.LayoutParams
+        hudParams.height = dp(reservedHeightDp)
+        binding.hudContainer.layoutParams = hudParams
+
+        val scoreSize = resources.getDimension(R.dimen.bp_hud_score_size) * hudScale
+        val statSize = resources.getDimension(R.dimen.bp_hud_stat_size) * hudScale
+        val modeSize = resources.getDimension(R.dimen.bp_hud_mode_size) * hudScale
+        val bannerSize = resources.getDimension(R.dimen.bp_hud_banner_size) * hudScale
+        binding.hudScore.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, scoreSize)
+        binding.hudLives.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, statSize)
+        binding.hudTime.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, statSize)
+        binding.hudLevel.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, statSize)
+        binding.hudMeta.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, modeSize)
+        binding.hudShieldLabel.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, modeSize)
+        binding.hudFps.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, modeSize)
+        binding.hudLevelBanner.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, bannerSize)
+
+        val actionMin = (44f * hudScale).coerceIn(42f, 60f)
+        binding.buttonPause.minimumWidth = dp(actionMin)
+        binding.buttonPause.minimumHeight = dp(actionMin)
+        binding.buttonLaser.minimumWidth = dp((76f * hudScale).coerceIn(72f, 104f))
+        binding.buttonLaser.minimumHeight = dp((42f * hudScale).coerceIn(40f, 56f))
+
+        val shieldWidthDp = (shortDp * 0.24f).coerceIn(116f, 186f)
+        val shieldParams = binding.hudShieldBar.layoutParams as android.widget.LinearLayout.LayoutParams
+        shieldParams.width = dp(shieldWidthDp)
+        binding.hudShieldBar.layoutParams = shieldParams
     }
 
     private fun updateHudMeta() {
         val parts = mutableListOf<String>()
         if (currentModeLabel.isNotBlank()) parts.add(currentModeLabel)
         if (currentJourneyLabel.isNotBlank()) parts.add(currentJourneyLabel)
-        parts.add(getString(R.string.label_xp_format, currentXpTotal))
+        if (currentMode == GameMode.ZEN) {
+            parts.add(getString(R.string.label_zen_flow))
+        } else {
+            parts.add(getString(R.string.label_xp_format, currentXpTotal))
+        }
         if (currentCombo >= 2) parts.add(getString(R.string.label_combo_format, currentCombo))
         binding.hudMeta.text = parts.joinToString(" • ")
     }
@@ -834,6 +910,16 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
 
     private fun updateShieldVisibility(show: Boolean) {
         binding.hudShieldRow.visibility = if (show) View.VISIBLE else View.GONE
+    }
+
+    private fun applyModeHud(mode: GameMode) {
+        val zen = mode == GameMode.ZEN
+        binding.hudScore.visibility = if (zen) View.GONE else View.VISIBLE
+        binding.hudLives.visibility = if (zen) View.GONE else View.VISIBLE
+        binding.hudTime.visibility = if (zen) View.GONE else View.VISIBLE
+        if (zen) {
+            currentPowerupSummary = getString(R.string.label_zen_flow)
+        }
     }
 
     private fun updateLaserButton(status: List<PowerupStatus>) {
@@ -962,8 +1048,12 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         }
     }
 
-    private fun dp(value: Int): Int =
-        (value * resources.displayMetrics.density).toInt()
+    private fun dp(value: Int): Int = dp(value.toFloat())
+
+    private fun dp(value: Float): Int {
+        if (value <= 0f) return 0
+        return (value * resources.displayMetrics.density).toInt().coerceAtLeast(1)
+    }
 
     companion object {
         const val EXTRA_MODE = "extra_mode"

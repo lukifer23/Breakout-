@@ -25,8 +25,11 @@ class ModeBalanceTest {
         val volley = ModeBalance.pacingFor(GameMode.VOLLEY)
         val survival = ModeBalance.pacingFor(GameMode.SURVIVAL)
         val god = ModeBalance.pacingFor(GameMode.GOD)
+        val zen = ModeBalance.pacingFor(GameMode.ZEN)
 
         assertTrue("God mode should remain easiest by base difficulty", god.difficultyBase < classic.difficultyBase)
+        assertTrue("Zen should stay easier than God mode", zen.difficultyBase <= god.difficultyBase)
+        assertTrue("Zen should cap speed below God mode", zen.speedBoostCap <= god.speedBoostCap)
         assertTrue("Survival should scale harder than classic", survival.difficultySlope > classic.difficultySlope)
         assertTrue("Rush should ramp speed faster than classic", rush.speedBoostSlope > classic.speedBoostSlope)
         assertTrue("Timed should drop slightly more powerups than classic", timed.dropChanceModeBoost > classic.dropChanceModeBoost)

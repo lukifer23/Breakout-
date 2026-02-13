@@ -2,117 +2,76 @@
 
 ## Requirements
 - JDK 17
-- Android SDK (platform 35 installed)
-- ADB in PATH
-- Ruby 2.7+ and Bundler 2.x (for Fastlane uploads)
+- Android SDK platform 35
+- `adb` on PATH
+- Ruby + Bundler (for Fastlane Play uploads)
 
-## Build
+## Android Debug Build
 ```bash
-./gradlew assembleDebug
+./gradlew :app:assembleDebug
 ```
+Output:
+- `app/build/outputs/apk/debug/app-debug.apk`
 
-## Release Bundle (Play Store)
-Build the Android App Bundle required by Google Play:
-```bash
-./gradlew bundleRelease
-```
-Output: `app/build/outputs/bundle/release/app-release.aab`
-
-## Play Console Uploads (Service Account)
-Google Play uploads require a service account JSON key (not an API key). Store it outside git and point tools to it via an environment variable.
-
-Set one of these environment variables to the absolute path:
-- `GOOGLE_PLAY_JSON` (preferred)
-- `PLAY_SERVICE_ACCOUNT_JSON`
-- `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`
-
-Example:
-```bash
-export GOOGLE_PLAY_JSON="/absolute/path/to/service-account.json"
-```
-
-The repo `.gitignore` already excludes common key filenames. Do not commit the key file.
-
-## Play Console Uploads (Fastlane)
-Fastlane is configured for Play uploads.
-
-Install dependencies:
-```bash
-bundle install
-```
-
-Required (set the JSON path):
-```bash
-export GOOGLE_PLAY_JSON="/absolute/path/to/service-account.json"
-```
-
-Build + upload to internal track:
-```bash
-bundle exec fastlane android build_and_upload_internal
-```
-
-Upload only (AAB + metadata/screenshots):
-```bash
-bundle exec fastlane android upload_internal
-```
-
-## Store Listing Metadata
-Text metadata used by Fastlane lives in `fastlane/metadata/android/en-US/`.
-Update `title.txt`, `short_description.txt`, `full_description.txt`, and changelogs before uploads.
-
-## Release Build (Signed)
-Set signing environment variables, then build:
-```bash
-export BP_RELEASE_STORE_FILE="/absolute/path/to/keystore.jks"
-export BP_RELEASE_STORE_PASSWORD="your_store_password"
-export BP_RELEASE_KEY_ALIAS="your_key_alias"
-export BP_RELEASE_KEY_PASSWORD="your_key_password"
-./gradlew assembleRelease
-```
-Output: `app/build/outputs/apk/release/app-release.apk`
-
-If signing variables are not set, the release build will use the debug keystore for local testing.
-
-## Google Play API Key (If Required)
-If Play services require an API key, set it via `local.properties` or an environment variable so it never lands in git.
-
-Option A: `local.properties` (recommended)
-```
-GOOGLE_PLAY_API_KEY=your_key_here
-```
-
-Option B: environment variable
-```bash
-export GOOGLE_PLAY_API_KEY="your_key_here"
-```
-
-## Install to Device
+## Install on Device
 ```bash
 adb devices
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 adb shell am start -n com.breakoutplus.debug/com.breakoutplus.MainActivity
 ```
 
-## Performance
-Breakout+ targets 60+ FPS gameplay with OpenGL ES 2.0 hardware acceleration. Rendering is paced via Choreographer-driven frame scheduling and surface frame-rate hints, with delta time clamping at 50ms to prevent large jumps on frame drops. Vsync is handled by the Android system for smooth animation.
-
-## iOS Build
-
+## Android Release Build
 ```bash
-cd ios/BreakoutPlus && xcodebuild -scheme BreakoutPlus -sdk iphonesimulator -configuration Debug build
+export BP_RELEASE_STORE_FILE="/absolute/path/to/keystore.jks"
+export BP_RELEASE_STORE_PASSWORD="your_store_password"
+export BP_RELEASE_KEY_ALIAS="your_key_alias"
+export BP_RELEASE_KEY_PASSWORD="your_key_password"
+./gradlew :app:assembleRelease
+```
+Output:
+- `app/build/outputs/apk/release/app-release.apk`
+
+## Play Store Bundle (AAB)
+```bash
+./gradlew :app:bundleRelease
+```
+Output:
+- `app/build/outputs/bundle/release/app-release.aab`
+
+## Fastlane Play Uploads
+Install gems:
+```bash
+bundle install
+```
+Set service account JSON path (preferred var):
+```bash
+export GOOGLE_PLAY_JSON="/absolute/path/to/service-account.json"
+```
+Upload lanes:
+```bash
+bundle exec fastlane android build_and_upload_internal
+bundle exec fastlane android upload_internal
 ```
 
-## Regenerate Audio
+## Validation Commands
+```bash
+./gradlew :app:compileDebugKotlin
+./gradlew :app:testDebugUnitTest
+./gradlew :app:lintDebug
+```
+
+## Device Mode Smoke Test
+```bash
+tools/mode_smoke_test.sh
+```
+
+## Regenerate Audio Assets
 ```bash
 python3 tools/generate_sfx.py
 ```
 
-## Tests
-Run unit tests:
+## iOS (Out of Android Release Scope)
 ```bash
-./gradlew test
+cd ios/BreakoutPlus
+xcodebuild -scheme BreakoutPlus -sdk iphonesimulator -configuration Debug build
 ```
-
-## Troubleshooting
-- If build tools are missing, use `sdkmanager` to install platform 35.
-- If ADB does not see the device, confirm USB debugging and cable.

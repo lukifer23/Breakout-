@@ -1,27 +1,32 @@
 # Breakout+ Design & UX
 
 ## Visual Direction
-- High-contrast neon palette against deep navy backgrounds.
-- Chunky button styles for touch accuracy on large screens.
-- HUD chips for readable in-game stats.
-- Typography: serif title treatment with sans-serif UI labels for a sharper, premium feel.
+- High-contrast neon-forward arcade styling.
+- Theme-driven palettes and animated backgrounds.
+- Crisp, readable HUD chips and labels across device classes.
 
-## Screens
-- **Splash**: system splash screen on launch.
-- **Title/Main**: quick access to Play, Modes, Scoreboard, Settings, How-To.
-- **Mode Select**: cards describing each mode with start button.
-- **Settings**: toggles + sensitivity slider + score reset.
-- **Scoreboard**: ranked list of best scores.
-- **How-To**: concise rules, powerups, brick types, modes.
-- **Game**: full-screen OpenGL with overlay HUD and pause/end states.
+## Core Screens
+- Main / title
+- Mode select
+- Gameplay (OpenGL surface + overlay HUD)
+- Settings
+- Scoreboard
+- How-To
+- Daily Challenges
+- Privacy policy
 
-## Foldable UX
-- `sw600dp` layouts reflow content into two-column layout for the main menu.
-- `sw720dp` layouts provide larger touch targets and improved readability for 7"+ displays.
-- Hinge-aware padding automatically adjusts spacing to avoid the fold crease on Samsung Galaxy Z Fold series.
-- Z Fold 7 optimized: vertical fold detection adds horizontal padding to keep UI elements clear of the hinge area.
+## HUD Principles
+- Keep score/lives/time/level/meta stable during gameplay.
+- Reserve top HUD height dynamically for different aspect ratios.
+- Scale typography/chips/buttons with responsive `hudScale` behavior.
+- Avoid intrusive tip overlays in active gameplay space.
 
-## Interaction Notes
-- One-handed use supported with left-handed toggle (pause button shifts left).
-- HUD uses a fixed top layout with inline stats, transient banners, and subtle pulse cues for key events.
-- Screen entry animations: titles and lists ease in to reduce visual abruptness.
+## Motion & Feedback
+- Consistent overlay and banner timings via `UiMotion` constants.
+- Gameplay FX includes particles, flashes, shield pulses, and controlled screen shake.
+- Animation oscillators are frame-time coherent to reduce visual drift.
+
+## Foldable / Large Screen
+- `sw600dp` and `sw720dp` layout variants for larger displays.
+- `FoldAwareActivity` applies hinge/inset-safe padding.
+- Handedness toggle keeps high-priority controls reachable.

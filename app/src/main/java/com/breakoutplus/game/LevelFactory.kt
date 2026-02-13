@@ -519,15 +519,15 @@ object LevelFactory {
         val intensity = ((difficulty - 1f) / 2f).coerceIn(0f, 1f)
         // Gradual density ramp based on level ranges
         val baseDensity = when {
-            levelIndex <= 6 -> 0.47f + (levelIndex - 3) * 0.04f // Levels 4-6: 47% to 55%
-            levelIndex <= 10 -> 0.55f + (levelIndex - 6) * 0.0375f // Levels 7-10: 55% to 70%
-            else -> 0.78f // Levels 11+: 78%
-        }.coerceIn(0.4f, 0.88f)
+            levelIndex <= 6 -> 0.52f + (levelIndex - 3) * 0.045f // Levels 4-6: 52% to ~66%
+            levelIndex <= 10 -> 0.66f + (levelIndex - 6) * 0.03f // Levels 7-10: 66% to 78%
+            else -> 0.8f // Levels 11+: 80%
+        }.coerceIn(0.48f, 0.9f)
         for (row in 0 until layout.rows) {
             for (col in 0 until layout.cols) {
                 if (existing.containsKey(col to row)) continue
                 val rowRatio = if (layout.rows > 1) row.toFloat() / (layout.rows - 1).toFloat() else 0f
-                val density = (baseDensity + intensity * 0.09f - rowRatio * 0.08f).coerceIn(0.4f, 0.88f)
+                val density = (baseDensity + intensity * 0.09f - rowRatio * 0.08f).coerceIn(0.45f, 0.9f)
                 if (random.nextFloat() > density) continue
                 val typeRoll = random.nextFloat()
                 val type = when {
@@ -599,8 +599,8 @@ object LevelFactory {
     }
 
     fun buildTunnelLevel(index: Int, difficulty: Float, theme: LevelTheme): LevelLayout {
-        val rows = (12 + (index / 5).coerceAtMost(3)).coerceIn(12, 15)
-        val cols = (13 + (index / 6).coerceAtMost(2)).coerceIn(13, 15)
+        val rows = (12 + (index / 4).coerceAtMost(4)).coerceIn(12, 16)
+        val cols = (13 + (index / 5).coerceAtMost(3)).coerceIn(13, 16)
         val fortressLeft = 1
         val fortressRight = cols - 2
         val fortressTop = 1
@@ -621,6 +621,16 @@ object LevelFactory {
         val tunnelLeftWall = (gateStart - 1).coerceAtLeast(0)
         val tunnelRightWall = (gateEnd + 1).coerceAtMost(cols - 1)
         val levelScale = 1f + index * 0.055f
+        val movingChance = when {
+            index >= 14 -> 0.06f
+            index >= 8 -> 0.04f
+            else -> 0f
+        }
+        val phaseChance = when {
+            index >= 16 -> 0.07f
+            index >= 10 -> 0.04f
+            else -> 0f
+        }
         val bricks = mutableListOf<BrickSpec>()
         val occupied = HashSet<Pair<Int, Int>>(rows * cols)
 
@@ -670,6 +680,17 @@ object LevelFactory {
             addBrick(tunnelLeftWall, row, BrickType.UNBREAKABLE, 999)
             addBrick(tunnelRightWall, row, BrickType.UNBREAKABLE, 999)
         }
+        val leftSentryCol = tunnelLeftWall - 1
+        val rightSentryCol = tunnelRightWall + 1
+        if (leftSentryCol >= 0 || rightSentryCol < cols) {
+            for (row in (fortressBottom + 1) until rows) {
+                if (row % 2 != 0) continue
+                val sentryType = if (index >= 10 && row % 4 == 0) BrickType.ARMORED else BrickType.REINFORCED
+                val sentryHp = max(1, (baseHp(sentryType) * levelScale * difficulty).roundToInt())
+                if (leftSentryCol >= 0) addBrick(leftSentryCol, row, sentryType, sentryHp)
+                if (rightSentryCol < cols) addBrick(rightSentryCol, row, sentryType, sentryHp)
+            }
+        }
 
         // Fill fortress interior with breakable bricks only.
         val coreTop = fortressTop + wallThickness
@@ -692,9 +713,11 @@ object LevelFactory {
                 if (kotlin.random.Random(seed).nextFloat() > density.coerceAtMost(0.96f)) continue
                 val typeRoll = kotlin.random.Random(seed + 19).nextFloat()
                 val type = when {
-                    typeRoll < 0.08f -> BrickType.EXPLOSIVE
-                    typeRoll < 0.33f -> BrickType.REINFORCED
-                    typeRoll < 0.47f -> BrickType.ARMORED
+                    typeRoll < phaseChance -> BrickType.PHASE
+                    typeRoll < phaseChance + movingChance -> BrickType.MOVING
+                    typeRoll < phaseChance + movingChance + 0.08f -> BrickType.EXPLOSIVE
+                    typeRoll < phaseChance + movingChance + 0.33f -> BrickType.REINFORCED
+                    typeRoll < phaseChance + movingChance + 0.47f -> BrickType.ARMORED
                     else -> BrickType.NORMAL
                 }
                 val hp = max(1, (baseHp(type) * levelScale * difficulty).roundToInt())
@@ -706,7 +729,7 @@ object LevelFactory {
         // Guarantee interior pressure so Tunnel never reads as a sparse normal mode.
         val interiorWidth = (coreRightExclusive - coreLeft).coerceAtLeast(1)
         val interiorHeight = (coreBottomExclusive - coreTop).coerceAtLeast(1)
-        val minimumInteriorBricks = (interiorWidth * interiorHeight * 0.72f).roundToInt().coerceAtLeast(26)
+        val minimumInteriorBricks = (interiorWidth * interiorHeight * 0.76f).roundToInt().coerceAtLeast(30)
         if (interiorCount < minimumInteriorBricks) {
             for (row in coreTop until coreBottomExclusive) {
                 for (col in coreLeft until coreRightExclusive) {
@@ -716,9 +739,11 @@ object LevelFactory {
                     val seed = index * 211 + row * 31 + col * 23
                     val typeRoll = kotlin.random.Random(seed).nextFloat()
                     val type = when {
-                        typeRoll < 0.12f -> BrickType.EXPLOSIVE
-                        typeRoll < 0.38f -> BrickType.REINFORCED
-                        typeRoll < 0.54f -> BrickType.ARMORED
+                        typeRoll < phaseChance -> BrickType.PHASE
+                        typeRoll < phaseChance + movingChance -> BrickType.MOVING
+                        typeRoll < phaseChance + movingChance + 0.12f -> BrickType.EXPLOSIVE
+                        typeRoll < phaseChance + movingChance + 0.38f -> BrickType.REINFORCED
+                        typeRoll < phaseChance + movingChance + 0.54f -> BrickType.ARMORED
                         else -> BrickType.NORMAL
                     }
                     val hp = max(1, (baseHp(type) * levelScale * difficulty).roundToInt())
@@ -769,7 +794,8 @@ object LevelFactory {
         // Add special brick types based on difficulty and level
         addSpecialBricks(rows, cols, index, difficulty, bricks, occupied)
 
-        val minimumBricks = (rows * cols * 0.48f).roundToInt()
+        val minimumDensity = (0.56f + (index * 0.003f).coerceAtMost(0.12f)).coerceIn(0.56f, 0.7f)
+        val minimumBricks = (rows * cols * minimumDensity).roundToInt()
         if (bricks.size < minimumBricks) {
             fillRemainingSpaces(rows, cols, index, difficulty, bricks, occupied, minimumBricks)
         }

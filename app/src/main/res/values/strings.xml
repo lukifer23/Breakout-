@@ -56,6 +56,7 @@
     <string name="label_combo_format">Combo x%1$d</string>
     <string name="label_journey_format">Journey %1$d-%2$d</string>
     <string name="label_xp_format">XP %1$d</string>
+    <string name="label_zen_flow">Flow</string>
     <string name="label_powerups_none">Powerups: none</string>
     <string name="label_shield_percent">Shield %1$d%%</string>
     <string name="label_score_level_format">Score %1$d • Level %2$d</string>

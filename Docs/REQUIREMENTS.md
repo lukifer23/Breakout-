@@ -1,51 +1,49 @@
 # Breakout+ Requirements
 
 ## Product Goals
-- Ship a foldable-optimized Breakout/brickbreaker for Samsung Galaxy Z Fold 7.
-- Deliver smooth 60 FPS gameplay with hardware-accelerated rendering.
-- Provide multiple modes, levels, powerups, and brick variants with escalating difficulty.
-- Include full UI/UX flow: system splash, title, modes, gameplay, scoreboard, settings, how-to.
-- Fully functional via CLI build and install (no Android Studio dependency).
+- Ship a foldable-optimized Android brick breaker with stable performance and complete gameplay coverage.
+- Maintain CLI-only build/test/deploy workflow.
+- Preserve feature breadth with no mode regressions.
 
-## Target Device
-- Samsung Galaxy Z Fold 7
-- Android 14+ (app minSdk 26, targetSdk 35)
-- Folded and unfolded layouts with hinge-aware padding.
+## Target Platform (Current)
+- Android (primary): minSdk 26, targetSdk 35
+- Primary optimization target: Samsung Galaxy Z Fold class devices (folded + unfolded)
 
 ## Functional Requirements
 
 ### Core Gameplay
-- **Touch controls**: `GameEngine.handleTouch()` - drag moves paddle, release launches ball
-- **Powerups**: `PowerUpType` enum, `GameEngine.applyPowerup()`, HUD shows active with timers
-- **Multiple effects**: Multi-ball, laser beams, guardrail, shield, extra life, wide paddle, shrink, slow motion, overdrive, fireball, magnet, gravity well, ball splitter, freeze, pierce
-- **Brick variants**: `BrickType` enum with hit point scaling and special behaviors
-- **Game modes**: `GameMode` enum controlling lives, timers, and rules
+- 10 modes: `CLASSIC`, `TIMED`, `ENDLESS`, `GOD`, `RUSH`, `VOLLEY`, `TUNNEL`, `SURVIVAL`, `INVADERS`, `ZEN`
+- 10 brick types with mode-appropriate behavior and HP scaling
+- 15 powerups with visual feedback and timer/charge handling
+- Accurate paddle/ball collision response with controllable launch aiming
+- Level progression and mode-specific completion/failure conditions
 
-### UI/UX Features
-- **Multiple screens**: `MainActivity`, `ModeSelectActivity`, `GameActivity`, `SettingsActivity`, `ScoreboardActivity`, `HowToActivity`, `DailyChallengesActivity`, `PrivacyActivity`
-- **Scoreboard**: `ScoreboardManager` with JSON persistence in SharedPreferences
-- **Settings**: `SettingsManager` with toggles for sound/music/vibration/tips/sensitivity/handedness
-- **How-to**: Expandable sections with controls, powerups, brick types, modes
-- **Audio**: `GameAudioManager` with procedurally generated SFX via `tools/generate_sfx.py`
+### UI / UX
+- Full screen flow: Main, Mode Select, Game, Settings, Scoreboard, How-To, Daily Challenges, Privacy
+- Responsive HUD scaling across phone/tablet/foldable aspect ratios
+- Reliable overlays for pause, level complete, game over, and high-score entry
+- Left-handed control layout support
+
+### Persistence
+- Local settings persistence
+- Local scoreboards (per mode + all modes)
+- Local progression/unlock/challenge/lifetime stats data
+- Optional local debug log persistence when enabled
 
 ## Non-Functional Requirements
 
-### Performance & Rendering
-- **GPU acceleration**: OpenGL ES 2.0 via `GLSurfaceView` and `Renderer2D`
-- **Stable timing**: Delta time clamping in `GameRenderer.onDrawFrame()` (50ms max)
-- **60 FPS target**: Continuous render loop with optimized rect/circle geometry
+### Rendering & Performance
+- OpenGL ES 2.0 renderer
+- Choreographer-paced frame requests (`RENDERMODE_WHEN_DIRTY`)
+- Fixed-step simulation in renderer loop for stable gameplay timing
+- FX/object caps to prevent runaway perf degradation in heavy scenes
 
-### Device Optimization
-- **Foldable support**: `layout-sw600dp`, `layout-sw720dp` variants, `FoldAwareActivity` with hinge padding
-- **Z Fold 7 tuned**: Layouts optimized for 7.6" inner display and hinge behavior
-
-### Development & Quality
-- **CLI-only workflow**: Gradle build system, no Android Studio required
-- **No placeholders**: All assets generated locally (audio, icons, layouts)
-- **Complete implementation**: Full feature set with no stubs or mocks
+### Quality Constraints
+- No feature removals for existing Android modes
+- No intentional regressions in mode rules or progression flow
+- Build/test/lint must remain green in CI-style CLI runs
 
 ## Success Criteria
-- Clean build from CLI: `./gradlew assembleDebug`.
-- Installable APK that runs on Z Fold 7 via ADB.
-- Smooth gameplay in both folded and unfolded states.
-- Core gameplay loop and all modes are playable.
+- `:app:assembleDebug`, `:app:testDebugUnitTest`, and `:app:lintDebug` succeed.
+- Latest debug APK installs and launches on connected Android device.
+- All 10 modes are playable end-to-end with expected mode identity.

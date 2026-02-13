@@ -65,6 +65,15 @@ object ModeBalance {
             difficultySlope = 0.04f,
             dropChanceModeBoost = -0.03f
         ),
+        GameMode.ZEN to Pacing(
+            speedBoostSlope = 0.006f,
+            speedBoostCap = 1.14f,
+            minSpeedFactor = 0.44f,
+            maxSpeedFactor = 1.28f,
+            difficultyBase = 0.8f,
+            difficultySlope = 0.03f,
+            dropChanceModeBoost = -0.04f
+        ),
         GameMode.RUSH to Pacing(
             speedBoostSlope = 0.02f,
             speedBoostCap = 1.48f,
