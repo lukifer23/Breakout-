@@ -15,9 +15,11 @@
 - Mode balance iteration from playtest feedback.
 - HUD consistency across extreme aspect ratios and large displays.
 - Stability/performance hardening for release track confidence.
+- Viewport calibration pass using folded portrait + unfolded/tablet validation matrix across all modes.
 
 ## Next (Android)
 - Expanded regression automation for mode-specific edge cases.
+- Add layout tuning unit coverage (aspect buckets -> expected row/column boost + HUD reserve bands).
 - Additional long-session profiling and memory pressure checks.
 - Accessibility polish pass (contrast/readability/input comfort).
 

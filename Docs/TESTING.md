@@ -28,6 +28,10 @@ Optional env vars:
 ## Manual Gameplay Checklist
 - Launch app and verify Main, Mode Select, Scoreboard, Settings, How-To, Daily Challenges, Privacy screens.
 - Start every mode: `CLASSIC`, `TIMED`, `ENDLESS`, `GOD`, `RUSH`, `VOLLEY`, `TUNNEL`, `SURVIVAL`, `INVADERS`, `ZEN`.
+- Run viewport matrix checks for every mode:
+  - Folded portrait phone.
+  - Unfolded/tablet portrait.
+  - Unfolded/tablet landscape.
 - Verify level flow:
   - Level-complete overlay advances correctly in normal modes.
   - `GOD` and `ZEN` auto-advance/continue without blocking progression.
@@ -40,6 +44,7 @@ Optional env vars:
 - Verify HUD behavior:
   - Responsive scaling across phone/tablet/foldable sizes.
   - No overlaps between score/meta/powerup chips/FPS/laser button.
+  - HUD reserve height adapts per viewport without crowding gameplay surface.
 - Verify controls:
   - Drag tracking and launch alignment with aim guide.
   - Laser button cooldown and visibility states.
