@@ -29,4 +29,12 @@ class GameModeTest {
         assertTrue(GameMode.GOD.endless)
         assertTrue(GameMode.GOD.baseLives >= 99)
     }
+
+    @Test
+    fun modeCatalogRemainsComplete() {
+        val modes = GameMode.values().toSet()
+        assertTrue(modes.size == 10)
+        assertTrue(GameMode.TUNNEL in modes)
+        assertTrue(GameMode.ZEN in modes)
+    }
 }

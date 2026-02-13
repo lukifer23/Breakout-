@@ -18,6 +18,7 @@ object ModeTheme {
         GameMode.TIMED to "Sunset",
         GameMode.ENDLESS to "Neon",
         GameMode.GOD to "Aurora",
+        GameMode.ZEN to "Aurora",
         GameMode.RUSH to "Lava",
         GameMode.VOLLEY to "Circuit",
         GameMode.TUNNEL to "Cobalt",

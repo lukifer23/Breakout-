@@ -468,10 +468,17 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             renderPowerupChips(status)
             currentCombo = combo
             currentPowerupCount = status.size
-            currentPowerupSummary = if (status.isEmpty()) {
-                getString(R.string.label_powerups_none)
-            } else {
-                resources.getQuantityString(R.plurals.label_powerups_active, status.size, status.size)
+            val preserveModeSummary =
+                currentMode == GameMode.VOLLEY ||
+                    currentMode == GameMode.TUNNEL ||
+                    currentMode == GameMode.SURVIVAL ||
+                    currentMode == GameMode.ZEN
+            if (!preserveModeSummary) {
+                currentPowerupSummary = if (status.isEmpty()) {
+                    getString(R.string.label_powerups_none)
+                } else {
+                    resources.getQuantityString(R.plurals.label_powerups_active, status.size, status.size)
+                }
             }
             updateLaserButton(status)
             updateHudMeta()
@@ -937,8 +944,26 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         } else {
             parts.add(getString(R.string.label_xp_format, currentXpTotal))
         }
-        if (currentCombo >= 2) parts.add(getString(R.string.label_combo_format, currentCombo))
+        val modeSummary = statusSummaryForHud()
+        if (!modeSummary.isNullOrBlank()) {
+            parts.add(modeSummary)
+        }
+        val comboLabel = getString(R.string.label_combo_format, currentCombo)
+        if (currentCombo >= 2 && (modeSummary == null || !modeSummary.contains(comboLabel))) {
+            parts.add(comboLabel)
+        }
         binding.hudMeta.text = parts.joinToString(" • ")
+    }
+
+    private fun statusSummaryForHud(): String? {
+        val summary = currentPowerupSummary.trim()
+        if (summary.isBlank() || summary == getString(R.string.label_powerups_none)) return null
+        return when (currentMode) {
+            GameMode.VOLLEY,
+            GameMode.TUNNEL,
+            GameMode.SURVIVAL -> summary
+            else -> null
+        }
     }
 
     private fun updateJourneyLabel(level: Int) {

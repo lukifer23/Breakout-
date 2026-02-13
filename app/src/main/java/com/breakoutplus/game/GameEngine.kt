@@ -5,6 +5,7 @@ import com.breakoutplus.SettingsManager
 import com.breakoutplus.UnlockManager
 import com.breakoutplus.game.LevelFactory.buildLevel
 import java.util.ArrayDeque
+import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.atan2
 import kotlin.math.ceil
@@ -2035,13 +2036,22 @@ class GameEngine(
         paddle.targetX = paddle.x
         syncAimForLaunch()
         listener.onLevelUpdated(levelIndex + 1)
-        if (config.mode == GameMode.VOLLEY) {
-            updatePowerupStatus()
-            listener.onTip("Volley mode: launch a chain, then survive the descending row.")
-        } else {
-            listener.onPowerupStatus("Powerups: none")
-            lastPowerupStatus = "Powerups: none"
-            listener.onTip(level.tip)
+        when (config.mode) {
+            GameMode.VOLLEY -> {
+                updatePowerupStatus()
+                listener.onTip("Volley mode: launch a chain, then survive the descending row.")
+            }
+            GameMode.TUNNEL,
+            GameMode.SURVIVAL,
+            GameMode.ZEN -> {
+                updatePowerupStatus()
+                listener.onTip(level.tip)
+            }
+            else -> {
+                listener.onPowerupStatus("Powerups: none")
+                lastPowerupStatus = "Powerups: none"
+                listener.onTip(level.tip)
+            }
         }
         logger?.logLevelStart(levelIndex, theme.name)
     }
@@ -3788,29 +3798,11 @@ class GameEngine(
                 lastPowerupStatus = status
                 listener.onPowerupStatus(status)
             }
-            if (lastPowerupSnapshot.isNotEmpty() || combo != lastComboReported) {
-                lastPowerupSnapshot = emptyList()
-                lastComboReported = combo
-                listener.onPowerupsUpdated(emptyList(), combo)
-            }
+            emitPowerupSnapshot(emptyList())
             return
         }
         if (config.mode == GameMode.TUNNEL) {
             val segments = mutableListOf<String>()
-            activeEffects[PowerUpType.LASER]?.let { segments.add("Laser ${it.toInt()}s") }
-            activeEffects[PowerUpType.FIREBALL]?.let { segments.add("Fireball ${it.toInt()}s") }
-            activeEffects[PowerUpType.PIERCE]?.let { segments.add("Pierce ${it.toInt()}s") }
-            activeEffects[PowerUpType.SHIELD]?.let { segments.add("Shield ${it.toInt()}s") }
-            activeEffects[PowerUpType.GUARDRAIL]?.let { segments.add("Guardrail ${it.toInt()}s") }
-            activeEffects[PowerUpType.WIDE_PADDLE]?.let { segments.add("Wide ${it.toInt()}s") }
-            activeEffects[PowerUpType.MAGNET]?.let { segments.add("Magnet ${it.toInt()}s") }
-            activeEffects[PowerUpType.SLOW]?.let { segments.add("Slow ${it.toInt()}s") }
-            activeEffects[PowerUpType.FREEZE]?.let { segments.add("Freeze ${it.toInt()}s") }
-            activeEffects[PowerUpType.GRAVITY_WELL]?.let { segments.add("Grav ${it.toInt()}s") }
-            activeEffects[PowerUpType.OVERDRIVE]?.let { segments.add("Overdrive ${it.toInt()}s") }
-            activeEffects[PowerUpType.RICOCHET]?.let { segments.add("Ricochet ${it.toInt()}s") }
-            activeEffects[PowerUpType.TIME_WARP]?.let { segments.add("Time Warp ${it.toInt()}s") }
-            activeEffects[PowerUpType.DOUBLE_SCORE]?.let { segments.add("2x Score ${it.toInt()}s") }
             segments.add("Shots: $tunnelShotsFired")
             if (combo >= 2) {
                 segments.add("Combo x$combo")
@@ -3820,25 +3812,12 @@ class GameEngine(
                 lastPowerupStatus = status
                 listener.onPowerupStatus(status)
             }
+            emitPowerupSnapshot(buildPowerupSnapshot())
             return
         }
         if (config.mode == GameMode.SURVIVAL) {
             val segments = mutableListOf<String>()
-            activeEffects[PowerUpType.LASER]?.let { segments.add("Laser ${it.toInt()}s") }
-            activeEffects[PowerUpType.FIREBALL]?.let { segments.add("Fireball ${it.toInt()}s") }
-            activeEffects[PowerUpType.PIERCE]?.let { segments.add("Pierce ${it.toInt()}s") }
-            activeEffects[PowerUpType.SHIELD]?.let { segments.add("Shield ${it.toInt()}s") }
-            activeEffects[PowerUpType.GUARDRAIL]?.let { segments.add("Guardrail ${it.toInt()}s") }
-            activeEffects[PowerUpType.WIDE_PADDLE]?.let { segments.add("Wide ${it.toInt()}s") }
-            activeEffects[PowerUpType.MAGNET]?.let { segments.add("Magnet ${it.toInt()}s") }
-            activeEffects[PowerUpType.SLOW]?.let { segments.add("Slow ${it.toInt()}s") }
-            activeEffects[PowerUpType.FREEZE]?.let { segments.add("Freeze ${it.toInt()}s") }
-            activeEffects[PowerUpType.GRAVITY_WELL]?.let { segments.add("Grav ${it.toInt()}s") }
-            activeEffects[PowerUpType.OVERDRIVE]?.let { segments.add("Overdrive ${it.toInt()}s") }
-            activeEffects[PowerUpType.RICOCHET]?.let { segments.add("Ricochet ${it.toInt()}s") }
-            activeEffects[PowerUpType.TIME_WARP]?.let { segments.add("Time Warp ${it.toInt()}s") }
-            activeEffects[PowerUpType.DOUBLE_SCORE]?.let { segments.add("2x Score ${it.toInt()}s") }
-            segments.add("Speed: ${String.format("%.1f", speedMultiplier)}x")
+            segments.add("Speed: ${String.format(Locale.US, "%.1f", speedMultiplier)}x")
             if (combo >= 2) {
                 segments.add("Combo x$combo")
             }
@@ -3847,6 +3826,7 @@ class GameEngine(
                 lastPowerupStatus = status
                 listener.onPowerupStatus(status)
             }
+            emitPowerupSnapshot(buildPowerupSnapshot())
             return
         }
         if (config.mode == GameMode.ZEN) {
@@ -3856,37 +3836,25 @@ class GameEngine(
                 lastPowerupStatus = status
                 listener.onPowerupStatus(status)
             }
-            // Don't show powerup chips in zen mode
-            if (lastPowerupSnapshot.isNotEmpty() || combo != lastComboReported) {
-                lastPowerupSnapshot = emptyList()
-                lastComboReported = combo
-                listener.onPowerupsUpdated(emptyList(), combo)
-            }
+            // Don't show powerup chips in zen mode.
+            emitPowerupSnapshot(emptyList())
             return
         }
         val segments = mutableListOf<String>()
-        if (activeEffects.isEmpty()) {
-            segments.add("Powerups: none")
+        val effectText = if (activeEffects.isEmpty()) {
+            "Powerups: none"
         } else {
-            val list = activeEffects.entries
+            activeEffects.entries
                 .sortedBy { it.key.ordinal }
-                .joinToString(" • ") { (type, time) ->
+                .joinToString(" • ", prefix = "Powerups: ") { (type, time) ->
                     if (type == PowerUpType.SHIELD) {
                         "${type.displayName} x$shieldCharges ${time.toInt()}s"
                     } else {
                         "${type.displayName} ${time.toInt()}s"
                     }
                 }
-            segments.add("Powerups: $list")
         }
-        val effectTimers = mutableListOf<String>()
-        activeEffects[PowerUpType.SLOW]?.let { effectTimers.add("Slow ${it.toInt()}s") }
-        activeEffects[PowerUpType.FREEZE]?.let { effectTimers.add("Freeze ${it.toInt()}s") }
-        activeEffects[PowerUpType.GRAVITY_WELL]?.let { effectTimers.add("Grav ${it.toInt()}s") }
-        activeEffects[PowerUpType.OVERDRIVE]?.let { effectTimers.add("Overdrive ${it.toInt()}s") }
-        if (effectTimers.isNotEmpty()) {
-            segments.addAll(effectTimers)
-        }
+        segments.add(effectText)
         if (combo >= 2) {
             segments.add("Combo x$combo")
         }
@@ -3895,7 +3863,11 @@ class GameEngine(
             lastPowerupStatus = status
             listener.onPowerupStatus(status)
         }
-        val snapshot = activeEffects.entries
+        emitPowerupSnapshot(buildPowerupSnapshot())
+    }
+
+    private fun buildPowerupSnapshot(): List<PowerupStatus> {
+        return activeEffects.entries
             .sortedBy { it.key.ordinal }
             .map { (type, time) ->
                 PowerupStatus(
@@ -3904,6 +3876,9 @@ class GameEngine(
                     charges = if (type == PowerUpType.SHIELD) shieldCharges else 0
                 )
             }
+    }
+
+    private fun emitPowerupSnapshot(snapshot: List<PowerupStatus>) {
         if (snapshot != lastPowerupSnapshot || combo != lastComboReported) {
             lastPowerupSnapshot = snapshot
             lastComboReported = combo

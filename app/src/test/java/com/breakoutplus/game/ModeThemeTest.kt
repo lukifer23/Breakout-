@@ -43,4 +43,14 @@ class ModeThemeTest {
         )
         assertEquals("Vapor", chosen.name)
     }
+
+    @Test
+    fun zenModeFallsBackToAuroraIdentity() {
+        val chosen = ModeTheme.themeFor(
+            mode = GameMode.ZEN,
+            levelIndex = 0,
+            availableThemeNames = setOf("Neon", "Aurora", "Forest")
+        )
+        assertEquals("Aurora", chosen.name)
+    }
 }
