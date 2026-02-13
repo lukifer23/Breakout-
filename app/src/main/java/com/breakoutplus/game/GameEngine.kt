@@ -1479,37 +1479,40 @@ class GameEngine(
         val tallness = ((aspectRatio - 1.25f) / 0.85f).coerceIn(0f, 1f)
         val isWide = aspectRatio < 1.45f
         val wideDensityRows = when {
-            aspectRatio < 1.26f -> 4
-            aspectRatio < 1.38f -> 3
-            aspectRatio < 1.52f -> 2
+            aspectRatio < 1.24f -> 5
+            aspectRatio < 1.34f -> 4
+            aspectRatio < 1.48f -> 3
+            aspectRatio < 1.62f -> 2
             else -> 0
         }
         val tallDensityRows = when {
-            aspectRatio > 2.25f -> 2
-            aspectRatio > 1.95f -> 1
+            aspectRatio > 2.2f -> 3
+            aspectRatio > 1.9f -> 2
+            aspectRatio > 1.72f -> 1
             else -> 0
         }
         val wideDensityCols = when {
-            aspectRatio < 1.3f -> 2
-            aspectRatio < 1.45f -> 1
+            aspectRatio < 1.32f -> 2
+            aspectRatio < 1.5f -> 1
             else -> 0
         }
         // Shared "zoomed-out" baseline for all modes: smaller bricks, more distance to the paddle,
         // and consistent spacing so switching modes doesn't feel like a camera jump.
-        brickAreaTopRatio = lerp(0.992f, 0.976f, tallness)
-        brickAreaBottomRatio = lerp(0.72f, 0.66f, tallness)
+        brickAreaTopRatio = lerp(0.992f, 0.978f, tallness)
+        brickAreaBottomRatio = lerp(0.69f, 0.62f, tallness)
         val wideVerticalExpansion = when {
-            aspectRatio < 1.26f -> 0.12f
-            aspectRatio < 1.38f -> 0.1f
-            aspectRatio < 1.5f -> 0.08f
+            aspectRatio < 1.24f -> 0.12f
+            aspectRatio < 1.34f -> 0.105f
+            aspectRatio < 1.46f -> 0.085f
             else -> 0f
         }
         val tallVerticalExpansion = when {
-            aspectRatio > 2.3f -> 0.05f
-            aspectRatio > 2.0f -> 0.03f
+            aspectRatio > 2.2f -> 0.07f
+            aspectRatio > 1.9f -> 0.05f
+            aspectRatio > 1.72f -> 0.03f
             else -> 0f
         }
-        brickAreaBottomRatio = (brickAreaBottomRatio - wideVerticalExpansion - tallVerticalExpansion).coerceIn(0.52f, 0.72f)
+        brickAreaBottomRatio = (brickAreaBottomRatio - wideVerticalExpansion - tallVerticalExpansion).coerceIn(0.48f, 0.7f)
         brickSpacing = lerp(0.3f, 0.36f, tallness)
         if (aspectRatio < 1.5f) {
             brickSpacing = (brickSpacing - 0.04f).coerceAtLeast(0.24f)
@@ -1519,13 +1522,18 @@ class GameEngine(
         if (!preserveRowBoost) {
             val densityBoost = (levelIndex / 6).coerceAtMost(2)
             val slateRowBoost = when {
-                aspectRatio < 1.34f -> 2
-                aspectRatio < 1.5f -> 1
+                aspectRatio < 1.28f -> 3
+                aspectRatio < 1.42f -> 2
+                aspectRatio < 1.58f -> 1
                 else -> 0
             }
-            val slateColBoost = if (aspectRatio < 1.38f) 1 else 0
+            val slateColBoost = when {
+                aspectRatio < 1.32f -> 2
+                aspectRatio < 1.46f -> 1
+                else -> 0
+            }
             val baseRowBoost =
-                (if (isWide) 4 else 3) + densityBoost + slateRowBoost + wideDensityRows + tallDensityRows
+                (if (isWide) 5 else 4) + densityBoost + slateRowBoost + wideDensityRows + tallDensityRows
             val baseColBoost =
                 (if (isWide) 4 else 3) + densityBoost + slateColBoost + wideDensityCols
             when (config.mode) {
@@ -1585,11 +1593,11 @@ class GameEngine(
             }
         }
         // Smaller bricks overall to avoid an overly zoomed-in feel.
-        globalBrickScale = lerp(0.8f, 0.77f, tallness)
+        globalBrickScale = lerp(0.82f, 0.79f, tallness)
         if (aspectRatio < 1.4f) {
-            globalBrickScale = (globalBrickScale - 0.05f).coerceAtLeast(0.7f)
+            globalBrickScale = (globalBrickScale - 0.04f).coerceAtLeast(0.72f)
         } else if (aspectRatio > 2.15f) {
-            globalBrickScale = (globalBrickScale - 0.03f).coerceAtLeast(0.72f)
+            globalBrickScale = (globalBrickScale - 0.015f).coerceAtLeast(0.75f)
         }
         if (config.mode == GameMode.RUSH) {
             globalBrickScale = (globalBrickScale + 0.03f).coerceAtMost(0.88f)
@@ -2261,13 +2269,7 @@ class GameEngine(
             }
         }
 
-        if (layoutRowBoost > 0 && !config.mode.invaders && config.mode != GameMode.VOLLEY) {
-            val topPad = baseBrickHeight * 0.15f
-            bricks.forEach { brick ->
-                brick.y += topPad
-                brick.baseY = brick.y
-            }
-        }
+        applyRowBoostTopPadding(baseBrickHeight)
 
         invaderBricks.clear()
         if (config.mode.invaders) {
@@ -2297,6 +2299,15 @@ class GameEngine(
             else -> 9
         }
         return min(clampedRequested, target)
+    }
+
+    private fun applyRowBoostTopPadding(baseBrickHeight: Float) {
+        if (layoutRowBoost <= 0 || config.mode.invaders || config.mode == GameMode.VOLLEY) return
+        val topPad = baseBrickHeight * 0.15f
+        bricks.forEach { brick ->
+            brick.y += topPad
+            brick.baseY = brick.y
+        }
     }
 
     private fun remapVolleyColumn(col: Int, originalCols: Int, targetCols: Int): Int {
@@ -2335,6 +2346,7 @@ class GameEngine(
             brick.baseX = x
             brick.baseY = y
         }
+        applyRowBoostTopPadding(baseBrickHeight)
         buildSpatialHash()
     }
 

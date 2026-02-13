@@ -124,6 +124,7 @@ ios/
 - `Docs/DATA_SAFETY.md`
 - `Docs/PRIVACY_POLICY.md`
 - `Docs/RELEASE_CHECKLIST.md`
+- `Docs/RELEASE_NOTES.md`
 - `Docs/STORE_LISTING.md`
 
 ## Notes

@@ -411,20 +411,10 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             val isCountdown = config.mode.timeLimitSeconds > 0
             binding.hudTime.visibility = android.view.View.VISIBLE
 
-            // Mode-specific time display
-            val timeText = when (config.mode) {
-                GameMode.SURVIVAL -> {
-                    // Show speed multiplier for survival mode
-                    val speedMultiplier = 1f + (secondsRemaining * 0.02f).coerceAtMost(1.4f)
-                    String.format("Speed: %.1fx", speedMultiplier)
-                }
-                else -> {
-                    if (isCountdown) {
-                        getString(R.string.label_time_format, minutes, seconds)
-                    } else {
-                        getString(R.string.label_elapsed_format, minutes, seconds)
-                    }
-                }
+            val timeText = if (isCountdown) {
+                getString(R.string.label_time_format, minutes, seconds)
+            } else {
+                getString(R.string.label_elapsed_format, minutes, seconds)
             }
 
             binding.hudTime.text = timeText
@@ -877,9 +867,9 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         val aspect = (longDp / shortDp).coerceAtLeast(1f)
 
         val baseScale = when {
-            shortDp >= 840f -> 1.2f
-            shortDp >= 720f -> 1.14f
-            shortDp >= 600f -> 1.08f
+            shortDp >= 840f -> 1.14f
+            shortDp >= 720f -> 1.1f
+            shortDp >= 600f -> 1.05f
             shortDp <= 340f -> 0.82f
             shortDp <= 380f -> 0.86f
             shortDp <= 420f -> 0.92f
@@ -894,15 +884,15 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         hudChipTextPx = resources.getDimension(R.dimen.bp_hud_mode_size) * hudScale
 
         val reservedRatio = when {
-            shortDp >= 840f -> 0.23f
-            shortDp >= 720f -> 0.225f
-            shortDp >= 600f -> 0.215f
-            aspect >= 2.3f -> 0.165f
-            aspect >= 2.0f -> 0.182f
-            else -> 0.225f
+            shortDp >= 840f -> 0.2f
+            shortDp >= 720f -> 0.195f
+            shortDp >= 600f -> 0.19f
+            aspect >= 2.3f -> 0.155f
+            aspect >= 2.0f -> 0.172f
+            else -> 0.21f
         }
         val reservedHeightDp = (heightDp * reservedRatio)
-            .coerceIn(118f, if (shortDp >= 720f) 228f else 188f)
+            .coerceIn(108f, if (shortDp >= 720f) 210f else 184f)
         val hudParams = binding.hudContainer.layoutParams as ConstraintLayout.LayoutParams
         val targetHeightPx = dp(reservedHeightDp)
         if (hudParams.height != targetHeightPx) {
