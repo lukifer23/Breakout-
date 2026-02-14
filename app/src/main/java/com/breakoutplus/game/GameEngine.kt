@@ -213,7 +213,7 @@ class GameEngine(
         val significantLayoutShift = if (lastResizeWidthPx > 0 && lastResizeHeightPx > 0) {
             val widthDelta = kotlin.math.abs(width - lastResizeWidthPx) / lastResizeWidthPx.toFloat()
             val heightDelta = kotlin.math.abs(height - lastResizeHeightPx) / lastResizeHeightPx.toFloat()
-            widthDelta >= 0.06f || heightDelta >= 0.06f
+            widthDelta >= 0.08f || heightDelta >= 0.08f
         } else {
             false
         }
@@ -1013,8 +1013,15 @@ class GameEngine(
         val highlight = fillColor(tempColor, 1f, 1f, 1f, 0.18f + pulse * 0.12f)
         renderer.drawRect(x + size * 0.12f, y + size * 0.62f, size * 0.76f, size * 0.18f, highlight)
 
+        // Add subtle glow effect for better visibility
+        val outerGlowColor = adjustColor(power.type.color, 1.2f, 0.4f)
+        renderer.drawCircle(power.x, power.y, size * 1.4f, outerGlowColor)
+
         val glyph = adjustColor(power.type.color, 1.5f, 0.95f)
         val glyphSoft = adjustColor(power.type.color, 1.15f, 0.78f)
+        val outlineColor = adjustColor(power.type.color, 1.8f, 0.3f)
+        renderer.drawCircle(power.x, power.y, size * 0.95f, outlineColor)
+
         when (power.type) {
             PowerUpType.MULTI_BALL -> {
                 renderer.drawCircle(power.x, power.y + size * 0.16f, size * 0.12f, glyph)
@@ -1475,6 +1482,8 @@ class GameEngine(
 
     fun getObjectCount(): Int = balls.size + bricks.size + powerups.size + beams.size + enemyShots.size + particles.size + waves.size
 
+    fun isGameRunning(): Boolean = state == GameState.RUNNING
+
     private fun applyLayoutTuning(aspectRatio: Float, preserveRowBoost: Boolean) {
         val tallness = ((aspectRatio - 1.25f) / 0.85f).coerceIn(0f, 1f)
         val isWide = aspectRatio < 1.45f
@@ -1893,13 +1902,28 @@ class GameEngine(
     }
 
     fun nextLevel() {
-        if (!awaitingNextLevel || state == GameState.GAME_OVER) return
+        // Defensive checks to prevent invalid level advancement
+        if (!awaitingNextLevel) {
+            logger?.logError("nextLevel called when not awaiting next level (state=$state, lives=$lives)")
+            return
+        }
+        if (state == GameState.GAME_OVER) {
+            logger?.logError("nextLevel called in GAME_OVER state")
+            return
+        }
+        if (lives <= 0) {
+            logger?.logError("nextLevel called with 0 lives")
+            return
+        }
+
+        logger?.logLevelAdvance(levelIndex + 1)
         levelIndex += 1
         awaitingNextLevel = false
         resetLevel(first = false)
     }
 
     private fun resetLevel(first: Boolean) {
+        logger?.logLevelStart(levelIndex + 1, currentLayout?.theme?.name ?: "unknown")
         state = GameState.READY
         stateBeforePause = GameState.READY
         awaitingNextLevel = false

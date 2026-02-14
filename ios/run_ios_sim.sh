@@ -70,7 +70,18 @@ if [[ -z "$UDID" ]]; then
 fi
 
 echo "Using simulator UDID: $UDID"
-open -a Simulator >/dev/null 2>&1 || true
+
+# Keep a single active simulator to avoid duplicate windows/devices.
+BOOTED_UDIDS="$(xcrun simctl list devices | sed -nE 's/.*\(([0-9A-F-]{36})\) \(Booted\).*/\1/p')"
+if [[ -n "$BOOTED_UDIDS" ]]; then
+  while IFS= read -r booted; do
+    [[ -z "$booted" ]] && continue
+    if [[ "$booted" != "$UDID" ]]; then
+      xcrun simctl shutdown "$booted" >/dev/null 2>&1 || true
+    fi
+  done <<< "$BOOTED_UDIDS"
+fi
+
 xcrun simctl boot "$UDID" >/dev/null 2>&1 || true
 xcrun simctl bootstatus "$UDID" -b
 
@@ -106,9 +117,21 @@ if [[ ! -d "$APP_PATH" ]]; then
 fi
 
 echo "Installing: $APP_PATH"
-xcrun simctl install "$UDID" "$APP_PATH"
+if ! xcrun simctl install "$UDID" "$APP_PATH"; then
+  echo "Initial install failed; rebooting simulator and retrying once..."
+  xcrun simctl shutdown "$UDID" >/dev/null 2>&1 || true
+  xcrun simctl boot "$UDID" >/dev/null 2>&1 || true
+  xcrun simctl bootstatus "$UDID" -b
+  xcrun simctl install "$UDID" "$APP_PATH"
+fi
 
 echo "Launching: $BUNDLE_ID"
-xcrun simctl launch "$UDID" "$BUNDLE_ID"
+if ! xcrun simctl launch "$UDID" "$BUNDLE_ID"; then
+  echo "Initial launch failed; rebooting simulator and retrying once..."
+  xcrun simctl shutdown "$UDID" >/dev/null 2>&1 || true
+  xcrun simctl boot "$UDID" >/dev/null 2>&1 || true
+  xcrun simctl bootstatus "$UDID" -b
+  xcrun simctl launch "$UDID" "$BUNDLE_ID"
+fi
 
 echo "Done. CLI iOS build + simulator launch completed."

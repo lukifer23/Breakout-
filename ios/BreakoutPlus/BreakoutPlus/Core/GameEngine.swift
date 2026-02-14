@@ -95,6 +95,7 @@ class GameEngine {
     // Active effects
     private var activeEffects: [PowerUpType: TimeInterval] = [:]
     private var speedMultiplier = 1.0
+    private var timeWarpMultiplier = 1.0
     private var timerAccumulator: TimeInterval = 0
     private var elapsedSeconds: TimeInterval = 0
     private var guardrailActive = false
@@ -123,7 +124,6 @@ class GameEngine {
     private let aimMinAngle: Float = 0.30
 
     // Invaders mode state
-    // private var enemyShots: [EnemyShot] = [] // TODO: Uncomment when EnemyShot added to Xcode project
     private var invaderDirection: Float = 1.0
     private var invaderSpeed: Float = 6.0
     private var invaderShotTimer: TimeInterval = 0
@@ -137,11 +137,13 @@ class GameEngine {
 
     // Volley mode state
     private var volleyTurnActive = false
-    private var volleyBallCount = 3
+    private var volleyBallCount = 5
     private var volleyQueuedBalls = 0
     private var volleyLaunchTimer: TimeInterval = 0
     private var volleyLaunchX: Float = 0
     private var volleyReturnAnchorX: Float = Float.nan
+    private var volleyReturnSumX: Float = 0
+    private var volleyReturnCount = 0
     private var volleyTurnCount = 0
     private var volleyAdvanceRows = 0
 
@@ -187,31 +189,32 @@ class GameEngine {
         }
         elapsedSeconds += dtRaw
 
-        let dt = dtRaw * speedMultiplier
+        let worldDt = dtRaw * speedMultiplier * timeWarpMultiplier
+        let ballDt = worldDt / max(0.01, timeWarpMultiplier)
 
         // Update timers
-        updateTimers(dt)
+        updateTimers(worldDt)
 
         // Update game objects
         if state == .ready {
             attachReadyBallsToPaddle()
             updateAimFromPaddle()
         }
-        updateBalls(dt)
-        updateBricks(dt)
-        updatePowerups(dt)
-        updateBeams(dt)
-        updatePaddle(dt)
+        updateBalls(ballDt)
+        updateBricks(worldDt)
+        updatePowerups(worldDt)
+        updateBeams(worldDt)
+        updatePaddle(worldDt)
         updateAim(Float(dtRaw))
 
         // Volley logic
         if gameMode == .volley {
-            updateVolleyLaunchQueue(dt)
+            updateVolleyLaunchQueue(ballDt)
         }
 
         // Invaders logic
         if gameMode.invaders {
-            updateInvaders(dt)
+            updateInvaders(worldDt)
         }
 
         // Handle collisions
@@ -219,12 +222,12 @@ class GameEngine {
 
         // Check win/lose conditions
         checkLevelCompletion()
-        checkGameOver()
 
         // Volley turn resolution
         if gameMode == .volley && state == .running {
             resolveVolleyTurnIfReady()
         }
+        checkGameOver()
     }
 
     private func attachReadyBallsToPaddle() {
@@ -291,6 +294,7 @@ class GameEngine {
 
         for i in 0..<balls.count {
             var ball = balls[i]
+            var removedCurrent = false
 
             // Update position
             ball.x += ball.vx * Float(deltaTime)
@@ -312,11 +316,31 @@ class GameEngine {
                 ball.vx = -ball.vx
                 ball.x = max(ball.radius, min(worldWidth - ball.radius, ball.x))
                 emit(.sound(.bounce, volume: 0.45))
+                if let remaining = ball.ricochetBounces {
+                    let next = remaining - 1
+                    ball.ricochetBounces = next > 0 ? next : nil
+                }
             }
 
             // Bottom - lose life
             if ball.y - ball.radius <= 0 {
-                if guardrailActive {
+                if gameMode == .volley {
+                    let clampedReturnX = ball.x.clamped(to: paddle.width / 2...worldWidth - paddle.width / 2)
+                    volleyReturnSumX += clampedReturnX
+                    volleyReturnCount += 1
+                    if !volleyReturnAnchorX.isFinite {
+                        volleyReturnAnchorX = clampedReturnX
+                    } else {
+                        volleyReturnAnchorX += (clampedReturnX - volleyReturnAnchorX) * 0.35
+                    }
+                    toRemove.append(i)
+                    removedCurrent = true
+                } else if gameMode.godMode {
+                    ball.vy = abs(ball.vy)
+                    ball.y = ball.radius + 0.1
+                    emit(.sound(.bounce, volume: 0.55))
+                    emit(.haptic(.light))
+                } else if guardrailActive {
                     ball.vy = abs(ball.vy)
                     ball.y = ball.radius + 0.1
                     emit(.sound(.bounce, volume: 0.55))
@@ -326,10 +350,14 @@ class GameEngine {
                     ball.vy = max(abs(ball.vy), Float(gameMode.launchSpeed * 0.8))
                     ball.y = paddle.y + paddle.height / 2 + ball.radius + 0.5
                     ball.x = paddle.x
+                    if shieldCharges == 0 {
+                        activeEffects.removeValue(forKey: .shield)
+                    }
                     emit(.sound(.powerup, volume: 0.45))
                     emit(.haptic(.medium))
                 } else {
                     toRemove.append(i)
+                    removedCurrent = true
                 }
             }
 
@@ -340,8 +368,10 @@ class GameEngine {
                 emit(.sound(.bounce, volume: 0.35))
             }
 
-            clampBallSpeed(&ball)
-            balls[i] = ball
+            if !removedCurrent {
+                clampBallSpeed(&ball)
+                balls[i] = ball
+            }
         }
 
         if !toRemove.isEmpty {
@@ -396,6 +426,7 @@ class GameEngine {
         case .tunnel: return 0.015
         case .survival: return 0.029
         case .invaders: return 0.017
+        case .zen: return 0.006
         }
     }
 
@@ -410,6 +441,7 @@ class GameEngine {
         case .tunnel: return 1.38
         case .survival: return 1.64
         case .invaders: return 1.44
+        case .zen: return 1.14
         }
     }
 
@@ -424,6 +456,7 @@ class GameEngine {
         case .tunnel: return 0.60
         case .survival: return 0.76
         case .invaders: return 0.62
+        case .zen: return 0.44
         }
     }
 
@@ -438,6 +471,7 @@ class GameEngine {
         case .tunnel: return 1.60
         case .survival: return 1.92
         case .invaders: return 1.66
+        case .zen: return 1.28
         }
     }
 
@@ -461,6 +495,8 @@ class GameEngine {
             return min(3.0, 1.2 + Float(levelIndex) * 0.125)
         case .invaders:
             return min(3.0, 1.08 + Float(levelIndex) * 0.085)
+        case .zen:
+            return min(3.0, 0.8 + Float(levelIndex) * 0.03)
         }
     }
 
@@ -542,11 +578,13 @@ class GameEngine {
         }
 
         // Ball-paddle collisions
-        for ballIndex in 0..<balls.count {
-            var ball = balls[ballIndex]
-            if ball.intersects(paddle) {
-                handlePaddleCollision(&ball)
-                balls[ballIndex] = ball
+        if gameMode != .volley {
+            for ballIndex in 0..<balls.count {
+                var ball = balls[ballIndex]
+                if ball.intersects(paddle) {
+                    handlePaddleCollision(&ball)
+                    balls[ballIndex] = ball
+                }
             }
         }
 
@@ -612,9 +650,8 @@ class GameEngine {
 
         if brick.hitPoints <= 0 {
             brick.alive = false
-            score += brick.scoreValue
+            addScore(brick.scoreValue)
             runBricksBroken += 1
-            delegate?.onScoreChanged(newScore: score)
             updateDailyChallenge(.bricksDestroyed)
 
             // Combo system
@@ -740,12 +777,11 @@ class GameEngine {
                     bricks[i].hitPoints -= 1
                     if bricks[i].hitPoints <= 0 {
                         bricks[i].alive = false
-                        score += bricks[i].scoreValue
+                        addScore(bricks[i].scoreValue)
                         runBricksBroken += 1
                     }
                 }
             }
-            delegate?.onScoreChanged(newScore: score)
         case .spawning:
             // Split into two smaller bricks.
             let childW = max(2.5, destroyed.width * 0.48)
@@ -775,8 +811,7 @@ class GameEngine {
         }
         if brick.hitPoints <= 0 {
             brick.alive = false
-            score += brick.scoreValue
-            delegate?.onScoreChanged(newScore: score)
+            addScore(brick.scoreValue)
             if Double.random(in: 0..<1) < 0.15 {
                 spawnPowerup(atX: brick.centerX, y: brick.centerY)
             }
@@ -799,12 +834,17 @@ class GameEngine {
             for _ in 0..<2 {
                 let angle = Double.random(in: .pi/6...(5 * .pi / 6)) // 30-150 deg
                 let speed = Double(gameMode.launchSpeed) * 0.75
-                let newBall = Ball(
+                var newBall = Ball(
                     x: paddle.x,
                     y: paddle.y + paddle.height / 2 + 1.0 + 1.0,
                     vx: Float(speed * cos(angle)),
                     vy: Float(abs(speed * sin(angle)))
                 )
+                newBall.isFireball = activeEffects.keys.contains(.fireball)
+                newBall.isPiercing = activeEffects.keys.contains(.pierce)
+                if activeEffects.keys.contains(.ricochet) {
+                    newBall.ricochetBounces = 2
+                }
                 balls.append(newBall)
             }
         case .laser:
@@ -848,16 +888,30 @@ class GameEngine {
                     )
                     newBall.isFireball = ball.isFireball
                     newBall.isPiercing = ball.isPiercing
+                    newBall.ricochetBounces = ball.ricochetBounces
                     balls.append(newBall)
                 }
             }
         case .extraLife:
-            if !gameMode.godMode {
+            if gameMode == .volley {
+                volleyBallCount = min(20, volleyBallCount + 1)
+                delegate?.onTip(message: "Volley +1 ball (\(volleyBallCount) total).")
+                emit(.sound(.powerup, volume: 0.42))
+            } else if !gameMode.godMode {
                 lives += 1
                 delegate?.onLivesChanged(newLives: lives)
                 emit(.sound(.life, volume: 0.9))
                 emit(.haptic(.success))
             }
+        case .ricochet:
+            for i in 0..<balls.count {
+                balls[i].ricochetBounces = (balls[i].ricochetBounces ?? 0) + 2
+            }
+        case .timeWarp:
+            syncSpeedMultiplier()
+        case .doubleScore:
+            // Passive scoring modifier while effect is active.
+            break
         }
         updatePowerupStatus()
     }
@@ -879,15 +933,21 @@ class GameEngine {
             syncSpeedMultiplier(removing: type)
         case .overdrive:
             syncSpeedMultiplier(removing: type)
+        case .timeWarp:
+            syncSpeedMultiplier(removing: type)
         case .pierce:
             pierceActive = false
             for i in 0..<balls.count { balls[i].isPiercing = false }
         case .fireball:
             for i in 0..<balls.count { balls[i].isFireball = false }
+        case .ricochet:
+            for i in 0..<balls.count { balls[i].ricochetBounces = nil }
         case .magnet:
             magnetActive = false
         case .gravityWell:
             gravityWellActive = false
+        case .doubleScore:
+            break
         default:
             break
         }
@@ -915,7 +975,10 @@ class GameEngine {
             .gravityWell: 0.7,
             .ballSplitter: 0.7,
             .freeze: 0.6,
-            .pierce: 0.7
+            .pierce: 0.7,
+            .ricochet: 0.8,
+            .timeWarp: 0.7,
+            .doubleScore: 0.6
         ]
         switch gameMode {
         case .timed:
@@ -932,21 +995,31 @@ class GameEngine {
             weights[.pierce, default: 0] += 0.2
             weights[.gravityWell, default: 0] += 0.15
             weights[.ballSplitter, default: 0] += 0.1
+            weights[.doubleScore, default: 0] += 0.1
         case .survival:
             weights[.shield, default: 0] += 0.2
             weights[.guardrail, default: 0] += 0.2
             weights[.extraLife, default: 0] += 0.05
             weights[.shrink] = (weights[.shrink] ?? 0) * 0.7
             weights[.overdrive] = (weights[.overdrive] ?? 0) * 0.7
+            weights[.timeWarp, default: 0] += 0.12
         case .god:
             weights[.extraLife] = 0.15
             weights[.shrink] = 0.1
             weights[.overdrive] = 0.1
+            weights[.doubleScore] = 0.2
+        case .zen:
+            weights[.extraLife] = 0.0
+            weights[.shrink] = 0.08
+            weights[.overdrive] = 0.08
+            weights[.doubleScore] = 0.0
+            weights[.timeWarp, default: 0] += 0.1
         case .invaders:
             weights[.shield, default: 0] += 0.3
             weights[.guardrail, default: 0] += 0.2
             weights[.laser, default: 0] += 0.35
             weights[.slowMotion, default: 0] += 0.1
+            weights[.ricochet, default: 0] += 0.12
         default:
             break
         }
@@ -972,6 +1045,13 @@ class GameEngine {
     }
 
     private func checkGameOver() {
+        if gameMode == .volley && (volleyTurnActive || volleyQueuedBalls > 0) {
+            return
+        }
+        if gameMode == .volley {
+            return
+        }
+
         if balls.isEmpty && gameMode.godMode {
             spawnBall()
             return
@@ -995,9 +1075,9 @@ class GameEngine {
         }
     }
 
-    private func spawnBall() {
+    private func spawnBall(spawnX: Float? = nil) {
         var ball = Ball(
-            x: paddle.x,
+            x: (spawnX ?? paddle.x).clamped(to: paddle.width / 2...worldWidth - paddle.width / 2),
             y: paddle.y + paddle.height / 2 + 1.0 + 1.0,
             vx: 0,
             vy: 0
@@ -1007,6 +1087,9 @@ class GameEngine {
         }
         if activeEffects.keys.contains(.pierce) {
             ball.isPiercing = true
+        }
+        if activeEffects.keys.contains(.ricochet) {
+            ball.ricochetBounces = 2
         }
         balls.append(ball)
     }
@@ -1050,7 +1133,14 @@ class GameEngine {
     }
 
     private func updatePowerupStatus() {
-        let status = activeEffects.map { (type, remaining) in
+        if gameMode == .zen {
+            delegate?.onPowerupStatusUpdated(status: [])
+            return
+        }
+
+        let status = activeEffects
+            .sorted { $0.key.rawValue < $1.key.rawValue }
+            .map { (type, remaining) in
             let charges = type == .shield ? shieldCharges : 0
             return PowerupStatus(type: type, remainingSeconds: Int(remaining), charges: charges)
         }
@@ -1075,8 +1165,9 @@ class GameEngine {
         let hasFreeze = activeEffects.keys.contains(.freeze) && type != .freeze
         let hasSlow = activeEffects.keys.contains(.slowMotion) && type != .slowMotion
         let hasOverdrive = activeEffects.keys.contains(.overdrive) && type != .overdrive
+        let hasTimeWarp = activeEffects.keys.contains(.timeWarp) && type != .timeWarp
         if hasFreeze {
-            speedMultiplier = 0.12
+            speedMultiplier = 0.1
         } else if hasSlow {
             speedMultiplier = 0.7
         } else if hasOverdrive {
@@ -1084,6 +1175,7 @@ class GameEngine {
         } else {
             speedMultiplier = 1.0
         }
+        timeWarpMultiplier = hasTimeWarp ? 0.7 : 1.0
     }
 
     func movePaddle(to x: Float) {
@@ -1212,6 +1304,14 @@ class GameEngine {
         }
     }
 
+    private func addScore(_ points: Int) {
+        guard points > 0 else { return }
+        if gameMode == .zen { return }
+        let multiplier = activeEffects.keys.contains(.doubleScore) ? 2 : 1
+        score += points * multiplier
+        delegate?.onScoreChanged(newScore: score)
+    }
+
     private func updateInvaders(_ deltaTime: TimeInterval) {
         // Move invader bricks
         updateInvaderFormation(deltaTime)
@@ -1262,8 +1362,8 @@ class GameEngine {
         if !volleyTurnActive || volleyQueuedBalls <= 0 { return }
         volleyLaunchTimer -= deltaTime
         while volleyQueuedBalls > 0 && volleyLaunchTimer <= 0 {
-            // Spawn ball at volley launch position
-            spawnBall()
+            let spawnX = volleyLaunchX.clamped(to: paddle.width / 2...worldWidth - paddle.width / 2)
+            spawnBall(spawnX: spawnX)
             if let lastBall = balls.last {
                 launchBallWithAim(lastBall)
             }
@@ -1283,8 +1383,7 @@ class GameEngine {
         emit(.sound(.bounce, volume: 0.36))
         triggerScreenShake(0.7, 0.07)
 
-        // Increase ball count every 2 volleys
-        if volleyTurnCount % 2 == 0 && volleyBallCount < 18 {
+        if shouldAwardVolleyBall(turnCount: volleyTurnCount) && volleyBallCount < 20 {
             volleyBallCount += 1
             delegate?.onTip(message: "Volley +1 ball (\(volleyBallCount) total).")
             emit(.sound(.powerup, volume: 0.32))
@@ -1307,25 +1406,61 @@ class GameEngine {
             return
         }
 
-        let launchX = volleyReturnAnchorX.isFinite ? volleyReturnAnchorX : paddle.x
+        let averagedReturnX: Float
+        if volleyReturnCount > 0 {
+            averagedReturnX = volleyReturnSumX / Float(volleyReturnCount)
+        } else {
+            averagedReturnX = Float.nan
+        }
+        let anchorX: Float
+        if averagedReturnX.isFinite {
+            anchorX = averagedReturnX
+        } else if volleyReturnAnchorX.isFinite {
+            anchorX = volleyReturnAnchorX
+        } else {
+            anchorX = paddleTargetX
+        }
+        let launchX = anchorX * 0.78 + paddleTargetX * 0.22
         paddle.x = launchX.clamped(to: paddle.width/2...worldWidth - paddle.width/2)
-        spawnBall()
-        attachReadyBallsToPaddle()
+        paddleTargetX = paddle.x
+        volleyReturnAnchorX = Float.nan
+        volleyReturnSumX = 0
+        volleyReturnCount = 0
+        spawnBall(spawnX: paddle.x)
+        syncAimForLaunch()
         state = .ready
         updatePowerupStatus()
     }
 
+    private func shouldAwardVolleyBall(turnCount: Int) -> Bool {
+        if turnCount <= 3 {
+            return true
+        }
+        if turnCount <= 10 {
+            return turnCount % 2 == 0
+        }
+        return turnCount % 3 == 0
+    }
+
     private func launchVolleyTurn() {
-        guard let firstBall = balls.first(where: { $0.vy == 0 }) else { return }
-        if firstBall.vx != 0 || firstBall.vy != 0 { return }
+        if volleyTurnActive { return }
+        var firstBall = balls.first(where: { abs($0.vx) < 0.001 && abs($0.vy) < 0.001 })
+        if firstBall == nil {
+            spawnBall(spawnX: paddle.x)
+            firstBall = balls.last
+        }
+        guard let launchBall = firstBall else { return }
+        if abs(launchBall.vx) >= 0.001 || abs(launchBall.vy) >= 0.001 { return }
 
         volleyTurnActive = true
-        volleyQueuedBalls = volleyBallCount - 1
+        volleyQueuedBalls = max(0, volleyBallCount - 1)
         volleyLaunchTimer = 0
         volleyLaunchX = paddle.x
         volleyReturnAnchorX = Float.nan
+        volleyReturnSumX = 0
+        volleyReturnCount = 0
 
-        launchBallWithAim(firstBall)
+        launchBallWithAim(launchBall)
         emit(.sound(.bounce, volume: 0.45))
         aimHasInput = false
         aimNormalized = 0
@@ -1334,17 +1469,81 @@ class GameEngine {
     }
 
     private func hasVolleyBreach() -> Bool {
-        let launchLineY = paddle.y + 8 // Launch line is a bit above paddle
-        return bricks.contains { $0.alive && $0.y < launchLineY }
+        let launchLineY = paddle.y + paddle.height * 0.5 + 1.8
+        return bricks.contains { $0.alive && $0.y <= launchLineY }
     }
 
     private func spawnVolleyTopRow() {
-        // Add a new row of bricks at the top
+        let cols = 12
         let rowY = worldHeight * 0.75 + Float(volleyAdvanceRows) * 6
-        for col in 0..<12 {
-            let x = Float(col) * (worldWidth / 12) + (worldWidth / 24)
-            let brick = Brick(x: x, y: rowY, width: worldWidth / 12 - 1, height: 5, type: .normal, hitPoints: 1)
-            bricks.append(brick)
+        let brickWidth = worldWidth / Float(cols) - 1
+
+        var occupiedCols = Set<Int>()
+        for brick in bricks where brick.alive && abs(brick.y - rowY) < 2.6 {
+            let rawCol = Int((brick.x / worldWidth) * Float(cols))
+            let col = max(0, min(cols - 1, rawCol))
+            occupiedCols.insert(col)
+        }
+
+        let aliveBricks = bricks.filter { $0.alive }.count
+        let softCap = max(cols * 5, 24)
+        let congestionPenalty = Float(max(0, aliveBricks - softCap)) / Float(softCap)
+        let clampedCongestion = congestionPenalty.clamped(to: 0...0.38)
+        let earlyEase: Float
+        if volleyTurnCount < 2 {
+            earlyEase = 0.16
+        } else if volleyTurnCount < 5 {
+            earlyEase = 0.09
+        } else {
+            earlyEase = 0
+        }
+        let density = (0.68 + Float(levelIndex) * 0.009 + Float(volleyTurnCount) * 0.005 - clampedCongestion - earlyEase).clamped(to: 0.46...0.87)
+
+        let ballRelief = (Float(max(0, volleyBallCount - 5)) * 0.04).clamped(to: 0...0.24)
+        let hpScale = max(0.85, 1 + Float(levelIndex) * 0.06 + Float(volleyTurnCount) * 0.024 - ballRelief)
+        let danger = (Float(volleyTurnCount) / 10).clamped(to: 0...1)
+        let explosiveChance = min(0.1, 0.035 + danger * 0.05)
+        let reinforcedChance = min(0.23, 0.11 + danger * 0.09)
+        let armoredChance = volleyTurnCount < 2 ? 0 : min(0.17, 0.06 + danger * 0.08)
+
+        let forcedGapPrimary = Int.random(in: 0..<cols)
+        let forcedGapSecondary = volleyTurnCount < 5 && cols >= 8 ? (forcedGapPrimary + max(2, cols / 3)) % cols : -1
+        let forcedGapTertiary = volleyTurnCount < 8 && cols >= 11 ? (forcedGapPrimary + cols / 2) % cols : -1
+        var forcedGaps = Set([forcedGapPrimary])
+        if forcedGapSecondary >= 0 { forcedGaps.insert(forcedGapSecondary) }
+        if forcedGapTertiary >= 0 { forcedGaps.insert(forcedGapTertiary) }
+
+        var spawned = 0
+        for col in 0..<cols {
+            if forcedGaps.contains(col) || occupiedCols.contains(col) {
+                continue
+            }
+            if Float.random(in: 0...1) > density {
+                continue
+            }
+            let roll = Float.random(in: 0...1)
+            let type: BrickType
+            if roll < explosiveChance {
+                type = .explosive
+            } else if roll < explosiveChance + reinforcedChance {
+                type = .reinforced
+            } else if roll < explosiveChance + reinforcedChance + armoredChance {
+                type = .armored
+            } else {
+                type = .normal
+            }
+            let hp = max(1, Int(round(Float(type.baseHitPoints) * hpScale)))
+            let x = Float(col) * (worldWidth / Float(cols)) + (worldWidth / Float(cols * 2))
+            bricks.append(Brick(x: x, y: rowY, width: brickWidth, height: 5, type: type, hitPoints: hp))
+            spawned += 1
+        }
+
+        if spawned == 0 {
+            if let fallbackCol = (0..<cols).first(where: { !forcedGaps.contains($0) && !occupiedCols.contains($0) }) {
+                let x = Float(fallbackCol) * (worldWidth / Float(cols)) + (worldWidth / Float(cols * 2))
+                let hp = max(1, Int(round(Float(BrickType.normal.baseHitPoints) * hpScale)))
+                bricks.append(Brick(x: x, y: rowY, width: brickWidth, height: 5, type: .normal, hitPoints: hp))
+            }
         }
     }
 
@@ -1407,6 +1606,7 @@ class GameEngine {
         comboTimer = 0
         activeEffects.removeAll()
         speedMultiplier = 1.0
+        timeWarpMultiplier = 1.0
         timerAccumulator = 0
         guardrailActive = false
         shieldCharges = gameMode.invaders ? shieldMaxCharges : 0
@@ -1430,6 +1630,17 @@ class GameEngine {
         if gameMode.rush {
             timeRemaining = gameMode.timeLimitSeconds
         }
+        if gameMode == .volley {
+            volleyTurnActive = false
+            volleyQueuedBalls = 0
+            volleyLaunchTimer = 0
+            volleyLaunchX = paddle.x
+            volleyReturnAnchorX = Float.nan
+            volleyReturnSumX = 0
+            volleyReturnCount = 0
+            volleyAdvanceRows = 0
+            volleyBallCount = max(5, volleyBallCount)
+        }
 
         // Generate level (simplified for now)
         generateLevel()
@@ -1441,6 +1652,7 @@ class GameEngine {
 
         spawnBall()
         updateAimFromPaddle()
+        updatePowerupStatus()
     }
 
     private func generateLevel() {
@@ -1472,11 +1684,13 @@ class GameEngine {
         runBricksBroken = 0
         runLivesLost = 0
         volleyTurnActive = false
-        volleyBallCount = 3
+        volleyBallCount = 5
         volleyQueuedBalls = 0
         volleyLaunchTimer = 0
         volleyLaunchX = 0
         volleyReturnAnchorX = Float.nan
+        volleyReturnSumX = 0
+        volleyReturnCount = 0
         volleyTurnCount = 0
         volleyAdvanceRows = 0
         delegate?.onScoreChanged(newScore: score)

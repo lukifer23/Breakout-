@@ -424,10 +424,68 @@ object LevelFactory {
             ),
             theme = LevelThemes.VAPOR,
             tip = "Ring formations require working from outside in."
+        ),
+        // Pattern 23: Dense block formation
+        LevelLayout(
+            rows = 8,
+            cols = 12,
+            bricks = parse(
+                listOf(
+                    "NNNNNNNNNNNN",
+                    "NNNNNNNNNNNN",
+                    "NNNNNNNNNNNN",
+                    "NNNNNNNNNNNN",
+                    "NNNNNNNNNNNN",
+                    "NNNNNNNNNNNN",
+                    "..RRRRRRRR..",
+                    "..RRRRRRRR.."
+                )
+            ),
+            theme = LevelThemes.COBALT,
+            tip = "Dense formations reward strategic clearing patterns."
+        ),
+        // Pattern 24: Compact fortress
+        LevelLayout(
+            rows = 9,
+            cols = 11,
+            bricks = parse(
+                listOf(
+                    "NNNNNNNNNNN",
+                    "NNNNNNNNNNN",
+                    "NNNNNNNNNNN",
+                    "NNNNNNNNNNN",
+                    "NNNNNNNNNNN",
+                    "NNNNNNNNNNN",
+                    "NNNNNNNNNNN",
+                    "..AAAAAAA..",
+                    "..AAAAAAA.."
+                )
+            ),
+            theme = LevelThemes.LAVA,
+            tip = "Fortress walls protect the armored core within."
+        ),
+        // Pattern 25: Solid mass with weak points
+        LevelLayout(
+            rows = 8,
+            cols = 12,
+            bricks = parse(
+                listOf(
+                    "NNNNNNNNNNNN",
+                    "NNNNNNNNNNNN",
+                    "NNNNNNNNNNNN",
+                    "NNNNN..NNNNN",
+                    "NNNN....NNNN",
+                    "NNNN....NNNN",
+                    "NNNNN..NNNNN",
+                    "NNNNNNNNNNNN"
+                )
+            ),
+            theme = LevelThemes.FOREST,
+            tip = "Find the weak points in this solid mass formation."
         )
     )
 
-    private val patternFillStartLevel = 3
+    private val patternFillStartLevel = 0
 
     fun buildLevel(
         index: Int,
@@ -519,10 +577,10 @@ object LevelFactory {
         val intensity = ((difficulty - 1f) / 2f).coerceIn(0f, 1f)
         // Gradual density ramp based on level ranges
         val baseDensity = when {
-            levelIndex <= 6 -> 0.52f + (levelIndex - 3) * 0.045f // Levels 4-6: 52% to ~66%
-            levelIndex <= 10 -> 0.66f + (levelIndex - 6) * 0.03f // Levels 7-10: 66% to 78%
-            else -> 0.8f // Levels 11+: 80%
-        }.coerceIn(0.48f, 0.9f)
+            levelIndex <= 5 -> 0.55f + levelIndex * 0.02f // Levels 0-5: 55% to 65%
+            levelIndex <= 10 -> 0.68f + (levelIndex - 5) * 0.025f // Levels 6-10: 68% to 80%
+            else -> 0.82f // Levels 11+: 82%
+        }.coerceIn(0.55f, 0.9f)
         for (row in 0 until layout.rows) {
             for (col in 0 until layout.cols) {
                 if (existing.containsKey(col to row)) continue
@@ -531,12 +589,12 @@ object LevelFactory {
                 if (random.nextFloat() > density) continue
                 val typeRoll = random.nextFloat()
                 val type = when {
-                    typeRoll < 0.025f + intensity * 0.035f -> BrickType.EXPLOSIVE
-                    typeRoll < 0.045f + intensity * 0.04f -> BrickType.MOVING
-                    typeRoll < 0.065f + intensity * 0.035f -> BrickType.SPAWNING
-                    typeRoll > 0.985f - intensity * 0.02f -> BrickType.PHASE
-                    typeRoll > 0.92f -> BrickType.REINFORCED
-                    typeRoll < 0.13f -> BrickType.ARMORED
+                    typeRoll < 0.045f + intensity * 0.055f -> BrickType.EXPLOSIVE
+                    typeRoll < 0.075f + intensity * 0.06f -> BrickType.MOVING
+                    typeRoll < 0.095f + intensity * 0.055f -> BrickType.SPAWNING
+                    typeRoll > 0.975f - intensity * 0.03f -> BrickType.PHASE
+                    typeRoll > 0.88f -> BrickType.REINFORCED
+                    typeRoll < 0.18f -> BrickType.ARMORED
                     else -> BrickType.NORMAL
                 }
                 val baseHp = when (type) {

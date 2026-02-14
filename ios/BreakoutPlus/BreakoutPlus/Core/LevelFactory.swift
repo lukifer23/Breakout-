@@ -154,54 +154,123 @@ enum LevelFactory {
                 layout: invaderPattern,
                 worldWidth: worldWidth,
                 worldHeight: worldHeight,
-                difficulty: max(1.0, diff * 0.96)
+                difficulty: max(1.0, diff * 0.96),
+                levelIndex: index,
+                fillGaps: false
             )
             return (bricks, .invaders, invaderPattern.tip)
         }
 
         if !endless {
             let layout = basePatterns[index % basePatterns.count]
-            let bricks = buildFrom(layout: layout, worldWidth: worldWidth, worldHeight: worldHeight, difficulty: diff)
+            let bricks = buildFrom(
+                layout: layout,
+                worldWidth: worldWidth,
+                worldHeight: worldHeight,
+                difficulty: diff,
+                levelIndex: index,
+                fillGaps: true
+            )
             return (bricks, modeTheme, layout.tip)
         }
 
         // Endless: procedural mix of types with scaling difficulty.
+        let aspect = worldHeight / max(1, worldWidth)
+        let tallRowsBoost = extraRowsForAspect(aspect)
         let cols = 12 + min(2, index / 5)
-        let rows = 8 + min(4, index / 4)
+        let rows = 8 + min(4, index / 4) + tallRowsBoost
         let brickWidth = worldWidth / Float(cols)
-        let brickHeight: Float = 6.0
-        let startY = worldHeight * 0.62
+        let bounds = brickFieldBounds(aspect: aspect, endless: true)
+        let areaTop = worldHeight * bounds.top
+        let areaBottom = worldHeight * bounds.bottom
+        let cellHeight = (areaTop - areaBottom) / Float(max(1, rows))
+        let brickHeight = max(3.8, cellHeight - 0.8)
 
         var bricks: [Brick] = []
         bricks.reserveCapacity(rows * cols)
         for row in 0..<rows {
             for col in 0..<cols {
-                if hashUnit(index * 719 + row * 29 + col * 11) < 0.12 { continue }
-                let t: BrickType = randomBrickType(level: index, row: row)
+                if hashUnit(index * 719 + row * 29 + col * 11) < 0.08 { continue }
+                let visualRow = row
+                let t: BrickType = randomBrickType(level: index, row: visualRow)
                 let hp = t == .unbreakable ? t.baseHitPoints : max(1, Int(Float(t.baseHitPoints) * diff))
                 let x = Float(col) * brickWidth + brickWidth / 2
-                let y = startY + Float(row) * brickHeight
+                let y = areaTop - (Float(visualRow) + 0.5) * cellHeight
                 bricks.append(Brick(x: x, y: y, width: brickWidth - 1, height: brickHeight - 1, type: t, hitPoints: hp))
             }
         }
         return (bricks, modeTheme, "Endless: adaptive layouts and escalating difficulty.")
     }
 
-    private static func buildFrom(layout: LevelLayout, worldWidth: Float, worldHeight: Float, difficulty: Float) -> [Brick] {
+    private static func buildFrom(
+        layout: LevelLayout,
+        worldWidth: Float,
+        worldHeight: Float,
+        difficulty: Float,
+        levelIndex: Int,
+        fillGaps: Bool
+    ) -> [Brick] {
+        let aspect = worldHeight / max(1, worldWidth)
+        let extraRows = fillGaps ? extraRowsForAspect(aspect) : 0
+        let totalRows = max(1, layout.rows + extraRows)
         let brickWidth = worldWidth / Float(layout.cols)
-        let brickHeight: Float = 6.0
-        let startY = worldHeight * 0.62
+        let bounds = brickFieldBounds(aspect: aspect, endless: false)
+        let areaTop = worldHeight * bounds.top
+        let areaBottom = worldHeight * bounds.bottom
+        let cellHeight = (areaTop - areaBottom) / Float(totalRows)
+        let brickHeight = max(3.8, cellHeight - 0.8)
+        let aspectBoost: Float = aspect >= 1.95 ? 0.07 : (aspect <= 1.45 ? 0.04 : 0.02)
+        let baseDensity: Float
+        if levelIndex <= 5 {
+            baseDensity = 0.55 + Float(levelIndex) * 0.02
+        } else if levelIndex <= 10 {
+            baseDensity = 0.68 + Float(levelIndex - 5) * 0.025
+        } else {
+            baseDensity = 0.82
+        }
 
         var bricks: [Brick] = []
-        bricks.reserveCapacity(layout.rows * layout.cols)
+        bricks.reserveCapacity(totalRows * layout.cols)
 
         for (row, line) in layout.lines.enumerated() {
-            for (col, ch) in line.enumerated() {
-                guard let t = charToType(ch) else { continue }
-                let hp = t == .unbreakable ? t.baseHitPoints : max(1, Int(Float(t.baseHitPoints) * difficulty))
+            let chars = Array(line)
+            for col in 0..<layout.cols {
+                let ch: Character = col < chars.count ? chars[col] : "."
                 let x = Float(col) * brickWidth + brickWidth / 2
-                let y = startY + Float(row) * brickHeight
+                let visualRow = row
+                let y = areaTop - (Float(visualRow) + 0.5) * cellHeight
+
+                if let t = charToType(ch) {
+                    let hp = t == .unbreakable ? t.baseHitPoints : max(1, Int(Float(t.baseHitPoints) * difficulty))
+                    bricks.append(Brick(x: x, y: y, width: brickWidth - 1, height: brickHeight - 1, type: t, hitPoints: hp))
+                    continue
+                }
+
+                if !fillGaps { continue }
+                let seed = levelIndex * 911 + row * 73 + col * 41
+                let rowProgress = layout.rows > 1 ? Float(row) / Float(layout.rows - 1) : 0
+                let gapDensity = (baseDensity + aspectBoost - rowProgress * 0.08).clamped(to: 0.46...0.9)
+                if Float(hashUnit(seed)) > gapDensity { continue }
+
+                let t = fillType(seed: seed + 17, level: levelIndex, allowExplosive: levelIndex >= 2)
+                let hp = max(1, Int(Float(t.baseHitPoints) * difficulty))
                 bricks.append(Brick(x: x, y: y, width: brickWidth - 1, height: brickHeight - 1, type: t, hitPoints: hp))
+            }
+        }
+
+        if fillGaps && extraRows > 0 {
+            for row in 0..<extraRows {
+                let rowDensity = (row == 0 ? 0.75 : 0.64) + min(0.1, Float(levelIndex) * 0.007)
+                for col in 0..<layout.cols {
+                    let seed = levelIndex * 1319 + row * 89 + col * 53
+                    if Float(hashUnit(seed)) > rowDensity { continue }
+                    let t = fillType(seed: seed + 31, level: levelIndex + row + 1, allowExplosive: levelIndex >= 4)
+                    let hp = max(1, Int(Float(t.baseHitPoints) * difficulty))
+                    let x = Float(col) * brickWidth + brickWidth / 2
+                    let visualRow = layout.rows + row
+                    let y = areaTop - (Float(visualRow) + 0.5) * cellHeight
+                    bricks.append(Brick(x: x, y: y, width: brickWidth - 1, height: brickHeight - 1, type: t, hitPoints: hp))
+                }
             }
         }
         return bricks
@@ -386,6 +455,8 @@ enum LevelFactory {
             rotation = [.neon, .sunset, .cobalt, .aurora, .forest, .lava]
         case .god:
             rotation = [.aurora, .forest, .cobalt]
+        case .zen:
+            rotation = [.aurora, .forest, .cobalt]
         case .rush:
             rotation = [.lava, .sunset, .forest]
         case .volley:
@@ -441,6 +512,46 @@ enum LevelFactory {
         if r < 0.97 { return .spawning }
         if r < 0.99 { return .phase }
         return row < 2 ? .unbreakable : .boss
+    }
+
+    private static func fillType(seed: Int, level: Int, allowExplosive: Bool) -> BrickType {
+        let roll = hashUnit(seed)
+        if allowExplosive && roll < 0.06 { return .explosive }
+        if level >= 4 && roll < 0.11 { return .moving }
+        if level >= 5 && roll < 0.15 { return .spawning }
+        if level >= 7 && roll > 0.965 { return .phase }
+        if level >= 10 && roll > 0.992 { return .boss }
+        if roll < 0.34 { return .reinforced }
+        if roll < 0.46 { return .armored }
+        return .normal
+    }
+
+    private static func extraRowsForAspect(_ aspect: Float) -> Int {
+        if aspect >= 2.12 { return 3 }
+        if aspect >= 1.95 { return 2 }
+        if aspect >= 1.80 { return 1 }
+        if aspect <= 1.45 { return 1 }
+        return 0
+    }
+
+    private static func brickFieldBounds(aspect: Float, endless: Bool) -> (top: Float, bottom: Float) {
+        let top: Float
+        let bottom: Float
+        switch aspect {
+        case ..<1.45:
+            top = 0.86
+            bottom = endless ? 0.40 : 0.42
+        case ..<1.80:
+            top = 0.84
+            bottom = endless ? 0.36 : 0.38
+        case ..<2.00:
+            top = 0.82
+            bottom = endless ? 0.33 : 0.34
+        default:
+            top = 0.80
+            bottom = endless ? 0.30 : 0.31
+        }
+        return (top, bottom)
     }
 
     private static func hashUnit(_ seed: Int) -> Double {

@@ -42,6 +42,7 @@ class GameViewModel: ObservableObject {
     @AppStorage("masterVolume") var masterVolume: Double = 1.0
     @AppStorage("effectsVolume") var effectsVolume: Double = 0.8
     @AppStorage("musicVolume") var musicVolume: Double = 0.28
+    @AppStorage("playerName") var playerName: String = "Player"
 
     private var cancellables = Set<AnyCancellable>()
 

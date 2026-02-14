@@ -20,6 +20,7 @@ struct SettingsView: View {
     @AppStorage("masterVolume") private var masterVolume: Double = 1.0
     @AppStorage("effectsVolume") private var effectsVolume: Double = 0.8
     @AppStorage("musicVolume") private var musicVolume: Double = 0.6
+    @AppStorage("playerName") private var playerName: String = "Player"
 
     var body: some View {
         ZStack {
@@ -44,6 +45,42 @@ struct SettingsView: View {
 
                 ScrollView(.vertical, showsIndicators: false) {
                     VStack(spacing: 16) {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Profile")
+                                .foregroundColor(.white.opacity(0.9))
+                                .font(.system(size: 14, weight: .semibold))
+
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Display Name")
+                                    .foregroundColor(.white)
+                                    .font(.system(size: 16, weight: .semibold))
+                                TextField("Player", text: $playerName)
+                                    .textInputAutocapitalization(.words)
+                                    .disableAutocorrection(true)
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 10)
+                                    .background(Color(hex: "121922"))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .stroke(Color(hex: "31E1F7").opacity(0.18), lineWidth: 1)
+                                    )
+                                    .cornerRadius(10)
+                                Text("Used for local scoreboard entries.")
+                                    .foregroundColor(.white.opacity(0.6))
+                                    .font(.system(size: 12))
+                            }
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 12)
+                            .background(Color(hex: "1A1F26"))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 14)
+                                    .stroke(Color(hex: "31E1F7").opacity(0.16), lineWidth: 1)
+                            )
+                            .cornerRadius(14)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
                         VStack(alignment: .leading, spacing: 12) {
                             Text("Audio")
                                 .foregroundColor(.white.opacity(0.9))

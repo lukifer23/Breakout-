@@ -9,7 +9,7 @@
 import Foundation
 
 enum GameMode: String, CaseIterable, Identifiable, Codable {
-    case classic, timed, endless, god, rush, volley, tunnel, survival, invaders
+    case classic, timed, endless, god, rush, volley, tunnel, survival, invaders, zen
 
     var id: String { rawValue }
 
@@ -24,6 +24,7 @@ enum GameMode: String, CaseIterable, Identifiable, Codable {
         case .tunnel: return "Tunnel Siege"
         case .survival: return "Survival"
         case .invaders: return "Invaders"
+        case .zen: return "Zen Mode"
         }
     }
 
@@ -38,6 +39,7 @@ enum GameMode: String, CaseIterable, Identifiable, Codable {
         case .tunnel: return "Break through a fortified ring and route shots through a narrow entry tunnel."
         case .survival: return "One life. Speed ramps faster as you climb."
         case .invaders: return "Breakout meets space invaders. Bounce shots to clear ships while dodging fire."
+        case .zen: return "Relaxing brick-breaking without pressure. No scores or lives to worry about."
         }
     }
 
@@ -46,12 +48,13 @@ enum GameMode: String, CaseIterable, Identifiable, Codable {
         case .classic: return "Lives 3 • No timer • Balanced"
         case .timed: return "Lives 2 • 2:30 timer • Fast"
         case .endless: return "Lives 3 • No timer • Scaling"
-        case .god: return "Infinite lives • No timer"
+        case .god: return "Infinite lives • Endless levels"
         case .rush: return "Lives 1 • 0:55 per level • Hardcore"
         case .volley: return "Lives 1 • Turn-based • Chain shots"
         case .tunnel: return "Lives 2 • Precision routing • Fortress"
         case .survival: return "Lives 1 • No timer • High speed"
         case .invaders: return "Shielded paddle • Enemy fire • No timer"
+        case .zen: return "No scores • No lives • Relaxed"
         }
     }
 
@@ -59,7 +62,7 @@ enum GameMode: String, CaseIterable, Identifiable, Codable {
         switch self {
         case .classic, .endless, .invaders: return 3
         case .timed: return 2
-        case .god: return 99
+        case .god, .zen: return 99
         case .rush, .volley, .survival: return 1
         case .tunnel: return 2
         }
@@ -76,14 +79,14 @@ enum GameMode: String, CaseIterable, Identifiable, Codable {
 
     var endless: Bool {
         switch self {
-        case .endless, .survival: return true
+        case .endless, .survival, .god: return true
         default: return false
         }
     }
 
     var godMode: Bool {
         switch self {
-        case .god: return true
+        case .god, .zen: return true
         default: return false
         }
     }
@@ -113,6 +116,7 @@ enum GameMode: String, CaseIterable, Identifiable, Codable {
         case .tunnel: return 79.5
         case .survival: return 92.5
         case .invaders: return 78.2
+        case .zen: return 72.25
         }
     }
 }

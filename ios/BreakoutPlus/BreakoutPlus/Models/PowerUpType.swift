@@ -11,6 +11,7 @@ import Foundation
 enum PowerUpType: String, CaseIterable {
     case multiBall, laser, guardrail, shield, extraLife, widePaddle, shrink
     case slowMotion, overdrive, fireball, magnet, gravityWell, ballSplitter, freeze, pierce
+    case ricochet, timeWarp, doubleScore
 
     var displayName: String {
         switch self {
@@ -29,6 +30,9 @@ enum PowerUpType: String, CaseIterable {
         case .ballSplitter: return "Ball Splitter"
         case .freeze: return "Freeze"
         case .pierce: return "Pierce"
+        case .ricochet: return "Ricochet"
+        case .timeWarp: return "Time Warp"
+        case .doubleScore: return "2x Score"
         }
     }
 
@@ -49,6 +53,9 @@ enum PowerUpType: String, CaseIterable {
         case .ballSplitter: return "Splits ball into multiple projectiles"
         case .freeze: return "Freezes time temporarily"
         case .pierce: return "Ball passes through multiple bricks"
+        case .ricochet: return "Balls gain extra wall bounces"
+        case .timeWarp: return "Slows world movement while preserving ball speed"
+        case .doubleScore: return "Doubles score rewards for a short time"
         }
     }
 
@@ -69,6 +76,9 @@ enum PowerUpType: String, CaseIterable {
         case .ballSplitter: return 0  // Instant effect
         case .freeze: return 5.0
         case .pierce: return 12.0
+        case .ricochet: return 15.0
+        case .timeWarp: return 10.0
+        case .doubleScore: return 8.0
         }
     }
 
@@ -89,6 +99,9 @@ enum PowerUpType: String, CaseIterable {
         case .ballSplitter: return (1.0, 1.0, 0.3)   // Yellow
         case .freeze: return (0.7, 0.9, 1.0)         // Ice blue
         case .pierce: return (0.9, 0.9, 0.9)         // Silver
+        case .ricochet: return (0.6, 0.8, 1.0)       // Light cyan
+        case .timeWarp: return (0.4, 0.9, 0.7)       // Mint
+        case .doubleScore: return (1.0, 0.8, 0.3)    // Amber
         }
     }
 
@@ -97,7 +110,7 @@ enum PowerUpType: String, CaseIterable {
     }
 
     var affectsPhysics: Bool {
-        return self == .slowMotion || self == .freeze || self == .overdrive
+        return self == .slowMotion || self == .freeze || self == .overdrive || self == .timeWarp
     }
 
     var affectsPaddle: Bool {
@@ -105,6 +118,6 @@ enum PowerUpType: String, CaseIterable {
     }
 
     var affectsBall: Bool {
-        return self == .fireball || self == .pierce
+        return self == .fireball || self == .pierce || self == .ricochet
     }
 }

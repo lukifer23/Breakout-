@@ -13,242 +13,268 @@ struct GameView: View {
     @State private var scene: GameScene?
 
     var body: some View {
-        ZStack {
-            // SpriteKit Game Scene
-            if let scene {
-                SpriteView(scene: scene)
-                    .edgesIgnoringSafeArea(.all)
-            }
+        GeometryReader { geometry in
+            let isZenMode = gameViewModel.selectedGameMode == .zen
+            let safeTop = max(geometry.safeAreaInsets.top, 10)
+            let visibleStatuses = Array(gameViewModel.powerupStatuses.prefix(3))
 
-            // HUD Overlay
-            VStack(spacing: 8) {
-                // Top HUD
-                HStack {
-                    Text("Score: \(gameViewModel.score)")
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(Color.black.opacity(0.5))
-                        .cornerRadius(8)
-
-                    Spacer()
-
-                    let isCountdown = gameViewModel.selectedGameMode.timeLimitSeconds > 0
-                    Text("\(isCountdown ? "Time" : "Elapsed") \(timeString(from: gameViewModel.timeRemaining))")
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundColor(isCountdown && gameViewModel.timeRemaining <= 10 ? .red : .white)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(Color.black.opacity(0.5))
-                        .cornerRadius(8)
-
-                    Text("Lives: \(gameViewModel.lives)")
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(Color.black.opacity(0.5))
-                        .cornerRadius(8)
+            ZStack {
+                // SpriteKit Game Scene
+                if let scene {
+                    SpriteView(scene: scene)
+                        .edgesIgnoringSafeArea(.all)
                 }
-                .padding(.top, 50)
-                .padding(.horizontal, 20)
 
-                // Secondary HUD row pinned near top so gameplay/paddle area stays clear.
-                HStack {
-                    Text("Level \(gameViewModel.level)")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(Color.black.opacity(0.5))
-                        .cornerRadius(6)
+                // HUD Overlay
+                VStack(spacing: 6) {
+                    HStack {
+                        if !isZenMode {
+                            Text("Score: \(gameViewModel.score)")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 9)
+                                .padding(.vertical, 5)
+                                .background(Color.black.opacity(0.45))
+                                .cornerRadius(8)
 
-                    Spacer()
+                            Spacer()
 
-                    if gameViewModel.comboCount > 1 {
-                        Text("Combo x\(gameViewModel.comboCount)")
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundColor(.yellow)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(Color.black.opacity(0.5))
+                            let isCountdown = gameViewModel.selectedGameMode.timeLimitSeconds > 0
+                            Text("\(isCountdown ? "Time" : "Elapsed") \(timeString(from: gameViewModel.timeRemaining))")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(isCountdown && gameViewModel.timeRemaining <= 10 ? .red : .white)
+                                .padding(.horizontal, 9)
+                                .padding(.vertical, 5)
+                                .background(Color.black.opacity(0.45))
+                                .cornerRadius(8)
+
+                            Text("Lives: \(gameViewModel.lives)")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 9)
+                                .padding(.vertical, 5)
+                                .background(Color.black.opacity(0.45))
+                                .cornerRadius(8)
+                        } else {
+                            Spacer()
+                            Text("Zen Mode")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(.white.opacity(0.95))
+                                .padding(.horizontal, 9)
+                                .padding(.vertical, 5)
+                                .background(Color.black.opacity(0.45))
+                                .cornerRadius(8)
+                            Spacer()
+                        }
+                    }
+                    .padding(.top, safeTop + 52)
+                    .padding(.horizontal, 16)
+
+                    HStack {
+                        Text("Level \(gameViewModel.level)")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(Color.black.opacity(0.45))
                             .cornerRadius(6)
-                    }
 
-                    ForEach(gameViewModel.powerupStatuses, id: \.type) { status in
-                        PowerupChip(status: status)
-                    }
-                }
-                .padding(.horizontal, 20)
+                        Spacer()
 
-                Spacer()
-            }
-            .allowsHitTesting(false)
-
-            // Top-center controls
-            VStack {
-                HStack {
-                    if gameViewModel.leftHanded {
-                        Button(action: {
-                            if gameViewModel.isPaused {
-                                gameViewModel.isPaused = false
-                                scene?.resumeGame()
-                            } else {
-                                gameViewModel.isPaused = true
-                                scene?.pauseGame()
-                            }
-                        }) {
-                            Text(gameViewModel.isPaused ? "RESUME" : "PAUSE")
-                                .font(.system(size: 14, weight: .bold))
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 10)
-                                .background(Color.black.opacity(0.55))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color(hex: "31E1F7").opacity(0.35), lineWidth: 1)
-                                )
-                                .cornerRadius(12)
+                        if !isZenMode && gameViewModel.comboCount > 1 {
+                            Text("Combo x\(gameViewModel.comboCount)")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor(.yellow)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 3)
+                                .background(Color.black.opacity(0.45))
+                                .cornerRadius(6)
                         }
-                        Spacer()
-                    } else {
-                        Spacer()
-                        Button(action: {
-                            if gameViewModel.isPaused {
-                                gameViewModel.isPaused = false
-                                scene?.resumeGame()
-                            } else {
-                                gameViewModel.isPaused = true
-                                scene?.pauseGame()
-                            }
-                        }) {
-                            Text(gameViewModel.isPaused ? "RESUME" : "PAUSE")
-                                .font(.system(size: 14, weight: .bold))
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 10)
-                                .background(Color.black.opacity(0.55))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color(hex: "31E1F7").opacity(0.35), lineWidth: 1)
-                                )
-                                .cornerRadius(12)
-                        }
-                        Spacer()
-                    }
-                }
-                .padding(.top, 14)
-                .padding(.horizontal, 18)
-                Spacer()
-            }
 
-            // Laser fire button (only when laser is active)
-            if gameViewModel.powerupStatuses.contains(where: { $0.type == .laser }) && !gameViewModel.isPaused && !gameViewModel.showGameOver && !gameViewModel.showLevelComplete {
-                VStack {
+                        if !isZenMode {
+                            ForEach(visibleStatuses, id: \.type) { status in
+                                PowerupChip(status: status)
+                            }
+                            if gameViewModel.powerupStatuses.count > visibleStatuses.count {
+                                Text("+\(gameViewModel.powerupStatuses.count - visibleStatuses.count)")
+                                    .font(.system(size: 11, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 7)
+                                    .padding(.vertical, 3)
+                                    .background(Color.black.opacity(0.45))
+                                    .cornerRadius(6)
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 16)
+
                     Spacer()
+                }
+                .allowsHitTesting(false)
+
+                // Top controls
+                VStack {
                     HStack {
                         if gameViewModel.leftHanded {
-                            Button(action: { scene?.fireLasers() }) {
-                                Text("FIRE")
+                            Button(action: {
+                                if gameViewModel.isPaused {
+                                    gameViewModel.isPaused = false
+                                    scene?.resumeGame()
+                                } else {
+                                    gameViewModel.isPaused = true
+                                    scene?.pauseGame()
+                                }
+                            }) {
+                                Text(gameViewModel.isPaused ? "RESUME" : "PAUSE")
                                     .font(.system(size: 14, weight: .bold))
                                     .foregroundColor(.white)
-                                    .padding(.horizontal, 18)
-                                    .padding(.vertical, 12)
-                                    .background(Color(hex: "FF4FD8").opacity(0.85))
-                                    .cornerRadius(14)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 10)
+                                    .background(Color.black.opacity(0.55))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(Color(hex: "31E1F7").opacity(0.35), lineWidth: 1)
+                                    )
+                                    .cornerRadius(12)
                             }
-                            .padding(.leading, 18)
-                            .padding(.bottom, 46)
                             Spacer()
                         } else {
                             Spacer()
-                            Button(action: { scene?.fireLasers() }) {
-                                Text("FIRE")
+                            Button(action: {
+                                if gameViewModel.isPaused {
+                                    gameViewModel.isPaused = false
+                                    scene?.resumeGame()
+                                } else {
+                                    gameViewModel.isPaused = true
+                                    scene?.pauseGame()
+                                }
+                            }) {
+                                Text(gameViewModel.isPaused ? "RESUME" : "PAUSE")
                                     .font(.system(size: 14, weight: .bold))
                                     .foregroundColor(.white)
-                                    .padding(.horizontal, 18)
-                                    .padding(.vertical, 12)
-                                    .background(Color(hex: "FF4FD8").opacity(0.85))
-                                    .cornerRadius(14)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 10)
+                                    .background(Color.black.opacity(0.55))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(Color(hex: "31E1F7").opacity(0.35), lineWidth: 1)
+                                    )
+                                    .cornerRadius(12)
                             }
-                            .padding(.trailing, 18)
-                            .padding(.bottom, 46)
+                        }
+                    }
+                    .padding(.top, safeTop + 8)
+                    .padding(.horizontal, 18)
+                    Spacer()
+                }
+
+                // Laser fire button (only when laser is active)
+                if gameViewModel.powerupStatuses.contains(where: { $0.type == .laser }) && !gameViewModel.isPaused && !gameViewModel.showGameOver && !gameViewModel.showLevelComplete {
+                    VStack {
+                        Spacer()
+                        HStack {
+                            if gameViewModel.leftHanded {
+                                Button(action: { scene?.fireLasers() }) {
+                                    Text("FIRE")
+                                        .font(.system(size: 14, weight: .bold))
+                                        .foregroundColor(.white)
+                                        .padding(.horizontal, 18)
+                                        .padding(.vertical, 12)
+                                        .background(Color(hex: "FF4FD8").opacity(0.85))
+                                        .cornerRadius(14)
+                                }
+                                .padding(.leading, 18)
+                                .padding(.bottom, 46)
+                                Spacer()
+                            } else {
+                                Spacer()
+                                Button(action: { scene?.fireLasers() }) {
+                                    Text("FIRE")
+                                        .font(.system(size: 14, weight: .bold))
+                                        .foregroundColor(.white)
+                                        .padding(.horizontal, 18)
+                                        .padding(.vertical, 12)
+                                        .background(Color(hex: "FF4FD8").opacity(0.85))
+                                        .cornerRadius(14)
+                                }
+                                .padding(.trailing, 18)
+                                .padding(.bottom, 46)
+                            }
                         }
                     }
                 }
-            }
 
-            // Tip banner
-            if let tip = gameViewModel.tipMessage, !tip.isEmpty, !gameViewModel.isPaused {
-                VStack {
-                    Text(tip)
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 10)
-                        .background(Color.black.opacity(0.55))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color(hex: "31E1F7").opacity(0.25), lineWidth: 1)
-                        )
-                        .cornerRadius(12)
-                        .padding(.top, 110)
-                    Spacer()
+                if let tip = gameViewModel.tipMessage, !tip.isEmpty, !gameViewModel.isPaused {
+                    VStack {
+                        Text(tip)
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 9)
+                            .background(Color.black.opacity(0.55))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color(hex: "31E1F7").opacity(0.25), lineWidth: 1)
+                            )
+                            .cornerRadius(12)
+                            .padding(.top, safeTop + 92)
+                        Spacer()
+                    }
+                    .transition(.opacity)
                 }
-                .transition(.opacity)
-            }
 
-            // Overlays
-            if gameViewModel.isPaused {
-                PauseOverlay(
-                    onResume: {
-                        gameViewModel.isPaused = false
-                        scene?.resumeGame()
-                    },
-                    onRestart: {
-                        gameViewModel.isPaused = false
-                        gameViewModel.showGameOver = false
-                        gameViewModel.showLevelComplete = false
-                        scene?.restartGame()
-                    },
-                    onMenu: {
-                        gameViewModel.exitToMenu()
-                    }
-                )
-            }
+                // Overlays
+                if gameViewModel.isPaused {
+                    PauseOverlay(
+                        onResume: {
+                            gameViewModel.isPaused = false
+                            scene?.resumeGame()
+                        },
+                        onRestart: {
+                            gameViewModel.isPaused = false
+                            gameViewModel.showGameOver = false
+                            gameViewModel.showLevelComplete = false
+                            scene?.restartGame()
+                        },
+                        onMenu: {
+                            gameViewModel.exitToMenu()
+                        }
+                    )
+                }
 
-            if gameViewModel.showLevelComplete {
-                EndOverlay(
-                    title: "LEVEL CLEAR",
-                    summary: gameViewModel.lastSummary,
-                    primaryTitle: "NEXT LEVEL",
-                    secondaryTitle: "MENU",
-                    onPrimary: {
-                        gameViewModel.showLevelComplete = false
-                        scene?.nextLevel()
-                    },
-                    onSecondary: {
-                        gameViewModel.exitToMenu()
-                    }
-                )
-            }
+                if gameViewModel.showLevelComplete {
+                    EndOverlay(
+                        title: "LEVEL CLEAR",
+                        summary: gameViewModel.lastSummary,
+                        primaryTitle: "NEXT LEVEL",
+                        secondaryTitle: "MENU",
+                        onPrimary: {
+                            gameViewModel.showLevelComplete = false
+                            scene?.nextLevel()
+                        },
+                        onSecondary: {
+                            gameViewModel.exitToMenu()
+                        }
+                    )
+                }
 
-            if gameViewModel.showGameOver {
-                EndOverlay(
-                    title: "GAME OVER",
-                    summary: gameViewModel.lastSummary,
-                    primaryTitle: "RESTART",
-                    secondaryTitle: "MENU",
-                    onPrimary: {
-                        gameViewModel.showGameOver = false
-                        scene?.restartGame()
-                    },
-                    onSecondary: {
-                        gameViewModel.exitToMenu()
-                    }
-                )
+                if gameViewModel.showGameOver {
+                    EndOverlay(
+                        title: "GAME OVER",
+                        summary: gameViewModel.lastSummary,
+                        primaryTitle: "RESTART",
+                        secondaryTitle: "MENU",
+                        onPrimary: {
+                            gameViewModel.showGameOver = false
+                            scene?.restartGame()
+                        },
+                        onSecondary: {
+                            gameViewModel.exitToMenu()
+                        }
+                    )
+                }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .navigationBarHidden(true)
         .statusBar(hidden: true)
@@ -428,6 +454,7 @@ class GameScene: SKScene, GameEngineDelegate {
     private var lastBrickSnapshot: [UUID: (alive: Bool, hp: Int)] = [:]
     private var lastEngineState: GameState?
     private var activeTouchID: ObjectIdentifier?
+    private var pixelScale: CGFloat = max(2.0, UIScreen.main.scale)
 
     init(viewModel: GameViewModel) {
         self.viewModel = viewModel
@@ -443,6 +470,7 @@ class GameScene: SKScene, GameEngineDelegate {
         view.preferredFramesPerSecond = 120
         view.ignoresSiblingOrder = true
         view.shouldCullNonVisibleNodes = true
+        pixelScale = max(1, view.contentScaleFactor)
 
         setupScene()
         setupGame()
@@ -454,7 +482,7 @@ class GameScene: SKScene, GameEngineDelegate {
         physicsWorld.gravity = .zero
 
         // Add flash overlay for combo effects
-        flashNode = SKSpriteNode(color: .white, size: size)
+        flashNode = SKSpriteNode(color: UIColor(red: 0.19, green: 0.88, blue: 0.97, alpha: 1.0), size: size)
         flashNode?.position = CGPoint(x: size.width/2, y: size.height/2)
         flashNode?.alpha = 0.0
         flashNode?.zPosition = 100
@@ -488,6 +516,9 @@ class GameScene: SKScene, GameEngineDelegate {
 
     override func didChangeSize(_ oldSize: CGSize) {
         super.didChangeSize(oldSize)
+        if let view {
+            pixelScale = max(1, view.contentScaleFactor)
+        }
         flashNode?.size = size
         flashNode?.position = CGPoint(x: size.width / 2, y: size.height / 2)
         guard gameEngine != nil else { return }
@@ -501,7 +532,7 @@ class GameScene: SKScene, GameEngineDelegate {
             return
         }
 
-        let deltaTime = max(0.0, min(1.0 / 20.0, currentTime - lastUpdateTime))
+        let deltaTime = max(0.0, min(1.0 / 60.0, currentTime - lastUpdateTime))
         lastUpdateTime = currentTime
 
         gameEngine.update(deltaTime: deltaTime)
@@ -517,6 +548,12 @@ class GameScene: SKScene, GameEngineDelegate {
             blue: CGFloat(theme.background.blue),
             alpha: 1.0
         )
+        flashNode?.color = UIColor(
+            red: CGFloat(theme.accent.red),
+            green: CGFloat(theme.accent.green),
+            blue: CGFloat(theme.accent.blue),
+            alpha: 1.0
+        )
         paddleNode.color = UIColor(
             red: CGFloat(theme.paddle.red),
             green: CGFloat(theme.paddle.green),
@@ -527,9 +564,9 @@ class GameScene: SKScene, GameEngineDelegate {
         // Update paddle
         let paddleX = CGFloat(gameEngine.paddle.x / gameEngine.worldWidth) * size.width
         let paddleY = CGFloat(gameEngine.paddle.y / gameEngine.worldHeight) * size.height
-        paddleNode.position = CGPoint(x: paddleX, y: paddleY)
-        paddleNode.size.width = CGFloat(gameEngine.paddle.width / gameEngine.worldWidth) * size.width
-        paddleNode.size.height = CGFloat(gameEngine.paddle.height / gameEngine.worldHeight) * size.height
+        paddleNode.position = snappedPoint(CGPoint(x: paddleX, y: paddleY))
+        paddleNode.size.width = snappedLength(CGFloat(gameEngine.paddle.width / gameEngine.worldWidth) * size.width)
+        paddleNode.size.height = snappedLength(CGFloat(gameEngine.paddle.height / gameEngine.worldHeight) * size.height)
 
         // Update balls
         while ballNodes.count < gameEngine.balls.count {
@@ -549,7 +586,8 @@ class GameScene: SKScene, GameEngineDelegate {
                     ball: ball,
                     worldWidth: gameEngine.worldWidth,
                     worldHeight: gameEngine.worldHeight,
-                    sceneSize: size
+                    sceneSize: size,
+                    pixelScale: pixelScale
                 )
             }
         }
@@ -575,7 +613,8 @@ class GameScene: SKScene, GameEngineDelegate {
                     worldWidth: gameEngine.worldWidth,
                     worldHeight: gameEngine.worldHeight,
                     sceneSize: size,
-                    time: lastUpdateTime
+                    time: lastUpdateTime,
+                    pixelScale: pixelScale
                 )
 
                 // Impact FX: detect brick damage/destruction by comparing to prior snapshot.
@@ -616,7 +655,8 @@ class GameScene: SKScene, GameEngineDelegate {
                     worldWidth: gameEngine.worldWidth,
                     worldHeight: gameEngine.worldHeight,
                     sceneSize: size,
-                    time: lastUpdateTime
+                    time: lastUpdateTime,
+                    pixelScale: pixelScale
                 )
             }
         }
@@ -624,6 +664,7 @@ class GameScene: SKScene, GameEngineDelegate {
         // Update beams
         while beamNodes.count < gameEngine.beams.count {
             let beamNode = SKShapeNode(rectOf: CGSize(width: 6, height: 60), cornerRadius: 2)
+            beamNode.isAntialiased = false
             beamNode.fillColor = UIColor(red: 1.0, green: 0.2, blue: 0.8, alpha: 0.95)
             beamNode.strokeColor = beamNode.fillColor
             beamNode.lineWidth = 0
@@ -640,14 +681,16 @@ class GameScene: SKScene, GameEngineDelegate {
             if index < beamNodes.count {
                 let bx = CGFloat(beam.x / gameEngine.worldWidth) * size.width
                 let by = CGFloat(beam.y / gameEngine.worldHeight) * size.height
-                beamNodes[index].position = CGPoint(x: bx, y: by)
+                beamNodes[index].position = snappedPoint(CGPoint(x: bx, y: by))
                 if let shape = beamNodes[index] as? SKShapeNode {
+                    let w = snappedLength(CGFloat(beam.width / gameEngine.worldWidth) * size.width)
+                    let h = snappedLength(CGFloat(beam.height / gameEngine.worldHeight) * size.height)
                     shape.path = CGPath(
                         roundedRect: CGRect(
-                            x: -CGFloat(beam.width / gameEngine.worldWidth) * size.width / 2,
-                            y: -CGFloat(beam.height / gameEngine.worldHeight) * size.height / 2,
-                            width: CGFloat(beam.width / gameEngine.worldWidth) * size.width,
-                            height: CGFloat(beam.height / gameEngine.worldHeight) * size.height
+                            x: -w / 2,
+                            y: -h / 2,
+                            width: w,
+                            height: h
                         ),
                         cornerWidth: 2,
                         cornerHeight: 2,
@@ -661,6 +704,7 @@ class GameScene: SKScene, GameEngineDelegate {
         while enemyShotNodes.count < gameEngine.enemyShots.count {
             let shotPath = CGPath(ellipseIn: CGRect(x: -3, y: -3, width: 6, height: 6), transform: nil)
             let shotNode = SKShapeNode(path: shotPath)
+            shotNode.isAntialiased = false
             shotNode.fillColor = UIColor(red: 1.0, green: 0.3, blue: 0.0, alpha: 1.0)
             shotNode.strokeColor = UIColor(red: 1.0, green: 0.0, blue: 0.0, alpha: 1.0)
             shotNode.lineWidth = 1
@@ -677,7 +721,7 @@ class GameScene: SKScene, GameEngineDelegate {
             if index < enemyShotNodes.count {
                 let shotX = CGFloat(shot.x / gameEngine.worldWidth) * size.width
                 let shotY = CGFloat(shot.y / gameEngine.worldHeight) * size.height
-                enemyShotNodes[index].position = CGPoint(x: shotX, y: shotY)
+                enemyShotNodes[index].position = snappedPoint(CGPoint(x: shotX, y: shotY))
             }
         }
 
@@ -867,6 +911,15 @@ class GameScene: SKScene, GameEngineDelegate {
         )
     }
 
+    private func snappedPoint(_ point: CGPoint) -> CGPoint {
+        CGPoint(x: snappedLength(point.x), y: snappedLength(point.y))
+    }
+
+    private func snappedLength(_ value: CGFloat) -> CGFloat {
+        guard pixelScale > 0 else { return value }
+        return (value * pixelScale).rounded() / pixelScale
+    }
+
     private func findAimCollision(startX: CGFloat, startY: CGFloat, dirX: CGFloat, dirY: CGFloat, radius: CGFloat) -> AimHit {
         let wallHit = findAimWallCollision(startX: startX, startY: startY, dirX: dirX, dirY: dirY, radius: radius)
         if let brickHit = findAimBrickCollision(
@@ -1042,11 +1095,17 @@ class GameScene: SKScene, GameEngineDelegate {
         DispatchQueue.main.async {
             self.viewModel.comboCount = count
 
-            // Flash effect for combos
-            self.flashNode?.run(SKAction.sequence([
-                SKAction.fadeAlpha(to: 0.3, duration: 0.1),
-                SKAction.fadeAlpha(to: 0.0, duration: 0.2)
-            ]))
+            // Keep screen flashes intentional and subtle.
+            if count >= 6 && count % 6 == 0 {
+                self.flashNode?.removeAction(forKey: "comboFlash")
+                self.flashNode?.run(
+                    SKAction.sequence([
+                        SKAction.fadeAlpha(to: 0.06, duration: 0.04),
+                        SKAction.fadeAlpha(to: 0.0, duration: 0.12)
+                    ]),
+                    withKey: "comboFlash"
+                )
+            }
         }
     }
 
@@ -1102,10 +1161,11 @@ class GameScene: SKScene, GameEngineDelegate {
             self.viewModel.lastSummary = summary
             self.viewModel.showGameOver = true
             self.viewModel.isPaused = false
+            let trimmedName = self.viewModel.playerName.trimmingCharacters(in: .whitespacesAndNewlines)
             ScoreboardStore.shared.add(
                 score: summary.score,
                 mode: self.viewModel.selectedGameMode,
-                name: "Player",  // TODO: Prompt for name
+                name: trimmedName.isEmpty ? "Player" : trimmedName,
                 level: summary.level,
                 durationSeconds: summary.durationSeconds
             )
@@ -1336,12 +1396,14 @@ private final class BallVisualNode: SKNode {
     override init() {
         super.init()
 
+        shadowNode.isAntialiased = false
         shadowNode.fillColor = UIColor.black.withAlphaComponent(0.26)
         shadowNode.strokeColor = .clear
         shadowNode.lineWidth = 0
         shadowNode.zPosition = -3
         addChild(shadowNode)
 
+        glowNode.isAntialiased = false
         glowNode.fillColor = UIColor.white.withAlphaComponent(0.18)
         glowNode.strokeColor = .clear
         glowNode.lineWidth = 0
@@ -1349,6 +1411,7 @@ private final class BallVisualNode: SKNode {
         glowNode.zPosition = -2
         addChild(glowNode)
 
+        coreNode.isAntialiased = false
         coreNode.lineWidth = 0
         coreNode.zPosition = 0
         addChild(coreNode)
@@ -1376,13 +1439,13 @@ private final class BallVisualNode: SKNode {
         fatalError("init(coder:) has not been implemented")
     }
 
-    func apply(ball: Ball, worldWidth: Float, worldHeight: Float, sceneSize: CGSize) {
+    func apply(ball: Ball, worldWidth: Float, worldHeight: Float, sceneSize: CGSize, pixelScale: CGFloat) {
         let x = CGFloat(ball.x / worldWidth) * sceneSize.width
         let y = CGFloat(ball.y / worldHeight) * sceneSize.height
-        let scenePoint = CGPoint(x: x, y: y)
+        let scenePoint = snappedPoint(CGPoint(x: x, y: y), scale: pixelScale)
         position = scenePoint
 
-        let r = max(5.0, CGFloat(ball.radius / worldWidth) * sceneSize.width * 1.28)
+        let r = max(5.0, snappedLength(CGFloat(ball.radius / worldWidth) * sceneSize.width * 1.28, scale: pixelScale))
         let baseRect = CGRect(x: -r, y: -r, width: r * 2, height: r * 2)
         let speed = CGFloat(sqrt(ball.vx * ball.vx + ball.vy * ball.vy))
 
@@ -1391,11 +1454,11 @@ private final class BallVisualNode: SKNode {
         let rimColor = style.rim
         let glowColor = style.glow
 
-        shadowNode.path = CGPath(ellipseIn: CGRect(x: -r * 0.88, y: -r * 0.84, width: r * 1.76, height: r * 1.44), transform: nil)
-        shadowNode.position = CGPoint(x: r * 0.18, y: -r * 0.16)
+        shadowNode.path = CGPath(ellipseIn: CGRect(x: -r * 0.82, y: -r * 0.8, width: r * 1.64, height: r * 1.36), transform: nil)
+        shadowNode.position = snappedPoint(CGPoint(x: r * 0.12, y: -r * 0.12), scale: pixelScale)
 
-        glowNode.path = CGPath(ellipseIn: CGRect(x: -r * 1.42, y: -r * 1.42, width: r * 2.84, height: r * 2.84), transform: nil)
-        glowNode.fillColor = glowColor.withAlphaComponent(ball.isFireball ? 0.34 : 0.22)
+        glowNode.path = CGPath(ellipseIn: CGRect(x: -r * 1.18, y: -r * 1.18, width: r * 2.36, height: r * 2.36), transform: nil)
+        glowNode.fillColor = glowColor.withAlphaComponent(ball.isFireball ? 0.2 : 0.12)
 
         coreNode.path = CGPath(ellipseIn: baseRect, transform: nil)
         coreNode.fillColor = coreColor
@@ -1413,7 +1476,7 @@ private final class BallVisualNode: SKNode {
             speed: speed,
             radius: r,
             scenePoint: scenePoint,
-            color: glowColor.withAlphaComponent(ball.isFireball ? 0.60 : 0.42)
+            color: glowColor.withAlphaComponent(ball.isFireball ? 0.42 : 0.28)
         )
 
         if ball.isFireball {
@@ -1446,9 +1509,9 @@ private final class BallVisualNode: SKNode {
             let t = step / CGFloat(trailNodes.count + 1)
             let rr = max(1.4, radius * (0.72 - t * 0.42))
             node.path = CGPath(ellipseIn: CGRect(x: -rr, y: -rr, width: rr * 2, height: rr * 2), transform: nil)
-            node.position = CGPoint(x: -dx * step * 0.84, y: -dy * step * 0.84)
+            node.position = CGPoint(x: -dx * step * 0.8, y: -dy * step * 0.8)
             node.fillColor = color
-            node.alpha = max(0.12, (1 - t) * 0.44)
+            node.alpha = max(0.1, (1 - t) * 0.32)
             node.isHidden = false
         }
 
@@ -1476,6 +1539,15 @@ private final class BallVisualNode: SKNode {
             glow: UIColor(red: 0.42, green: 0.72, blue: 1.0, alpha: 1.0)
         )
     }
+
+    private func snappedPoint(_ point: CGPoint, scale: CGFloat) -> CGPoint {
+        CGPoint(x: snappedLength(point.x, scale: scale), y: snappedLength(point.y, scale: scale))
+    }
+
+    private func snappedLength(_ value: CGFloat, scale: CGFloat) -> CGFloat {
+        guard scale > 0 else { return value }
+        return (value * scale).rounded() / scale
+    }
 }
 
 private final class BrickVisualNode: SKNode {
@@ -1493,33 +1565,40 @@ private final class BrickVisualNode: SKNode {
     override init() {
         super.init()
 
+        shadow.isAntialiased = false
         shadow.lineWidth = 0
-        shadow.fillColor = UIColor.black.withAlphaComponent(0.24)
+        shadow.fillColor = UIColor.black.withAlphaComponent(0.16)
         shadow.strokeColor = .clear
         shadow.zPosition = -2
         addChild(shadow)
 
+        glow.isAntialiased = false
         glow.lineWidth = 0
-        glow.alpha = 0.22
+        glow.alpha = 0.14
         glow.zPosition = -1
         addChild(glow)
 
+        base.isAntialiased = false
         base.lineWidth = 0
         base.zPosition = 0
         addChild(base)
 
+        bevelTop.isAntialiased = false
         bevelTop.lineWidth = 0
         bevelTop.zPosition = 1
         addChild(bevelTop)
 
+        bevelBottom.isAntialiased = false
         bevelBottom.lineWidth = 0
         bevelBottom.zPosition = 1
         addChild(bevelBottom)
 
+        shine.isAntialiased = false
         shine.lineWidth = 0
         shine.zPosition = 2
         addChild(shine)
 
+        border.isAntialiased = false
         border.fillColor = .clear
         border.zPosition = 3
         addChild(border)
@@ -1556,12 +1635,13 @@ private final class BrickVisualNode: SKNode {
         worldWidth: Float,
         worldHeight: Float,
         sceneSize: CGSize,
-        time: TimeInterval
+        time: TimeInterval,
+        pixelScale: CGFloat
     ) {
-        let brickX = CGFloat(brick.x / worldWidth) * sceneSize.width
-        let brickY = CGFloat(brick.y / worldHeight) * sceneSize.height
-        let width = max(8, CGFloat(brick.width / worldWidth) * sceneSize.width)
-        let height = max(6, CGFloat(brick.height / worldHeight) * sceneSize.height)
+        let brickX = snappedLength(CGFloat(brick.x / worldWidth) * sceneSize.width, scale: pixelScale)
+        let brickY = snappedLength(CGFloat(brick.y / worldHeight) * sceneSize.height, scale: pixelScale)
+        let width = max(8, snappedLength(CGFloat(brick.width / worldWidth) * sceneSize.width, scale: pixelScale))
+        let height = max(6, snappedLength(CGFloat(brick.height / worldHeight) * sceneSize.height, scale: pixelScale))
         let corner = max(2, min(width, height) * 0.24)
         let rect = CGRect(x: -width / 2, y: -height / 2, width: width, height: height)
         let roundedPath = CGPath(
@@ -1575,7 +1655,7 @@ private final class BrickVisualNode: SKNode {
         if brick.type == .moving {
             posY += CGFloat(Darwin.sin(time * 4.6 + Double(wobbleSeed))) * 1.2
         }
-        position = CGPoint(x: brickX, y: posY)
+        position = snappedPoint(CGPoint(x: brickX, y: posY), scale: pixelScale)
 
         let c = brick.currentColor(theme: theme)
         let baseColor = UIColor(red: CGFloat(c.red), green: CGFloat(c.green), blue: CGFloat(c.blue), alpha: 1.0)
@@ -1585,19 +1665,19 @@ private final class BrickVisualNode: SKNode {
         let glyphColor = brighten(baseColor, by: 0.7).withAlphaComponent(0.88)
 
         shadow.path = CGPath(
-            roundedRect: rect.offsetBy(dx: width * 0.05, dy: -height * 0.08),
+            roundedRect: rect.offsetBy(dx: width * 0.02, dy: -height * 0.03),
             cornerWidth: corner,
             cornerHeight: corner,
             transform: nil
         )
 
         glow.path = CGPath(
-            roundedRect: rect.insetBy(dx: -2.0, dy: -2.0),
-            cornerWidth: corner + 2,
-            cornerHeight: corner + 2,
+            roundedRect: rect.insetBy(dx: -0.35, dy: -0.35),
+            cornerWidth: corner + 0.5,
+            cornerHeight: corner + 0.5,
             transform: nil
         )
-        glow.fillColor = baseColor.withAlphaComponent(brick.type == .unbreakable ? 0.2 : 0.16)
+        glow.fillColor = baseColor.withAlphaComponent(brick.type == .unbreakable ? 0.05 : 0.03)
 
         base.path = roundedPath
         base.fillColor = darken(baseColor, by: damage * 0.42)
@@ -1617,7 +1697,7 @@ private final class BrickVisualNode: SKNode {
             cornerHeight: max(1, corner * 0.45),
             transform: nil
         )
-        shine.fillColor = UIColor.white.withAlphaComponent(brick.type == .unbreakable ? 0.3 : 0.2)
+        shine.fillColor = UIColor.white.withAlphaComponent(brick.type == .unbreakable ? 0.09 : 0.05)
 
         let topBevelRect = CGRect(
             x: -width * 0.46,
@@ -1631,7 +1711,7 @@ private final class BrickVisualNode: SKNode {
             cornerHeight: max(1, corner * 0.32),
             transform: nil
         )
-        bevelTop.fillColor = brighten(baseColor, by: 0.52).withAlphaComponent(0.45)
+        bevelTop.fillColor = brighten(baseColor, by: 0.22).withAlphaComponent(0.14)
 
         let bottomBevelRect = CGRect(
             x: -width * 0.44,
@@ -1645,11 +1725,11 @@ private final class BrickVisualNode: SKNode {
             cornerHeight: max(1, corner * 0.28),
             transform: nil
         )
-        bevelBottom.fillColor = darken(baseColor, by: 0.42).withAlphaComponent(0.42)
+        bevelBottom.fillColor = darken(baseColor, by: 0.2).withAlphaComponent(0.14)
 
         border.path = roundedPath
-        border.lineWidth = max(1, height * 0.1)
-        border.strokeColor = brick.type == .unbreakable ? UIColor.white.withAlphaComponent(0.85) : edgeColor.withAlphaComponent(0.78)
+        border.lineWidth = max(1.2, height * 0.11)
+        border.strokeColor = brick.type == .unbreakable ? UIColor.white.withAlphaComponent(0.9) : edgeColor.withAlphaComponent(0.88)
 
         glyph.path = brickGlyphPath(type: brick.type, width: width * 0.65, height: height * 0.6)
         glyph.fillColor = glyphColor
@@ -1674,6 +1754,15 @@ private final class BrickVisualNode: SKNode {
             cracks.isHidden = true
             cracks.path = nil
         }
+    }
+
+    private func snappedPoint(_ point: CGPoint, scale: CGFloat) -> CGPoint {
+        CGPoint(x: snappedLength(point.x, scale: scale), y: snappedLength(point.y, scale: scale))
+    }
+
+    private func snappedLength(_ value: CGFloat, scale: CGFloat) -> CGFloat {
+        guard scale > 0 else { return value }
+        return (value * scale).rounded() / scale
     }
 
     private func brickGlyphPath(type: BrickType, width: CGFloat, height: CGFloat) -> CGPath {
@@ -1751,12 +1840,14 @@ private final class PowerupVisualNode: SKNode {
     override init() {
         super.init()
 
+        shadow.isAntialiased = false
         shadow.lineWidth = 0
         shadow.fillColor = UIColor.black.withAlphaComponent(0.26)
         shadow.strokeColor = .clear
         shadow.zPosition = -1
         addChild(shadow)
 
+        aura.isAntialiased = false
         aura.lineWidth = 0
         aura.zPosition = 0
         addChild(aura)
@@ -1770,6 +1861,7 @@ private final class PowerupVisualNode: SKNode {
         orbit.lineCap = .round
         addChild(orbit)
 
+        core.isAntialiased = false
         core.lineWidth = 0
         core.zPosition = 3
         addChild(core)
@@ -1797,11 +1889,12 @@ private final class PowerupVisualNode: SKNode {
         worldWidth: Float,
         worldHeight: Float,
         sceneSize: CGSize,
-        time: TimeInterval
+        time: TimeInterval,
+        pixelScale: CGFloat
     ) {
         let px = CGFloat(powerup.x / worldWidth) * sceneSize.width
         let py = CGFloat(powerup.y / worldHeight) * sceneSize.height
-        position = CGPoint(x: px, y: py)
+        position = snappedPoint(CGPoint(x: px, y: py), scale: pixelScale)
 
         let baseColor = UIColor(
             red: CGFloat(powerup.type.color.red),
@@ -1810,14 +1903,14 @@ private final class PowerupVisualNode: SKNode {
             alpha: 1.0
         )
         let pulse = 0.88 + 0.14 * CGFloat(Darwin.sin(time * 8.2 + Double(phaseSeed)))
-        let radius = max(5.8, CGFloat(powerup.width / worldWidth) * sceneSize.width * 0.92)
+        let radius = max(5.8, snappedLength(CGFloat(powerup.width / worldWidth) * sceneSize.width * 0.92, scale: pixelScale))
 
         shadow.path = CGPath(ellipseIn: CGRect(x: -radius * 0.86, y: -radius * 0.56, width: radius * 1.72, height: radius * 0.98), transform: nil)
-        shadow.position = CGPoint(x: radius * 0.16, y: -radius * 0.22)
+        shadow.position = snappedPoint(CGPoint(x: radius * 0.12, y: -radius * 0.16), scale: pixelScale)
 
-        aura.path = CGPath(ellipseIn: CGRect(x: -radius * 1.45, y: -radius * 1.45, width: radius * 2.9, height: radius * 2.9), transform: nil)
-        aura.fillColor = baseColor.withAlphaComponent(0.16)
-        aura.alpha = 0.62 * pulse
+        aura.path = CGPath(ellipseIn: CGRect(x: -radius * 1.22, y: -radius * 1.22, width: radius * 2.44, height: radius * 2.44), transform: nil)
+        aura.fillColor = baseColor.withAlphaComponent(0.08)
+        aura.alpha = 0.46 * pulse
 
         ring.path = CGPath(ellipseIn: CGRect(x: -radius * 1.05, y: -radius * 1.05, width: radius * 2.1, height: radius * 2.1), transform: nil)
         ring.strokeColor = brighten(baseColor, by: 0.38).withAlphaComponent(0.85)
@@ -1827,9 +1920,9 @@ private final class PowerupVisualNode: SKNode {
             ellipseIn: CGRect(x: -radius * 1.24, y: -radius * 0.86, width: radius * 2.48, height: radius * 1.72),
             transform: nil
         )
-        orbit.strokeColor = brighten(baseColor, by: 0.56).withAlphaComponent(0.66)
+        orbit.strokeColor = brighten(baseColor, by: 0.56).withAlphaComponent(0.52)
         orbit.lineWidth = max(1.0, radius * 0.08)
-        orbit.glowWidth = radius * 0.18
+        orbit.glowWidth = radius * 0.06
 
         core.path = CGPath(ellipseIn: CGRect(x: -radius * 0.92, y: -radius * 0.92, width: radius * 1.84, height: radius * 1.84), transform: nil)
         core.fillColor = darken(baseColor, by: 0.22)
@@ -1841,12 +1934,12 @@ private final class PowerupVisualNode: SKNode {
             cornerHeight: radius * 0.18,
             transform: nil
         )
-        gleam.fillColor = UIColor.white.withAlphaComponent(0.20)
+        gleam.fillColor = UIColor.white.withAlphaComponent(0.13)
 
         icon.path = powerupGlyphPath(type: powerup.type, radius: radius * 0.9)
         icon.fillColor = brighten(baseColor, by: 0.62)
         icon.strokeColor = UIColor.white.withAlphaComponent(0.88)
-        icon.lineWidth = (powerup.type == .freeze || powerup.type == .pierce || powerup.type == .magnet) ? max(1.1, radius * 0.09) : 0
+        icon.lineWidth = (powerup.type == .freeze || powerup.type == .pierce || powerup.type == .magnet || powerup.type == .ricochet || powerup.type == .timeWarp) ? max(1.1, radius * 0.09) : 0
         spark.path = CGPath(ellipseIn: CGRect(x: radius * 0.22, y: radius * 0.24, width: radius * 0.24, height: radius * 0.24), transform: nil)
         spark.alpha = 0.5 + 0.45 * CGFloat(Darwin.sin(time * 5.4 + Double(phaseSeed)))
 
@@ -1854,6 +1947,15 @@ private final class PowerupVisualNode: SKNode {
         zRotation = CGFloat(Darwin.sin(time * 2.1 + Double(phaseSeed))) * 0.06
         xScale = pulse
         yScale = pulse
+    }
+
+    private func snappedPoint(_ point: CGPoint, scale: CGFloat) -> CGPoint {
+        CGPoint(x: snappedLength(point.x, scale: scale), y: snappedLength(point.y, scale: scale))
+    }
+
+    private func snappedLength(_ value: CGFloat, scale: CGFloat) -> CGFloat {
+        guard scale > 0 else { return value }
+        return (value * scale).rounded() / scale
     }
 
     private func powerupGlyphPath(type: PowerUpType, radius: CGFloat) -> CGPath {
@@ -1946,6 +2048,33 @@ private final class PowerupVisualNode: SKNode {
             path.addLine(to: CGPoint(x: radius * 0.1, y: radius * 0.18))
             path.addLine(to: CGPoint(x: radius * 0.24, y: radius * 0.18))
             path.closeSubpath()
+        case .ricochet:
+            path.move(to: CGPoint(x: -radius * 0.48, y: -radius * 0.18))
+            path.addLine(to: CGPoint(x: -radius * 0.1, y: -radius * 0.18))
+            path.addLine(to: CGPoint(x: -radius * 0.2, y: -radius * 0.32))
+            path.move(to: CGPoint(x: -radius * 0.18, y: -radius * 0.42))
+            path.addLine(to: CGPoint(x: -radius * 0.18, y: -radius * 0.06))
+            path.move(to: CGPoint(x: radius * 0.48, y: radius * 0.18))
+            path.addLine(to: CGPoint(x: radius * 0.1, y: radius * 0.18))
+            path.addLine(to: CGPoint(x: radius * 0.2, y: radius * 0.32))
+            path.move(to: CGPoint(x: radius * 0.18, y: radius * 0.42))
+            path.addLine(to: CGPoint(x: radius * 0.18, y: radius * 0.06))
+        case .timeWarp:
+            path.addEllipse(in: CGRect(x: -radius * 0.46, y: -radius * 0.46, width: radius * 0.92, height: radius * 0.92))
+            path.move(to: CGPoint(x: 0, y: 0))
+            path.addLine(to: CGPoint(x: 0, y: radius * 0.26))
+            path.move(to: CGPoint(x: 0, y: 0))
+            path.addLine(to: CGPoint(x: -radius * 0.2, y: 0))
+            path.addEllipse(in: CGRect(x: radius * 0.14, y: radius * 0.14, width: radius * 0.12, height: radius * 0.12))
+        case .doubleScore:
+            path.move(to: CGPoint(x: -radius * 0.42, y: 0))
+            path.addLine(to: CGPoint(x: radius * 0.42, y: 0))
+            path.move(to: CGPoint(x: 0, y: -radius * 0.42))
+            path.addLine(to: CGPoint(x: 0, y: radius * 0.42))
+            path.addRect(CGRect(x: -radius * 0.22, y: -radius * 0.22, width: radius * 0.14, height: radius * 0.14))
+            path.addRect(CGRect(x: radius * 0.08, y: -radius * 0.22, width: radius * 0.14, height: radius * 0.14))
+            path.addRect(CGRect(x: -radius * 0.22, y: radius * 0.08, width: radius * 0.14, height: radius * 0.14))
+            path.addRect(CGRect(x: radius * 0.08, y: radius * 0.08, width: radius * 0.14, height: radius * 0.14))
         }
         return path
     }
@@ -1979,21 +2108,23 @@ private struct PowerupChip: View {
     var body: some View {
         HStack(spacing: 4) {
             Text(status.type.displayName)
-                .font(.system(size: 12, weight: .medium))
+                .font(.system(size: 10, weight: .medium))
                 .foregroundColor(.white)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
             if status.remainingSeconds > 0 {
                 Text("\(status.remainingSeconds)s")
-                    .font(.system(size: 10, weight: .bold))
+                    .font(.system(size: 9, weight: .bold))
                     .foregroundColor(.yellow)
             }
             if status.charges > 0 {
                 Text("(\(status.charges))")
-                    .font(.system(size: 10, weight: .bold))
+                    .font(.system(size: 9, weight: .bold))
                     .foregroundColor(.cyan)
             }
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
+        .padding(.horizontal, 6)
+        .padding(.vertical, 3)
         .background(Color(red: Double(status.type.color.red), green: Double(status.type.color.green), blue: Double(status.type.color.blue)).opacity(0.8))
         .cornerRadius(6)
     }

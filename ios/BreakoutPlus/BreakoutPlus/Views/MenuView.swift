@@ -19,18 +19,16 @@ struct MenuView: View {
                     VStack(spacing: 26) {
                         // Title
                         VStack(spacing: 10) {
-                            Text("BREAKOUT")
-                                .font(.system(size: 48, weight: .bold))
-                                .foregroundColor(Color(hex: "31E1F7"))
+                            BreakoutBrandMark()
 
-                            Text("+")
-                                .font(.system(size: 36, weight: .bold))
-                                .foregroundColor(Color(hex: "FF4FD8"))
-                                .offset(y: -8)
+                            Text("Breakout+")
+                                .font(.system(size: 44, weight: .black))
+                                .foregroundColor(Color(hex: "F4F7FF"))
+                                .tracking(1.0)
 
-                            Text("PREMIUM")
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(Color(hex: "FFFFFF").opacity(0.7))
+                            Text("High velocity brickbreaker")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(Color(hex: "A6B3C9"))
                         }
 
                         Text("Pick a mode tailored to your play style.")
@@ -110,6 +108,46 @@ struct MenuView: View {
     }
 }
 
+private struct BreakoutBrandMark: View {
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(
+                    RadialGradient(
+                        gradient: Gradient(colors: [Color(hex: "18233C"), Color(hex: "0B1220")]),
+                        center: .center,
+                        startRadius: 6,
+                        endRadius: 46
+                    )
+                )
+
+            Circle()
+                .stroke(Color(hex: "31E1F7"), lineWidth: 5.5)
+                .frame(width: 64, height: 64)
+
+            Rectangle()
+                .fill(Color(hex: "31E1F7"))
+                .frame(width: 5, height: 28)
+
+            Rectangle()
+                .fill(Color(hex: "31E1F7"))
+                .frame(width: 28, height: 5)
+
+            Circle()
+                .fill(Color(hex: "FF4FD8"))
+                .frame(width: 14, height: 14)
+                .offset(x: 22, y: -20)
+
+            RoundedRectangle(cornerRadius: 2)
+                .fill(Color(hex: "FFC857"))
+                .frame(width: 42, height: 7)
+                .offset(y: 24)
+        }
+        .frame(width: 92, height: 92)
+        .shadow(color: Color(hex: "31E1F7").opacity(0.2), radius: 8, y: 2)
+    }
+}
+
 struct GameModeButton: View {
     let mode: GameMode
     let action: () -> Void
@@ -125,6 +163,7 @@ struct GameModeButton: View {
         case .tunnel: return Color(hex: "4AA3FF")
         case .survival: return Color(hex: "FF8A3D")
         case .invaders: return Color(hex: "9C6ADE") // Purple/violet for invaders
+        case .zen: return Color(hex: "6EE7B7")
         }
     }
 

@@ -88,6 +88,20 @@ class GameLogger(private val context: Context, private val enabled: Boolean = tr
         ))
     }
 
+    fun logError(message: String, extraData: Map<String, Any> = emptyMap()) {
+        if (!enabled) return
+        logEvent(EventType.STATE_SNAPSHOT, mapOf("error" to message) + extraData)
+    }
+
+    fun logLevelAdvance(newLevelIndex: Int) {
+        if (!enabled) return
+        logEvent(EventType.LEVEL_START, mapOf(
+            "levelIndex" to newLevelIndex,
+            "advanceType" to "next_level",
+            "timestamp" to System.currentTimeMillis()
+        ))
+    }
+
     fun logBrickDestroyed(brickType: BrickType, position: Pair<Float, Float>, comboCount: Int) {
         if (!enabled) return
         logEvent(EventType.BRICK_DESTROYED, mapOf(

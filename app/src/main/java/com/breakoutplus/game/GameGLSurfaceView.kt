@@ -107,6 +107,10 @@ class GameGLSurfaceView @JvmOverloads constructor(
         queueRendererAction { it.setDebugAutoPlay(enabled) }
     }
 
+    fun isGameRunning(): Boolean {
+        return rendererImpl?.isGameRunning() ?: false
+    }
+
     override fun onTouchEvent(event: MotionEvent): Boolean {
         val renderer = rendererImpl
         if (renderer != null) {

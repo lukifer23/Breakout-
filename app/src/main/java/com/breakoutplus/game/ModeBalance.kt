@@ -108,7 +108,7 @@ object ModeBalance {
             maxSpeedFactor = 1.92f,
             difficultyBase = 1.2f,
             difficultySlope = 0.125f,
-            dropChanceModeBoost = 0.025f
+            dropChanceModeBoost = 0.055f
         ),
         GameMode.INVADERS to Pacing(
             speedBoostSlope = 0.017f,

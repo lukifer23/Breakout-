@@ -175,6 +175,10 @@ class GameRenderer(
         engine.setDebugAutoPlay(enabled)
     }
 
+    fun isGameRunning(): Boolean {
+        return !paused && engine.isGameRunning()
+    }
+
     fun pause() {
         paused = true
         engine.pause()

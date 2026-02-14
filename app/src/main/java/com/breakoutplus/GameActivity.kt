@@ -60,6 +60,9 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     private var levelAdvanceInProgress = false
     private var debugAutoPlaySession = false
     private var debugAutoPlayStopRunnable: Runnable? = null
+    private var hudResizeRunnable: Runnable? = null
+    private val hudResizeDebounceMs = 120L
+    private var hudResizingInProgress = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -158,6 +161,8 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         laserCooldownRunnable?.let { binding.buttonLaser.removeCallbacks(it) }
         debugAutoPlayStopRunnable?.let { binding.gameSurface.removeCallbacks(it) }
         debugAutoPlayStopRunnable = null
+        hudResizeRunnable?.let { binding.root.removeCallbacks(it) }
+        hudResizeRunnable = null
         if (debugAutoPlaySession) {
             binding.gameSurface.setDebugAutoPlay(false)
         }
@@ -275,8 +280,11 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
                 binding.buttonEndSecondary.isEnabled = false
                 hideOverlay(binding.endOverlay)
                 if (!isFinishing && !isDestroyed) {
+                    Log.d("GameActivity", "Advancing to next level (activity state: finishing=$isFinishing, destroyed=$isDestroyed)")
                     binding.gameSurface.nextLevel()
                     playGameFade()
+                } else {
+                    Log.w("GameActivity", "Cannot advance level - activity finishing or destroyed")
                 }
                 endOverlayState = EndOverlayState.NONE
                 levelAdvanceInProgress = false
@@ -381,7 +389,12 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             if (availWidth == lastHudAvailWidthPx && availHeight == lastHudAvailHeightPx) return@addOnLayoutChangeListener
             lastHudAvailWidthPx = availWidth
             lastHudAvailHeightPx = availHeight
-            applyResponsiveHudSizing()
+
+            // Debounce HUD resize to prevent rapid layout changes
+            hudResizeRunnable?.let { binding.root.removeCallbacks(it) }
+            val runnable = Runnable { applyResponsiveHudSizing() }
+            hudResizeRunnable = runnable
+            binding.root.postDelayed(runnable, hudResizeDebounceMs)
         }
     }
 
@@ -587,11 +600,17 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             (resources.displayMetrics.widthPixels * 0.9f).toInt().coerceAtMost(600),
             android.view.ViewGroup.LayoutParams.WRAP_CONTENT
         )
-        // Position in upper half to avoid paddle area
+        // Position in upper portion to avoid paddle area, more conservative on small screens
         val window = dialog.window
         val params = window?.attributes
         params?.gravity = android.view.Gravity.TOP or android.view.Gravity.CENTER_HORIZONTAL
-        params?.y = (resources.displayMetrics.heightPixels * 0.2f).toInt()
+        val screenHeight = resources.displayMetrics.heightPixels
+        val safeTopMargin = when {
+            screenHeight < 1200 -> (screenHeight * 0.08f).toInt() // 8% for small screens
+            screenHeight < 1800 -> (screenHeight * 0.12f).toInt() // 12% for medium screens
+            else -> (screenHeight * 0.15f).toInt() // 15% for large screens
+        }.coerceAtLeast(80) // Minimum 80dp
+        params?.y = safeTopMargin
         window?.attributes = params
 
         val title = view.findViewById<android.widget.TextView>(R.id.highScoreTitle)
@@ -695,6 +714,8 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     }
 
     private fun showOverlay(view: View) {
+        // Cancel any ongoing hide animation to prevent flashing
+        view.animate().cancel()
         view.visibility = View.VISIBLE
         view.alpha = 0f
         view.scaleX = 0.96f
@@ -854,8 +875,20 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     }
 
     private fun applyResponsiveHudSizing() {
-        val metrics = resources.displayMetrics
-        if (metrics.density <= 0f) return
+        // Skip HUD resizing during active gameplay to prevent jitters
+        if (binding.gameSurface.isGameRunning()) {
+            return
+        }
+
+        // Prevent re-entry during layout changes
+        if (hudResizingInProgress) {
+            return
+        }
+        hudResizingInProgress = true
+
+        try {
+            val metrics = resources.displayMetrics
+            if (metrics.density <= 0f) return
         val widthPx = (binding.root.width - binding.root.paddingLeft - binding.root.paddingRight)
             .takeIf { it > 0 } ?: metrics.widthPixels
         val heightPx = (binding.root.height - binding.root.paddingTop - binding.root.paddingBottom)
@@ -923,6 +956,9 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         val shieldParams = binding.hudShieldBar.layoutParams as android.widget.LinearLayout.LayoutParams
         shieldParams.width = dp(shieldWidthDp)
         binding.hudShieldBar.layoutParams = shieldParams
+        } finally {
+            hudResizingInProgress = false
+        }
     }
 
     private fun updateHudMeta() {

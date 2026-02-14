@@ -61,7 +61,8 @@ struct HowToView: View {
                             "Moving: slides horizontally.",
                             "Spawning: splits into smaller bricks when destroyed.",
                             "Phase: tougher brick with bonus drops.",
-                            "Boss: heavyweight brick with guaranteed reward."
+                            "Boss: heavyweight brick with guaranteed reward.",
+                            "Invader: moving fleet brick used in Invaders mode."
                         ])
 
                         SectionCard(title: "Powerups", lines: [
@@ -79,7 +80,10 @@ struct HowToView: View {
                             "Pierce: pass through multiple bricks.",
                             "Magnet: attracts falling powerups to the paddle.",
                             "Gravity well: bends ball paths toward center.",
-                            "Ball splitter: multiplies your current balls."
+                            "Ball splitter: multiplies your current balls.",
+                            "Ricochet: grants extra wall bounces.",
+                            "Time warp: slows world movement while keeping ball speed.",
+                            "2x score: doubles score rewards briefly."
                         ])
 
                         SectionCard(title: "Modes", lines: [
@@ -91,7 +95,8 @@ struct HowToView: View {
                             "Volley: aim once, launch a chain of balls, then brace for descending rows.",
                             "Tunnel Siege: breach a fortress wall through a narrow tunnel gate.",
                             "Survival: one life with faster speed ramps.",
-                            "Invaders: bounce shots to clear ships while dodging fire."
+                            "Invaders: bounce shots to clear ships while dodging fire.",
+                            "Zen Mode: relaxed pacing with no score or life pressure."
                         ])
                     }
                     .padding(.vertical, 6)
@@ -114,7 +119,7 @@ private struct SectionCard: View {
                 .foregroundColor(.white)
                 .font(.system(size: 16, weight: .bold))
             ForEach(lines, id: \.self) { line in
-                Text("• \\(line)")
+                Text("• \(line)")
                     .foregroundColor(.white.opacity(0.78))
                     .font(.system(size: 14))
                     .fixedSize(horizontal: false, vertical: true)

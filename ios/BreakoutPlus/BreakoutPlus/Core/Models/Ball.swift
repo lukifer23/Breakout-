@@ -17,6 +17,7 @@ struct Ball: Identifiable, Equatable {
     var radius: Float = 1.0
     var isFireball: Bool = false
     var isPiercing: Bool = false
+    var ricochetBounces: Int? = nil
     var color: (red: Float, green: Float, blue: Float) = (1.0, 1.0, 1.0)
 
     var position: CGPoint {
@@ -46,6 +47,7 @@ struct Ball: Identifiable, Equatable {
                lhs.vy == rhs.vy &&
                lhs.radius == rhs.radius &&
                lhs.isFireball == rhs.isFireball &&
-               lhs.isPiercing == rhs.isPiercing
+               lhs.isPiercing == rhs.isPiercing &&
+               lhs.ricochetBounces == rhs.ricochetBounces
     }
 }
