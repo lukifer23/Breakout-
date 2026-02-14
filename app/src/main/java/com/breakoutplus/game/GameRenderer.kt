@@ -31,6 +31,7 @@ class GameRenderer(
     private var shakePhase = 0f
     private var comboFlash = 0f
     private var levelClearFlash = 0f
+    private var impactFlash = 0f
     private var musicWasPlaying = false
     private var fixedStepSeconds = 1f / 120f
     private var simulationAccumulator = 0f
@@ -54,6 +55,10 @@ class GameRenderer(
 
     fun triggerLevelClearFlash() {
         levelClearFlash = max(levelClearFlash, levelClearFlashDuration)
+    }
+
+    fun triggerImpactFlash(intensity: Float) {
+        impactFlash = max(impactFlash, intensity.coerceIn(0f, 1f))
     }
 
     fun setTargetFrameRate(fps: Float) {
@@ -98,6 +103,9 @@ class GameRenderer(
         }
         if (levelClearFlash > 0f) {
             levelClearFlash = (levelClearFlash - delta).coerceAtLeast(0f)
+        }
+        if (impactFlash > 0f) {
+            impactFlash = (impactFlash - delta * 2.0f).coerceAtLeast(0f)
         }
 
         if (!paused) {
@@ -145,6 +153,11 @@ class GameRenderer(
             val t = (levelClearFlash / levelClearFlashDuration).coerceIn(0f, 1f)
             val alpha = (smoothStep(t) * 0.42f).coerceIn(0f, 0.42f)
             renderer2D.drawRect(0f, 0f, worldWidth, worldHeight, floatArrayOf(1f, 0.85f, 0.35f, alpha))
+        }
+
+        if (impactFlash > 0f) {
+            val alpha = (impactFlash * 0.6f).coerceIn(0f, 0.6f)
+            renderer2D.drawRect(0f, 0f, worldWidth, worldHeight, floatArrayOf(1f, 1f, 1f, alpha))
         }
 
         // Performance logging

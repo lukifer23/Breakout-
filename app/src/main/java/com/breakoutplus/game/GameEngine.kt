@@ -169,7 +169,6 @@ class GameEngine(
     private var layoutColBoost = 0
     private var invaderScale = 1f
     private var globalBrickScale = 0.9f
-    private var screenFlash = 0f
     private var levelClearFlash = 0f
     private var renderTimeSeconds = 0f
     private val hitFlashDecayRate = 2.0f
@@ -378,7 +377,7 @@ class GameEngine(
         renderer.setWorldSize(worldWidth, worldHeight)
         renderTimeSeconds = System.nanoTime() / 1_000_000_000f
         // Enhanced background with subtle gradient and flash effect
-        val flashIntensity = screenFlash + levelClearFlash * 0.8f
+        val flashIntensity = levelClearFlash * 0.8f
         val bgTop = if (flashIntensity > 0f) {
             adjustColor(theme.background, 1.1f + flashIntensity, 1f)
         } else {
@@ -1598,6 +1597,41 @@ class GameEngine(
                 }
                 GameMode.SURVIVAL -> {
                     layoutRowBoost = baseRowBoost + 1
+    private fun applyLayoutTuning(aspectRatio: Float, preserveRowBoost: Boolean) {
+        val tallness = ((aspectRatio - 1.25f) / 0.85f).coerceIn(0f, 1f)
+        val isSlate = aspectRatio < 1.45f
+        
+        // Base tuning interpolated by tallness (0.0 = 4:3 iPad, 1.0 = 20:9 Phone)
+        brickAreaTopRatio = lerp(0.992f, 0.978f, tallness)
+        brickAreaBottomRatio = lerp(0.69f, 0.62f, tallness)
+        brickSpacing = lerp(0.32f, 0.38f, tallness)
+        
+        // Slate-specific optimizations for density
+        if (isSlate) {
+             // Push bricks slightly higher to clear HUD area better on squarer screens
+            brickAreaBottomRatio += 0.025f 
+            // Slightly smaller spacing for density
+            brickSpacing *= 0.9f 
+        }
+
+        if (!preserveRowBoost) {
+            val baseRowBoost = when {
+                isSlate -> 4 // Significantly more rows on slates to fill the wider/shorter space
+                aspectRatio < 1.75f -> 2
+                else -> 0
+            }
+            val baseColBoost = when {
+                isSlate -> 2 // More columns on slates
+                aspectRatio < 1.6f -> 1
+                else -> 0
+            }
+            when (config.mode) {
+                GameMode.VOLLEY -> {
+                    layoutRowBoost = baseRowBoost
+                    layoutColBoost = baseColBoost
+                }
+                GameMode.GOD -> {
+                    layoutRowBoost = baseRowBoost + 4
                     layoutColBoost = baseColBoost + 1
                 }
                 GameMode.ENDLESS -> {
@@ -1612,11 +1646,14 @@ class GameEngine(
         }
         // Smaller bricks overall to avoid an overly zoomed-in feel.
         globalBrickScale = lerp(0.82f, 0.79f, tallness)
-        if (aspectRatio < 1.4f) {
-            globalBrickScale = (globalBrickScale - 0.04f).coerceAtLeast(0.72f)
+        
+        if (isSlate) {
+             // Compensate for the extra density/rows
+            globalBrickScale = (globalBrickScale - 0.05f).coerceAtLeast(0.70f)
         } else if (aspectRatio > 2.15f) {
             globalBrickScale = (globalBrickScale - 0.015f).coerceAtLeast(0.75f)
         }
+        
         if (config.mode == GameMode.RUSH) {
             globalBrickScale = (globalBrickScale + 0.03f).coerceAtMost(0.88f)
             brickSpacing = (brickSpacing + 0.03f).coerceAtMost(0.42f)
@@ -1981,7 +2018,6 @@ class GameEngine(
         tunnelShotsFired = 0
         tunnelGateFlash = 0f
         speedMultiplier = 1f
-        screenFlash = 0f
         levelClearFlash = 0f
         activeEffects.clear()
         balls.clear()
@@ -2960,6 +2996,9 @@ class GameEngine(
         val explosiveChance = (0.035f + danger * 0.05f).coerceAtMost(0.1f)
         val reinforcedChance = (0.11f + danger * 0.09f).coerceAtMost(0.23f)
         val armoredChance = if (volleyTurnCount < 2) 0f else (0.06f + danger * 0.08f).coerceAtMost(0.17f)
+        val movingChance = if (volleyTurnCount < 4) 0f else 0.05f
+        val phaseChance = if (volleyTurnCount < 6) 0f else 0.04f
+        val spawningChance = if (volleyTurnCount < 8) 0f else 0.03f
 
         val forcedGapPrimary = random.nextInt(cols)
         val forcedGapSecondary = if (volleyTurnCount < 5 && cols >= 8) {
@@ -2986,6 +3025,9 @@ class GameEngine(
                 typeRoll < explosiveChance -> BrickType.EXPLOSIVE
                 typeRoll < explosiveChance + reinforcedChance -> BrickType.REINFORCED
                 typeRoll < explosiveChance + reinforcedChance + armoredChance -> BrickType.ARMORED
+                typeRoll < explosiveChance + reinforcedChance + armoredChance + movingChance -> BrickType.MOVING
+                typeRoll < explosiveChance + reinforcedChance + armoredChance + movingChance + phaseChance -> BrickType.PHASE
+                typeRoll < explosiveChance + reinforcedChance + armoredChance + movingChance + phaseChance + spawningChance -> BrickType.SPAWNING
                 else -> BrickType.NORMAL
             }
             val baseHp = baseHitPoints(type)
@@ -3001,6 +3043,13 @@ class GameEngine(
                 maxHitPoints = hp,
                 type = type
             )
+            // Initialize phase/spawn props
+            if (type == BrickType.PHASE) {
+                brick.maxPhase = 2
+                brick.phase = 0
+            } else if (type == BrickType.SPAWNING) {
+                brick.spawnCount = 2
+            }
             bricks.add(brick)
             spawned += 1
         }
@@ -3151,7 +3200,7 @@ class GameEngine(
                 spawnBrickDestructionFx(brick, ball.x, ball.y, intensity = 1f)
 
                 if (brick.type == BrickType.BOSS) {
-                    screenFlash = 0.4f
+                    renderer?.triggerImpactFlash(0.4f)
                     renderer?.triggerScreenShake(3.6f, 0.24f)
                     if (waves.size < maxWaves) {
                         waves.add(
@@ -3542,7 +3591,7 @@ class GameEngine(
             if (invaderShield <= 0f && !invaderShieldAlerted) {
                 invaderShieldAlerted = true
                 shieldBreakPulse = 1f
-                screenFlash = 0.25f
+                renderer?.triggerImpactFlash(0.25f)
                 audio.play(GameSound.EXPLOSION, 0.55f)
                 renderer?.triggerScreenShake(2f, 0.2f)
                 listener.onTip("Shield down! Dodge the incoming fire.")
@@ -3647,7 +3696,6 @@ class GameEngine(
             syncPaddleWidthFromEffects()
         }
         // Update screen flash
-        screenFlash = max(0f, screenFlash - dt * 3f)
         levelClearFlash = max(0f, levelClearFlash - dt * 1.5f)
         updatePowerupStatus()
     }
@@ -4005,10 +4053,18 @@ class GameEngine(
                 bricksBroken = runBricksBroken,
                 livesLost = runLivesLost
             )
-            awaitingNextLevel = true
-            state = GameState.PAUSED
-            stateBeforePause = GameState.PAUSED
-            listener.onLevelComplete(summary)
+
+            if (config.mode.godMode) {
+                // Auto-advance in God Mode to ensure continuous play
+                logger?.logLevelAdvance(levelIndex + 1)
+                levelIndex += 1
+                resetLevel(first = false)
+            } else {
+                awaitingNextLevel = true
+                state = GameState.PAUSED
+                stateBeforePause = GameState.PAUSED
+                listener.onLevelComplete(summary)
+            }
         }
     }
 
@@ -4114,7 +4170,7 @@ class GameEngine(
     private fun triggerExplosion(brick: Brick) {
         audio.play(GameSound.EXPLOSION, 0.8f)
         audio.haptic(GameHaptic.HEAVY)
-        screenFlash = 0.3f
+        renderer?.triggerImpactFlash(0.3f)
         renderer?.triggerScreenShake(2.8f, 0.18f)
         val radius = 1
         for (neighbor in bricks) {
@@ -4289,7 +4345,7 @@ class GameEngine(
             renderer?.triggerScreenShake(shakeStrength * fxScale, shakeDuration)
         }
         if (brick.type == BrickType.EXPLOSIVE || brick.type == BrickType.BOSS) {
-            screenFlash = max(screenFlash, 0.14f + 0.1f * fxScale)
+            renderer?.triggerImpactFlash(0.14f + 0.1f * fxScale)
         }
     }
 

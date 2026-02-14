@@ -38,10 +38,18 @@ Output:
 Output:
 - `app/build/outputs/bundle/release/app-release.aab`
 
+Important:
+- If `BP_RELEASE_*` signing env vars are not set, the Gradle release build currently falls back to debug signing.
+- That fallback bundle is not accepted by Play for apps that already have an upload key registered.
+
 ## Fastlane Play Uploads
 Install gems:
 ```bash
 bundle install
+```
+If Bundler version mismatch occurs with `Gemfile.lock`, install the expected Bundler first:
+```bash
+gem install bundler:2.5.11
 ```
 Set service account JSON path (preferred var):
 ```bash
