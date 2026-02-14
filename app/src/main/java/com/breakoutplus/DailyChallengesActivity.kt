@@ -15,7 +15,10 @@ class DailyChallengesActivity : FoldAwareActivity() {
         setContentView(binding.root)
         setFoldAwareRoot(binding.root)
 
-        binding.buttonChallengesBack.setOnClickListener { finish() }
+        binding.buttonChallengesBack.setOnClickListener {
+            finish()
+            playCloseTransition(R.anim.slide_in_left, R.anim.slide_out_right)
+        }
         renderChallenges()
         animateEntry()
     }

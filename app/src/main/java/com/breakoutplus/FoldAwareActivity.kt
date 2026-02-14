@@ -1,6 +1,8 @@
 package com.breakoutplus
 
+import android.app.Activity
 import android.graphics.Rect
+import android.os.Build
 import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
@@ -30,6 +32,24 @@ abstract class FoldAwareActivity : AppCompatActivity() {
     protected fun setFoldAwareRoot(view: View) {
         rootView = view
         basePadding = Rect(view.paddingLeft, view.paddingTop, view.paddingRight, view.paddingBottom)
+    }
+
+    protected fun playOpenTransition(enterAnim: Int, exitAnim: Int) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            overrideActivityTransition(Activity.OVERRIDE_TRANSITION_OPEN, enterAnim, exitAnim)
+        } else {
+            @Suppress("DEPRECATION")
+            overridePendingTransition(enterAnim, exitAnim)
+        }
+    }
+
+    protected fun playCloseTransition(enterAnim: Int, exitAnim: Int) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            overrideActivityTransition(Activity.OVERRIDE_TRANSITION_CLOSE, enterAnim, exitAnim)
+        } else {
+            @Suppress("DEPRECATION")
+            overridePendingTransition(enterAnim, exitAnim)
+        }
     }
 
     override fun onStart() {

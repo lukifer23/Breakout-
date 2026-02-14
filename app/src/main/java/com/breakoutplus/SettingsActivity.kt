@@ -15,7 +15,10 @@ class SettingsActivity : FoldAwareActivity() {
         setContentView(binding.root)
         setFoldAwareRoot(binding.root)
 
-        binding.buttonSettingsBack.setOnClickListener { finish() }
+        binding.buttonSettingsBack.setOnClickListener {
+            finish()
+            playCloseTransition(R.anim.slide_in_left, R.anim.slide_out_right)
+        }
 
         val settings = SettingsManager.load(this)
         binding.switchSound.isChecked = settings.soundEnabled
@@ -116,6 +119,7 @@ class SettingsActivity : FoldAwareActivity() {
 
         binding.buttonPrivacyPolicy.setOnClickListener {
             startActivity(Intent(this, PrivacyActivity::class.java))
+            playOpenTransition(R.anim.slide_in_right, R.anim.slide_out_left)
         }
 
         animateEntry()

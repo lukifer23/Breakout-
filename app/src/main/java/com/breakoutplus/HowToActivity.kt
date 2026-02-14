@@ -13,7 +13,10 @@ class HowToActivity : FoldAwareActivity() {
         setContentView(binding.root)
         setFoldAwareRoot(binding.root)
 
-        binding.buttonHowToBack.setOnClickListener { finish() }
+        binding.buttonHowToBack.setOnClickListener {
+            finish()
+            playCloseTransition(R.anim.slide_in_left, R.anim.slide_out_right)
+        }
 
         // Set up expandable sections
         setupExpandableSection(binding.powerupsHeader, binding.powerupsContent)

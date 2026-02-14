@@ -22,7 +22,7 @@ class ModeSelectActivity : FoldAwareActivity() {
 
         binding.buttonModeBack.setOnClickListener {
             finish()
-            overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_right)
+            playCloseTransition(R.anim.slide_in_left, R.anim.slide_out_right)
         }
 
         renderModes()
@@ -86,7 +86,7 @@ class ModeSelectActivity : FoldAwareActivity() {
                 if (!clickEnabled) return@setOnClickListener
                 clickEnabled = false
                 startActivity(Intent(this, GameActivity::class.java).putExtra(GameActivity.EXTRA_MODE, mode.name))
-                overridePendingTransition(R.anim.fade_in, R.anim.fade_out)
+                playOpenTransition(R.anim.fade_in, R.anim.fade_out)
             }
 
             // Add entrance animation

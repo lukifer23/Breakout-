@@ -12,8 +12,12 @@ struct Brick: Identifiable, Equatable {
     let id = UUID()
     var x: Float
     var y: Float
+    var baseX: Float
+    var baseY: Float
     var width: Float
     var height: Float
+    var gridX: Int = -1
+    var gridY: Int = -1
     var type: BrickType
     var hitPoints: Int
     var maxHitPoints: Int
@@ -21,11 +25,24 @@ struct Brick: Identifiable, Equatable {
     var vx: Float = 0  // For moving bricks
     var vy: Float = 0
 
-    init(x: Float, y: Float, width: Float, height: Float, type: BrickType, hitPoints: Int) {
+    init(
+        x: Float,
+        y: Float,
+        width: Float,
+        height: Float,
+        type: BrickType,
+        hitPoints: Int,
+        gridX: Int = -1,
+        gridY: Int = -1
+    ) {
         self.x = x
         self.y = y
+        self.baseX = x
+        self.baseY = y
         self.width = width
         self.height = height
+        self.gridX = gridX
+        self.gridY = gridY
         self.type = type
         self.hitPoints = hitPoints
         self.maxHitPoints = hitPoints
@@ -71,6 +88,8 @@ struct Brick: Identifiable, Equatable {
                lhs.y == rhs.y &&
                lhs.width == rhs.width &&
                lhs.height == rhs.height &&
+               lhs.gridX == rhs.gridX &&
+               lhs.gridY == rhs.gridY &&
                lhs.type == rhs.type &&
                lhs.hitPoints == rhs.hitPoints &&
                lhs.alive == rhs.alive

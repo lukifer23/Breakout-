@@ -18,11 +18,13 @@ class Renderer2D {
     private var offsetY = 0f
     private var worldWidth = 100f
     private var worldHeight = 160f
+    private var shaderBound = false
 
     fun init() {
         shader.build()
         rectMesh.build()
         circleMesh.build()
+        shaderBound = false
         GLES20.glEnable(GLES20.GL_BLEND)
         GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA)
     }
@@ -59,7 +61,7 @@ class Renderer2D {
     }
 
     fun drawRect(x: Float, y: Float, width: Float, height: Float, color: FloatArray) {
-        shader.use()
+        ensureShader()
         Matrix.setIdentityM(modelMatrix, 0)
         Matrix.translateM(modelMatrix, 0, x + offsetX, y + offsetY, 0f)
         Matrix.scaleM(modelMatrix, 0, width, height, 1f)
@@ -70,7 +72,7 @@ class Renderer2D {
     }
 
     fun drawCircle(x: Float, y: Float, radius: Float, color: FloatArray) {
-        shader.use()
+        ensureShader()
         Matrix.setIdentityM(modelMatrix, 0)
         Matrix.translateM(modelMatrix, 0, x + offsetX, y + offsetY, 0f)
         Matrix.scaleM(modelMatrix, 0, radius, radius, 1f)
@@ -91,7 +93,7 @@ class Renderer2D {
     fun flushCircleBatch() {
         if (circleBatch.isEmpty()) return
 
-        shader.use()
+        ensureShader()
         circleBatch.forEach { circle ->
             Matrix.setIdentityM(modelMatrix, 0)
             Matrix.translateM(modelMatrix, 0, circle.x + offsetX, circle.y + offsetY, 0f)
@@ -102,6 +104,12 @@ class Renderer2D {
             circleMesh.draw(shader)
         }
         circleBatch.clear()
+    }
+
+    private fun ensureShader() {
+        if (shaderBound) return
+        shader.use()
+        shaderBound = true
     }
 
     fun drawBeam(x: Float, y: Float, width: Float, height: Float, color: FloatArray) {

@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SpriteKit
+import UIKit
 
 struct GameView: View {
     @EnvironmentObject var gameViewModel: GameViewModel
@@ -15,7 +16,8 @@ struct GameView: View {
     var body: some View {
         GeometryReader { geometry in
             let isZenMode = gameViewModel.selectedGameMode == .zen
-            let safeTop = max(geometry.safeAreaInsets.top, 10)
+            let safeTop = resolvedSafeTop(from: geometry)
+            let hudTop = safeTop + 18
             let visibleStatuses = Array(gameViewModel.powerupStatuses.prefix(3))
 
             ZStack {
@@ -67,7 +69,7 @@ struct GameView: View {
                             Spacer()
                         }
                     }
-                    .padding(.top, safeTop + 52)
+                    .padding(.top, hudTop)
                     .padding(.horizontal, 16)
 
                     HStack {
@@ -163,7 +165,7 @@ struct GameView: View {
                             }
                         }
                     }
-                    .padding(.top, safeTop + 8)
+                    .padding(.top, safeTop + 6)
                     .padding(.horizontal, 18)
                     Spacer()
                 }
@@ -217,7 +219,7 @@ struct GameView: View {
                                     .stroke(Color(hex: "31E1F7").opacity(0.25), lineWidth: 1)
                             )
                             .cornerRadius(12)
-                            .padding(.top, safeTop + 92)
+                            .padding(.top, safeTop + 122)
                         Spacer()
                     }
                     .transition(.opacity)
@@ -304,6 +306,17 @@ struct GameView: View {
         let minutes = seconds / 60
         let remainingSeconds = seconds % 60
         return String(format: "%d:%02d", minutes, remainingSeconds)
+    }
+
+    private func resolvedSafeTop(from geometry: GeometryProxy) -> CGFloat {
+        let sceneTop = geometry.safeAreaInsets.top
+        let windowTop = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap(\.windows)
+            .filter(\.isKeyWindow)
+            .map(\.safeAreaInsets.top)
+            .max() ?? 0
+        return max(sceneTop, windowTop, 10)
     }
 
     private func syncAudioSettings() {
@@ -455,6 +468,11 @@ class GameScene: SKScene, GameEngineDelegate {
     private var lastEngineState: GameState?
     private var activeTouchID: ObjectIdentifier?
     private var pixelScale: CGFloat = max(2.0, UIScreen.main.scale)
+    private var shakeOffset: CGPoint = .zero
+    private var shakeTimeRemaining: TimeInterval = 0
+    private var shakeDuration: TimeInterval = 0
+    private var shakeIntensity: CGFloat = 0
+    private var lastComboFlashAt: TimeInterval = 0
 
     init(viewModel: GameViewModel) {
         self.viewModel = viewModel
@@ -536,6 +554,7 @@ class GameScene: SKScene, GameEngineDelegate {
         lastUpdateTime = currentTime
 
         gameEngine.update(deltaTime: deltaTime)
+        updateScreenShake(deltaTime)
         updateVisuals()
         syncAudioPlayback()
     }
@@ -564,7 +583,7 @@ class GameScene: SKScene, GameEngineDelegate {
         // Update paddle
         let paddleX = CGFloat(gameEngine.paddle.x / gameEngine.worldWidth) * size.width
         let paddleY = CGFloat(gameEngine.paddle.y / gameEngine.worldHeight) * size.height
-        paddleNode.position = snappedPoint(CGPoint(x: paddleX, y: paddleY))
+        paddleNode.position = snappedPoint(CGPoint(x: paddleX + shakeOffset.x, y: paddleY + shakeOffset.y))
         paddleNode.size.width = snappedLength(CGFloat(gameEngine.paddle.width / gameEngine.worldWidth) * size.width)
         paddleNode.size.height = snappedLength(CGFloat(gameEngine.paddle.height / gameEngine.worldHeight) * size.height)
 
@@ -587,7 +606,8 @@ class GameScene: SKScene, GameEngineDelegate {
                     worldWidth: gameEngine.worldWidth,
                     worldHeight: gameEngine.worldHeight,
                     sceneSize: size,
-                    pixelScale: pixelScale
+                    pixelScale: pixelScale,
+                    shakeOffset: shakeOffset
                 )
             }
         }
@@ -614,7 +634,8 @@ class GameScene: SKScene, GameEngineDelegate {
                     worldHeight: gameEngine.worldHeight,
                     sceneSize: size,
                     time: lastUpdateTime,
-                    pixelScale: pixelScale
+                    pixelScale: pixelScale,
+                    shakeOffset: shakeOffset
                 )
 
                 // Impact FX: detect brick damage/destruction by comparing to prior snapshot.
@@ -656,7 +677,8 @@ class GameScene: SKScene, GameEngineDelegate {
                     worldHeight: gameEngine.worldHeight,
                     sceneSize: size,
                     time: lastUpdateTime,
-                    pixelScale: pixelScale
+                    pixelScale: pixelScale,
+                    shakeOffset: shakeOffset
                 )
             }
         }
@@ -681,7 +703,7 @@ class GameScene: SKScene, GameEngineDelegate {
             if index < beamNodes.count {
                 let bx = CGFloat(beam.x / gameEngine.worldWidth) * size.width
                 let by = CGFloat(beam.y / gameEngine.worldHeight) * size.height
-                beamNodes[index].position = snappedPoint(CGPoint(x: bx, y: by))
+                beamNodes[index].position = snappedPoint(CGPoint(x: bx + shakeOffset.x, y: by + shakeOffset.y))
                 if let shape = beamNodes[index] as? SKShapeNode {
                     let w = snappedLength(CGFloat(beam.width / gameEngine.worldWidth) * size.width)
                     let h = snappedLength(CGFloat(beam.height / gameEngine.worldHeight) * size.height)
@@ -721,7 +743,7 @@ class GameScene: SKScene, GameEngineDelegate {
             if index < enemyShotNodes.count {
                 let shotX = CGFloat(shot.x / gameEngine.worldWidth) * size.width
                 let shotY = CGFloat(shot.y / gameEngine.worldHeight) * size.height
-                enemyShotNodes[index].position = snappedPoint(CGPoint(x: shotX, y: shotY))
+                enemyShotNodes[index].position = snappedPoint(CGPoint(x: shotX + shakeOffset.x, y: shotY + shakeOffset.y))
             }
         }
 
@@ -911,6 +933,32 @@ class GameScene: SKScene, GameEngineDelegate {
         )
     }
 
+    private func updateScreenShake(_ deltaTime: TimeInterval) {
+        guard shakeTimeRemaining > 0 else {
+            shakeOffset = .zero
+            return
+        }
+        shakeTimeRemaining = max(0, shakeTimeRemaining - deltaTime)
+        let progress = CGFloat(shakeTimeRemaining / max(0.001, shakeDuration))
+        let amplitude = shakeIntensity * progress
+        let raw = CGPoint(
+            x: CGFloat.random(in: -amplitude...amplitude),
+            y: CGFloat.random(in: -amplitude...amplitude)
+        )
+        shakeOffset = snappedPoint(raw)
+        if shakeTimeRemaining <= 0 {
+            shakeOffset = .zero
+        }
+    }
+
+    func triggerScreenShake(intensity: Float, duration: Float) {
+        let clampedIntensity = CGFloat(max(0.2, min(3.4, intensity * 1.8)))
+        let clampedDuration = TimeInterval(max(0.03, min(0.22, duration)))
+        shakeIntensity = max(shakeIntensity, clampedIntensity)
+        shakeDuration = max(shakeDuration, clampedDuration)
+        shakeTimeRemaining = max(shakeTimeRemaining, clampedDuration)
+    }
+
     private func snappedPoint(_ point: CGPoint) -> CGPoint {
         CGPoint(x: snappedLength(point.x), y: snappedLength(point.y))
     }
@@ -1095,13 +1143,15 @@ class GameScene: SKScene, GameEngineDelegate {
         DispatchQueue.main.async {
             self.viewModel.comboCount = count
 
-            // Keep screen flashes intentional and subtle.
-            if count >= 6 && count % 6 == 0 {
+            // Keep flash events sparse and predictable to avoid perceived flicker.
+            let now = Date().timeIntervalSinceReferenceDate
+            if count >= 10 && count % 10 == 0 && (now - self.lastComboFlashAt) >= 0.55 {
+                self.lastComboFlashAt = now
                 self.flashNode?.removeAction(forKey: "comboFlash")
                 self.flashNode?.run(
                     SKAction.sequence([
-                        SKAction.fadeAlpha(to: 0.06, duration: 0.04),
-                        SKAction.fadeAlpha(to: 0.0, duration: 0.12)
+                        SKAction.fadeAlpha(to: 0.038, duration: 0.03),
+                        SKAction.fadeAlpha(to: 0.0, duration: 0.14)
                     ]),
                     withKey: "comboFlash"
                 )
@@ -1131,6 +1181,8 @@ class GameScene: SKScene, GameEngineDelegate {
             if viewModel.vibrationEnabled {
                 Haptics.shared.trigger(haptic)
             }
+        case .screenShake(let intensity, let duration):
+            triggerScreenShake(intensity: intensity, duration: duration)
         }
     }
 
@@ -1439,10 +1491,17 @@ private final class BallVisualNode: SKNode {
         fatalError("init(coder:) has not been implemented")
     }
 
-    func apply(ball: Ball, worldWidth: Float, worldHeight: Float, sceneSize: CGSize, pixelScale: CGFloat) {
+    func apply(
+        ball: Ball,
+        worldWidth: Float,
+        worldHeight: Float,
+        sceneSize: CGSize,
+        pixelScale: CGFloat,
+        shakeOffset: CGPoint
+    ) {
         let x = CGFloat(ball.x / worldWidth) * sceneSize.width
         let y = CGFloat(ball.y / worldHeight) * sceneSize.height
-        let scenePoint = snappedPoint(CGPoint(x: x, y: y), scale: pixelScale)
+        let scenePoint = snappedPoint(CGPoint(x: x + shakeOffset.x, y: y + shakeOffset.y), scale: pixelScale)
         position = scenePoint
 
         let r = max(5.0, snappedLength(CGFloat(ball.radius / worldWidth) * sceneSize.width * 1.28, scale: pixelScale))
@@ -1636,10 +1695,11 @@ private final class BrickVisualNode: SKNode {
         worldHeight: Float,
         sceneSize: CGSize,
         time: TimeInterval,
-        pixelScale: CGFloat
+        pixelScale: CGFloat,
+        shakeOffset: CGPoint
     ) {
-        let brickX = snappedLength(CGFloat(brick.x / worldWidth) * sceneSize.width, scale: pixelScale)
-        let brickY = snappedLength(CGFloat(brick.y / worldHeight) * sceneSize.height, scale: pixelScale)
+        let brickX = snappedLength(CGFloat(brick.x / worldWidth) * sceneSize.width + shakeOffset.x, scale: pixelScale)
+        let brickY = snappedLength(CGFloat(brick.y / worldHeight) * sceneSize.height + shakeOffset.y, scale: pixelScale)
         let width = max(8, snappedLength(CGFloat(brick.width / worldWidth) * sceneSize.width, scale: pixelScale))
         let height = max(6, snappedLength(CGFloat(brick.height / worldHeight) * sceneSize.height, scale: pixelScale))
         let corner = max(2, min(width, height) * 0.24)
@@ -1890,10 +1950,11 @@ private final class PowerupVisualNode: SKNode {
         worldHeight: Float,
         sceneSize: CGSize,
         time: TimeInterval,
-        pixelScale: CGFloat
+        pixelScale: CGFloat,
+        shakeOffset: CGPoint
     ) {
-        let px = CGFloat(powerup.x / worldWidth) * sceneSize.width
-        let py = CGFloat(powerup.y / worldHeight) * sceneSize.height
+        let px = CGFloat(powerup.x / worldWidth) * sceneSize.width + shakeOffset.x
+        let py = CGFloat(powerup.y / worldHeight) * sceneSize.height + shakeOffset.y
         position = snappedPoint(CGPoint(x: px, y: py), scale: pixelScale)
 
         let baseColor = UIColor(

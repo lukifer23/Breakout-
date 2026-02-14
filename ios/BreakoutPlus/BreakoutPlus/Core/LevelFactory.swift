@@ -18,33 +18,34 @@ struct LevelLayout {
 enum LevelFactory {
     private static let basePatterns: [LevelLayout] = [
         LevelLayout(
-            rows: 6,
+            rows: 7,
             cols: 10,
             lines: [
                 "NNNNNNNNNN",
-                "NRRNNRRNNR",
-                "NNENNENNNN",
-                "NRRNNRRNNR",
                 "NNNNNNNNNN",
-                "..U....U.."
+                "NNRRRRRRNN",
+                "NNRRAARRNN",
+                "NNRRRRRRNN",
+                "NNNNNNNNNN",
+                "NNNNNNNNNN"
             ],
             theme: .neon,
-            tip: "Aim for explosive bricks to clear clusters."
+            tip: "Classic opener: build control and clear center lanes first."
         ),
         LevelLayout(
             rows: 7,
             cols: 10,
             lines: [
-                "..NNNNNN..",
-                ".NRRAARRN.",
-                ".NNEEEENN.",
-                "NRRNNNNRRN",
-                "NNA....ANN",
-                ".NRR..RRN.",
-                "..NNNNNN.."
+                "NNNNNNNNNN",
+                "NNRRNNRRNN",
+                "NNAANNAANN",
+                "NNRRNNRRNN",
+                "NNEENNEENN",
+                "NNNNNNNNNN",
+                "NNNNNNNNNN"
             ],
             theme: .sunset,
-            tip: "Laser powerups help cut through armor."
+            tip: "Clear reinforced pockets early before pressure builds."
         ),
         LevelLayout(
             rows: 7,
@@ -110,6 +111,278 @@ enum LevelFactory {
             ],
             theme: .lava,
             tip: "Boss bricks reward big plays. Save lasers."
+        ),
+        LevelLayout(
+            rows: 8,
+            cols: 12,
+            lines: [
+                ".....NN.....",
+                "....NNNN....",
+                "...NNRRNN...",
+                "..NRR..RRN..",
+                ".NN......NN.",
+                "..NRR..RRN..",
+                "...NNRRNN...",
+                "....NNNN...."
+            ],
+            theme: .forest,
+            tip: "Diamond formations create tricky ricochet angles."
+        ),
+        LevelLayout(
+            rows: 9,
+            cols: 11,
+            lines: [
+                ".....N.....",
+                "....NNN....",
+                "...N...N...",
+                "..N.....N..",
+                ".N.......N.",
+                "..N.....N..",
+                "...N...N...",
+                "....NNN....",
+                ".....N....."
+            ],
+            theme: .lava,
+            tip: "Follow the spiral path for maximum point efficiency."
+        ),
+        LevelLayout(
+            rows: 8,
+            cols: 14,
+            lines: [
+                "UUUUUUUUUUUUUU",
+                "U............U",
+                "U.NN......NN.U",
+                "U..RR....RR..U",
+                "U..RR....RR..U",
+                "U.NN......NN.U",
+                "U............U",
+                "UUUUUUUUUUUUUU"
+            ],
+            theme: .cobalt,
+            tip: "Break through fortress walls strategically."
+        ),
+        LevelLayout(
+            rows: 7,
+            cols: 12,
+            lines: [
+                "..NN....NN..",
+                ".N..NN..N..N",
+                "N.NN..NN.NN.",
+                ".N..NN..N..N",
+                "..NN....NN..",
+                ".N..NN..N..N",
+                "N.NN..NN.NN."
+            ],
+            theme: .sunset,
+            tip: "Wave patterns reward careful route planning."
+        ),
+        LevelLayout(
+            rows: 8,
+            cols: 8,
+            lines: [
+                "NRNRNRNR",
+                "RNRNRNRN",
+                "NRNRNRNR",
+                "RNRNRNRN",
+                "NRNRNRNR",
+                "RNB.NBRN",
+                "NRNRNRNR",
+                "RNRNRNRN"
+            ],
+            theme: .aurora,
+            tip: "Checkerboard bosses demand sustained pressure."
+        ),
+        LevelLayout(
+            rows: 8,
+            cols: 12,
+            lines: [
+                "MMMMMMMMMMMM",
+                "M..........M",
+                "M.NN....NN.M",
+                "M..MM..MM..M",
+                "M..MM..MM..M",
+                "M.NN....NN.M",
+                "M..........M",
+                "MMMMMMMMMMMM"
+            ],
+            theme: .neon,
+            tip: "Moving mazes shift the safe angles every rally."
+        ),
+        LevelLayout(
+            rows: 9,
+            cols: 11,
+            lines: [
+                ".....U.....",
+                "....UUU....",
+                "...U...U...",
+                "..U.....U..",
+                ".U..SSS..U.",
+                "..U.....U..",
+                "...U...U...",
+                "....UUU....",
+                ".....U....."
+            ],
+            theme: .cobalt,
+            tip: "Spawning bricks multiply if ignored."
+        ),
+        LevelLayout(
+            rows: 6,
+            cols: 10,
+            lines: [
+                "....BB....",
+                "...B..B...",
+                "..B....B..",
+                "...B..B...",
+                "....BB....",
+                "NNNNNNNNNN"
+            ],
+            theme: .sunset,
+            tip: "Boss arena: carve routes before committing to center."
+        ),
+        LevelLayout(
+            rows: 8,
+            cols: 10,
+            lines: [
+                "...NNN....",
+                "..NRRRN...",
+                ".N.....N..",
+                "N..AAA..N.",
+                "N..AAA..N.",
+                ".N.....N..",
+                "..NRRRN...",
+                "...NNN...."
+            ],
+            theme: .cobalt,
+            tip: "Diamond core requires precision targeting."
+        ),
+        LevelLayout(
+            rows: 8,
+            cols: 10,
+            lines: [
+                "N.........",
+                "RN........",
+                "ARN.......",
+                "EARN......",
+                ".EARN.....",
+                "..EARN....",
+                "...EARN...",
+                "....EARN.."
+            ],
+            theme: .sunset,
+            tip: "Spiral cascades snowball combos when chained."
+        ),
+        LevelLayout(
+            rows: 8,
+            cols: 10,
+            lines: [
+                "N..N..N..N",
+                "R..R..R..R",
+                "A..A..A..A",
+                "N..N..N..N",
+                "R..R..R..R",
+                "A..A..A..A",
+                "N..N..N..N",
+                "R..R..R..R"
+            ],
+            theme: .aurora,
+            tip: "Pillar formations create intentional lanes."
+        ),
+        LevelLayout(
+            rows: 8,
+            cols: 10,
+            lines: [
+                "N.N.N.N.N.",
+                ".N.N.N.N.N",
+                "N.N.N.N.N.",
+                ".N.N.N.N.N",
+                "N.N.N.N.N.",
+                ".N.N.N.N.N",
+                "N.N.N.N.N.",
+                ".N.N.N.N.N"
+            ],
+            theme: .neon,
+            tip: "Grid gaps reward precision angle selection."
+        ),
+        LevelLayout(
+            rows: 8,
+            cols: 10,
+            lines: [
+                "....N.....",
+                "...NRN....",
+                "..N...N...",
+                ".NR...RN..",
+                "N..R.R..N.",
+                ".NR...RN..",
+                "..N...N...",
+                "...NRN...."
+            ],
+            theme: .cobalt,
+            tip: "Cascade layouts open and close rebound channels."
+        ),
+        LevelLayout(
+            rows: 8,
+            cols: 10,
+            lines: [
+                "...NNN....",
+                "..N...N...",
+                ".N..E..N..",
+                "N..R.R..N.",
+                "N..R.R..N.",
+                ".N..E..N..",
+                "..N...N...",
+                "...NNN...."
+            ],
+            theme: .sunset,
+            tip: "Concentric rings are best cleared from the outside in."
+        ),
+        LevelLayout(
+            rows: 8,
+            cols: 12,
+            lines: [
+                "NNNNNNNNNNNN",
+                "NNNNNNNNNNNN",
+                "NNNNNNNNNNNN",
+                "NNNNNNNNNNNN",
+                "NNNNNNNNNNNN",
+                "NNNNNNNNNNNN",
+                "..RRRRRRRR..",
+                "..RRRRRRRR.."
+            ],
+            theme: .cobalt,
+            tip: "Dense blocks reward disciplined clearing patterns."
+        ),
+        LevelLayout(
+            rows: 9,
+            cols: 11,
+            lines: [
+                "NNNNNNNNNNN",
+                "NNNNNNNNNNN",
+                "NNNNNNNNNNN",
+                "NNNNNNNNNNN",
+                "NNNNNNNNNNN",
+                "NNNNNNNNNNN",
+                "NNNNNNNNNNN",
+                "..AAAAAAA..",
+                "..AAAAAAA.."
+            ],
+            theme: .lava,
+            tip: "Compact fortress: crack the shell to expose the core."
+        ),
+        LevelLayout(
+            rows: 8,
+            cols: 12,
+            lines: [
+                "NNNNNNNNNNNN",
+                "NNNNNNNNNNNN",
+                "NNNNNNNNNNNN",
+                "NNNNN..NNNNN",
+                "NNNN....NNNN",
+                "NNNN....NNNN",
+                "NNNNN..NNNNN",
+                "NNNNNNNNNNNN"
+            ],
+            theme: .forest,
+            tip: "Solid mass with weak points; route through the center seams."
         )
     ]
 
@@ -196,7 +469,7 @@ enum LevelFactory {
                 let hp = t == .unbreakable ? t.baseHitPoints : max(1, Int(Float(t.baseHitPoints) * diff))
                 let x = Float(col) * brickWidth + brickWidth / 2
                 let y = areaTop - (Float(visualRow) + 0.5) * cellHeight
-                bricks.append(Brick(x: x, y: y, width: brickWidth - 1, height: brickHeight - 1, type: t, hitPoints: hp))
+                bricks.append(Brick(x: x, y: y, width: brickWidth - 1, height: brickHeight - 1, type: t, hitPoints: hp, gridX: col, gridY: visualRow))
             }
         }
         return (bricks, modeTheme, "Endless: adaptive layouts and escalating difficulty.")
@@ -221,12 +494,14 @@ enum LevelFactory {
         let brickHeight = max(3.8, cellHeight - 0.8)
         let aspectBoost: Float = aspect >= 1.95 ? 0.07 : (aspect <= 1.45 ? 0.04 : 0.02)
         let baseDensity: Float
-        if levelIndex <= 5 {
-            baseDensity = 0.55 + Float(levelIndex) * 0.02
+        if levelIndex <= 2 {
+            baseDensity = 0.75 + Float(levelIndex) * 0.03
+        } else if levelIndex <= 5 {
+            baseDensity = 0.81 + Float(levelIndex - 2) * 0.02
         } else if levelIndex <= 10 {
-            baseDensity = 0.68 + Float(levelIndex - 5) * 0.025
+            baseDensity = 0.85 + Float(levelIndex - 5) * 0.015
         } else {
-            baseDensity = 0.82
+            baseDensity = 0.9
         }
 
         var bricks: [Brick] = []
@@ -242,7 +517,7 @@ enum LevelFactory {
 
                 if let t = charToType(ch) {
                     let hp = t == .unbreakable ? t.baseHitPoints : max(1, Int(Float(t.baseHitPoints) * difficulty))
-                    bricks.append(Brick(x: x, y: y, width: brickWidth - 1, height: brickHeight - 1, type: t, hitPoints: hp))
+                    bricks.append(Brick(x: x, y: y, width: brickWidth - 1, height: brickHeight - 1, type: t, hitPoints: hp, gridX: col, gridY: visualRow))
                     continue
                 }
 
@@ -254,7 +529,7 @@ enum LevelFactory {
 
                 let t = fillType(seed: seed + 17, level: levelIndex, allowExplosive: levelIndex >= 2)
                 let hp = max(1, Int(Float(t.baseHitPoints) * difficulty))
-                bricks.append(Brick(x: x, y: y, width: brickWidth - 1, height: brickHeight - 1, type: t, hitPoints: hp))
+                bricks.append(Brick(x: x, y: y, width: brickWidth - 1, height: brickHeight - 1, type: t, hitPoints: hp, gridX: col, gridY: visualRow))
             }
         }
 
@@ -269,7 +544,7 @@ enum LevelFactory {
                     let x = Float(col) * brickWidth + brickWidth / 2
                     let visualRow = layout.rows + row
                     let y = areaTop - (Float(visualRow) + 0.5) * cellHeight
-                    bricks.append(Brick(x: x, y: y, width: brickWidth - 1, height: brickHeight - 1, type: t, hitPoints: hp))
+                    bricks.append(Brick(x: x, y: y, width: brickWidth - 1, height: brickHeight - 1, type: t, hitPoints: hp, gridX: col, gridY: visualRow))
                 }
             }
         }
@@ -312,8 +587,10 @@ enum LevelFactory {
         let tunnelRightWall = min(cols - 1, gateEnd + 1)
         let levelScale: Float = 1.0 + Float(index) * 0.055
 
-        let areaTop = worldHeight * 0.84
-        let areaBottom = worldHeight * 0.22
+        let aspect = worldHeight / max(1, worldWidth)
+        let bounds = brickFieldBounds(aspect: aspect, endless: false)
+        let areaTop = worldHeight * (bounds.top + 0.01)
+        let areaBottom = worldHeight * max(0.2, bounds.bottom - 0.09)
         let cellHeight = (areaTop - areaBottom) / Float(rows)
         let cellWidth = worldWidth / Float(cols)
         let brickHeight = max(2.2, cellHeight - 0.8)
@@ -334,7 +611,7 @@ enum LevelFactory {
             occupied.insert(k)
             let x = Float(col) * cellWidth + cellWidth / 2
             let y = areaTop - (Float(row) + 0.5) * cellHeight
-            bricks.append(Brick(x: x, y: y, width: brickWidth, height: brickHeight, type: type, hitPoints: hp))
+            bricks.append(Brick(x: x, y: y, width: brickWidth, height: brickHeight, type: type, hitPoints: hp, gridX: col, gridY: row))
         }
 
         // Fortress shell: unbreakable ring with a narrow gate.
@@ -527,10 +804,11 @@ enum LevelFactory {
     }
 
     private static func extraRowsForAspect(_ aspect: Float) -> Int {
-        if aspect >= 2.12 { return 3 }
-        if aspect >= 1.95 { return 2 }
-        if aspect >= 1.80 { return 1 }
-        if aspect <= 1.45 { return 1 }
+        if aspect >= 2.12 { return 4 }
+        if aspect >= 1.95 { return 3 }
+        if aspect >= 1.80 { return 2 }
+        if aspect <= 1.45 { return 3 }
+        if aspect <= 1.60 { return 2 }
         return 0
     }
 
@@ -539,17 +817,17 @@ enum LevelFactory {
         let bottom: Float
         switch aspect {
         case ..<1.45:
-            top = 0.86
-            bottom = endless ? 0.40 : 0.42
+            top = 0.76
+            bottom = endless ? 0.30 : 0.32
         case ..<1.80:
-            top = 0.84
-            bottom = endless ? 0.36 : 0.38
+            top = 0.78
+            bottom = endless ? 0.29 : 0.31
         case ..<2.00:
-            top = 0.82
-            bottom = endless ? 0.33 : 0.34
+            top = 0.79
+            bottom = endless ? 0.28 : 0.30
         default:
             top = 0.80
-            bottom = endless ? 0.30 : 0.31
+            bottom = endless ? 0.27 : 0.29
         }
         return (top, bottom)
     }

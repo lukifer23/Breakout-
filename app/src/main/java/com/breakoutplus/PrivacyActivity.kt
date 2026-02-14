@@ -12,7 +12,10 @@ class PrivacyActivity : FoldAwareActivity() {
         setContentView(binding.root)
         setFoldAwareRoot(binding.root)
 
-        binding.buttonPrivacyBack.setOnClickListener { finish() }
+        binding.buttonPrivacyBack.setOnClickListener {
+            finish()
+            playCloseTransition(R.anim.slide_in_left, R.anim.slide_out_right)
+        }
         binding.privacyText.text = loadPrivacyText()
         animateEntry()
     }

@@ -1488,10 +1488,15 @@ class GameEngine(
         val tallness = ((aspectRatio - 1.25f) / 0.85f).coerceIn(0f, 1f)
         val isWide = aspectRatio < 1.45f
         val wideDensityRows = when {
-            aspectRatio < 1.24f -> 5
-            aspectRatio < 1.34f -> 4
-            aspectRatio < 1.48f -> 3
-            aspectRatio < 1.62f -> 2
+            aspectRatio < 1.24f -> 6
+            aspectRatio < 1.34f -> 5
+            aspectRatio < 1.48f -> 4
+            aspectRatio < 1.62f -> 3
+            else -> 0
+        }
+        val slateVerticalBonus = when {
+            aspectRatio < 1.24f -> 2
+            aspectRatio < 1.46f -> 1
             else -> 0
         }
         val tallDensityRows = when {
@@ -1555,7 +1560,7 @@ class GameEngine(
                     layoutColBoost = (baseColBoost - 1).coerceAtLeast(1)
                 }
                 GameMode.GOD -> {
-                    layoutRowBoost = (baseRowBoost - 1).coerceAtLeast(1)
+                    layoutRowBoost = (baseRowBoost - 1 + slateVerticalBonus).coerceAtLeast(1)
                     layoutColBoost = (baseColBoost - 1).coerceAtLeast(1)
                 }
                 GameMode.VOLLEY -> {
@@ -1565,7 +1570,9 @@ class GameEngine(
                         aspectRatio > 2.2f -> 1
                         else -> 1
                     }
-                    layoutRowBoost = (volleyRowBase + densityBoost / 2 + wideDensityRows / 2 + tallDensityRows).coerceAtLeast(1)
+                    layoutRowBoost =
+                        (volleyRowBase + densityBoost / 2 + wideDensityRows / 2 + tallDensityRows + slateVerticalBonus)
+                            .coerceAtLeast(1)
                     layoutColBoost = when {
                         aspectRatio < 1.35f -> 3
                         aspectRatio < 1.7f -> 2
@@ -1580,7 +1587,9 @@ class GameEngine(
                         aspectRatio > 2.2f -> 2
                         else -> 2
                     }
-                    layoutRowBoost = (tunnelRowBase + densityBoost / 2 + wideDensityRows / 2 + tallDensityRows).coerceAtLeast(2)
+                    layoutRowBoost =
+                        (tunnelRowBase + densityBoost / 2 + wideDensityRows / 2 + tallDensityRows + slateVerticalBonus)
+                            .coerceAtLeast(2)
                     layoutColBoost = when {
                         aspectRatio < 1.36f -> 2
                         aspectRatio < 1.7f -> 1
@@ -1902,8 +1911,12 @@ class GameEngine(
     }
 
     fun nextLevel() {
+        val clearedBoardWhilePaused =
+            state == GameState.PAUSED &&
+                config.mode.godMode &&
+                bricks.none { it.alive && it.type != BrickType.UNBREAKABLE }
         // Defensive checks to prevent invalid level advancement
-        if (!awaitingNextLevel) {
+        if (!awaitingNextLevel && !clearedBoardWhilePaused) {
             logger?.logError("nextLevel called when not awaiting next level (state=$state, lives=$lives)")
             return
         }
@@ -1965,6 +1978,8 @@ class GameEngine(
         volleyReturnAnchorX = Float.NaN
         volleyReturnSumX = 0f
         volleyReturnCount = 0
+        tunnelShotsFired = 0
+        tunnelGateFlash = 0f
         speedMultiplier = 1f
         screenFlash = 0f
         levelClearFlash = 0f

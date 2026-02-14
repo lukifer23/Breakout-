@@ -875,11 +875,6 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     }
 
     private fun applyResponsiveHudSizing() {
-        // Skip HUD resizing during active gameplay to prevent jitters
-        if (binding.gameSurface.isGameRunning()) {
-            return
-        }
-
         // Prevent re-entry during layout changes
         if (hudResizingInProgress) {
             return
@@ -917,15 +912,15 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         hudChipTextPx = resources.getDimension(R.dimen.bp_hud_mode_size) * hudScale
 
         val reservedRatio = when {
-            shortDp >= 840f -> 0.2f
-            shortDp >= 720f -> 0.195f
-            shortDp >= 600f -> 0.19f
+            shortDp >= 840f -> 0.172f
+            shortDp >= 720f -> 0.168f
+            shortDp >= 600f -> 0.165f
             aspect >= 2.3f -> 0.155f
             aspect >= 2.0f -> 0.172f
             else -> 0.21f
         }
         val reservedHeightDp = (heightDp * reservedRatio)
-            .coerceIn(108f, if (shortDp >= 720f) 210f else 184f)
+            .coerceIn(108f, if (shortDp >= 720f) 194f else 180f)
         val hudParams = binding.hudContainer.layoutParams as ConstraintLayout.LayoutParams
         val targetHeightPx = dp(reservedHeightDp)
         if (hudParams.height != targetHeightPx) {

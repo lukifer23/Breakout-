@@ -26,6 +26,7 @@ protocol GameEngineDelegate: AnyObject {
 enum GameFeedbackEvent: Equatable {
     case sound(GameSound, volume: Float)
     case haptic(HapticEvent)
+    case screenShake(intensity: Float, duration: Float)
 }
 
 extension GameEngineDelegate {
@@ -1273,9 +1274,6 @@ class GameEngine {
         for i in 0..<balls.count {
             balls[i].y *= yScale
         }
-        for i in 0..<bricks.count {
-            bricks[i].y *= yScale
-        }
         for i in 0..<powerups.count {
             powerups[i].y *= yScale
         }
@@ -1285,6 +1283,7 @@ class GameEngine {
         for i in 0..<enemyShots.count {
             enemyShots[i].y *= yScale
         }
+        relayoutBricksForViewportChange(previousHeight: oldHeight, yScale: yScale)
 
         paddle.y = 8
         paddleTargetX = paddleTargetX.clamped(to: paddle.width / 2...worldWidth - paddle.width / 2)
@@ -1292,6 +1291,67 @@ class GameEngine {
             attachReadyBallsToPaddle()
         }
         updateAimFromPaddle()
+    }
+
+    private func relayoutBricksForViewportChange(previousHeight: Float, yScale: Float) {
+        if gameMode == .volley {
+            for i in 0..<bricks.count {
+                bricks[i].y *= yScale
+            }
+            return
+        }
+
+        let built = LevelFactory.buildLevel(
+            index: levelIndex,
+            worldWidth: worldWidth,
+            worldHeight: worldHeight,
+            mode: gameMode,
+            endless: gameMode.endless,
+            difficulty: difficultyForMode()
+        )
+        let oldBricks = bricks
+        var oldByKey: [String: Brick] = [:]
+        oldByKey.reserveCapacity(oldBricks.count)
+        for brick in oldBricks {
+            if let key = brickStateKey(for: brick) {
+                oldByKey[key] = brick
+            }
+        }
+
+        var rebuilt = built.bricks
+        for i in 0..<rebuilt.count {
+            if let key = brickStateKey(for: rebuilt[i]) {
+                if let old = oldByKey[key] {
+                    rebuilt[i].alive = old.alive
+                    if old.alive {
+                        rebuilt[i].hitPoints = max(1, min(old.hitPoints, rebuilt[i].maxHitPoints))
+                    } else {
+                        rebuilt[i].hitPoints = 0
+                    }
+                    rebuilt[i].vx = old.vx
+                    rebuilt[i].vy = old.vy
+                }
+            }
+        }
+
+        // Preserve dynamic spawned children (no stable grid key), scaling Y for the new viewport.
+        for var old in oldBricks where brickStateKey(for: old) == nil {
+            old.y *= yScale
+            old.baseY = old.y
+            rebuilt.append(old)
+        }
+
+        bricks = rebuilt
+        currentTheme = built.theme
+        currentTip = built.tip
+        if gameMode.invaders {
+            updateInvaderAnchors()
+        }
+    }
+
+    private func brickStateKey(for brick: Brick) -> String? {
+        guard brick.gridX >= 0, brick.gridY >= 0 else { return nil }
+        return "\(brick.gridX):\(brick.gridY):\(brick.type.rawValue)"
     }
 
     func enableDailyChallenges(_ enabled: Bool) {
@@ -1328,24 +1388,27 @@ class GameEngine {
     }
 
     private func updateInvaderFormation(_ deltaTime: TimeInterval) {
-        // Simple left-right movement for invader bricks
         invaderFormationOffset += invaderDirection * invaderSpeed * Float(deltaTime)
-
-        // Reverse direction at edges
         let maxOffset = worldWidth * 0.3
-        if abs(invaderFormationOffset) > maxOffset {
-            invaderDirection *= -1
-            invaderFormationOffset = invaderDirection * maxOffset
+        if invaderFormationOffset > maxOffset {
+            invaderFormationOffset = maxOffset
+            invaderDirection = -1
+        } else if invaderFormationOffset < -maxOffset {
+            invaderFormationOffset = -maxOffset
+            invaderDirection = 1
         }
+        invaderRowPhase += Float(deltaTime) * 1.4
 
-        // Apply movement to invader bricks
         for i in 0..<bricks.count {
             if bricks[i].type == .invader {
-                bricks[i].x += invaderDirection * invaderSpeed * Float(deltaTime)
-                // Keep within bounds
-                bricks[i].x = max(bricks[i].width/2, min(worldWidth - bricks[i].width/2, bricks[i].x))
+                let row = Float(max(0, bricks[i].gridY))
+                let rowDrift = sin(invaderRowPhase + row * invaderRowPhaseOffset) * invaderRowDrift
+                let targetX = bricks[i].baseX + invaderFormationOffset + rowDrift
+                bricks[i].x = max(bricks[i].width / 2, min(worldWidth - bricks[i].width / 2, targetX))
+                bricks[i].baseY = bricks[i].y
             }
         }
+        invaderBricks = bricks.filter { $0.type == .invader && $0.alive }
     }
 
     private func updateEnemyShots(_ deltaTime: TimeInterval) {
@@ -1475,11 +1538,13 @@ class GameEngine {
 
     private func spawnVolleyTopRow() {
         let cols = 12
-        let rowY = worldHeight * 0.75 + Float(volleyAdvanceRows) * 6
+        let rowStep = volleyRowStep()
+        let rowY = volleySpawnY()
         let brickWidth = worldWidth / Float(cols) - 1
+        let brickHeight = max(4.4, rowStep * 0.82)
 
         var occupiedCols = Set<Int>()
-        for brick in bricks where brick.alive && abs(brick.y - rowY) < 2.6 {
+        for brick in bricks where brick.alive && abs(brick.y - rowY) < rowStep * 0.55 {
             let rawCol = Int((brick.x / worldWidth) * Float(cols))
             let col = max(0, min(cols - 1, rawCol))
             occupiedCols.insert(col)
@@ -1534,7 +1599,7 @@ class GameEngine {
             }
             let hp = max(1, Int(round(Float(type.baseHitPoints) * hpScale)))
             let x = Float(col) * (worldWidth / Float(cols)) + (worldWidth / Float(cols * 2))
-            bricks.append(Brick(x: x, y: rowY, width: brickWidth, height: 5, type: type, hitPoints: hp))
+            bricks.append(Brick(x: x, y: rowY, width: brickWidth, height: brickHeight, type: type, hitPoints: hp, gridX: col, gridY: -1))
             spawned += 1
         }
 
@@ -1542,23 +1607,22 @@ class GameEngine {
             if let fallbackCol = (0..<cols).first(where: { !forcedGaps.contains($0) && !occupiedCols.contains($0) }) {
                 let x = Float(fallbackCol) * (worldWidth / Float(cols)) + (worldWidth / Float(cols * 2))
                 let hp = max(1, Int(round(Float(BrickType.normal.baseHitPoints) * hpScale)))
-                bricks.append(Brick(x: x, y: rowY, width: brickWidth, height: 5, type: .normal, hitPoints: hp))
+                bricks.append(Brick(x: x, y: rowY, width: brickWidth, height: brickHeight, type: .normal, hitPoints: hp, gridX: fallbackCol, gridY: -1))
             }
         }
     }
 
     private func relayoutBricks() {
-        // Move all bricks down by volleyAdvanceRows * brick height
-        let moveDown = Float(volleyAdvanceRows) * 6
+        let moveDown = Float(volleyAdvanceRows) * volleyRowStep()
         for i in 0..<bricks.count {
             bricks[i].y -= moveDown
+            bricks[i].baseY = bricks[i].y
         }
         volleyAdvanceRows = 0
     }
 
     private func triggerScreenShake(_ intensity: Float, _ duration: Float) {
-        // Simple screen shake effect - could be implemented in GameView
-        delegate?.onFeedback(.sound(.explosion, volume: 0.4))
+        delegate?.onFeedback(.screenShake(intensity: intensity, duration: duration))
     }
 
     private func fireInvaderShot() {
@@ -1642,7 +1706,7 @@ class GameEngine {
             volleyBallCount = max(5, volleyBallCount)
         }
 
-        // Generate level (simplified for now)
+        // Generate level layout for the active mode.
         generateLevel()
         if currentTip.isEmpty {
             delegate?.onTip(message: levelIndex == 0 ? "Tip: Release to launch. Hit the paddle edge to steer." : "Tip: Stack powerups for huge combos.")
@@ -1667,6 +1731,34 @@ class GameEngine {
         bricks = built.bricks
         currentTheme = built.theme
         currentTip = built.tip
+        if gameMode.invaders {
+            updateInvaderAnchors()
+        }
+    }
+
+    private func updateInvaderAnchors() {
+        for i in 0..<bricks.count where bricks[i].type == .invader {
+            bricks[i].baseX = bricks[i].x
+            bricks[i].baseY = bricks[i].y
+        }
+        invaderBricks = bricks.filter { $0.type == .invader && $0.alive }
+    }
+
+    private func volleyRowStep() -> Float {
+        max(4.2, min(6.6, worldHeight * 0.033))
+    }
+
+    private func volleySpawnY() -> Float {
+        let aspect = worldHeight / max(1, worldWidth)
+        let ratio: Float
+        if aspect >= 2.0 {
+            ratio = 0.74
+        } else if aspect <= 1.45 {
+            ratio = 0.71
+        } else {
+            ratio = 0.73
+        }
+        return worldHeight * ratio
     }
 
     func nextLevel() {
@@ -1735,7 +1827,7 @@ class GameEngine {
         case .haptic:
             if feedbackCooldown > 0 { return }
             feedbackCooldown = 0.03
-        case .sound:
+        case .sound, .screenShake:
             break
         }
         delegate?.onFeedback(event)

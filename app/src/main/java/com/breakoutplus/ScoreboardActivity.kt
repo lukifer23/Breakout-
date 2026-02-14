@@ -22,7 +22,10 @@ class ScoreboardActivity : FoldAwareActivity() {
         setContentView(binding.root)
         setFoldAwareRoot(binding.root)
 
-        binding.buttonScoreBack.setOnClickListener { finish() }
+        binding.buttonScoreBack.setOnClickListener {
+            finish()
+            playCloseTransition(R.anim.slide_in_left, R.anim.slide_out_right)
+        }
         findViewById<com.google.android.material.button.MaterialButton>(R.id.buttonScorePrev)?.setOnClickListener { switchMode(-1) }
         findViewById<com.google.android.material.button.MaterialButton>(R.id.buttonScoreNext)?.setOnClickListener { switchMode(1) }
 

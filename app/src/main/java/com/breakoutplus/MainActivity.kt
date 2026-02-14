@@ -21,27 +21,31 @@ class MainActivity : FoldAwareActivity() {
             if (!clickEnabled) return@setOnClickListener
             clickEnabled = false
             startActivity(Intent(this, ModeSelectActivity::class.java))
-            overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
+            playOpenTransition(R.anim.slide_in_right, R.anim.slide_out_left)
         }
         binding.buttonChallenges.setOnClickListener {
             if (!clickEnabled) return@setOnClickListener
             clickEnabled = false
             startActivity(Intent(this, DailyChallengesActivity::class.java))
+            playOpenTransition(R.anim.slide_in_right, R.anim.slide_out_left)
         }
         binding.buttonScoreboard.setOnClickListener {
             if (!clickEnabled) return@setOnClickListener
             clickEnabled = false
             startActivity(Intent(this, ScoreboardActivity::class.java))
+            playOpenTransition(R.anim.slide_in_right, R.anim.slide_out_left)
         }
         binding.buttonSettings.setOnClickListener {
             if (!clickEnabled) return@setOnClickListener
             clickEnabled = false
             startActivity(Intent(this, SettingsActivity::class.java))
+            playOpenTransition(R.anim.slide_in_right, R.anim.slide_out_left)
         }
         binding.buttonHowTo.setOnClickListener {
             if (!clickEnabled) return@setOnClickListener
             clickEnabled = false
             startActivity(Intent(this, HowToActivity::class.java))
+            playOpenTransition(R.anim.slide_in_right, R.anim.slide_out_left)
         }
 
         animateIntro()
