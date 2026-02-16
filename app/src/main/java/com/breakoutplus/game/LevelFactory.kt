@@ -729,14 +729,30 @@ object LevelFactory {
         val gateCenter = cols / 2
         val gateLeft = gateCenter - gateWidth / 2
         val gateRight = gateLeft + gateWidth - 1
+        val gateOpenCol = when {
+            gateWidth <= 1 -> gateCenter
+            gateWidth == 2 -> if (index % 2 == 0) gateLeft else gateRight
+            else -> gateCenter
+        }
 
         // Bottom Wall (interrupted by Gate)
         for (col in (castleLeft + towerSize) until (castleRight - towerSize + 1)) {
             if (col in gateLeft..gateRight) {
-                // The Gate: Reinforced Portcullis
-                if (index > 2) {
-                    addBrick(col, castleBottom, BrickType.REINFORCED, (3 * difficulty).toInt())
+                // Keep at least one true opening so the breach lane remains readable.
+                if (col == gateOpenCol) continue
+                val gateType = when {
+                    index >= 10 && col == gateCenter -> BrickType.ARMORED
+                    index >= 4 -> BrickType.REINFORCED
+                    else -> BrickType.NORMAL
                 }
+                val gateBase = when (gateType) {
+                    BrickType.NORMAL -> 2
+                    BrickType.REINFORCED -> 3
+                    BrickType.ARMORED -> 4
+                    else -> 2
+                }
+                val gateHp = max(1, (gateBase * difficulty * (1f + index * 0.03f)).roundToInt())
+                addBrick(col, castleBottom, gateType, gateHp)
             } else {
                 val isWeakBot = (col + index * 2) % 6 == 0
                 val botType = if (isWeakBot) BrickType.ARMORED else BrickType.UNBREAKABLE
@@ -748,6 +764,15 @@ object LevelFactory {
         for (row in (castleBottom + 1) until rows) {
             addBrick(gateLeft - 1, row, BrickType.UNBREAKABLE, 999)
             addBrick(gateRight + 1, row, BrickType.UNBREAKABLE, 999)
+            if (index >= 5 && row < rows - 1) {
+                val chokeType = when {
+                    index >= 13 && row % 3 == 0 -> BrickType.PHASE
+                    row % 2 == 0 -> BrickType.REINFORCED
+                    else -> BrickType.NORMAL
+                }
+                val chokeHp = max(1, (baseHp(chokeType) * difficulty * (1f + index * 0.025f)).roundToInt())
+                addBrick(gateCenter, row, chokeType, chokeHp)
+            }
         }
 
         // 5. Interior (The Keep & Guards)
@@ -781,6 +806,16 @@ object LevelFactory {
                     val hp = max(1, (baseHp(type) * difficulty * (1f + index * 0.02f)).roundToInt())
                     addBrick(col, row, type, hp)
                 }
+            }
+        }
+
+        // 6. Keep Core defenders for late siege levels.
+        if (index >= 8) {
+            val keepRow = castleTop + (castleBottom - castleTop) / 2
+            for (col in (gateCenter - 1)..(gateCenter + 1)) {
+                val type = if (index >= 14 && col == gateCenter) BrickType.BOSS else BrickType.PHASE
+                val hp = max(1, (baseHp(type) * difficulty * (1f + index * 0.04f)).roundToInt())
+                addBrick(col, keepRow, type, hp)
             }
         }
 

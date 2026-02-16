@@ -1,54 +1,95 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="12dp"
-    android:background="@drawable/card_background"
-    android:orientation="horizontal"
-    android:padding="12dp">
+    android:layout_marginBottom="10dp"
+    app:cardBackgroundColor="@color/bp_surface"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="3dp"
+    app:strokeColor="@color/bp_line"
+    app:strokeWidth="1dp">
 
-    <TextView
-        android:id="@+id/scoreRank"
-        android:layout_width="32dp"
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:fontFamily="sans-serif-medium"
-        android:text="@string/label_rank_default"
-        android:textColor="@color/bp_gold"
-        android:textSize="@dimen/bp_body_text_size"
-        android:textStyle="bold" />
-
-    <LinearLayout
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:orientation="vertical">
+        android:paddingStart="12dp"
+        android:paddingTop="10dp"
+        android:paddingEnd="12dp"
+        android:paddingBottom="10dp">
 
         <TextView
-            android:id="@+id/scoreMode"
+            android:id="@+id/scoreRank"
+            android:layout_width="40dp"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:fontFamily="sans-serif-medium"
+            android:text="@string/label_rank_default"
+            android:textColor="@color/bp_gold"
+            android:textSize="@dimen/bp_small_text_size"
+            android:textStyle="bold"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/scorePlayer"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:layout_marginEnd="10dp"
+            android:ellipsize="end"
+            android:fontFamily="sans-serif-medium"
+            android:maxLines="1"
+            android:text="@string/label_player_default"
+            android:textColor="@color/bp_white"
+            android:textSize="@dimen/bp_body_text_size"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toStartOf="@id/scoreValue"
+            app:layout_constraintStart_toEndOf="@id/scoreRank"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/scoreModeMeta"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:layout_marginTop="2dp"
+            android:layout_marginEnd="10dp"
+            android:ellipsize="end"
+            android:fontFamily="sans-serif"
+            android:maxLines="1"
+            android:text="@string/label_level_time_default"
+            android:textColor="@color/bp_gray"
+            android:textSize="@dimen/bp_caption_text_size"
+            app:layout_constraintEnd_toStartOf="@id/scoreValue"
+            app:layout_constraintStart_toEndOf="@id/scoreRank"
+            app:layout_constraintTop_toBottomOf="@id/scorePlayer" />
+
+        <TextView
+            android:id="@+id/scoreValue"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:fontFamily="sans-serif-medium"
-            android:text="@string/label_mode_classic"
+            android:gravity="end"
+            android:text="@string/label_score_value_default"
             android:textColor="@color/bp_white"
             android:textSize="@dimen/bp_body_text_size"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            app:layout_constraintBottom_toTopOf="@id/scoreDate"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@id/scorePlayer" />
 
         <TextView
-            android:id="@+id/scoreMeta"
+            android:id="@+id/scoreDate"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:fontFamily="sans-serif"
-            android:text="@string/label_level_time_default"
+            android:gravity="end"
+            android:text="@string/label_recent_default"
             android:textColor="@color/bp_gray"
-            android:textSize="@dimen/bp_caption_text_size" />
-    </LinearLayout>
-
-    <TextView
-        android:id="@+id/scoreValue"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:fontFamily="sans-serif-medium"
-        android:text="@string/label_score_value_default"
-        android:textColor="@color/bp_white"
-        android:textSize="@dimen/bp_body_text_size"
-        android:textStyle="bold" />
-</LinearLayout>
+            android:textSize="11sp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/scoreValue" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</com.google.android.material.card.MaterialCardView>

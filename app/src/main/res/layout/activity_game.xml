@@ -338,6 +338,9 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:text="@string/label_score_level_default"
+                android:textAlignment="center"
+                android:gravity="center"
+                android:lineSpacingExtra="2dp"
                 android:textColor="@color/bp_gray" />
 
             <com.google.android.material.button.MaterialButton

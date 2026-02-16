@@ -575,10 +575,18 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
                     "event=game_over mode=${config.mode.name} score=${summary.score} level=${summary.level} duration=${summary.durationSeconds} bricks=${summary.bricksBroken} lives_lost=${summary.livesLost}"
                 )
             }
+            val highScoreTimestamp = System.currentTimeMillis()
             // Check if this is a high score for the mode
-            if (ScoreboardManager.isHighScoreForMode(this, config.mode.displayName, summary.score, summary.durationSeconds)) {
+            if (ScoreboardManager.isHighScoreForMode(
+                    this,
+                    config.mode.displayName,
+                    summary.score,
+                    summary.durationSeconds,
+                    highScoreTimestamp
+                )
+            ) {
                 // Show name input dialog
-                showNameInputDialog(summary)
+                showNameInputDialog(summary, highScoreTimestamp)
             } else {
                 // Not a high score, just show game over screen
                 binding.endTitle.text = getString(R.string.label_game_over)
@@ -590,14 +598,14 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         }
     }
 
-    private fun showNameInputDialog(summary: GameSummary) {
+    private fun showNameInputDialog(summary: GameSummary, highScoreTimestamp: Long) {
         val dialog = android.app.Dialog(this)
         val view = layoutInflater.inflate(R.layout.dialog_high_score, binding.root, false)
         dialog.setContentView(view)
         dialog.setCancelable(false)
         dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
         dialog.window?.setLayout(
-            (resources.displayMetrics.widthPixels * 0.9f).toInt().coerceAtMost(600),
+            (resources.displayMetrics.widthPixels * 0.9f).toInt().coerceAtMost(dp(600f)),
             android.view.ViewGroup.LayoutParams.WRAP_CONTENT
         )
         // Position in upper portion to avoid paddle area, more conservative on small screens
@@ -609,7 +617,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             screenHeight < 1200 -> (screenHeight * 0.08f).toInt() // 8% for small screens
             screenHeight < 1800 -> (screenHeight * 0.12f).toInt() // 12% for medium screens
             else -> (screenHeight * 0.15f).toInt() // 15% for large screens
-        }.coerceAtLeast(80) // Minimum 80dp
+        }.coerceAtLeast(dp(80f)) // Minimum 80dp
         params?.y = safeTopMargin
         window?.attributes = params
 
@@ -649,7 +657,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
                     name = playerName,
                     level = summary.level,
                     durationSeconds = summary.durationSeconds,
-                    timestamp = System.currentTimeMillis()
+                    timestamp = highScoreTimestamp
                 )
             )
             dialog.dismiss()
@@ -876,81 +884,118 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
 
     private fun applyResponsiveHudSizing() {
         // Prevent re-entry during layout changes
-        if (hudResizingInProgress) {
-            return
-        }
+        if (hudResizingInProgress) return
         hudResizingInProgress = true
 
         try {
             val metrics = resources.displayMetrics
             if (metrics.density <= 0f) return
-        val widthPx = (binding.root.width - binding.root.paddingLeft - binding.root.paddingRight)
-            .takeIf { it > 0 } ?: metrics.widthPixels
-        val heightPx = (binding.root.height - binding.root.paddingTop - binding.root.paddingBottom)
-            .takeIf { it > 0 } ?: metrics.heightPixels
-        val widthDp = widthPx / metrics.density
-        val heightDp = heightPx / metrics.density
-        val shortDp = minOf(widthDp, heightDp)
-        val longDp = maxOf(widthDp, heightDp)
-        val aspect = (longDp / shortDp).coerceAtLeast(1f)
+            val widthPx = (binding.root.width - binding.root.paddingLeft - binding.root.paddingRight)
+                .takeIf { it > 0 } ?: metrics.widthPixels
+            val heightPx = (binding.root.height - binding.root.paddingTop - binding.root.paddingBottom)
+                .takeIf { it > 0 } ?: metrics.heightPixels
+            val widthDp = widthPx / metrics.density
+            val heightDp = heightPx / metrics.density
+            val shortDp = minOf(widthDp, heightDp)
+            val longDp = maxOf(widthDp, heightDp)
+            val aspect = (longDp / shortDp).coerceAtLeast(1f)
 
-        val baseScale = when {
-            shortDp >= 840f -> 1.14f
-            shortDp >= 720f -> 1.1f
-            shortDp >= 600f -> 1.05f
-            shortDp <= 340f -> 0.82f
-            shortDp <= 380f -> 0.86f
-            shortDp <= 420f -> 0.92f
-            else -> 1f
-        }
-        val tallFoldCompaction = when {
-            aspect >= 2.3f -> 0.88f
-            aspect >= 2.05f -> 0.92f
-            else -> 1f
-        }
-        hudScale = (baseScale * tallFoldCompaction).coerceIn(0.82f, 1.24f)
-        hudChipTextPx = resources.getDimension(R.dimen.bp_hud_mode_size) * hudScale
+            val baseScale = when {
+                shortDp >= 840f -> 1.14f
+                shortDp >= 720f -> 1.1f
+                shortDp >= 600f -> 1.05f
+                shortDp <= 340f -> 0.82f
+                shortDp <= 380f -> 0.86f
+                shortDp <= 420f -> 0.92f
+                else -> 1f
+            }
+            val tallFoldCompaction = when {
+                aspect >= 2.3f -> 0.88f
+                aspect >= 2.05f -> 0.92f
+                else -> 1f
+            }
+            hudScale = (baseScale * tallFoldCompaction).coerceIn(0.82f, 1.24f)
+            hudChipTextPx = resources.getDimension(R.dimen.bp_hud_mode_size) * hudScale
 
-        val reservedRatio = when {
-            shortDp >= 840f -> 0.172f
-            shortDp >= 720f -> 0.168f
-            shortDp >= 600f -> 0.165f
-            aspect >= 2.3f -> 0.155f
-            aspect >= 2.0f -> 0.172f
-            else -> 0.21f
-        }
-        val reservedHeightDp = (heightDp * reservedRatio)
-            .coerceIn(108f, if (shortDp >= 720f) 194f else 180f)
-        val hudParams = binding.hudContainer.layoutParams as ConstraintLayout.LayoutParams
-        val targetHeightPx = dp(reservedHeightDp)
-        if (hudParams.height != targetHeightPx) {
-            hudParams.height = targetHeightPx
-            binding.hudContainer.layoutParams = hudParams
-        }
+            val reservedRatio = when {
+                shortDp >= 840f && aspect < 1.45f -> 0.158f
+                shortDp >= 840f -> 0.172f
+                shortDp >= 720f && aspect < 1.45f -> 0.16f
+                shortDp >= 720f -> 0.168f
+                shortDp >= 600f && aspect < 1.5f -> 0.162f
+                shortDp >= 600f -> 0.165f
+                aspect >= 2.3f -> 0.155f
+                aspect >= 2.0f -> 0.172f
+                else -> 0.21f
+            }
+            val reservedHeightDp = (heightDp * reservedRatio)
+                .coerceIn(108f, if (shortDp >= 720f) 194f else 180f)
+            val hudParams = binding.hudContainer.layoutParams as ConstraintLayout.LayoutParams
+            val targetHeightPx = dp(reservedHeightDp)
+            if (hudParams.height != targetHeightPx) {
+                hudParams.height = targetHeightPx
+                binding.hudContainer.layoutParams = hudParams
+            }
 
-        val scoreSize = resources.getDimension(R.dimen.bp_hud_score_size) * hudScale
-        val statSize = resources.getDimension(R.dimen.bp_hud_stat_size) * hudScale
-        val modeSize = resources.getDimension(R.dimen.bp_hud_mode_size) * hudScale
-        val bannerSize = resources.getDimension(R.dimen.bp_hud_banner_size) * hudScale
-        binding.hudScore.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, scoreSize)
-        binding.hudLives.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, statSize)
-        binding.hudTime.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, statSize)
-        binding.hudLevel.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, statSize)
-        binding.hudMeta.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, modeSize)
-        binding.hudShieldLabel.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, modeSize)
-        binding.hudFps.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, modeSize)
-        binding.hudLevelBanner.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, bannerSize)
+            val scoreSize = resources.getDimension(R.dimen.bp_hud_score_size) * hudScale
+            val statSize = resources.getDimension(R.dimen.bp_hud_stat_size) * hudScale
+            val modeSize = resources.getDimension(R.dimen.bp_hud_mode_size) * hudScale
+            val bannerSize = resources.getDimension(R.dimen.bp_hud_banner_size) * hudScale
+            binding.hudScore.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, scoreSize)
+            binding.hudLives.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, statSize)
+            binding.hudTime.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, statSize)
+            binding.hudLevel.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, statSize)
+            binding.hudMeta.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, modeSize)
+            binding.hudShieldLabel.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, modeSize)
+            binding.hudFps.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, modeSize)
+            binding.hudLevelBanner.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, bannerSize)
 
-        val actionMin = (44f * hudScale).coerceIn(38f, 60f)
-        binding.buttonPause.minimumWidth = dp(actionMin)
-        binding.buttonPause.minimumHeight = dp(actionMin)
-        binding.buttonLaser.minimumWidth = dp((76f * hudScale).coerceIn(64f, 104f))
-        binding.buttonLaser.minimumHeight = dp((42f * hudScale).coerceIn(36f, 56f))
+            val rowPadding = dp((10f * hudScale).coerceIn(8f, 16f))
+            binding.hudRow.setPadding(rowPadding, rowPadding, rowPadding, rowPadding)
 
-        val shieldWidthDp = (shortDp * 0.24f).coerceIn(116f, 186f)
-        val shieldParams = binding.hudShieldBar.layoutParams as android.widget.LinearLayout.LayoutParams
-        shieldParams.width = dp(shieldWidthDp)
-        binding.hudShieldBar.layoutParams = shieldParams
+            val scoreParams = binding.hudScore.layoutParams as ConstraintLayout.LayoutParams
+            scoreParams.marginEnd = dp((10f * hudScale).coerceIn(8f, 18f))
+            binding.hudScore.layoutParams = scoreParams
+
+            val statGap = dp((14f * hudScale).coerceIn(10f, 24f))
+            val timeParams = binding.hudTime.layoutParams as android.widget.LinearLayout.LayoutParams
+            timeParams.marginStart = statGap
+            binding.hudTime.layoutParams = timeParams
+            val levelParams = binding.hudLevel.layoutParams as android.widget.LinearLayout.LayoutParams
+            levelParams.marginStart = statGap
+            binding.hudLevel.layoutParams = levelParams
+
+            val statusTopMargin = dp((6f * hudScale).coerceIn(4f, 10f))
+            val statusParams = binding.hudStatusRow.layoutParams as android.widget.LinearLayout.LayoutParams
+            statusParams.topMargin = statusTopMargin
+            binding.hudStatusRow.layoutParams = statusParams
+            val powerupsParams = binding.hudPowerups.layoutParams as android.widget.LinearLayout.LayoutParams
+            powerupsParams.topMargin = statusTopMargin
+            binding.hudPowerups.layoutParams = powerupsParams
+            val chipsParams = binding.hudPowerupChips.layoutParams as android.widget.LinearLayout.LayoutParams
+            chipsParams.bottomMargin = dp((4f * hudScale).coerceIn(2f, 8f))
+            binding.hudPowerupChips.layoutParams = chipsParams
+            val bannerParams = binding.hudLevelBanner.layoutParams as android.widget.LinearLayout.LayoutParams
+            bannerParams.topMargin = dp((10f * hudScale).coerceIn(6f, 14f))
+            binding.hudLevelBanner.layoutParams = bannerParams
+
+            val actionMin = (44f * hudScale).coerceIn(38f, 60f)
+            binding.buttonPause.minimumWidth = dp(actionMin)
+            binding.buttonPause.minimumHeight = dp(actionMin)
+            binding.buttonPause.iconSize = dp((22f * hudScale).coerceIn(18f, 30f))
+            binding.buttonLaser.minimumWidth = dp((76f * hudScale).coerceIn(64f, 104f))
+            binding.buttonLaser.minimumHeight = dp((42f * hudScale).coerceIn(36f, 56f))
+            val laserMargin = dp((16f * hudScale).coerceIn(12f, 24f))
+            val laserParams = binding.buttonLaser.layoutParams as ConstraintLayout.LayoutParams
+            laserParams.marginStart = laserMargin
+            laserParams.marginEnd = laserMargin
+            laserParams.bottomMargin = laserMargin
+            binding.buttonLaser.layoutParams = laserParams
+
+            val shieldWidthDp = (shortDp * if (aspect < 1.45f) 0.22f else 0.24f).coerceIn(116f, 186f)
+            val shieldParams = binding.hudShieldBar.layoutParams as android.widget.LinearLayout.LayoutParams
+            shieldParams.width = dp(shieldWidthDp)
+            binding.hudShieldBar.layoutParams = shieldParams
         } finally {
             hudResizingInProgress = false
         }
@@ -1035,14 +1080,29 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     private fun animateEndStats(summary: GameSummary, title: String) {
         binding.endTitle.text = title
         endStatsAnimator?.cancel()
+        val timeText = formatDuration(summary.durationSeconds)
         val animator = android.animation.ValueAnimator.ofInt(0, summary.score)
         endStatsAnimator = animator
         animator.duration = 700
         animator.addUpdateListener { valueAnimator ->
             val value = valueAnimator.animatedValue as Int
-            binding.endStats.text = getString(R.string.label_score_level_format, value, summary.level)
+            binding.endStats.text = getString(
+                R.string.label_end_stats_format,
+                value,
+                summary.level,
+                timeText,
+                summary.bricksBroken,
+                summary.livesLost
+            )
         }
         animator.start()
+    }
+
+    private fun formatDuration(seconds: Int): String {
+        val clamped = seconds.coerceAtLeast(0)
+        val minutes = clamped / 60
+        val remainingSeconds = clamped % 60
+        return String.format(java.util.Locale.getDefault(), "%02d:%02d", minutes, remainingSeconds)
     }
 
     private fun startLaserCooldown(seconds: Float) {

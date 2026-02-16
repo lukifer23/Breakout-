@@ -21,6 +21,10 @@ object ScoreboardManager {
     private fun prefs(context: Context) =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
+    private val scoreComparator = compareByDescending<ScoreEntry> { it.score }
+        .thenBy { normalizedDuration(it.durationSeconds) }
+        .thenByDescending { it.timestamp }
+
     fun loadScores(context: Context): List<ScoreEntry> {
         val raw = prefs(context).getString(KEY_SCORES, "[]") ?: "[]"
         val json = JSONArray(raw)
@@ -44,26 +48,39 @@ object ScoreboardManager {
     fun getHighScoresForMode(context: Context, mode: String): List<ScoreEntry> {
         return loadScores(context)
             .filter { it.mode == mode }
-            .sortedWith(compareByDescending<ScoreEntry> { it.score }.thenBy { normalizedDuration(it.durationSeconds) })
+            .sortedWith(scoreComparator)
             .take(MAX_SCORES_PER_MODE)
     }
 
     fun getHighScoresAllModes(context: Context): List<ScoreEntry> {
         return loadScores(context)
-            .sortedWith(compareByDescending<ScoreEntry> { it.score }.thenBy { normalizedDuration(it.durationSeconds) })
+            .sortedWith(scoreComparator)
             .take(10)
     }
 
-    fun isHighScoreForMode(context: Context, mode: String, score: Int, durationSeconds: Int): Boolean {
+    fun isHighScoreForMode(
+        context: Context,
+        mode: String,
+        score: Int,
+        durationSeconds: Int,
+        timestamp: Long = System.currentTimeMillis()
+    ): Boolean {
         val highScores = getHighScoresForMode(context, mode)
         if (highScores.size < 10) return true
         val worst = highScores.last()
-        return score > worst.score ||
-            (score == worst.score && normalizedDuration(durationSeconds) < normalizedDuration(worst.durationSeconds))
+        val candidate = ScoreEntry(
+            score = score,
+            mode = mode,
+            name = "",
+            level = 0,
+            durationSeconds = durationSeconds,
+            timestamp = timestamp
+        )
+        return scoreComparator.compare(candidate, worst) < 0
     }
 
     fun addHighScore(context: Context, entry: ScoreEntry): List<ScoreEntry> {
-        if (!isHighScoreForMode(context, entry.mode, entry.score, entry.durationSeconds)) {
+        if (!isHighScoreForMode(context, entry.mode, entry.score, entry.durationSeconds, entry.timestamp)) {
             return getHighScoresForMode(context, entry.mode) // Return existing high scores unchanged
         }
 
@@ -76,7 +93,7 @@ object ScoreboardManager {
 
     private fun trimScoresPerMode(scores: List<ScoreEntry>): List<ScoreEntry> {
         return scores.groupBy { it.mode }.flatMap { (_, entries) ->
-            entries.sortedWith(compareByDescending<ScoreEntry> { it.score }.thenBy { normalizedDuration(it.durationSeconds) })
+            entries.sortedWith(scoreComparator)
                 .take(MAX_SCORES_PER_MODE)
         }
     }

@@ -73,18 +73,39 @@ class LevelFactoryTest {
 
     @Test
     fun buildTunnelLevel_keepsBottomGateOpen() {
+        val index = 5
         val level = LevelFactory.buildTunnelLevel(
-            index = 5,
+            index = index,
             difficulty = 1.35f,
             theme = LevelThemes.COBALT
         )
         val fortressBottomRow = level.rows - 4
-        val occupied = level.bricks
+        val occupiedBottom = level.bricks
             .filter { it.row == fortressBottomRow }
             .map { it.col }
             .toSet()
-        val gaps = (0 until level.cols).count { it !in occupied }
-        assertTrue("Tunnel gate row should keep an open lane", gaps >= 1)
+        val gateWidth = 2 + (index % 2)
+        val gateCenter = level.cols / 2
+        val gateLeft = gateCenter - gateWidth / 2
+        val gateRight = gateLeft + gateWidth - 1
+        val gateOpenings = (gateLeft..gateRight).count { it !in occupiedBottom }
+        assertTrue("Tunnel gate should preserve at least one true opening", gateOpenings >= 1)
+    }
+
+    @Test
+    fun buildTunnelLevel_midGameAddsEntryChokePressure() {
+        val index = 8
+        val level = LevelFactory.buildTunnelLevel(
+            index = index,
+            difficulty = 1.5f,
+            theme = LevelThemes.COBALT
+        )
+        val fortressBottomRow = level.rows - 4
+        val gateCenter = level.cols / 2
+        val chokeRows = (fortressBottomRow + 1) until (level.rows - 1)
+        val chokeBricks = level.bricks.filter { it.col == gateCenter && it.row in chokeRows }
+        assertTrue("Mid-game tunnel should add breakable choke defenders in the entry lane", chokeBricks.isNotEmpty())
+        assertTrue("Entry choke should remain breakable", chokeBricks.none { it.type == BrickType.UNBREAKABLE })
     }
 
     @Test
@@ -98,7 +119,7 @@ class LevelFactoryTest {
         assertTrue("Tunnel should remain dense in late game", breakables.size >= 50)
         assertTrue(
             "Late tunnel should include advanced interior threats",
-            breakables.any { it.type == BrickType.MOVING || it.type == BrickType.PHASE }
+            breakables.any { it.type == BrickType.MOVING || it.type == BrickType.PHASE || it.type == BrickType.BOSS }
         )
     }
 }

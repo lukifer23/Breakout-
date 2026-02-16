@@ -3,9 +3,12 @@ package com.breakoutplus
 import android.os.Bundle
 import android.view.LayoutInflater
 import androidx.core.content.ContextCompat
+import com.google.android.material.card.MaterialCardView
 import com.breakoutplus.databinding.ActivityScoreboardBinding
 import com.breakoutplus.databinding.ItemScoreRowBinding
 import com.breakoutplus.game.GameMode
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 import com.breakoutplus.ProgressionManager
 
@@ -13,6 +16,7 @@ class ScoreboardActivity : FoldAwareActivity() {
     private lateinit var binding: ActivityScoreboardBinding
     private var currentModeIndex = 0
     private val modes = mutableListOf<ModeEntry>()
+    private val scoreDateFormat = SimpleDateFormat("MMM d, yyyy", Locale.getDefault())
 
     private data class ModeEntry(val label: String, val mode: GameMode?)
 
@@ -63,6 +67,8 @@ class ScoreboardActivity : FoldAwareActivity() {
 
         // Update mode title
         binding.scoreTitle.text = getString(R.string.label_leaderboard_format, currentMode.label)
+        binding.buttonScorePrev.isEnabled = modes.size > 1
+        binding.buttonScoreNext.isEnabled = modes.size > 1
 
         if (scores.isEmpty()) {
             binding.scoreEmpty.text = getString(R.string.label_no_scores_mode, currentMode.label)
@@ -74,11 +80,20 @@ class ScoreboardActivity : FoldAwareActivity() {
         scores.forEachIndexed { index, entry ->
             val row = ItemScoreRowBinding.inflate(inflater, binding.scoreList, false)
             row.scoreRank.text = getString(R.string.label_rank_format, index + 1)
-            row.scoreMode.text = entry.name
+            row.scorePlayer.text = entry.name.ifBlank { getString(R.string.label_player_default) }
             val timeText = if (entry.durationSeconds > 0) formatDuration(entry.durationSeconds) else "--"
             val modeLabel = entry.mode.ifBlank { getString(R.string.label_mode_classic) }
-            row.scoreMeta.text = getString(R.string.label_score_meta_format, modeLabel, entry.level, timeText)
-            row.scoreValue.text = "%d".format(entry.score)
+            row.scoreModeMeta.text = if (currentMode.mode == null) {
+                getString(R.string.label_score_meta_format, modeLabel, entry.level, timeText)
+            } else {
+                getString(R.string.label_score_meta_no_mode_format, entry.level, timeText)
+            }
+            row.scoreValue.text = String.format(Locale.getDefault(), "%,d", entry.score)
+            row.scoreDate.text = if (entry.timestamp > 0L) {
+                scoreDateFormat.format(Date(entry.timestamp))
+            } else {
+                getString(R.string.label_score_date_unknown)
+            }
             val rankColor = when (index) {
                 0 -> R.color.bp_gold
                 1 -> R.color.bp_cyan
@@ -86,6 +101,10 @@ class ScoreboardActivity : FoldAwareActivity() {
                 else -> R.color.bp_gray
             }
             row.scoreRank.setTextColor(ContextCompat.getColor(this, rankColor))
+            val card = row.root as? MaterialCardView
+            card?.strokeColor = ContextCompat.getColor(this, if (index < 3) rankColor else R.color.bp_line)
+            card?.strokeWidth = if (index < 3) dp(1.5f) else dp(1f)
+            card?.cardElevation = if (index < 3) dp(4f).toFloat() else dp(2f).toFloat()
 
             // Add entrance animation
             val rowView = row.root
@@ -112,7 +131,9 @@ class ScoreboardActivity : FoldAwareActivity() {
         val chapter = ProgressionManager.chapterForLevel(bestLevel)
         val stage = ProgressionManager.stageForLevel(bestLevel)
         val xp = ProgressionManager.loadXp(this)
-        binding.scoreProgress.text = getString(R.string.label_progress_format, chapter, stage, xp)
+        val journey = getString(R.string.label_progress_format, chapter, stage, xp)
+        val best = getString(R.string.label_best_level_short, bestLevel)
+        binding.scoreProgress.text = "$journey • $best"
     }
 
     private fun updateLifetimeStats() {
@@ -122,17 +143,20 @@ class ScoreboardActivity : FoldAwareActivity() {
         } else {
             0
         }
-        val totalMinutes = (stats.totalPlaySeconds / 60L).toInt()
-        val totalHours = totalMinutes / 60
-        val remainingMinutes = totalMinutes % 60
-        val playTime = String.format(Locale.getDefault(), "%dh %02dm", totalHours, remainingMinutes)
+        val playTime = formatPlayTime(stats.totalPlaySeconds)
+        val longestRun = formatDuration(stats.longestRunSeconds)
+        binding.scoreRunSummary.text = getString(
+            R.string.label_lifetime_run_format,
+            stats.gamesPlayed,
+            stats.highestScore,
+            avgScore
+        )
         binding.scoreLifetimeStats.text = getString(
             R.string.label_lifetime_stats_format,
             stats.totalBricksBroken,
             stats.totalLivesLost,
             playTime,
-            stats.longestRunSeconds,
-            avgScore
+            longestRun
         )
     }
 
@@ -140,6 +164,24 @@ class ScoreboardActivity : FoldAwareActivity() {
         val minutes = seconds / 60
         val remaining = seconds % 60
         return String.format(Locale.getDefault(), "%02d:%02d", minutes, remaining)
+    }
+
+    private fun formatPlayTime(totalSeconds: Long): String {
+        if (totalSeconds <= 0L) return "0m"
+        val totalMinutes = totalSeconds / 60L
+        val days = totalMinutes / (24L * 60L)
+        val hours = (totalMinutes / 60L) % 24L
+        val minutes = totalMinutes % 60L
+        return when {
+            days > 0L -> String.format(Locale.getDefault(), "%dd %dh", days, hours)
+            hours > 0L -> String.format(Locale.getDefault(), "%dh %02dm", hours, minutes)
+            else -> String.format(Locale.getDefault(), "%dm", minutes)
+        }
+    }
+
+    private fun dp(value: Float): Int {
+        if (value <= 0f) return 0
+        return (value * resources.displayMetrics.density).toInt().coerceAtLeast(1)
     }
 
     private fun animateEntry() {

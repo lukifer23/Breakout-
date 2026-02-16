@@ -82,19 +82,39 @@ class Renderer2D {
         circleMesh.draw(shader)
     }
 
-    // Batched circle drawing to reduce shader switches and matrix calculations
-    private val circleBatch = ArrayList<CircleDraw>(300) // Pre-allocated for up to 300 circles
-    private data class CircleDraw(val x: Float, val y: Float, val radius: Float, val color: FloatArray)
+    // Batched circle drawing to reduce shader switches and matrix calculations.
+    // Reuses slots to avoid per-frame object churn from transient particle effects.
+    private val circleBatch = ArrayList<CircleDraw>(300)
+    private var circleBatchCount = 0
+
+    private class CircleDraw {
+        var x: Float = 0f
+        var y: Float = 0f
+        var radius: Float = 0f
+        val color: FloatArray = FloatArray(4)
+    }
 
     fun drawCircleBatch(x: Float, y: Float, radius: Float, color: FloatArray) {
-        circleBatch.add(CircleDraw(x, y, radius, color))
+        if (circleBatchCount >= circleBatch.size) {
+            circleBatch.add(CircleDraw())
+        }
+        val circle = circleBatch[circleBatchCount]
+        circle.x = x
+        circle.y = y
+        circle.radius = radius
+        circle.color[0] = color.getOrElse(0) { 1f }
+        circle.color[1] = color.getOrElse(1) { 1f }
+        circle.color[2] = color.getOrElse(2) { 1f }
+        circle.color[3] = color.getOrElse(3) { 1f }
+        circleBatchCount += 1
     }
 
     fun flushCircleBatch() {
-        if (circleBatch.isEmpty()) return
+        if (circleBatchCount == 0) return
 
         ensureShader()
-        circleBatch.forEach { circle ->
+        for (i in 0 until circleBatchCount) {
+            val circle = circleBatch[i]
             Matrix.setIdentityM(modelMatrix, 0)
             Matrix.translateM(modelMatrix, 0, circle.x + offsetX, circle.y + offsetY, 0f)
             Matrix.scaleM(modelMatrix, 0, circle.radius, circle.radius, 1f)
@@ -103,7 +123,7 @@ class Renderer2D {
             shader.setUniformColor("u_Color", circle.color)
             circleMesh.draw(shader)
         }
-        circleBatch.clear()
+        circleBatchCount = 0
     }
 
     private fun ensureShader() {

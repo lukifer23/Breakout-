@@ -32,8 +32,11 @@
     <string name="label_scoreboard_hint">Top runs across all modes.</string>
     <string name="label_progress_format">Journey %1$d-%2$d • XP %3$d</string>
     <string name="label_progress_default">Journey 1-1 • XP 0</string>
-    <string name="label_lifetime_stats_format">Lifetime: Bricks %1$,d • Lives Lost %2$,d • Play %3$s • Best Run %4$ds • Avg Score %5$,d</string>
-    <string name="label_lifetime_stats_default">Lifetime: Bricks 0 • Lives Lost 0 • Play 0h 00m • Best Run 0s • Avg Score 0</string>
+    <string name="label_best_level_short">Best Lv %1$d</string>
+    <string name="label_lifetime_run_format">Runs %1$,d • High %2$,d • Avg %3$,d</string>
+    <string name="label_lifetime_run_default">Runs 0 • High 0 • Avg 0</string>
+    <string name="label_lifetime_stats_format">Bricks %1$,d • Lives Lost %2$,d • Play %3$s • Longest %4$s</string>
+    <string name="label_lifetime_stats_default">Bricks 0 • Lives Lost 0 • Play 0m • Longest 00:00</string>
     <string name="label_howto_hint">Quick Start</string>
     <string name="label_mode_classic">Classic</string>
     <string name="label_mode_all">All Modes</string>
@@ -60,6 +63,7 @@
     <string name="label_powerups_none">Powerups: none</string>
     <string name="label_shield_percent">Shield %1$d%%</string>
     <string name="label_score_level_format">Score %1$d • Level %2$d</string>
+    <string name="label_end_stats_format">Score %1$d • Level %2$d\nTime %3$s • Bricks %4$d • Lives Lost %5$d</string>
     <string name="label_score_level_mode_format">Score %1$d • Level %2$d • Mode %3$s</string>
     <string name="label_high_score_title">New High Score!</string>
     <string name="label_player_default">Player</string>
@@ -69,6 +73,9 @@
     <string name="label_rank_format">#%1$d</string>
     <string name="label_level_time_format">Level %1$d • %2$s</string>
     <string name="label_score_meta_format">%1$s • Level %2$d • %3$s</string>
+    <string name="label_score_meta_no_mode_format">Level %1$d • %2$s</string>
+    <string name="label_recent_default">Today</string>
+    <string name="label_score_date_unknown">Unknown</string>
     <string name="label_challenge_progress">%1$d/%2$d</string>
     <string name="label_challenge_completed">Completed</string>
     <string name="label_challenge_in_progress">In progress</string>

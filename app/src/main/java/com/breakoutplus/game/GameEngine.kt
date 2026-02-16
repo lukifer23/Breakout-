@@ -76,6 +76,7 @@ class GameEngine(
     private var lastPowerupStatus = ""
     private var lastPowerupSnapshot: List<PowerupStatus> = emptyList()
     private var lastComboReported = 0
+    private var powerupStatusTick = 0f
     private var lostLifeThisLevel = false
     private var laserTipShown = false
     private var magnetTipShown = false
@@ -147,9 +148,9 @@ class GameEngine(
     private var tunnelShotsFired = 0
     private var tunnelGateFlash = 0f
 
-    // Spatial hash for brick collisions
+    // Spatial hash for brick collisions (packed key avoids per-frame Pair allocation).
     private val spatialHashCellSize = 8f
-    private val spatialHash = mutableMapOf<Pair<Int, Int>, MutableList<Brick>>()
+    private val spatialHash = mutableMapOf<Long, MutableList<Brick>>()
     private val nearbyBrickBuffer = ArrayList<Brick>(96)
     private val nearbyBrickSeen = HashSet<Brick>(96)
     private var spatialHashDirty = true
@@ -182,6 +183,10 @@ class GameEngine(
     private var streakBonusActive = false
     private val streakBonusPerBrick = 20
     private val aimMinAngle = 0.30f
+
+    private fun spatialKey(cellX: Int, cellY: Int): Long {
+        return (cellX.toLong() shl 32) or (cellY.toLong() and 0xffffffffL)
+    }
 
     init {
         themePool = LevelThemes.baseThemes().toMutableList()
@@ -1485,70 +1490,73 @@ class GameEngine(
 
     private fun applyLayoutTuning(aspectRatio: Float, preserveRowBoost: Boolean) {
         val tallness = ((aspectRatio - 1.25f) / 0.85f).coerceIn(0f, 1f)
-        val isWide = aspectRatio < 1.45f
-        val wideDensityRows = when {
-            aspectRatio < 1.24f -> 6
-            aspectRatio < 1.34f -> 5
-            aspectRatio < 1.48f -> 4
-            aspectRatio < 1.62f -> 3
-            else -> 0
-        }
-        val slateVerticalBonus = when {
-            aspectRatio < 1.24f -> 2
-            aspectRatio < 1.46f -> 1
-            else -> 0
-        }
-        val tallDensityRows = when {
-            aspectRatio > 2.2f -> 3
-            aspectRatio > 1.9f -> 2
-            aspectRatio > 1.72f -> 1
-            else -> 0
-        }
-        val wideDensityCols = when {
-            aspectRatio < 1.32f -> 2
-            aspectRatio < 1.5f -> 1
-            else -> 0
-        }
-        // Shared "zoomed-out" baseline for all modes: smaller bricks, more distance to the paddle,
-        // and consistent spacing so switching modes doesn't feel like a camera jump.
+        val isSlate = aspectRatio < 1.45f
+
+        // Shared baseline for all modes so switching feels visually stable.
         brickAreaTopRatio = lerp(0.992f, 0.978f, tallness)
         brickAreaBottomRatio = lerp(0.69f, 0.62f, tallness)
+        brickSpacing = lerp(0.31f, 0.37f, tallness)
+
         val wideVerticalExpansion = when {
-            aspectRatio < 1.24f -> 0.12f
-            aspectRatio < 1.34f -> 0.105f
-            aspectRatio < 1.46f -> 0.085f
+            aspectRatio < 1.24f -> 0.11f
+            aspectRatio < 1.34f -> 0.1f
+            aspectRatio < 1.46f -> 0.08f
             else -> 0f
         }
         val tallVerticalExpansion = when {
-            aspectRatio > 2.2f -> 0.07f
-            aspectRatio > 1.9f -> 0.05f
+            aspectRatio > 2.2f -> 0.06f
+            aspectRatio > 1.9f -> 0.045f
             aspectRatio > 1.72f -> 0.03f
             else -> 0f
         }
-        brickAreaBottomRatio = (brickAreaBottomRatio - wideVerticalExpansion - tallVerticalExpansion).coerceIn(0.48f, 0.7f)
-        brickSpacing = lerp(0.3f, 0.36f, tallness)
-        if (aspectRatio < 1.5f) {
-            brickSpacing = (brickSpacing - 0.04f).coerceAtLeast(0.24f)
-        } else if (aspectRatio > 2.1f) {
-            brickSpacing = (brickSpacing - 0.02f).coerceAtLeast(0.24f)
+        brickAreaBottomRatio =
+            (brickAreaBottomRatio - wideVerticalExpansion - tallVerticalExpansion).coerceIn(0.48f, 0.72f)
+
+        if (isSlate) {
+            brickSpacing *= 0.9f
         }
+        if (aspectRatio < 1.5f) {
+            brickSpacing -= 0.035f
+        } else if (aspectRatio > 2.1f) {
+            brickSpacing -= 0.02f
+        }
+        brickSpacing = brickSpacing.coerceIn(0.22f, 0.42f)
+
         if (!preserveRowBoost) {
             val densityBoost = (levelIndex / 6).coerceAtMost(2)
             val slateRowBoost = when {
-                aspectRatio < 1.28f -> 3
-                aspectRatio < 1.42f -> 2
-                aspectRatio < 1.58f -> 1
+                aspectRatio < 1.24f -> 4
+                aspectRatio < 1.35f -> 3
+                aspectRatio < 1.48f -> 2
+                aspectRatio < 1.6f -> 1
                 else -> 0
             }
             val slateColBoost = when {
-                aspectRatio < 1.32f -> 2
-                aspectRatio < 1.46f -> 1
+                aspectRatio < 1.28f -> 3
+                aspectRatio < 1.42f -> 2
+                aspectRatio < 1.56f -> 1
                 else -> 0
             }
-            val baseRowBoost =
-                (if (isWide) 5 else 4) + densityBoost + slateRowBoost + wideDensityRows + tallDensityRows
-            val baseColBoost =
-                (if (isWide) 4 else 3) + densityBoost + slateColBoost + wideDensityCols
+            val tallRowBoost = when {
+                aspectRatio > 2.25f -> 3
+                aspectRatio > 2.0f -> 2
+                aspectRatio > 1.8f -> 1
+                else -> 0
+            }
+            val wideRowBoost = when {
+                aspectRatio < 1.34f -> 2
+                aspectRatio < 1.52f -> 1
+                else -> 0
+            }
+            val wideColBoost = when {
+                aspectRatio < 1.34f -> 2
+                aspectRatio < 1.52f -> 1
+                else -> 0
+            }
+
+            val baseRowBoost = (if (isSlate) 5 else 4) + densityBoost + slateRowBoost + wideRowBoost + tallRowBoost
+            val baseColBoost = (if (isSlate) 4 else 3) + densityBoost + slateColBoost + wideColBoost
+
             when (config.mode) {
                 GameMode.RUSH -> {
                     layoutRowBoost = (baseRowBoost - 2).coerceAtLeast(0)
@@ -1559,120 +1567,98 @@ class GameEngine(
                     layoutColBoost = (baseColBoost - 1).coerceAtLeast(1)
                 }
                 GameMode.GOD -> {
-                    layoutRowBoost = (baseRowBoost - 1 + slateVerticalBonus).coerceAtLeast(1)
+                    layoutRowBoost = (baseRowBoost + slateRowBoost / 2).coerceAtLeast(2)
                     layoutColBoost = (baseColBoost - 1).coerceAtLeast(1)
                 }
                 GameMode.VOLLEY -> {
                     val volleyRowBase = when {
-                        aspectRatio < 1.3f -> 3
-                        aspectRatio < 1.6f -> 2
-                        aspectRatio > 2.2f -> 1
-                        else -> 1
-                    }
-                    layoutRowBoost =
-                        (volleyRowBase + densityBoost / 2 + wideDensityRows / 2 + tallDensityRows + slateVerticalBonus)
-                            .coerceAtLeast(1)
-                    layoutColBoost = when {
-                        aspectRatio < 1.35f -> 3
-                        aspectRatio < 1.7f -> 2
-                        aspectRatio > 2.15f -> 1
-                        else -> 1
-                    }
-                }
-                GameMode.TUNNEL -> {
-                    val tunnelRowBase = when {
-                        aspectRatio < 1.3f -> 4
+                        aspectRatio < 1.3f -> 5
+                        aspectRatio < 1.45f -> 4
                         aspectRatio < 1.6f -> 3
                         aspectRatio > 2.2f -> 2
                         else -> 2
                     }
                     layoutRowBoost =
-                        (tunnelRowBase + densityBoost / 2 + wideDensityRows / 2 + tallDensityRows + slateVerticalBonus)
-                            .coerceAtLeast(2)
+                        (volleyRowBase + densityBoost / 2 + slateRowBoost / 2 + tallRowBoost).coerceAtLeast(2)
+                    // Volley width is controlled by effectiveVolleyColumns() to avoid asymmetry.
+                    layoutColBoost = 0
+                }
+                GameMode.TUNNEL -> {
+                    val tunnelRowBase = when {
+                        aspectRatio < 1.3f -> 6
+                        aspectRatio < 1.45f -> 5
+                        aspectRatio < 1.6f -> 4
+                        aspectRatio > 2.2f -> 2
+                        else -> 3
+                    }
+                    layoutRowBoost =
+                        (tunnelRowBase + densityBoost / 2 + slateRowBoost / 2 + tallRowBoost).coerceAtLeast(3)
                     layoutColBoost = when {
-                        aspectRatio < 1.36f -> 2
+                        aspectRatio < 1.34f -> 2
                         aspectRatio < 1.7f -> 1
                         else -> 0
                     }
                 }
                 GameMode.SURVIVAL -> {
                     layoutRowBoost = baseRowBoost + 1
-    private fun applyLayoutTuning(aspectRatio: Float, preserveRowBoost: Boolean) {
-        val tallness = ((aspectRatio - 1.25f) / 0.85f).coerceIn(0f, 1f)
-        val isSlate = aspectRatio < 1.45f
-        
-        // Base tuning interpolated by tallness (0.0 = 4:3 iPad, 1.0 = 20:9 Phone)
-        brickAreaTopRatio = lerp(0.992f, 0.978f, tallness)
-        brickAreaBottomRatio = lerp(0.69f, 0.62f, tallness)
-        brickSpacing = lerp(0.32f, 0.38f, tallness)
-        
-        // Slate-specific optimizations for density
-        if (isSlate) {
-             // Push bricks slightly higher to clear HUD area better on squarer screens
-            brickAreaBottomRatio += 0.025f 
-            // Slightly smaller spacing for density
-            brickSpacing *= 0.9f 
+                    layoutColBoost = baseColBoost
+                }
+                GameMode.ENDLESS,
+                GameMode.CLASSIC,
+                GameMode.ZEN,
+                GameMode.INVADERS -> {
+                    layoutRowBoost = baseRowBoost
+                    layoutColBoost = baseColBoost
+                }
+            }
         }
 
-        if (!preserveRowBoost) {
-            val baseRowBoost = when {
-                isSlate -> 4 // Significantly more rows on slates to fill the wider/shorter space
-                aspectRatio < 1.75f -> 2
-                else -> 0
-            }
-            val baseColBoost = when {
-                isSlate -> 2 // More columns on slates
-                aspectRatio < 1.6f -> 1
-                else -> 0
-            }
-            when (config.mode) {
-                GameMode.VOLLEY -> {
-                    layoutRowBoost = baseRowBoost
-                    layoutColBoost = baseColBoost
-                }
-                GameMode.GOD -> {
-                    layoutRowBoost = baseRowBoost + 4
-                    layoutColBoost = baseColBoost + 1
-                }
-                GameMode.ENDLESS -> {
-                    layoutRowBoost = baseRowBoost + 1
-                    layoutColBoost = baseColBoost + 1
-                }
-                else -> {
-                    layoutRowBoost = baseRowBoost
-                    layoutColBoost = baseColBoost
-                }
-            }
-        }
-        // Smaller bricks overall to avoid an overly zoomed-in feel.
+        // Smaller bricks keep the board less zoomed-in while preserving readability.
         globalBrickScale = lerp(0.82f, 0.79f, tallness)
-        
         if (isSlate) {
-             // Compensate for the extra density/rows
-            globalBrickScale = (globalBrickScale - 0.05f).coerceAtLeast(0.70f)
+            val slatePenalty = when {
+                aspectRatio < 1.28f -> 0.075f
+                aspectRatio < 1.4f -> 0.06f
+                else -> 0.05f
+            }
+            globalBrickScale = (globalBrickScale - slatePenalty).coerceAtLeast(0.68f)
         } else if (aspectRatio > 2.15f) {
             globalBrickScale = (globalBrickScale - 0.015f).coerceAtLeast(0.75f)
         }
-        
-        if (config.mode == GameMode.RUSH) {
-            globalBrickScale = (globalBrickScale + 0.03f).coerceAtMost(0.88f)
-            brickSpacing = (brickSpacing + 0.03f).coerceAtMost(0.42f)
-        } else if (config.mode == GameMode.VOLLEY) {
-            globalBrickScale = (globalBrickScale + 0.008f).coerceAtMost(0.85f)
-            brickAreaBottomRatio = (brickAreaBottomRatio - 0.02f).coerceAtLeast(0.61f)
-        } else if (config.mode == GameMode.TUNNEL) {
-            // Tunnel should occupy more vertical space so the fortress reads clearly.
-            globalBrickScale = (globalBrickScale + 0.02f).coerceAtMost(0.87f)
-            brickAreaBottomRatio = (brickAreaBottomRatio - 0.06f).coerceAtLeast(0.58f)
-            brickSpacing = (brickSpacing + 0.02f).coerceAtMost(0.42f)
-        } else if (config.mode == GameMode.TIMED) {
-            globalBrickScale = (globalBrickScale + 0.01f).coerceAtMost(0.86f)
-        } else if (config.mode == GameMode.SURVIVAL) {
-            globalBrickScale = (globalBrickScale - 0.01f).coerceAtLeast(0.75f)
+
+        when (config.mode) {
+            GameMode.RUSH -> {
+                globalBrickScale = (globalBrickScale + 0.03f).coerceAtMost(0.88f)
+                brickSpacing = (brickSpacing + 0.03f).coerceAtMost(0.42f)
+            }
+            GameMode.VOLLEY -> {
+                globalBrickScale = (globalBrickScale + 0.008f).coerceAtMost(0.85f)
+                brickAreaBottomRatio = (brickAreaBottomRatio - 0.02f).coerceAtLeast(0.61f)
+                if (isSlate) {
+                    brickAreaBottomRatio = (brickAreaBottomRatio - 0.025f).coerceAtLeast(0.58f)
+                }
+            }
+            GameMode.TUNNEL -> {
+                // Tunnel should occupy more vertical space so fortress identity reads clearly.
+                globalBrickScale = (globalBrickScale + 0.02f).coerceAtMost(0.87f)
+                brickAreaBottomRatio = (brickAreaBottomRatio - 0.06f).coerceAtLeast(0.58f)
+                brickSpacing = (brickSpacing + 0.02f).coerceAtMost(0.42f)
+                if (isSlate) {
+                    brickAreaBottomRatio = (brickAreaBottomRatio - 0.02f).coerceAtLeast(0.55f)
+                }
+            }
+            GameMode.TIMED -> {
+                globalBrickScale = (globalBrickScale + 0.01f).coerceAtMost(0.86f)
+            }
+            GameMode.SURVIVAL -> {
+                globalBrickScale = (globalBrickScale - 0.01f).coerceAtLeast(0.75f)
+            }
+            else -> Unit
         }
+
         if (config.mode.invaders) {
             brickAreaBottomRatio = (brickAreaBottomRatio + lerp(0.035f, 0.05f, tallness)).coerceAtMost(0.79f)
-            brickSpacing = brickSpacing * 0.95f
+            brickSpacing *= 0.95f
             invaderScale = lerp(0.5f, 0.47f, tallness)
             invaderRowDrift = lerp(0.8f, 0.65f, tallness)
             invaderRowPhaseOffset = lerp(0.45f, 0.6f, tallness)
@@ -2028,6 +2014,7 @@ class GameEngine(
         waves.clear()
         lastPowerupSnapshot = emptyList()
         lastComboReported = 0
+        powerupStatusTick = 0f
 
         if (config.mode.godMode && !godModeTipShown) {
             listener.onTip("God mode: bottom shield is always active.")
@@ -2150,7 +2137,7 @@ class GameEngine(
 
             for (cellX in minX..maxX) {
                 for (cellY in minY..maxY) {
-                    val cellKey = cellX to cellY
+                    val cellKey = spatialKey(cellX, cellY)
                     spatialHash.getOrPut(cellKey) { mutableListOf() }.add(brick)
                 }
             }
@@ -2168,7 +2155,7 @@ class GameEngine(
 
         for (cellX in ballMinX..ballMaxX) {
             for (cellY in ballMinY..ballMaxY) {
-                val cellKey = cellX to cellY
+                val cellKey = spatialKey(cellX, cellY)
                 spatialHash[cellKey]?.forEach { brick ->
                     if (nearbyBrickSeen.add(brick)) {
                         nearbyBrickBuffer.add(brick)
@@ -2176,7 +2163,7 @@ class GameEngine(
                 }
             }
         }
-        if (nearbyBrickBuffer.isEmpty() && bricks.isNotEmpty()) {
+        if (nearbyBrickBuffer.isEmpty() && bricks.isNotEmpty() && (spatialHashDirty || spatialHash.isEmpty())) {
             // Safety fallback: avoid collision loss if hash is temporarily stale.
             return bricks
         }
@@ -2186,7 +2173,7 @@ class GameEngine(
     private fun buildBricks(layout: LevelFactory.LevelLayout) {
         bricks.clear()
         val rows = layout.rows + layoutRowBoost
-        val requestedCols = layout.cols + layoutColBoost
+        val requestedCols = if (config.mode == GameMode.VOLLEY) layout.cols else layout.cols + layoutColBoost
         val cols = if (config.mode == GameMode.VOLLEY) effectiveVolleyColumns(requestedCols) else requestedCols
         val spacing = brickSpacing
         val areaTop = worldHeight * brickAreaTopRatio
@@ -2203,7 +2190,7 @@ class GameEngine(
         layout.bricks.forEach { spec ->
             val sourceCol = spec.col + colOffset
             val gridX = if (config.mode == GameMode.VOLLEY) {
-                remapVolleyColumn(sourceCol, requestedCols, cols)
+                remapVolleyColumn(spec.col, layout.cols, cols)
             } else {
                 sourceCol
             }
@@ -2254,10 +2241,20 @@ class GameEngine(
         if (layoutRowBoost > 0 && !config.mode.invaders) {
             val difficulty = 1f + levelIndex * 0.08f
             val baseRow = layout.rows
+            val boostCols = if (config.mode == GameMode.VOLLEY) cols else layout.cols
             repeat(layoutRowBoost) { offset ->
                 val rowIndex = baseRow + offset
-                for (col in 0 until layout.cols) {
-                    val seed = (levelIndex + 1) * 97 + rowIndex * 13 + col * 7
+                for (col in 0 until boostCols) {
+                    val sourceCol = if (config.mode == GameMode.VOLLEY) {
+                        (((col.toFloat() + 0.5f) / boostCols.toFloat()) * layout.cols.toFloat())
+                            .toInt()
+                            .coerceIn(0, layout.cols - 1)
+                    } else {
+                        col
+                    }
+                    val gridX = if (config.mode == GameMode.VOLLEY) col else col + colOffset
+                    if (occupied.contains(key(gridX, rowIndex))) continue
+                    val seed = (levelIndex + 1) * 97 + rowIndex * 13 + sourceCol * 7
                     val roll = Random(seed).nextFloat()
                     val type = when {
                         roll > 0.9f -> BrickType.REINFORCED
@@ -2266,12 +2263,11 @@ class GameEngine(
                     }
                     val baseHp = baseHitPoints(type)
                     val hp = if (type == BrickType.UNBREAKABLE) baseHp else max(1, (baseHp * difficulty).roundToInt())
-                    val cellX = spacing + (col + colOffset) * (baseBrickWidth + spacing)
+                    val cellX = spacing + gridX * (baseBrickWidth + spacing)
                     val visualRow = if (config.mode == GameMode.VOLLEY) rowIndex + volleyAdvanceRows else rowIndex
                     val cellY = areaBottom + (rows - 1 - visualRow) * (baseBrickHeight + spacing * 0.5f)
                     val x = cellX + (baseBrickWidth - brickWidth) * 0.5f
                     val y = cellY + (baseBrickHeight - brickHeight) * 0.5f
-                    val gridX = col + colOffset
                     val gridY = rowIndex
                     bricks.add(
                         Brick(
@@ -2295,7 +2291,7 @@ class GameEngine(
             }
         }
 
-        if (layoutColBoost > 0 && !config.mode.invaders) {
+        if (layoutColBoost > 0 && !config.mode.invaders && config.mode != GameMode.VOLLEY) {
             val difficulty = 1f + levelIndex * 0.08f
             val leftCols = colOffset
             val rightStart = colOffset + layout.cols
@@ -2395,7 +2391,7 @@ class GameEngine(
         val layout = currentLayout ?: return
         if (bricks.isEmpty()) return
         val rows = layout.rows + layoutRowBoost
-        val requestedCols = layout.cols + layoutColBoost
+        val requestedCols = if (config.mode == GameMode.VOLLEY) layout.cols else layout.cols + layoutColBoost
         val cols = if (config.mode == GameMode.VOLLEY) effectiveVolleyColumns(requestedCols) else requestedCols
         val spacing = brickSpacing
         val areaTop = worldHeight * brickAreaTopRatio
@@ -2963,13 +2959,14 @@ class GameEngine(
         return when {
             turnCount <= 3 -> true
             turnCount <= 10 -> turnCount % 2 == 0
-            else -> turnCount % 3 == 0
+            turnCount <= 22 -> turnCount % 3 == 0 || turnCount % 5 == 0
+            else -> turnCount % 4 == 0
         }
     }
 
     private fun spawnVolleyTopRow() {
         val layout = currentLayout ?: return
-        val cols = effectiveVolleyColumns(layout.cols + layoutColBoost)
+        val cols = effectiveVolleyColumns(layout.cols)
         val spawnRow = -volleyAdvanceRows
         val occupied = HashSet<Int>(cols)
         bricks.forEach { brick ->
@@ -2986,19 +2983,27 @@ class GameEngine(
             volleyTurnCount < 5 -> 0.09f
             else -> 0f
         }
-        val density = (0.68f + levelIndex * 0.009f + volleyTurnCount * 0.005f - congestionPenalty - earlyEase)
+        val breachY = paddle.y + paddle.height * 0.5f + 1.8f
+        val closestY = bricks.asSequence()
+            .filter { it.alive }
+            .minOfOrNull { it.y } ?: worldHeight
+        val nearBreach = closestY <= breachY + worldHeight * 0.09f
+        val slateDensityBoost = if (currentAspectRatio < 1.45f) 0.03f else 0f
+        val dangerRelief = if (nearBreach) 0.12f else 0f
+        val density = (0.68f + levelIndex * 0.009f + volleyTurnCount * 0.005f + slateDensityBoost - congestionPenalty - earlyEase - dangerRelief)
             .coerceIn(0.46f, 0.87f)
 
         val ballRelief = ((volleyBallCount - 5).coerceAtLeast(0) * 0.04f).coerceAtMost(0.24f)
-        val hpScale = (1f + levelIndex * 0.06f + volleyTurnCount * 0.024f - ballRelief).coerceAtLeast(0.85f)
+        val hpScale = (1f + levelIndex * 0.06f + volleyTurnCount * 0.024f - ballRelief - if (nearBreach) 0.18f else 0f)
+            .coerceAtLeast(0.78f)
 
         val danger = (volleyTurnCount / 10f).coerceIn(0f, 1f)
         val explosiveChance = (0.035f + danger * 0.05f).coerceAtMost(0.1f)
         val reinforcedChance = (0.11f + danger * 0.09f).coerceAtMost(0.23f)
-        val armoredChance = if (volleyTurnCount < 2) 0f else (0.06f + danger * 0.08f).coerceAtMost(0.17f)
-        val movingChance = if (volleyTurnCount < 4) 0f else 0.05f
-        val phaseChance = if (volleyTurnCount < 6) 0f else 0.04f
-        val spawningChance = if (volleyTurnCount < 8) 0f else 0.03f
+        val armoredChance = if (volleyTurnCount < 2) 0f else ((0.06f + danger * 0.08f) * if (nearBreach) 0.55f else 1f).coerceAtMost(0.17f)
+        val movingChance = if (volleyTurnCount < 4) 0f else 0.05f * if (nearBreach) 0.6f else 1f
+        val phaseChance = if (volleyTurnCount < 6) 0f else 0.04f * if (nearBreach) 0.65f else 1f
+        val spawningChance = if (volleyTurnCount < 8) 0f else 0.03f * if (nearBreach) 0.65f else 1f
 
         val forcedGapPrimary = random.nextInt(cols)
         val forcedGapSecondary = if (volleyTurnCount < 5 && cols >= 8) {
@@ -3014,6 +3019,9 @@ class GameEngine(
         val forcedGaps = hashSetOf(forcedGapPrimary)
         if (forcedGapSecondary >= 0) forcedGaps.add(forcedGapSecondary)
         if (forcedGapTertiary >= 0) forcedGaps.add(forcedGapTertiary)
+        if (nearBreach && cols >= 7) {
+            forcedGaps.add((forcedGapPrimary + (cols / 4).coerceAtLeast(1)) % cols)
+        }
         var spawned = 0
 
         for (col in 0 until cols) {
@@ -3697,7 +3705,11 @@ class GameEngine(
         }
         // Update screen flash
         levelClearFlash = max(0f, levelClearFlash - dt * 1.5f)
-        updatePowerupStatus()
+        powerupStatusTick -= dt
+        if (powerupStatusTick <= 0f) {
+            powerupStatusTick = 0.12f
+            updatePowerupStatus()
+        }
     }
 
     private fun syncPaddleWidthFromEffects() {
@@ -3890,10 +3902,20 @@ class GameEngine(
         }
     }
 
-    private fun updatePowerupStatus() {
+    private fun updatePowerupStatus(force: Boolean = false) {
+        if (force) {
+            powerupStatusTick = 0f
+        }
         if (config.mode == GameMode.VOLLEY) {
+            val alive = bricks.count { it.alive && it.type != BrickType.UNBREAKABLE }
+            val breachY = paddle.y + paddle.height * 0.5f + 1.8f
+            val closestY = bricks.asSequence()
+                .filter { it.alive }
+                .minOfOrNull { it.y } ?: worldHeight
+            val laneClearance = (closestY - breachY).coerceAtLeast(0f)
             val status = "Volley balls: $volleyBallCount • Turn ${volleyTurnCount + 1}"
-            if (status != lastPowerupStatus) {
+                .plus(" • Bricks $alive • Lane ${String.format(Locale.getDefault(), "%.1f", laneClearance)}")
+            if (force || status != lastPowerupStatus) {
                 lastPowerupStatus = status
                 listener.onPowerupStatus(status)
             }
@@ -3903,11 +3925,17 @@ class GameEngine(
         if (config.mode == GameMode.TUNNEL) {
             val segments = mutableListOf<String>()
             segments.add("Shots: $tunnelShotsFired")
+            val totalBreakables = bricks.count { it.type != BrickType.UNBREAKABLE }.coerceAtLeast(1)
+            val aliveBreakables = bricks.count { it.alive && it.type != BrickType.UNBREAKABLE }
+            val breachPercent = (((totalBreakables - aliveBreakables).toFloat() / totalBreakables.toFloat()) * 100f)
+                .roundToInt()
+                .coerceIn(0, 100)
+            segments.add("Breach $breachPercent%")
             if (combo >= 2) {
                 segments.add("Combo x$combo")
             }
             val status = segments.joinToString(" • ")
-            if (status != lastPowerupStatus) {
+            if (force || status != lastPowerupStatus) {
                 lastPowerupStatus = status
                 listener.onPowerupStatus(status)
             }
@@ -3921,7 +3949,7 @@ class GameEngine(
                 segments.add("Combo x$combo")
             }
             val status = segments.joinToString(" • ")
-            if (status != lastPowerupStatus) {
+            if (force || status != lastPowerupStatus) {
                 lastPowerupStatus = status
                 listener.onPowerupStatus(status)
             }
@@ -3931,7 +3959,7 @@ class GameEngine(
         if (config.mode == GameMode.ZEN) {
             // Zen mode: minimal HUD, no scores or lives
             val status = "Zen Mode"
-            if (status != lastPowerupStatus) {
+            if (force || status != lastPowerupStatus) {
                 lastPowerupStatus = status
                 listener.onPowerupStatus(status)
             }
@@ -3943,13 +3971,12 @@ class GameEngine(
         val effectText = if (activeEffects.isEmpty()) {
             "Powerups: none"
         } else {
-            activeEffects.entries
-                .sortedBy { it.key.ordinal }
+            sortedActiveEffects()
                 .joinToString(" • ", prefix = "Powerups: ") { (type, time) ->
                     if (type == PowerUpType.SHIELD) {
-                        "${type.displayName} x$shieldCharges ${time.toInt()}s"
+                        "${type.displayName} x$shieldCharges ${displaySeconds(time)}s"
                     } else {
-                        "${type.displayName} ${time.toInt()}s"
+                        "${type.displayName} ${displaySeconds(time)}s"
                     }
                 }
         }
@@ -3958,20 +3985,51 @@ class GameEngine(
             segments.add("Combo x$combo")
         }
         val status = segments.joinToString(" • ")
-        if (status != lastPowerupStatus) {
+        if (force || status != lastPowerupStatus) {
             lastPowerupStatus = status
             listener.onPowerupStatus(status)
         }
         emitPowerupSnapshot(buildPowerupSnapshot())
     }
 
+    private fun sortedActiveEffects(): List<Map.Entry<PowerUpType, Float>> {
+        return activeEffects.entries.sortedWith(
+            compareBy<Map.Entry<PowerUpType, Float>> { powerupPriority(it.key) }
+                .thenByDescending { it.value }
+        )
+    }
+
+    private fun powerupPriority(type: PowerUpType): Int {
+        return when (type) {
+            PowerUpType.SHIELD,
+            PowerUpType.GUARDRAIL -> 0
+            PowerUpType.LASER,
+            PowerUpType.FIREBALL,
+            PowerUpType.PIERCE,
+            PowerUpType.DOUBLE_SCORE -> 1
+            PowerUpType.WIDE_PADDLE,
+            PowerUpType.SHRINK,
+            PowerUpType.MAGNET -> 2
+            PowerUpType.SLOW,
+            PowerUpType.FREEZE,
+            PowerUpType.TIME_WARP,
+            PowerUpType.OVERDRIVE -> 3
+            PowerUpType.MULTI_BALL,
+            PowerUpType.BALL_SPLITTER,
+            PowerUpType.GRAVITY_WELL,
+            PowerUpType.LIFE,
+            PowerUpType.RICOCHET -> 4
+        }
+    }
+
+    private fun displaySeconds(time: Float): Int = ceil(time).toInt().coerceAtLeast(1)
+
     private fun buildPowerupSnapshot(): List<PowerupStatus> {
-        return activeEffects.entries
-            .sortedBy { it.key.ordinal }
+        return sortedActiveEffects()
             .map { (type, time) ->
                 PowerupStatus(
                     type = type,
-                    remainingSeconds = time.toInt(),
+                    remainingSeconds = displaySeconds(time),
                     charges = if (type == PowerUpType.SHIELD) shieldCharges else 0
                 )
             }
@@ -4054,17 +4112,11 @@ class GameEngine(
                 livesLost = runLivesLost
             )
 
-            if (config.mode.godMode) {
-                // Auto-advance in God Mode to ensure continuous play
-                logger?.logLevelAdvance(levelIndex + 1)
-                levelIndex += 1
-                resetLevel(first = false)
-            } else {
-                awaitingNextLevel = true
-                state = GameState.PAUSED
-                stateBeforePause = GameState.PAUSED
-                listener.onLevelComplete(summary)
-            }
+            // Keep one completion flow for all modes; GameActivity handles auto-advance behavior.
+            awaitingNextLevel = true
+            state = GameState.PAUSED
+            stateBeforePause = GameState.PAUSED
+            listener.onLevelComplete(summary)
         }
     }
 

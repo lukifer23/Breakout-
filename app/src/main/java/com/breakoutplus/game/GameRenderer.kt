@@ -23,6 +23,8 @@ class GameRenderer(
     private var paused = false
     private var worldWidth = 100f
     private var worldHeight = 160f
+    private var viewportWidthPx = 0
+    private var viewportHeightPx = 0
 
     // Enhanced visual effects
     private var screenShake = 0f
@@ -76,6 +78,8 @@ class GameRenderer(
         if (width <= 0 || height <= 0) return
         GLES20.glViewport(0, 0, width, height)
         renderer2D.setViewport(width, height)
+        viewportWidthPx = width
+        viewportHeightPx = height
         worldWidth = 100f
         worldHeight = worldWidth * (height.toFloat() / width.toFloat())
         engine.onResize(width, height)
@@ -212,6 +216,7 @@ class GameRenderer(
     fun restart() {
         engine = GameEngine(config, listener, audioManager, logger, config.dailyChallenges, this)
         engine.setDebugAutoPlay(debugAutoPlayEnabled)
+        reapplyViewportToEngine()
         lastTimeNs = 0L
         simulationAccumulator = 0f
     }
@@ -225,6 +230,7 @@ class GameRenderer(
         audioManager.updateSettings(newConfig.settings)
         engine = GameEngine(config, listener, audioManager, logger, config.dailyChallenges, this)
         engine.setDebugAutoPlay(debugAutoPlayEnabled)
+        reapplyViewportToEngine()
         simulationAccumulator = 0f
     }
 
@@ -246,5 +252,11 @@ class GameRenderer(
     private fun smoothStep(value: Float): Float {
         val t = value.coerceIn(0f, 1f)
         return t * t * (3f - 2f * t)
+    }
+
+    private fun reapplyViewportToEngine() {
+        if (viewportWidthPx > 0 && viewportHeightPx > 0) {
+            engine.onResize(viewportWidthPx, viewportHeightPx)
+        }
     }
 }

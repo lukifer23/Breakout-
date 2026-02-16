@@ -24,26 +24,53 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/scoreTitle" />
 
-    <TextView
-        android:id="@+id/scoreProgress"
-        style="@style/Text.BreakoutPlus.Caption"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:text="@string/label_progress_default"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/scoreSubtitle" />
-
-    <TextView
-        android:id="@+id/scoreLifetimeStats"
-        style="@style/Text.BreakoutPlus.Caption"
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/scoreSummaryCard"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
-        android:text="@string/label_lifetime_stats_default"
+        android:layout_marginTop="10dp"
+        app:cardBackgroundColor="@color/bp_surface"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="4dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/scoreProgress" />
+        app:layout_constraintTop_toBottomOf="@id/scoreSubtitle"
+        app:strokeColor="@color/bp_line"
+        app:strokeWidth="1dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="14dp">
+
+            <TextView
+                android:id="@+id/scoreProgress"
+                style="@style/Text.BreakoutPlus.Caption"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/label_progress_default"
+                android:textColor="@color/bp_cyan"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/scoreRunSummary"
+                style="@style/Text.BreakoutPlus.Caption"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="@string/label_lifetime_run_default"
+                android:textColor="@color/bp_white" />
+
+            <TextView
+                android:id="@+id/scoreLifetimeStats"
+                style="@style/Text.BreakoutPlus.Caption"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="@string/label_lifetime_stats_default" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
 
     <ScrollView
         android:id="@+id/scoreScroll"
@@ -53,14 +80,14 @@
         app:layout_constraintBottom_toTopOf="@id/scoreFooter"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/scoreLifetimeStats">
+        app:layout_constraintTop_toBottomOf="@id/scoreSummaryCard">
 
         <LinearLayout
             android:id="@+id/scoreList"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingBottom="8dp"
-            android:orientation="vertical" />
+            android:orientation="vertical"
+            android:paddingBottom="10dp" />
     </ScrollView>
 
     <TextView
@@ -73,13 +100,13 @@
         android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/scoreLifetimeStats" />
+        app:layout_constraintTop_toBottomOf="@id/scoreSummaryCard" />
 
     <LinearLayout
         android:id="@+id/scoreFooter"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:gravity="end"
+        android:layout_marginTop="10dp"
         android:orientation="horizontal"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -88,28 +115,31 @@
         <com.google.android.material.button.MaterialButton
             android:id="@+id/buttonScorePrev"
             style="@style/Widget.BreakoutPlus.Button"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="12dp"
-            android:text="@string/label_prev_symbol"
-            android:backgroundTint="@color/bp_cyan" />
+            android:layout_marginEnd="8dp"
+            android:layout_weight="1"
+            android:backgroundTint="@color/bp_cyan"
+            android:text="@string/label_prev_symbol" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/buttonScoreBack"
             style="@style/Widget.BreakoutPlus.Button"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="12dp"
-            android:text="@string/label_back"
-            android:backgroundTint="@color/bp_gray" />
+            android:layout_marginEnd="8dp"
+            android:layout_weight="1"
+            android:backgroundTint="@color/bp_gray"
+            android:text="@string/label_back" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/buttonScoreNext"
             style="@style/Widget.BreakoutPlus.Button"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="@string/label_next_symbol"
-            android:backgroundTint="@color/bp_cyan" />
+            android:layout_weight="1"
+            android:backgroundTint="@color/bp_cyan"
+            android:text="@string/label_next_symbol" />
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
