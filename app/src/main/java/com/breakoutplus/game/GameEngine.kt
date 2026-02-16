@@ -111,7 +111,20 @@ class GameEngine(
     private var shieldHitPulse = 0f
     private var shieldHitX = 0f
     private var shieldHitColor = floatArrayOf(0.8f, 0.95f, 1f, 1f)
+    private val tunnelWallColor = floatArrayOf(0.76f, 0.83f, 0.93f, 1f)
     private val tempColor = FloatArray(4)
+    private val scratchColor0 = FloatArray(4)
+    private val scratchColor1 = FloatArray(4)
+    private val scratchColor2 = FloatArray(4)
+    private val scratchColor3 = FloatArray(4)
+    private val scratchColor4 = FloatArray(4)
+    private val scratchColor5 = FloatArray(4)
+    private val scratchColor6 = FloatArray(4)
+    private val scratchColor7 = FloatArray(4)
+    private val scratchColor8 = FloatArray(4)
+    private val scratchColor9 = FloatArray(4)
+    private val scratchColor10 = FloatArray(4)
+    private val scratchColor11 = FloatArray(4)
     private val aliveInvaderBuffer = ArrayList<Brick>(72)
     private var shieldBreakPulse = 0f
     private var powerupCollectionPulse = 0f
@@ -278,7 +291,9 @@ class GameEngine(
         if (debugAutoPlayEnabled) {
             updateDebugAutoPlay(delta)
         }
-        updateTimers(dt)
+        if (updateTimers(dt)) {
+            return
+        }
         updatePaddle(delta)
         updateAim(delta)
         updateBricks(dt)
@@ -384,14 +399,14 @@ class GameEngine(
         // Enhanced background with subtle gradient and flash effect
         val flashIntensity = levelClearFlash * 0.8f
         val bgTop = if (flashIntensity > 0f) {
-            adjustColor(theme.background, 1.1f + flashIntensity, 1f)
+            adjustColor(scratchColor0, theme.background, 1.1f + flashIntensity, 1f)
         } else {
-            adjustColor(theme.background, 1.1f, 1f)
+            adjustColor(scratchColor0, theme.background, 1.1f, 1f)
         }
         val bgBottom = if (flashIntensity > 0f) {
-            adjustColor(theme.background, 0.9f + flashIntensity, 1f)
+            adjustColor(scratchColor1, theme.background, 0.9f + flashIntensity, 1f)
         } else {
-            adjustColor(theme.background, 0.9f, 1f)
+            adjustColor(scratchColor1, theme.background, 0.9f, 1f)
         }
 
         // Draw gradient background (top to bottom)
@@ -596,7 +611,7 @@ class GameEngine(
             if (!renderer.isRectVisible(brick.x, brick.y, brick.width, brick.height)) continue
             val color = if (config.mode == GameMode.TUNNEL && brick.type == BrickType.UNBREAKABLE) {
                 // Keep tunnel walls visually distinct from regular bricks.
-                floatArrayOf(0.76f, 0.83f, 0.93f, 1f)
+                tunnelWallColor
             } else {
                 brick.currentColor(theme)
             }
@@ -604,11 +619,11 @@ class GameEngine(
             if (brick.type == BrickType.INVADER) {
                 drawInvaderShip(renderer, brick, color)
                 if (brick.maxHitPoints >= 2) {
-                    val armor = adjustColor(color, 0.82f, 0.9f)
+                    val armor = adjustColor(scratchColor2, color, 0.82f, 0.9f)
                     val count = if (brick.maxHitPoints >= 3) 2 else 1
                     drawStripe(renderer, brick, armor, count)
                 if (brick.maxHitPoints >= 3) {
-                    val core = adjustColor(color, 1.4f, 0.9f)
+                    val core = adjustColor(scratchColor3, color, 1.4f, 0.9f)
                     renderer.drawCircle(brick.centerX, brick.centerY, brick.height * 0.08f, core)
                 }
             }
@@ -617,16 +632,16 @@ class GameEngine(
 
             // 3D depth effect: base shadow
             val shadowOffset = brick.width * 0.02f
-            val shadowColor = adjustColor(color, 0.4f, 0.3f)
+            val shadowColor = adjustColor(scratchColor4, color, 0.4f, 0.3f)
             renderer.drawRect(brick.x + shadowOffset, brick.y + shadowOffset, brick.width, brick.height, shadowColor)
 
             // Main brick body
             renderer.drawRect(brick.x, brick.y, brick.width, brick.height, color)
 
             // 3D highlights and bevels
-            val highlight = adjustColor(color, 1.3f, 1f)
-            val midtone = adjustColor(color, 0.9f, 1f)
-            val lowlight = adjustColor(color, 0.6f, 1f)
+            val highlight = adjustColor(scratchColor5, color, 1.3f, 1f)
+            val midtone = adjustColor(scratchColor6, color, 0.9f, 1f)
+            val lowlight = adjustColor(scratchColor7, color, 0.6f, 1f)
 
             // Top bevel (highlight)
             val topBevelHeight = brick.height * 0.08f
@@ -645,13 +660,13 @@ class GameEngine(
             renderer.drawRect(brick.x + brick.width - rightBevelWidth, brick.y, rightBevelWidth, brick.height, lowlight)
 
             when (brick.type) {
-                BrickType.REINFORCED -> drawStripe(renderer, brick, adjustColor(color, 0.85f, 1f), 1)
-                BrickType.ARMORED -> drawStripe(renderer, brick, adjustColor(color, 0.78f, 1f), 2)
+                BrickType.REINFORCED -> drawStripe(renderer, brick, adjustColor(scratchColor8, color, 0.85f, 1f), 1)
+                BrickType.ARMORED -> drawStripe(renderer, brick, adjustColor(scratchColor9, color, 0.78f, 1f), 2)
                 BrickType.UNBREAKABLE -> {
-                    drawStripe(renderer, brick, adjustColor(color, 0.66f, 1f), 3)
+                    drawStripe(renderer, brick, adjustColor(scratchColor10, color, 0.66f, 1f), 3)
                     if (config.mode == GameMode.TUNNEL) {
-                        val lock = adjustColor(color, 0.48f, 1f)
-                        val cap = adjustColor(color, 1.12f, 0.95f)
+                        val lock = adjustColor(scratchColor9, color, 0.48f, 1f)
+                        val cap = adjustColor(scratchColor11, color, 1.12f, 0.95f)
                         val barWidth = brick.width * 0.14f
                         val barHeight = brick.height * 0.5f
                         renderer.drawRect(
@@ -672,13 +687,13 @@ class GameEngine(
                 }
                 BrickType.MOVING -> {
                     // Add movement indicator
-                    val indicatorColor = adjustColor(color, 1.3f, 0.8f)
+                    val indicatorColor = adjustColor(scratchColor8, color, 1.3f, 0.8f)
                     renderer.drawRect(brick.x + brick.width * 0.1f, brick.y + brick.height * 0.1f,
                                     brick.width * 0.8f, brick.height * 0.05f, indicatorColor)
                 }
                 BrickType.SPAWNING -> {
                     // Add spawn indicator (dots)
-                    val dotColor = adjustColor(color, 1.2f, 0.9f)
+                    val dotColor = adjustColor(scratchColor8, color, 1.2f, 0.9f)
                     val dotSize = brick.width * 0.08f
                     for (i in 0 until brick.spawnCount) {
                         val dotX = brick.x + brick.width * 0.2f + i * brick.width * 0.15f
@@ -700,7 +715,7 @@ class GameEngine(
                 BrickType.BOSS -> {
                     // Boss indicator (pulsing border)
                     val pulse = (kotlin.math.sin(time * 4f) * 0.5f + 0.5f) * 0.3f + 0.7f
-                    val bossColor = adjustColor(color, pulse, 1f)
+                    val bossColor = adjustColor(scratchColor8, color, pulse, 1f)
                     val borderWidth = brick.width * 0.05f
                     // Draw border by drawing slightly larger rect underneath
                     renderer.drawRect(brick.x - borderWidth, brick.y - borderWidth,
@@ -739,7 +754,7 @@ class GameEngine(
 
         enemyShots.forEach { shot ->
             val speed = kotlin.math.abs(shot.vy)
-            val glow = adjustColor(shot.color, 1.2f + speed * 0.002f, 0.5f)
+            val glow = adjustColor(scratchColor2, shot.color, 1.2f + speed * 0.002f, 0.5f)
             renderer.drawCircle(shot.x, shot.y, shot.radius * 1.9f, glow)
             val trailLen = when (shot.style) {
                 1 -> 5.0f
@@ -771,11 +786,16 @@ class GameEngine(
                         shot.x,
                         shot.y + shot.radius * 1.1f,
                         shot.radius * 0.6f,
-                        adjustColor(shot.color, 1.4f, 0.8f)
+                        adjustColor(scratchColor3, shot.color, 1.4f, 0.8f)
                     )
                 }
                 2 -> {
-                    renderer.drawCircle(shot.x, shot.y, shot.radius * 1.35f, adjustColor(shot.color, 1.4f, 0.45f))
+                    renderer.drawCircle(
+                        shot.x,
+                        shot.y,
+                        shot.radius * 1.35f,
+                        adjustColor(scratchColor3, shot.color, 1.4f, 0.45f)
+                    )
                     renderer.drawCircle(shot.x, shot.y, shot.radius * 0.65f, shot.color)
                 }
                 else -> {
@@ -791,9 +811,9 @@ class GameEngine(
             val thickness = 0.6f + ratio * 0.5f
             val alpha = (0.15f + ratio * 0.35f + shieldHitPulse * 0.25f + pulse * 0.2f).coerceIn(0.1f, 0.75f)
             val baseColor = if (invaderShieldCritical) {
-                floatArrayOf(1f, 0.45f, 0.45f, alpha)
+                fillColor(scratchColor11, 1f, 0.45f, 0.45f, alpha)
             } else {
-                floatArrayOf(0.45f, 0.9f, 1f, alpha)
+                fillColor(scratchColor11, 0.45f, 0.9f, 1f, alpha)
             }
             val shieldX = worldWidth * 0.06f
             val shieldWidth = worldWidth * 0.88f
@@ -982,7 +1002,7 @@ class GameEngine(
         val glowColor = if (isNegative) {
             fillColor(tempColor, 0.8f + pulse * 0.2f, 0.2f, 0.2f, 0.6f + pulse * 0.2f)
         } else {
-            adjustColor(power.type.color, 0.25f + pulse * 0.2f, 0.6f)
+            adjustColor(scratchColor0, power.type.color, 0.25f + pulse * 0.2f, 0.6f)
         }
         renderer.drawRect(power.x - size * 0.6f, power.y - size * 0.6f, size * 1.2f, size * 1.2f, glowColor)
         // Rotating ring effect - simple pulsing ring
@@ -1005,8 +1025,8 @@ class GameEngine(
         )
 
         // Main powerup body with gradient
-        val outer = adjustColor(power.type.color, 0.7f, 1f)
-        val inner = adjustColor(power.type.color, 1.1f + pulse * 0.05f, 1f)
+        val outer = adjustColor(scratchColor1, power.type.color, 0.7f, 1f)
+        val inner = adjustColor(scratchColor2, power.type.color, 1.1f + pulse * 0.05f, 1f)
 
         // Draw with rounded appearance using multiple rects
         val cornerInset = size * 0.1f
@@ -1018,12 +1038,12 @@ class GameEngine(
         renderer.drawRect(x + size * 0.12f, y + size * 0.62f, size * 0.76f, size * 0.18f, highlight)
 
         // Add subtle glow effect for better visibility
-        val outerGlowColor = adjustColor(power.type.color, 1.2f, 0.4f)
+        val outerGlowColor = adjustColor(scratchColor3, power.type.color, 1.2f, 0.4f)
         renderer.drawCircle(power.x, power.y, size * 1.4f, outerGlowColor)
 
-        val glyph = adjustColor(power.type.color, 1.5f, 0.95f)
-        val glyphSoft = adjustColor(power.type.color, 1.15f, 0.78f)
-        val outlineColor = adjustColor(power.type.color, 1.8f, 0.3f)
+        val glyph = adjustColor(scratchColor4, power.type.color, 1.5f, 0.95f)
+        val glyphSoft = adjustColor(scratchColor5, power.type.color, 1.15f, 0.78f)
+        val outlineColor = adjustColor(scratchColor6, power.type.color, 1.8f, 0.3f)
         renderer.drawCircle(power.x, power.y, size * 0.95f, outlineColor)
 
         when (power.type) {
@@ -1396,7 +1416,7 @@ class GameEngine(
         }
         val pulseBoost = 1f + hitPulse * 0.25f
 
-        val shadow = adjustColor(baseColor, 0.35f, 0.35f)
+        val shadow = adjustColor(scratchColor0, baseColor, 0.35f, 0.35f)
         renderer.drawRect(x + w * 0.04f, y + h * 0.04f, w * 0.92f, h * 0.92f, shadow)
 
         val bodyHeight = when (variant) {
@@ -1411,15 +1431,15 @@ class GameEngine(
             2 -> 0.22f
             else -> 0.28f
         } * h
-        val body = adjustColor(baseColor, 0.95f * tint * pulseBoost, 1f)
+        val body = adjustColor(scratchColor1, baseColor, 0.95f * tint * pulseBoost, 1f)
         renderer.drawRect(x, y + bodyY, w, bodyHeight, body)
 
-        val wingColor = adjustColor(baseColor, 1.15f * tint * pulseBoost, 1f)
+        val wingColor = adjustColor(scratchColor2, baseColor, 1.15f * tint * pulseBoost, 1f)
         val wingHeight = h * if (variant == 2) 0.32f else 0.28f
         renderer.drawRect(x + w * 0.06f, y + h * 0.12f, w * 0.2f, wingHeight, wingColor)
         renderer.drawRect(x + w * 0.74f, y + h * 0.12f, w * 0.2f, wingHeight, wingColor)
 
-        val cockpit = adjustColor(baseColor, 1.35f * pulseBoost, 1f)
+        val cockpit = adjustColor(scratchColor3, baseColor, 1.35f * pulseBoost, 1f)
         val cockpitRadius = h * when (variant) {
             1 -> 0.15f
             2 -> 0.2f
@@ -1428,34 +1448,40 @@ class GameEngine(
         renderer.drawCircle(x + w * 0.5f, y + h * 0.58f, cockpitRadius, cockpit)
 
         if (variant == 2) {
-            val light = adjustColor(baseColor, 1.6f, 0.9f)
+            val light = adjustColor(scratchColor4, baseColor, 1.6f, 0.9f)
             renderer.drawCircle(x + w * 0.38f, y + h * 0.56f, h * 0.08f, light)
             renderer.drawCircle(x + w * 0.62f, y + h * 0.56f, h * 0.08f, light)
         }
 
-        val engine = adjustColor(baseColor, 1.5f * tint * pulseBoost, 0.9f)
+        val engine = adjustColor(scratchColor5, baseColor, 1.5f * tint * pulseBoost, 0.9f)
         renderer.drawRect(x + w * 0.22f, y + h * 0.08f, w * 0.12f, h * 0.12f, engine)
         renderer.drawRect(x + w * 0.66f, y + h * 0.08f, w * 0.12f, h * 0.12f, engine)
 
-        val rim = adjustColor(baseColor, 0.7f * tint, 1f)
+        val rim = adjustColor(scratchColor6, baseColor, 0.7f * tint, 1f)
         renderer.drawRect(x + w * 0.08f, y + h * 0.7f, w * 0.84f, h * 0.06f, rim)
 
         if (variant == 1) {
-            val fin = adjustColor(baseColor, 1.25f, 0.9f)
+            val fin = adjustColor(scratchColor7, baseColor, 1.25f, 0.9f)
             renderer.drawRect(x + w * 0.14f, y + h * 0.68f, w * 0.12f, h * 0.08f, fin)
             renderer.drawRect(x + w * 0.74f, y + h * 0.68f, w * 0.12f, h * 0.08f, fin)
         }
         if (variant == 3) {
-            val ridge = adjustColor(baseColor, 1.1f, 0.85f)
+            val ridge = adjustColor(scratchColor8, baseColor, 1.1f, 0.85f)
             renderer.drawRect(x + w * 0.46f, y + h * 0.34f, w * 0.08f, h * 0.28f, ridge)
         }
 
         if (brick.fireFlash > 0f) {
             val flashAlpha = (brick.fireFlash * 0.8f).coerceIn(0f, 0.8f)
-            val flashColor = adjustColor(baseColor, 1.5f, flashAlpha)
+            val flashColor = adjustColor(scratchColor9, baseColor, 1.5f, flashAlpha)
             val flashRadius = h * (0.16f + brick.fireFlash * 0.18f)
             renderer.drawCircle(x + w * 0.5f, y - h * 0.02f, flashRadius, flashColor)
-            renderer.drawRect(x + w * 0.46f, y - h * 0.16f, w * 0.08f, h * 0.14f, adjustColor(baseColor, 1.8f, flashAlpha))
+            renderer.drawRect(
+                x + w * 0.46f,
+                y - h * 0.16f,
+                w * 0.08f,
+                h * 0.14f,
+                adjustColor(scratchColor10, baseColor, 1.8f, flashAlpha)
+            )
         }
     }
 
@@ -1470,6 +1496,14 @@ class GameEngine(
             (color[2] * factor).coerceIn(0f, 1f),
             alpha
         )
+    }
+
+    private fun adjustColor(out: FloatArray, color: FloatArray, factor: Float, alpha: Float): FloatArray {
+        out[0] = (color[0] * factor).coerceIn(0f, 1f)
+        out[1] = (color[1] * factor).coerceIn(0f, 1f)
+        out[2] = (color[2] * factor).coerceIn(0f, 1f)
+        out[3] = alpha
+        return out
     }
 
     private fun fillColor(out: FloatArray, r: Float, g: Float, b: Float, a: Float): FloatArray {
@@ -1959,7 +1993,6 @@ class GameEngine(
     }
 
     private fun resetLevel(first: Boolean) {
-        logger?.logLevelStart(levelIndex + 1, currentLayout?.theme?.name ?: "unknown")
         state = GameState.READY
         stateBeforePause = GameState.READY
         awaitingNextLevel = false
@@ -2123,7 +2156,7 @@ class GameEngine(
                 listener.onTip(level.tip)
             }
         }
-        logger?.logLevelStart(levelIndex, theme.name)
+        logger?.logLevelStart(levelIndex + 1, theme.name)
     }
 
     private fun buildSpatialHash() {
@@ -2436,8 +2469,8 @@ class GameEngine(
         }
     }
 
-    private fun updateTimers(dt: Float) {
-        if (state != GameState.RUNNING) return
+    private fun updateTimers(dt: Float): Boolean {
+        if (state != GameState.RUNNING) return false
         elapsedSeconds += dt
 
         // Update combo timer
@@ -2452,6 +2485,7 @@ class GameEngine(
             timeRemaining -= dt
             if (timeRemaining <= 0f) {
                 triggerGameOver()
+                return true
             } else {
                 val currentSecond = timeRemaining.toInt()
                 if (currentSecond != lastReportedSecond) {
@@ -2466,6 +2500,7 @@ class GameEngine(
                 listener.onTimeUpdated(currentSecond)
             }
         }
+        return state == GameState.GAME_OVER
     }
 
     fun updateSettings(newSettings: SettingsManager.Settings) {
@@ -4100,7 +4135,7 @@ class GameEngine(
                     }
                 }
             }
-            logger?.logLevelComplete(levelIndex, score, elapsedSeconds, remaining)
+            logger?.logLevelComplete(levelIndex + 1, score, elapsedSeconds, remaining)
             levelClearFlash = 1.0f
             renderer?.triggerLevelClearFlash()
             spawnLevelCompleteConfetti()

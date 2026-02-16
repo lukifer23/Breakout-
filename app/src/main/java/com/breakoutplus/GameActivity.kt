@@ -3,6 +3,7 @@ package com.breakoutplus
 import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.res.Configuration
+import android.graphics.Rect
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -63,6 +64,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     private var hudResizeRunnable: Runnable? = null
     private val hudResizeDebounceMs = 120L
     private var hudResizingInProgress = false
+    private var levelAdvanceRecoveryRunnable: Runnable? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -75,6 +77,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         baseSurfaceBottomMargin =
             (binding.gameSurface.layoutParams as ConstraintLayout.LayoutParams).bottomMargin
         applyWindowInsets()
+        applyGameGestureExclusion()
 
         val modeName = intent.getStringExtra(EXTRA_MODE)
         val mode = runCatching { GameMode.valueOf(modeName ?: "CLASSIC") }.getOrDefault(GameMode.CLASSIC)
@@ -145,6 +148,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     override fun onResume() {
         super.onResume()
         applyResponsiveHudSizing()
+        applyGameGestureExclusion()
         refreshSettings()
         applyFrameRatePreference()
         binding.gameSurface.onResume()
@@ -157,6 +161,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         binding.gameSurface.pauseGame()
         binding.gameSurface.onPause()
         levelAdvanceInProgress = false
+        cancelLevelAdvanceRecovery()
         config.dailyChallenges?.let { DailyChallengeStore.save(this, it) }
         laserCooldownRunnable?.let { binding.buttonLaser.removeCallbacks(it) }
         debugAutoPlayStopRunnable?.let { binding.gameSurface.removeCallbacks(it) }
@@ -175,7 +180,10 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-        binding.root.post { applyResponsiveHudSizing() }
+        binding.root.post {
+            applyResponsiveHudSizing()
+            applyGameGestureExclusion()
+        }
     }
 
     private fun refreshSettings() {
@@ -254,6 +262,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
 
     private fun restartGame() {
         levelAdvanceInProgress = false
+        cancelLevelAdvanceRecovery()
         hideOverlay(binding.endOverlay)
         hideOverlay(binding.pauseOverlay)
         hideOverlay(binding.tooltipOverlay)
@@ -267,6 +276,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
 
     private fun exitToMenu() {
         levelAdvanceInProgress = false
+        cancelLevelAdvanceRecovery()
         finish()
         startActivity(Intent(this, MainActivity::class.java))
     }
@@ -279,15 +289,30 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
                 binding.buttonEndPrimary.isEnabled = false
                 binding.buttonEndSecondary.isEnabled = false
                 hideOverlay(binding.endOverlay)
+                cancelLevelAdvanceRecovery()
+                val recovery = Runnable {
+                    if (!levelAdvanceInProgress || isFinishing || isDestroyed) return@Runnable
+                    levelAdvanceInProgress = false
+                    binding.buttonEndPrimary.isEnabled = true
+                    binding.buttonEndSecondary.isEnabled = true
+                    endOverlayState = EndOverlayState.LEVEL_COMPLETE
+                    showOverlay(binding.endOverlay)
+                    Log.w("GameActivity", "Level advance timed out; restored end overlay for retry")
+                }
+                levelAdvanceRecoveryRunnable = recovery
+                binding.root.postDelayed(recovery, 1400L)
                 if (!isFinishing && !isDestroyed) {
                     Log.d("GameActivity", "Advancing to next level (activity state: finishing=$isFinishing, destroyed=$isDestroyed)")
                     binding.gameSurface.nextLevel()
                     playGameFade()
                 } else {
                     Log.w("GameActivity", "Cannot advance level - activity finishing or destroyed")
+                    levelAdvanceInProgress = false
+                    binding.buttonEndPrimary.isEnabled = true
+                    binding.buttonEndSecondary.isEnabled = true
+                    cancelLevelAdvanceRecovery()
                 }
                 endOverlayState = EndOverlayState.NONE
-                levelAdvanceInProgress = false
             }
             else -> restartGame()
         }
@@ -361,6 +386,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             val desiredBottomMargin = baseSurfaceBottomMargin + maxInsetBottom
             params.bottomMargin = desiredBottomMargin
             binding.gameSurface.layoutParams = params
+            binding.root.post { applyGameGestureExclusion() }
             insets
         }
     }
@@ -392,10 +418,28 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
 
             // Debounce HUD resize to prevent rapid layout changes
             hudResizeRunnable?.let { binding.root.removeCallbacks(it) }
-            val runnable = Runnable { applyResponsiveHudSizing() }
+            val runnable = Runnable {
+                applyResponsiveHudSizing()
+                applyGameGestureExclusion()
+            }
             hudResizeRunnable = runnable
             binding.root.postDelayed(runnable, hudResizeDebounceMs)
         }
+    }
+
+    private fun applyGameGestureExclusion() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
+        val surface = binding.gameSurface
+        val width = surface.width
+        val height = surface.height
+        if (width <= 0 || height <= 0) {
+            surface.post { applyGameGestureExclusion() }
+            return
+        }
+        val edgeWidth = dp(28f).coerceAtLeast(1).coerceAtMost(width / 3)
+        val leftEdge = Rect(0, 0, edgeWidth, height)
+        val rightEdge = Rect(width - edgeWidth, 0, width, height)
+        surface.systemGestureExclusionRects = listOf(leftEdge, rightEdge)
     }
 
     override fun onScoreUpdated(score: Int) {
@@ -441,6 +485,10 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
 
     override fun onLevelUpdated(level: Int) {
         runOnUiThread {
+            levelAdvanceInProgress = false
+            cancelLevelAdvanceRecovery()
+            binding.buttonEndPrimary.isEnabled = true
+            binding.buttonEndSecondary.isEnabled = true
             binding.hudLevel.text = getString(R.string.label_level_format, level)
             updateJourneyLabel(level)
             updateHudMeta()
@@ -499,17 +547,23 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     }
 
     override fun onThemeUnlocked(themeName: String) {
-        val updated = UnlockManager.unlockTheme(this, themeName)
-        config = config.copy(unlocks = updated)
-        binding.gameSurface.applyUnlocks(updated)
-        showBanner(getString(R.string.label_theme_unlocked, themeName))
+        runOnUiThread {
+            if (isFinishing || isDestroyed) return@runOnUiThread
+            val updated = UnlockManager.unlockTheme(this, themeName)
+            config = config.copy(unlocks = updated)
+            binding.gameSurface.applyUnlocks(updated)
+            showBanner(getString(R.string.label_theme_unlocked, themeName))
+        }
     }
 
     override fun onCosmeticUnlocked(newTier: Int) {
-        val updated = UnlockManager.setCosmeticTier(this, newTier)
-        config = config.copy(unlocks = updated)
-        binding.gameSurface.applyUnlocks(updated)
-        showBanner(getString(R.string.label_cosmetic_unlocked))
+        runOnUiThread {
+            if (isFinishing || isDestroyed) return@runOnUiThread
+            val updated = UnlockManager.setCosmeticTier(this, newTier)
+            config = config.copy(unlocks = updated)
+            binding.gameSurface.applyUnlocks(updated)
+            showBanner(getString(R.string.label_cosmetic_unlocked))
+        }
     }
 
     override fun onFpsUpdate(fps: Int) {
@@ -1191,6 +1245,11 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             PowerUpType.TIME_WARP -> "WARP"
             PowerUpType.DOUBLE_SCORE -> "2X"
         }
+    }
+
+    private fun cancelLevelAdvanceRecovery() {
+        levelAdvanceRecoveryRunnable?.let { binding.root.removeCallbacks(it) }
+        levelAdvanceRecoveryRunnable = null
     }
 
     private fun dp(value: Int): Int = dp(value.toFloat())

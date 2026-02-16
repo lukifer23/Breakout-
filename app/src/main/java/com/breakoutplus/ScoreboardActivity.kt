@@ -49,6 +49,7 @@ class ScoreboardActivity : FoldAwareActivity() {
         super.onResume()
         updateProgress()
         updateLifetimeStats()
+        renderScores()
     }
 
     private fun switchMode(direction: Int) {
@@ -83,10 +84,11 @@ class ScoreboardActivity : FoldAwareActivity() {
             row.scorePlayer.text = entry.name.ifBlank { getString(R.string.label_player_default) }
             val timeText = if (entry.durationSeconds > 0) formatDuration(entry.durationSeconds) else "--"
             val modeLabel = entry.mode.ifBlank { getString(R.string.label_mode_classic) }
+            val levelLabel = entry.level.coerceAtLeast(1)
             row.scoreModeMeta.text = if (currentMode.mode == null) {
-                getString(R.string.label_score_meta_format, modeLabel, entry.level, timeText)
+                getString(R.string.label_score_meta_format, modeLabel, levelLabel, timeText)
             } else {
-                getString(R.string.label_score_meta_no_mode_format, entry.level, timeText)
+                getString(R.string.label_score_meta_no_mode_format, levelLabel, timeText)
             }
             row.scoreValue.text = String.format(Locale.getDefault(), "%,d", entry.score)
             row.scoreDate.text = if (entry.timestamp > 0L) {
@@ -161,8 +163,9 @@ class ScoreboardActivity : FoldAwareActivity() {
     }
 
     private fun formatDuration(seconds: Int): String {
-        val minutes = seconds / 60
-        val remaining = seconds % 60
+        val safeSeconds = seconds.coerceAtLeast(0)
+        val minutes = safeSeconds / 60
+        val remaining = safeSeconds % 60
         return String.format(Locale.getDefault(), "%02d:%02d", minutes, remaining)
     }
 

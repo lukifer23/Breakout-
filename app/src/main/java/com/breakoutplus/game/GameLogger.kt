@@ -13,7 +13,10 @@ import java.util.*
  * Comprehensive game logging system for debugging, analytics, and AI training data.
  * Records game events, player actions, performance metrics, and game state snapshots.
  */
-class GameLogger(private val context: Context, private val enabled: Boolean = true) {
+class GameLogger(private val context: Context, enabled: Boolean = true) {
+
+    @Volatile
+    private var enabled: Boolean = enabled
 
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.US)
     private val logBuffer = mutableListOf<GameEvent>()
@@ -38,6 +41,10 @@ class GameLogger(private val context: Context, private val enabled: Boolean = tr
     )
 
     // Core logging methods
+    fun setEnabled(enabled: Boolean) {
+        this.enabled = enabled
+    }
+
     fun logSessionStart(mode: GameMode) {
         if (!enabled) return
         logEvent(EventType.SESSION_START, mapOf(

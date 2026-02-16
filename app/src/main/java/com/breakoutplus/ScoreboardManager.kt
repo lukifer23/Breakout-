@@ -31,14 +31,16 @@ object ScoreboardManager {
         return buildList {
             for (i in 0 until json.length()) {
                 val obj = json.optJSONObject(i) ?: continue
+                val rawName = obj.optString("name", "Player").trim()
+                val rawMode = obj.optString("mode").trim()
                 add(
                     ScoreEntry(
-                        score = obj.optInt("score"),
-                        mode = obj.optString("mode"),
-                        name = obj.optString("name", "Player"), // Default to "Player" for legacy scores
-                        level = obj.optInt("level"),
-                        durationSeconds = obj.optInt("duration"),
-                        timestamp = obj.optLong("timestamp")
+                        score = obj.optInt("score").coerceAtLeast(0),
+                        mode = if (rawMode.isNotBlank()) rawMode else "Classic",
+                        name = if (rawName.isNotBlank()) rawName else "Player",
+                        level = obj.optInt("level", 1).coerceAtLeast(1),
+                        durationSeconds = obj.optInt("duration").coerceAtLeast(0),
+                        timestamp = obj.optLong("timestamp").coerceAtLeast(0L)
                     )
                 )
             }
@@ -72,23 +74,38 @@ object ScoreboardManager {
             score = score,
             mode = mode,
             name = "",
-            level = 0,
-            durationSeconds = durationSeconds,
+            level = 1,
+            durationSeconds = durationSeconds.coerceAtLeast(0),
             timestamp = timestamp
         )
         return scoreComparator.compare(candidate, worst) < 0
     }
 
     fun addHighScore(context: Context, entry: ScoreEntry): List<ScoreEntry> {
-        if (!isHighScoreForMode(context, entry.mode, entry.score, entry.durationSeconds, entry.timestamp)) {
-            return getHighScoresForMode(context, entry.mode) // Return existing high scores unchanged
+        val sanitizedEntry = entry.copy(
+            score = entry.score.coerceAtLeast(0),
+            mode = entry.mode.trim().ifBlank { "Classic" },
+            name = entry.name.trim().ifBlank { "Player" },
+            level = entry.level.coerceAtLeast(1),
+            durationSeconds = entry.durationSeconds.coerceAtLeast(0),
+            timestamp = if (entry.timestamp > 0L) entry.timestamp else System.currentTimeMillis()
+        )
+        if (!isHighScoreForMode(
+                context,
+                sanitizedEntry.mode,
+                sanitizedEntry.score,
+                sanitizedEntry.durationSeconds,
+                sanitizedEntry.timestamp
+            )
+        ) {
+            return getHighScoresForMode(context, sanitizedEntry.mode)
         }
 
         val scores = loadScores(context).toMutableList()
-        scores.add(entry)
+        scores.add(sanitizedEntry)
         val trimmed = trimScoresPerMode(scores)
         saveScores(context, trimmed)
-        return getHighScoresForMode(context, entry.mode)
+        return getHighScoresForMode(context, sanitizedEntry.mode)
     }
 
     private fun trimScoresPerMode(scores: List<ScoreEntry>): List<ScoreEntry> {

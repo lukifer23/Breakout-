@@ -3,6 +3,7 @@ package com.breakoutplus.game
 import android.content.Context
 import android.opengl.GLES20
 import android.opengl.GLSurfaceView
+import android.util.Log
 import android.view.MotionEvent
 import com.breakoutplus.SettingsManager
 import kotlin.math.cos
@@ -17,14 +18,13 @@ class GameRenderer(
 
     private val renderer2D = Renderer2D()
     private val audioManager = GameAudioManager(context, config.settings)
-    private val logger = if (config.settings.loggingEnabled) GameLogger(context, true) else null
+    private val logger = GameLogger(context, config.settings.loggingEnabled)
     private var engine = GameEngine(config, listener, audioManager, logger, config.dailyChallenges, this)
     private var lastTimeNs: Long = 0L
     private var paused = false
     private var worldWidth = 100f
     private var worldHeight = 160f
-    private var viewportWidthPx = 0
-    private var viewportHeightPx = 0
+    private val viewportState = ViewportState()
 
     // Enhanced visual effects
     private var screenShake = 0f
@@ -38,6 +38,8 @@ class GameRenderer(
     private var fixedStepSeconds = 1f / 120f
     private var simulationAccumulator = 0f
     private var debugAutoPlayEnabled = false
+    private var recoveryAttempts = 0
+    private val maxRecoveryAttempts = 2
     private val shakeAmplitudeScale = 0.34f
     private val maxShakeAmplitude = 1.15f
     private val comboFlashDuration = 0.28f
@@ -78,100 +80,106 @@ class GameRenderer(
         if (width <= 0 || height <= 0) return
         GLES20.glViewport(0, 0, width, height)
         renderer2D.setViewport(width, height)
-        viewportWidthPx = width
-        viewportHeightPx = height
+        viewportState.update(width, height)
         worldWidth = 100f
         worldHeight = worldWidth * (height.toFloat() / width.toFloat())
         engine.onResize(width, height)
     }
 
     override fun onDrawFrame(unused: javax.microedition.khronos.opengles.GL10?) {
-        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
+        try {
+            GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
 
-        val frameStart = System.nanoTime()
-        val now = frameStart
-        if (lastTimeNs == 0L) {
+            val frameStart = System.nanoTime()
+            val now = frameStart
+            if (lastTimeNs == 0L) {
+                lastTimeNs = now
+            }
+            var delta = (now - lastTimeNs) / 1_000_000_000f
             lastTimeNs = now
-        }
-        var delta = (now - lastTimeNs) / 1_000_000_000f
-        lastTimeNs = now
-        if (delta > 0.1f) delta = 0.1f
+            if (delta > 0.1f) delta = 0.1f
 
-        // Update visual effects
-        if (screenShake > 0f) {
-            screenShake = (screenShake - delta).coerceAtLeast(0f)
-            shakePhase += delta * (24f + shakeIntensity * 10f)
-        }
-        if (comboFlash > 0f) {
-            comboFlash = (comboFlash - delta).coerceAtLeast(0f)
-        }
-        if (levelClearFlash > 0f) {
-            levelClearFlash = (levelClearFlash - delta).coerceAtLeast(0f)
-        }
-        if (impactFlash > 0f) {
-            impactFlash = (impactFlash - delta * 2.0f).coerceAtLeast(0f)
-        }
-
-        if (!paused) {
-            val step = fixedStepSeconds.coerceIn(1f / 240f, 1f / 45f)
-            simulationAccumulator = (simulationAccumulator + delta).coerceAtMost(step * 6f)
-            var updates = 0
-            while (simulationAccumulator >= step && updates < 6) {
-                engine.update(step)
-                simulationAccumulator -= step
-                updates += 1
+            // Update visual effects
+            if (screenShake > 0f) {
+                screenShake = (screenShake - delta).coerceAtLeast(0f)
+                shakePhase += delta * (24f + shakeIntensity * 10f)
             }
-            if (updates == 0 && delta > 0f) {
-                // Keep controls responsive when frame pacing temporarily outruns simulation step.
-                engine.update(delta.coerceAtMost(step))
-                simulationAccumulator = 0f
+            if (comboFlash > 0f) {
+                comboFlash = (comboFlash - delta).coerceAtLeast(0f)
             }
-        }
+            if (levelClearFlash > 0f) {
+                levelClearFlash = (levelClearFlash - delta).coerceAtLeast(0f)
+            }
+            if (impactFlash > 0f) {
+                impactFlash = (impactFlash - delta * 2.0f).coerceAtLeast(0f)
+            }
 
-        // Apply screen shake to renderer
-        if (screenShake > 0f) {
-            val decay = if (screenShakeDuration > 0f) {
-                (screenShake / screenShakeDuration).coerceIn(0f, 1f)
+            if (!paused) {
+                val step = fixedStepSeconds.coerceIn(1f / 240f, 1f / 45f)
+                simulationAccumulator = (simulationAccumulator + delta).coerceAtMost(step * 6f)
+                var updates = 0
+                while (simulationAccumulator >= step && updates < 6) {
+                    engine.update(step)
+                    simulationAccumulator -= step
+                    updates += 1
+                }
+                if (updates == 0 && delta > 0f) {
+                    // Keep controls responsive when frame pacing temporarily outruns simulation step.
+                    engine.update(delta.coerceAtMost(step))
+                    simulationAccumulator = 0f
+                }
+            }
+
+            // Apply screen shake to renderer
+            if (screenShake > 0f) {
+                val decay = if (screenShakeDuration > 0f) {
+                    (screenShake / screenShakeDuration).coerceIn(0f, 1f)
+                } else {
+                    0f
+                }
+                val amplitude = (shakeIntensity * smoothStep(decay) * shakeAmplitudeScale).coerceAtMost(maxShakeAmplitude)
+                val shakeX = sin(shakePhase) * amplitude
+                val shakeY = cos(shakePhase * 1.37f) * amplitude * 0.82f
+                renderer2D.setOffset(shakeX, shakeY)
             } else {
-                0f
+                shakeIntensity = 0f
+                screenShakeDuration = 0f
+                renderer2D.setOffset(0f, 0f)
             }
-            val amplitude = (shakeIntensity * smoothStep(decay) * shakeAmplitudeScale).coerceAtMost(maxShakeAmplitude)
-            val shakeX = sin(shakePhase) * amplitude
-            val shakeY = cos(shakePhase * 1.37f) * amplitude * 0.82f
-            renderer2D.setOffset(shakeX, shakeY)
-        } else {
-            shakeIntensity = 0f
-            screenShakeDuration = 0f
-            renderer2D.setOffset(0f, 0f)
-        }
 
-        engine.render(renderer2D)
+            engine.render(renderer2D)
 
-        if (comboFlash > 0f) {
-            val t = (comboFlash / comboFlashDuration).coerceIn(0f, 1f)
-            val alpha = (smoothStep(t) * 0.33f).coerceIn(0f, 0.33f)
-            renderer2D.drawRect(0f, 0f, worldWidth, worldHeight, floatArrayOf(0.9f, 0.98f, 1f, alpha))
-        }
-
-        if (levelClearFlash > 0f) {
-            val t = (levelClearFlash / levelClearFlashDuration).coerceIn(0f, 1f)
-            val alpha = (smoothStep(t) * 0.42f).coerceIn(0f, 0.42f)
-            renderer2D.drawRect(0f, 0f, worldWidth, worldHeight, floatArrayOf(1f, 0.85f, 0.35f, alpha))
-        }
-
-        if (impactFlash > 0f) {
-            val alpha = (impactFlash * 0.6f).coerceIn(0f, 0.6f)
-            renderer2D.drawRect(0f, 0f, worldWidth, worldHeight, floatArrayOf(1f, 1f, 1f, alpha))
-        }
-
-        // Performance logging
-        if (!paused) {
-            val frameTime = (System.nanoTime() - frameStart) / 1_000_000f // Convert to milliseconds
-            val fps = if (delta > 0f) (1f / delta).toInt() else 0
-            logger?.logPerformanceMetric(fps.toFloat(), frameTime, engine.getObjectCount())
-            if (config.settings.showFpsCounter) {
-                listener.onFpsUpdate(fps)
+            if (comboFlash > 0f) {
+                val t = (comboFlash / comboFlashDuration).coerceIn(0f, 1f)
+                val alpha = (smoothStep(t) * 0.33f).coerceIn(0f, 0.33f)
+                renderer2D.drawRect(0f, 0f, worldWidth, worldHeight, floatArrayOf(0.9f, 0.98f, 1f, alpha))
             }
+
+            if (levelClearFlash > 0f) {
+                val t = (levelClearFlash / levelClearFlashDuration).coerceIn(0f, 1f)
+                val alpha = (smoothStep(t) * 0.42f).coerceIn(0f, 0.42f)
+                renderer2D.drawRect(0f, 0f, worldWidth, worldHeight, floatArrayOf(1f, 0.85f, 0.35f, alpha))
+            }
+
+            if (impactFlash > 0f) {
+                val alpha = (impactFlash * 0.6f).coerceIn(0f, 0.6f)
+                renderer2D.drawRect(0f, 0f, worldWidth, worldHeight, floatArrayOf(1f, 1f, 1f, alpha))
+            }
+
+            // Performance logging
+            if (!paused) {
+                val frameTime = (System.nanoTime() - frameStart) / 1_000_000f // Convert to milliseconds
+                val fps = if (delta > 0f) (1f / delta).toInt() else 0
+                logger.logPerformanceMetric(fps.toFloat(), frameTime, engine.getObjectCount())
+                if (config.settings.showFpsCounter) {
+                    listener.onFpsUpdate(fps)
+                }
+            }
+            if (recoveryAttempts > 0) {
+                recoveryAttempts = 0
+            }
+        } catch (t: Throwable) {
+            handleFatalRenderError(t)
         }
     }
 
@@ -219,6 +227,7 @@ class GameRenderer(
         reapplyViewportToEngine()
         lastTimeNs = 0L
         simulationAccumulator = 0f
+        recoveryAttempts = 0
     }
 
     fun nextLevel() {
@@ -228,16 +237,19 @@ class GameRenderer(
     fun reset(newConfig: GameConfig) {
         config = newConfig
         audioManager.updateSettings(newConfig.settings)
+        logger.setEnabled(newConfig.settings.loggingEnabled)
         engine = GameEngine(config, listener, audioManager, logger, config.dailyChallenges, this)
         engine.setDebugAutoPlay(debugAutoPlayEnabled)
         reapplyViewportToEngine()
         simulationAccumulator = 0f
+        recoveryAttempts = 0
     }
 
     fun updateSettings(settings: SettingsManager.Settings) {
         config = config.copy(settings = settings)
         engine.updateSettings(settings)
         audioManager.updateSettings(settings)
+        logger.setEnabled(settings.loggingEnabled)
     }
 
     fun updateUnlocks(unlocks: com.breakoutplus.UnlockManager.UnlockState) {
@@ -255,8 +267,33 @@ class GameRenderer(
     }
 
     private fun reapplyViewportToEngine() {
-        if (viewportWidthPx > 0 && viewportHeightPx > 0) {
-            engine.onResize(viewportWidthPx, viewportHeightPx)
+        viewportState.reapply { width, height -> engine.onResize(width, height) }
+    }
+
+    private fun handleFatalRenderError(t: Throwable) {
+        Log.e("GameRenderer", "Fatal render/update error", t)
+        logger.logError(
+            "render_crash",
+            mapOf(
+                "type" to (t::class.java.simpleName ?: "Throwable"),
+                "message" to (t.message ?: "unknown")
+            )
+        )
+        if (recoveryAttempts >= maxRecoveryAttempts) {
+            paused = true
+            return
+        }
+        recoveryAttempts += 1
+        runCatching {
+            paused = false
+            simulationAccumulator = 0f
+            lastTimeNs = 0L
+            engine = GameEngine(config, listener, audioManager, logger, config.dailyChallenges, this)
+            engine.setDebugAutoPlay(debugAutoPlayEnabled)
+            reapplyViewportToEngine()
+        }.onFailure { recoveryFailure ->
+            Log.e("GameRenderer", "Renderer recovery failed", recoveryFailure)
+            paused = true
         }
     }
 }
