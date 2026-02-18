@@ -4,6 +4,7 @@
 - Ship a foldable-optimized Android brick breaker with stable performance and complete gameplay coverage.
 - Maintain CLI-only build/test/deploy workflow.
 - Preserve feature breadth with no mode regressions.
+- Reduce implementation complexity in core runtime code without removing functionality.
 
 ## Target Platform (Current)
 - Android (primary): minSdk 26, targetSdk 35
@@ -42,8 +43,10 @@
 - No feature removals for existing Android modes
 - No intentional regressions in mode rules or progression flow
 - Build/test/lint must remain green in CI-style CLI runs
+- No placeholder/stub/mock gameplay paths in production code
 
 ## Success Criteria
 - `:app:assembleDebug`, `:app:testDebugUnitTest`, and `:app:lintDebug` succeed.
 - Latest debug APK installs and launches on connected Android device.
 - All 10 modes are playable end-to-end with expected mode identity.
+- Folded/unfolded/slate form-factor matrix shows stable HUD scaling and readable gameplay surfaces.

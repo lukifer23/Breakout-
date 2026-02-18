@@ -24,6 +24,20 @@ Optional env vars:
 - `BP_MODE_WAIT=6`
 - `BP_AUTO_PLAY=1`
 - `BP_AUTO_PLAY_SECONDS=20`
+- `BP_DEBUG_PROGRESSION_PROBE=1` (debug-only deterministic board-clear assist for GOD/ZEN progression checks)
+
+## Deterministic GOD/ZEN Progression Probe
+```bash
+tools/god_zen_progression_probe.sh
+```
+
+This verifies on-device that GOD/ZEN can complete a level and auto-advance to at least level 2 without fallback recovery.
+
+Optional env vars:
+- `BP_SERIAL=<adb-serial>`
+- `BP_PROGRESSION_MODES="GOD ZEN"`
+- `BP_PROGRESSION_RUN_SECONDS=35`
+- `BP_PROGRESSION_WAIT_PAD_SECONDS=8`
 
 ## Manual Gameplay Checklist
 - Launch app and verify Main, Mode Select, Scoreboard, Settings, How-To, Daily Challenges, Privacy screens.

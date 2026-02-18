@@ -12,6 +12,7 @@ WAIT_SECONDS="${BP_MODE_WAIT:-4}"
 MODES_RAW="${BP_GAME_MODES:-CLASSIC TIMED ENDLESS GOD RUSH VOLLEY TUNNEL SURVIVAL INVADERS ZEN}"
 AUTO_PLAY="${BP_AUTO_PLAY:-0}"
 AUTO_PLAY_SECONDS="${BP_AUTO_PLAY_SECONDS:-0}"
+DEBUG_PROGRESSION_PROBE="${BP_DEBUG_PROGRESSION_PROBE:-0}"
 
 if ! command -v "${ADB_BIN}" >/dev/null 2>&1; then
   echo "adb not found (set ADB_BIN if needed)." >&2
@@ -61,6 +62,9 @@ for mode in ${MODES_RAW}; do
     if [[ "${AUTO_PLAY_SECONDS}" =~ ^[0-9]+$ ]] && [[ "${AUTO_PLAY_SECONDS}" -gt 0 ]]; then
       START_ARGS+=(--ei extra_debug_autoplay_seconds "${AUTO_PLAY_SECONDS}")
     fi
+  fi
+  if [[ "${DEBUG_PROGRESSION_PROBE}" == "1" ]]; then
+    START_ARGS+=(--ez extra_debug_progression_probe true)
   fi
   adb_cmd "${START_ARGS[@]}" >/tmp/bp_mode_start.log 2>&1 || true
   cat /tmp/bp_mode_start.log | tail -n 8

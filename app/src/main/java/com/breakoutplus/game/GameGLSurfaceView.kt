@@ -113,6 +113,10 @@ class GameGLSurfaceView @JvmOverloads constructor(
         queueRendererAction("setDebugAutoPlay") { it.setDebugAutoPlay(enabled) }
     }
 
+    fun setDebugProgressionProbe(enabled: Boolean) {
+        queueRendererAction("setDebugProgressionProbe") { it.setDebugProgressionProbe(enabled) }
+    }
+
     fun captureSummary(callback: (GameSummary?) -> Unit) {
         val renderer = rendererImpl
         if (renderer == null) {

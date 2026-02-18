@@ -152,6 +152,8 @@ class GameEngine(
     private var debugAutoPlayEnabled = false
     private var debugAutoPlayActionTimer = 0f
     private var debugAutoPlayWave = 0f
+    private var debugProgressionProbeEnabled = false
+    private var debugProgressionProbeTimer = 0f
     private var volleyBallCount = 3
     private var volleyQueuedBalls = 0
     private var volleyLaunchTimer = 0f
@@ -164,6 +166,7 @@ class GameEngine(
     private var volleyReturnCount = 0
     private var volleyPreferredLaneCol = -1
     private var lastVolleySupplyTurn = -99
+    private var volleyCompactionCheckTimer = 0f
 
     private var tunnelShotsFired = 0
     private var tunnelGateFlash = 0f
@@ -303,6 +306,9 @@ class GameEngine(
         if (debugAutoPlayEnabled) {
             updateDebugAutoPlay(delta)
         }
+        if (debugProgressionProbeEnabled) {
+            updateDebugProgressionProbe(delta)
+        }
         if (updateTimers(dt)) {
             return
         }
@@ -341,7 +347,15 @@ class GameEngine(
                 resolveVolleyTurnIfReady()
             }
         }
-        compactDeadVolleyBricksIfNeeded()
+        if (config.mode == GameMode.VOLLEY) {
+            volleyCompactionCheckTimer -= dt
+            if (volleyCompactionCheckTimer <= 0f) {
+                volleyCompactionCheckTimer = 0.5f
+                compactDeadVolleyBricksIfNeeded()
+            }
+        } else {
+            volleyCompactionCheckTimer = 0f
+        }
         if (shieldHitPulse > 0f) {
             shieldHitPulse = max(0f, shieldHitPulse - dt * 2.6f)
         }
@@ -364,6 +378,11 @@ class GameEngine(
         }
         debugAutoPlayActionTimer = 0f
         debugAutoPlayWave = 0f
+    }
+
+    fun setDebugProgressionProbe(enabled: Boolean) {
+        debugProgressionProbeEnabled = enabled
+        debugProgressionProbeTimer = 0f
     }
 
     private fun updateDebugAutoPlay(dt: Float) {
@@ -406,6 +425,26 @@ class GameEngine(
             }
             else -> Unit
         }
+    }
+
+    private fun updateDebugProgressionProbe(dt: Float) {
+        if (dt <= 0f) return
+        if (!config.mode.godMode) return
+        if (state != GameState.RUNNING || awaitingNextLevel) return
+        debugProgressionProbeTimer -= dt
+        if (debugProgressionProbeTimer > 0f) return
+
+        val target = bricks.firstOrNull { it.alive && it.type != BrickType.UNBREAKABLE } ?: return
+        val probeBeam = Beam(
+            x = target.centerX,
+            y = target.centerY,
+            width = target.width.coerceAtLeast(0.8f),
+            height = target.height.coerceAtLeast(0.8f),
+            speed = 0f,
+            color = PowerUpType.LASER.color
+        )
+        handleBrickCollisionFromBeam(probeBeam, target)
+        debugProgressionProbeTimer = 0.03f
     }
 
     fun render(renderer: Renderer2D) {
@@ -2113,6 +2152,7 @@ class GameEngine(
         volleyReturnCount = 0
         volleyPreferredLaneCol = -1
         lastVolleySupplyTurn = -99
+        volleyCompactionCheckTimer = 0f
         tunnelShotsFired = 0
         tunnelGateFlash = 0f
         lastTunnelSupplyShot = 0
@@ -3121,12 +3161,12 @@ class GameEngine(
             volleyTurnCount < 6 -> 0.11f
             else -> 0f
         }
-        val breachY = paddle.y + paddle.height * 0.5f + 1.8f
-        val closestY = bricks.asSequence()
-            .filter { it.alive }
-            .minOfOrNull { it.y } ?: worldHeight
-        val laneWindow = worldHeight * 0.2f
-        val pressure = ((breachY + laneWindow - closestY) / laneWindow).coerceIn(0f, 1f)
+        val pressure = ModeBoardMetrics.volleyMetrics(
+            bricks = bricks,
+            paddleY = paddle.y,
+            paddleHeight = paddle.height,
+            worldHeight = worldHeight
+        ).pressure
         val nearBreach = pressure >= 0.45f
         val slateDensityBoost = if (currentAspectRatio < 1.45f) 0.04f else 0f
         val lowBallRelief = when {
@@ -3273,12 +3313,12 @@ class GameEngine(
 
     private fun volleyLanePressure(): Float {
         if (config.mode != GameMode.VOLLEY) return 0f
-        val breachY = paddle.y + paddle.height * 0.5f + 1.8f
-        val closestY = bricks.asSequence()
-            .filter { it.alive }
-            .minOfOrNull { it.y } ?: worldHeight
-        val laneWindow = worldHeight * 0.2f
-        return ((breachY + laneWindow - closestY) / laneWindow).coerceIn(0f, 1f)
+        return ModeBoardMetrics.volleyMetrics(
+            bricks = bricks,
+            paddleY = paddle.y,
+            paddleHeight = paddle.height,
+            worldHeight = worldHeight
+        ).pressure
     }
 
     private fun maybeSpawnVolleySupplyDrop(pressure: Float) {
@@ -3323,8 +3363,11 @@ class GameEngine(
 
     private fun hasVolleyBreach(): Boolean {
         if (config.mode != GameMode.VOLLEY) return false
-        val breachY = paddle.y + paddle.height * 0.5f + 1.8f
-        return bricks.any { it.alive && it.y <= breachY }
+        val breachY = ModeBoardMetrics.volleyBreachY(
+            paddleY = paddle.y,
+            paddleHeight = paddle.height
+        )
+        return ModeBoardMetrics.hasVolleyBreach(bricks = bricks, breachY = breachY)
     }
 
     private fun triggerVolleyBreachIfNeeded(): Boolean {
@@ -3427,11 +3470,11 @@ class GameEngine(
         val nearbyBricks = getNearbyBricks(ball)
         for (brick in nearbyBricks) {
             if (!brick.alive) continue
-            if (!circleIntersectsRect(ball, brick)) continue
+            if (!GameCollisionSystem.circleIntersectsRect(ball, brick)) continue
 
             // Resolve bounce before applying hit to ensure consistent collision response
             if (!fireballActive && !pierceActive) {
-                bounceBallFromBrick(ball, brick)
+                GameCollisionSystem.bounceBallFromBrick(ball, brick)
             }
             val destroyed = brick.applyHit(fireballActive || pierceActive)
 
@@ -3560,7 +3603,7 @@ class GameEngine(
             var hitBrick: Brick? = null
             for (brick in bricks) {
                 if (!brick.alive) continue
-                if (!beamIntersectsBrick(beam, brick)) continue
+                if (!GameCollisionSystem.beamIntersectsBrick(beam, brick)) continue
                 hitBrick = brick
                 break
             }
@@ -4123,15 +4166,20 @@ class GameEngine(
             powerupStatusTick = 0f
         }
         if (config.mode == GameMode.VOLLEY) {
-            val alive = bricks.count { it.alive && it.type != BrickType.UNBREAKABLE }
-            val breachY = paddle.y + paddle.height * 0.5f + 1.8f
-            val closestY = bricks.asSequence()
-                .filter { it.alive }
-                .minOfOrNull { it.y } ?: worldHeight
-            val laneClearance = (closestY - breachY).coerceAtLeast(0f)
-            val status = "Volley balls: $volleyBallCount • Turn ${volleyTurnCount + 1}"
-                .plus(" • Depth ${volleyAdvanceRows}")
-                .plus(" • Bricks $alive • Lane ${String.format(Locale.getDefault(), "%.1f", laneClearance)}")
+            val volleyMetrics = ModeBoardMetrics.volleyMetrics(
+                bricks = bricks,
+                paddleY = paddle.y,
+                paddleHeight = paddle.height,
+                worldHeight = worldHeight
+            )
+            val status = ModeStatusText.volley(
+                volleyBallCount = volleyBallCount,
+                turnNumber = volleyTurnCount + 1,
+                depthRows = volleyAdvanceRows,
+                aliveBreakables = volleyMetrics.aliveBreakables,
+                laneClearance = volleyMetrics.laneClearance,
+                locale = Locale.getDefault()
+            )
             if (force || status != lastPowerupStatus) {
                 lastPowerupStatus = status
                 listener.onPowerupStatus(status)
@@ -4140,19 +4188,18 @@ class GameEngine(
             return
         }
         if (config.mode == GameMode.TUNNEL) {
-            val segments = mutableListOf<String>()
-            segments.add("Shots: $tunnelShotsFired")
-            segments.add("Gate ${tunnelGateIntegrityPercent()}%")
-            val totalBreakables = bricks.count { it.type != BrickType.UNBREAKABLE }.coerceAtLeast(1)
-            val aliveBreakables = bricks.count { it.alive && it.type != BrickType.UNBREAKABLE }
-            val breachPercent = (((totalBreakables - aliveBreakables).toFloat() / totalBreakables.toFloat()) * 100f)
+            val gateIntegrityPercent = tunnelGateIntegrityPercent()
+            val counts = ModeBoardMetrics.breakableCounts(bricks)
+            val safeTotalBreakables = counts.totalBreakables.coerceAtLeast(1)
+            val breachPercent = (((safeTotalBreakables - counts.aliveBreakables).toFloat() / safeTotalBreakables.toFloat()) * 100f)
                 .roundToInt()
                 .coerceIn(0, 100)
-            segments.add("Breach $breachPercent%")
-            if (combo >= 2) {
-                segments.add("Combo x$combo")
-            }
-            val status = segments.joinToString(" • ")
+            val status = ModeStatusText.tunnel(
+                shotsFired = tunnelShotsFired,
+                gateIntegrityPercent = gateIntegrityPercent,
+                breachPercent = breachPercent,
+                combo = combo
+            )
             if (force || status != lastPowerupStatus) {
                 lastPowerupStatus = status
                 listener.onPowerupStatus(status)
@@ -4161,12 +4208,7 @@ class GameEngine(
             return
         }
         if (config.mode == GameMode.SURVIVAL) {
-            val segments = mutableListOf<String>()
-            segments.add("Speed: ${String.format(Locale.US, "%.1f", speedMultiplier)}x")
-            if (combo >= 2) {
-                segments.add("Combo x$combo")
-            }
-            val status = segments.joinToString(" • ")
+            val status = ModeStatusText.survival(speedMultiplier = speedMultiplier, combo = combo)
             if (force || status != lastPowerupStatus) {
                 lastPowerupStatus = status
                 listener.onPowerupStatus(status)
@@ -4186,18 +4228,15 @@ class GameEngine(
             return
         }
         val segments = mutableListOf<String>()
-        val effectText = if (activeEffects.isEmpty()) {
-            "Powerups: none"
-        } else {
-            sortedActiveEffects()
-                .joinToString(" • ", prefix = "Powerups: ") { (type, time) ->
-                    if (type == PowerUpType.SHIELD) {
-                        "${type.displayName} x$shieldCharges ${displaySeconds(time)}s"
-                    } else {
-                        "${type.displayName} ${displaySeconds(time)}s"
-                    }
-                }
-        }
+        val effectText = ModeStatusText.powerups(
+            sortedActiveEffects().map { (type, time) ->
+                ModeStatusText.EffectStatus(
+                    type = type,
+                    remainingSeconds = displaySeconds(time),
+                    charges = if (type == PowerUpType.SHIELD) shieldCharges else 0
+                )
+            }
+        )
         segments.add(effectText)
         if (combo >= 2) {
             segments.add("Combo x$combo")
@@ -4270,31 +4309,15 @@ class GameEngine(
         return ((index % cols) + cols) % cols
     }
 
-    private data class TunnelGateZone(
-        val minCol: Int,
-        val maxCol: Int,
-        val rows: IntRange
-    )
-
-    private fun tunnelGateZone(): TunnelGateZone? {
+    private fun tunnelGateZone(): ModeBoardMetrics.TunnelGateZone? {
         if (config.mode != GameMode.TUNNEL) return null
         val layout = currentLayout ?: return null
-        val cols = layout.cols.coerceAtLeast(1)
-        val boardCols = (cols + layoutColBoost).coerceAtLeast(cols)
-        val rows = layout.rows.coerceAtLeast(1)
-        val colOffset = layoutColBoost / 2
-        val center = cols / 2 + colOffset
-        val gateHalfWidth = when {
-            levelIndex < 4 -> 2
-            levelIndex < 10 -> 1
-            else -> 1
-        }
-        val gateMinCol = (center - gateHalfWidth).coerceAtLeast(0)
-        val gateMaxCol = (center + gateHalfWidth).coerceAtMost(boardCols - 1)
-        val fortressBottomRow = (rows - 4).coerceAtLeast(0)
-        val gateRowMin = (fortressBottomRow - 1).coerceAtLeast(0)
-        val gateRowMax = (fortressBottomRow + 2).coerceAtMost(rows - 1)
-        return TunnelGateZone(gateMinCol, gateMaxCol, gateRowMin..gateRowMax)
+        return ModeBoardMetrics.tunnelGateZone(
+            layoutCols = layout.cols,
+            layoutRows = layout.rows,
+            layoutColBoost = layoutColBoost,
+            levelIndex = levelIndex
+        )
     }
 
     private fun tunnelGateIntegrityPercent(): Int {
@@ -4302,25 +4325,10 @@ class GameEngine(
             return cachedTunnelGateIntegrityPercent
         }
         val gateZone = tunnelGateZone() ?: return 100
-        var totalGateBreakables = 0
-        var aliveGateBreakables = 0
-        for (brick in bricks) {
-            if (brick.type == BrickType.UNBREAKABLE) continue
-            if (brick.gridX !in gateZone.minCol..gateZone.maxCol) continue
-            if (brick.gridY !in gateZone.rows) continue
-            totalGateBreakables += 1
-            if (brick.alive) {
-                aliveGateBreakables += 1
-            }
-        }
-        if (totalGateBreakables == 0) {
-            cachedTunnelGateIntegrityPercent = 100
-            tunnelGateIntegrityDirty = false
-            return 100
-        }
-        cachedTunnelGateIntegrityPercent = ((aliveGateBreakables.toFloat() / totalGateBreakables.toFloat()) * 100f)
-            .roundToInt()
-            .coerceIn(0, 100)
+        cachedTunnelGateIntegrityPercent = ModeBoardMetrics.tunnelGateMetrics(
+            bricks = bricks,
+            gateZone = gateZone
+        ).integrityPercent
         tunnelGateIntegrityDirty = false
         return cachedTunnelGateIntegrityPercent
     }
@@ -4345,9 +4353,10 @@ class GameEngine(
 
     private fun tunnelBreakthroughPressure(): Float {
         if (config.mode != GameMode.TUNNEL) return 0f
-        val gateIntegrityPressure = tunnelGateIntegrityPercent() / 100f
-        val shotPressure = ((tunnelShotsFired - 6).coerceAtLeast(0) / 20f).coerceIn(0f, 1f)
-        return (gateIntegrityPressure * (0.78f + shotPressure * 0.22f)).coerceIn(0f, 1f)
+        return ModeBoardMetrics.tunnelBreakthroughPressure(
+            gateIntegrityPercent = tunnelGateIntegrityPercent(),
+            tunnelShotsFired = tunnelShotsFired
+        )
     }
 
     private fun maybeSpawnTunnelSupplyDrop() {
@@ -4475,8 +4484,8 @@ class GameEngine(
 
     private fun checkLevelCompletion() {
         if (state != GameState.RUNNING || awaitingNextLevel) return
-        val remaining = bricks.count { it.alive && it.type != BrickType.UNBREAKABLE }
-        if (remaining == 0) {
+        val hasRemainingBreakables = bricks.any { it.alive && it.type != BrickType.UNBREAKABLE }
+        if (!hasRemainingBreakables) {
             val levelDuration = elapsedSeconds - levelStartTime
             dailyChallenges?.let { challenges ->
                 if (!lostLifeThisLevel) {
@@ -4491,7 +4500,7 @@ class GameEngine(
                     }
                 }
             }
-            logger?.logLevelComplete(levelIndex + 1, score, elapsedSeconds, remaining)
+            logger?.logLevelComplete(levelIndex + 1, score, elapsedSeconds, 0)
             levelClearFlash = 1.0f
             renderer?.triggerLevelClearFlash()
             spawnLevelCompleteConfetti()
@@ -5298,53 +5307,6 @@ class GameEngine(
         return powerRight > paddleLeft && powerLeft < paddleRight && powerTop > paddleBottom && powerBottom < paddleTop
     }
 
-    private fun circleIntersectsRect(ball: Ball, brick: Brick): Boolean {
-        val closestX = ball.x.coerceIn(brick.x, brick.x + brick.width)
-        val closestY = ball.y.coerceIn(brick.y, brick.y + brick.height)
-        val dx = ball.x - closestX
-        val dy = ball.y - closestY
-        return dx * dx + dy * dy <= ball.radius * ball.radius
-    }
-
-    private fun bounceBallFromBrick(ball: Ball, brick: Brick) {
-        val overlapLeft = ball.x + ball.radius - brick.x
-        val overlapRight = brick.x + brick.width - (ball.x - ball.radius)
-        val overlapBottom = ball.y + ball.radius - brick.y
-        val overlapTop = brick.y + brick.height - (ball.y - ball.radius)
-
-        val minOverlapX = min(overlapLeft, overlapRight)
-        val minOverlapY = min(overlapBottom, overlapTop)
-
-        if (minOverlapX < minOverlapY) {
-            if (overlapLeft < overlapRight) {
-                ball.x = brick.x - ball.radius
-                ball.vx = -abs(ball.vx)
-            } else {
-                ball.x = brick.x + brick.width + ball.radius
-                ball.vx = abs(ball.vx)
-            }
-        } else {
-            if (overlapBottom < overlapTop) {
-                ball.y = brick.y - ball.radius
-                ball.vy = -abs(ball.vy)
-            } else {
-                ball.y = brick.y + brick.height + ball.radius
-                ball.vy = abs(ball.vy)
-            }
-        }
-    }
-
-    private fun beamIntersectsBrick(beam: Beam, brick: Brick): Boolean {
-        val beamLeft = beam.x - beam.width / 2f
-        val beamRight = beam.x + beam.width / 2f
-        val beamBottom = beam.y - beam.height / 2f
-        val beamTop = beam.y + beam.height / 2f
-        val brickLeft = brick.x
-        val brickRight = brick.x + brick.width
-        val brickBottom = brick.y
-        val brickTop = brick.y + brick.height
-        return beamRight > brickLeft && beamLeft < brickRight && beamTop > brickBottom && beamBottom < brickTop
-    }
 }
 
 enum class GameState {

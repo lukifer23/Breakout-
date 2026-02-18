@@ -60,6 +60,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     private var lastHudAvailHeightPx: Int = -1
     private var levelAdvanceInProgress = false
     private var debugAutoPlaySession = false
+    private var debugProgressionProbeSession = false
     private var debugAutoPlayStopRunnable: Runnable? = null
     private var hudResizeRunnable: Runnable? = null
     private val hudResizeDebounceMs = 120L
@@ -73,6 +74,12 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     private var shieldPulseToken = 0
     private var shieldLabelFlashToken = 0
     private var fadeAnimationToken = 0
+    private var tipBannerRunnable: Runnable? = null
+    private var queuedTipMessage: String? = null
+    private var lastTipMessage: String = ""
+    private var lastTipTimestampMs: Long = 0L
+    private val tipMinGapMs = 900L
+    private val tipDuplicateSuppressMs = 2800L
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -112,15 +119,30 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
                 }
             }
             debugAutoPlaySession = intent.getBooleanExtra(EXTRA_DEBUG_AUTOPLAY, false)
+            debugProgressionProbeSession = intent.getBooleanExtra(EXTRA_DEBUG_PROGRESSION_PROBE, false)
             if (debugAutoPlaySession) {
                 val runSeconds = intent.getIntExtra(EXTRA_DEBUG_AUTOPLAY_SECONDS, 0).coerceIn(0, 600)
                 binding.gameSurface.setDebugAutoPlay(true)
+                if (debugProgressionProbeSession) {
+                    binding.gameSurface.setDebugProgressionProbe(true)
+                }
                 if (runSeconds > 0) {
-                    val stopRunnable = Runnable { binding.gameSurface.setDebugAutoPlay(false) }
+                    val stopRunnable = Runnable {
+                        binding.gameSurface.setDebugAutoPlay(false)
+                        if (debugProgressionProbeSession) {
+                            binding.gameSurface.setDebugProgressionProbe(false)
+                        }
+                    }
                     debugAutoPlayStopRunnable = stopRunnable
                     binding.gameSurface.postDelayed(stopRunnable, runSeconds * 1000L)
                 }
                 Log.i("BreakoutAutoPlay", "event=session_start mode=${mode.name} seconds=${runSeconds}")
+                if (debugProgressionProbeSession) {
+                    Log.i("BreakoutAutoPlay", "event=progression_probe_enabled mode=${mode.name}")
+                }
+            } else if (debugProgressionProbeSession) {
+                binding.gameSurface.setDebugProgressionProbe(true)
+                Log.i("BreakoutAutoPlay", "event=progression_probe_enabled mode=${mode.name}")
             }
         }
 
@@ -176,13 +198,22 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         debugAutoPlayStopRunnable = null
         hudResizeRunnable?.let { binding.root.removeCallbacks(it) }
         hudResizeRunnable = null
+        tipBannerRunnable?.let { binding.root.removeCallbacks(it) }
+        tipBannerRunnable = null
+        queuedTipMessage = null
         if (debugAutoPlaySession) {
             binding.gameSurface.setDebugAutoPlay(false)
+        }
+        if (debugProgressionProbeSession) {
+            binding.gameSurface.setDebugProgressionProbe(false)
         }
         super.onPause()
     }
 
     override fun onDestroy() {
+        tipBannerRunnable?.let { binding.root.removeCallbacks(it) }
+        tipBannerRunnable = null
+        queuedTipMessage = null
         super.onDestroy()
     }
 
@@ -337,19 +368,14 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
 
     private fun applyHandedness(leftHanded: Boolean) {
         val params = binding.buttonPause.layoutParams as ConstraintLayout.LayoutParams
-        val isCentered =
-            params.startToStart == ConstraintLayout.LayoutParams.PARENT_ID &&
-                params.endToEnd == ConstraintLayout.LayoutParams.PARENT_ID
-        if (!isCentered) {
-            if (leftHanded) {
-                params.startToStart = ConstraintLayout.LayoutParams.PARENT_ID
-                params.endToEnd = ConstraintLayout.LayoutParams.UNSET
-            } else {
-                params.endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
-                params.startToStart = ConstraintLayout.LayoutParams.UNSET
-            }
-            binding.buttonPause.layoutParams = params
+        if (leftHanded) {
+            params.startToStart = ConstraintLayout.LayoutParams.PARENT_ID
+            params.endToEnd = ConstraintLayout.LayoutParams.UNSET
+        } else {
+            params.endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
+            params.startToStart = ConstraintLayout.LayoutParams.UNSET
         }
+        binding.buttonPause.layoutParams = params
 
         val laserParams = binding.buttonLaser.layoutParams as ConstraintLayout.LayoutParams
         if (leftHanded) {
@@ -509,6 +535,9 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             binding.hudLevel.text = getString(R.string.label_level_format, level)
             updateJourneyLabel(level)
             updateHudMeta()
+            if (debugAutoPlaySession) {
+                Log.i("BreakoutAutoPlay", "event=level_start mode=${config.mode.name} level=$level")
+            }
         }
     }
 
@@ -638,7 +667,49 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     }
 
     override fun onTip(message: String) {
-        // Intentionally no-op: bottom tip popups obstruct gameplay and are redundant with HUD.
+        if (!config.settings.tipsEnabled) return
+        val normalized = message.trim()
+        if (normalized.isBlank()) return
+        runOnUiThread {
+            if (isFinishing || isDestroyed) return@runOnUiThread
+            if (binding.pauseOverlay.visibility == View.VISIBLE || binding.endOverlay.visibility == View.VISIBLE) {
+                return@runOnUiThread
+            }
+            val now = System.currentTimeMillis()
+            if (normalized == lastTipMessage && now - lastTipTimestampMs < tipDuplicateSuppressMs) {
+                return@runOnUiThread
+            }
+            val sinceLast = now - lastTipTimestampMs
+            if (sinceLast >= tipMinGapMs) {
+                showBanner(normalized)
+                lastTipMessage = normalized
+                lastTipTimestampMs = now
+                queuedTipMessage = null
+                tipBannerRunnable?.let { binding.root.removeCallbacks(it) }
+                tipBannerRunnable = null
+                return@runOnUiThread
+            }
+            queuedTipMessage = normalized
+            val delayMs = (tipMinGapMs - sinceLast).coerceAtLeast(80L)
+            tipBannerRunnable?.let { binding.root.removeCallbacks(it) }
+            val runner = Runnable {
+                val queued = queuedTipMessage ?: return@Runnable
+                if (isFinishing || isDestroyed) return@Runnable
+                val emitTime = System.currentTimeMillis()
+                if (queued == lastTipMessage && emitTime - lastTipTimestampMs < tipDuplicateSuppressMs) {
+                    queuedTipMessage = null
+                    tipBannerRunnable = null
+                    return@Runnable
+                }
+                showBanner(queued)
+                lastTipMessage = queued
+                lastTipTimestampMs = emitTime
+                queuedTipMessage = null
+                tipBannerRunnable = null
+            }
+            tipBannerRunnable = runner
+            binding.root.postDelayed(runner, delayMs)
+        }
     }
 
     override fun onGameOver(summary: GameSummary) {
@@ -795,15 +866,24 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         binding.buttonEndPrimary.isEnabled = false
         binding.buttonEndSecondary.isEnabled = false
         cancelLevelAdvanceRecovery()
+        if (debugAutoPlaySession) {
+            Log.i("BreakoutAutoPlay", "event=next_level_request mode=${config.mode.name} from_level=${summary.level} target_level=${summary.level + 1} source=auto")
+        }
 
         val retry = Runnable {
             if (!levelAdvanceInProgress || isFinishing || isDestroyed) return@Runnable
             Log.w("GameActivity", "Auto level advance timed out; retrying nextLevel()")
+            if (debugAutoPlaySession) {
+                Log.i("BreakoutAutoPlay", "event=next_level_retry mode=${config.mode.name} from_level=${summary.level} target_level=${summary.level + 1}")
+            }
             binding.gameSurface.nextLevel()
 
             val fallback = Runnable {
                 if (!levelAdvanceInProgress || isFinishing || isDestroyed) return@Runnable
                 Log.e("GameActivity", "Auto level advance failed; restoring manual next-level overlay")
+                if (debugAutoPlaySession) {
+                    Log.i("BreakoutAutoPlay", "event=next_level_fallback mode=${config.mode.name} from_level=${summary.level} target_level=${summary.level + 1}")
+                }
                 levelAdvanceInProgress = false
                 binding.buttonEndPrimary.isEnabled = true
                 binding.buttonEndSecondary.isEnabled = true
@@ -1525,5 +1605,6 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         const val EXTRA_DEBUG_POWERUP = "extra_debug_powerup"
         const val EXTRA_DEBUG_AUTOPLAY = "extra_debug_autoplay"
         const val EXTRA_DEBUG_AUTOPLAY_SECONDS = "extra_debug_autoplay_seconds"
+        const val EXTRA_DEBUG_PROGRESSION_PROBE = "extra_debug_progression_probe"
     }
 }

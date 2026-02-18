@@ -14,8 +14,19 @@
 - Core gameplay: `GameEngine.kt`
 - Layout generation: `LevelFactory.kt`
 - Mode tuning: `GameMode.kt`, `ModeBalance.kt`
+- Mode status formatting: `ModeStatusText.kt`
 - Drawing primitives: `Renderer2D.kt`
 - Audio playback/feedback: `GameAudioManager.kt`
+
+## Current Hotspots (Complexity)
+- `GameEngine.kt` is the primary complexity concentration (gameplay, mode logic, collisions, FX, and status output mixed together).
+- `GameActivity.kt` contains significant UI/hud/orchestration logic that needs continued cleanup.
+- `LevelFactory.kt` is large and contains multiple generation strategies with high branching.
+
+Current decomposition strategy is incremental extraction with behavior parity:
+1. Extract pure status/formatting logic first.
+2. Extract collision and mode-state systems next.
+3. Extract powerup/effects lifecycle systems after that.
 
 ## Loop Details
 - Render mode: `RENDERMODE_WHEN_DIRTY` (not continuous).
@@ -38,6 +49,12 @@
 - Resource qualifiers for larger devices (`sw600dp`, `sw720dp`).
 - `FoldAwareActivity` applies hinge/inset-aware layout padding.
 - `GameActivity` applies responsive HUD scaling and reserved HUD height for varied aspect ratios.
+
+## Engineering Rules For Refactor Work
+- No feature removals.
+- No placeholder systems or mock behavior paths.
+- Keep mode identity intact while reducing class size and coupling.
+- Every extraction must keep build/test/lint green.
 
 ## Performance Notes
 - OpenGL ES 2.0 rendering path.

@@ -38,6 +38,7 @@ class GameRenderer(
     private var fixedStepSeconds = 1f / 120f
     private var simulationAccumulator = 0f
     private var debugAutoPlayEnabled = false
+    private var debugProgressionProbeEnabled = false
     private var recoveryAttempts = 0
     private val maxRecoveryAttempts = 2
     private var perfLogSampleTimer = 0f
@@ -215,6 +216,11 @@ class GameRenderer(
         engine.setDebugAutoPlay(enabled)
     }
 
+    fun setDebugProgressionProbe(enabled: Boolean) {
+        debugProgressionProbeEnabled = enabled
+        engine.setDebugProgressionProbe(enabled)
+    }
+
     fun isGameRunning(): Boolean {
         return !paused && engine.isGameRunning()
     }
@@ -242,6 +248,7 @@ class GameRenderer(
     fun restart() {
         engine = GameEngine(config, listener, audioManager, logger, config.dailyChallenges, this)
         engine.setDebugAutoPlay(debugAutoPlayEnabled)
+        engine.setDebugProgressionProbe(debugProgressionProbeEnabled)
         reapplyViewportToEngine()
         resetVisualEffects()
         lastTimeNs = 0L
@@ -262,6 +269,7 @@ class GameRenderer(
         logger.setEnabled(newConfig.settings.loggingEnabled)
         engine = GameEngine(config, listener, audioManager, logger, config.dailyChallenges, this)
         engine.setDebugAutoPlay(debugAutoPlayEnabled)
+        engine.setDebugProgressionProbe(debugProgressionProbeEnabled)
         reapplyViewportToEngine()
         resetVisualEffects()
         simulationAccumulator = 0f
