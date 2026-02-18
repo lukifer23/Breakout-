@@ -167,6 +167,9 @@ class GameEngine(
 
     private var tunnelShotsFired = 0
     private var tunnelGateFlash = 0f
+    private var lastTunnelSupplyShot = 0
+    private var cachedTunnelGateIntegrityPercent = 100
+    private var tunnelGateIntegrityDirty = true
 
     // Spatial hash for brick collisions (packed key avoids per-frame Pair allocation).
     private val spatialHashCellSize = 8f
@@ -270,6 +273,7 @@ class GameEngine(
             // Keep active gameplay geometry in sync across fold/unfold/rotation changes.
             relayoutBricks()
         }
+        markTunnelGateIntegrityDirty()
         lastResizeWidthPx = width
         lastResizeHeightPx = height
     }
@@ -1870,15 +1874,6 @@ class GameEngine(
 
     fun handleTouch(event: MotionEvent, viewWidth: Float, viewHeight: Float) {
         if (state == GameState.PAUSED || state == GameState.GAME_OVER) return
-        if (config.mode == GameMode.VOLLEY && state == GameState.RUNNING) {
-            if (event.actionMasked == MotionEvent.ACTION_POINTER_DOWN &&
-                activeEffects.containsKey(PowerUpType.LASER)
-            ) {
-                shootLaser()
-            }
-            // Allow paddle movement in VOLLEY RUNNING state
-            // Continue with normal touch handling below
-        }
 
         val clampWorldX = { screenX: Float ->
             clampPaddleX(screenX / viewWidth * worldWidth)
@@ -1912,11 +1907,14 @@ class GameEngine(
         val actionString = when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> "down"
             MotionEvent.ACTION_MOVE -> "move"
+            MotionEvent.ACTION_POINTER_DOWN -> "pointer_down"
+            MotionEvent.ACTION_POINTER_UP -> "pointer_up"
             MotionEvent.ACTION_UP -> "up"
+            MotionEvent.ACTION_CANCEL -> "cancel"
             else -> "other"
         }
-        if (shouldLogTouch(event.actionMasked, trackedX, trackedY, event.eventTime)) {
-            logger?.logTouchInput(actionString, trackedX, trackedY, trackedPressure)
+        if (logger != null && shouldLogTouch(event.actionMasked, trackedX, trackedY, event.eventTime)) {
+            logger.logTouchInput(actionString, trackedX, trackedY, trackedPressure)
         }
 
         when (event.actionMasked) {
@@ -2115,6 +2113,9 @@ class GameEngine(
         lastVolleySupplyTurn = -99
         tunnelShotsFired = 0
         tunnelGateFlash = 0f
+        lastTunnelSupplyShot = 0
+        cachedTunnelGateIntegrityPercent = 100
+        tunnelGateIntegrityDirty = true
         speedMultiplier = 1f
         levelClearFlash = 0f
         activeEffects.clear()
@@ -2460,6 +2461,7 @@ class GameEngine(
             invaderBricks.addAll(bricks.filter { it.type == BrickType.INVADER })
         }
         dynamicBrickLayout = config.mode.invaders || bricks.any { it.type == BrickType.MOVING }
+        markTunnelGateIntegrityDirty()
         buildSpatialHash()
     }
 
@@ -2855,6 +2857,7 @@ class GameEngine(
         if (config.mode == GameMode.TUNNEL) {
             tunnelShotsFired += 1
             tunnelGateFlash = 1f
+            maybeSpawnTunnelSupplyDrop()
         }
     }
 
@@ -3049,19 +3052,13 @@ class GameEngine(
         }
 
         relayoutBricks()
-        if (hasVolleyBreach()) {
-            logger?.logGameOver(score, levelIndex + 1, "volley_breach")
-            listener.onTip("Breach! Bricks reached the launch line.")
-            triggerGameOver()
+        if (triggerVolleyBreachIfNeeded()) {
             return
         }
 
         spawnVolleyTopRow()
         relayoutBricks()
-        if (hasVolleyBreach()) {
-            logger?.logGameOver(score, levelIndex + 1, "volley_breach")
-            listener.onTip("Breach! Bricks reached the launch line.")
-            triggerGameOver()
+        if (triggerVolleyBreachIfNeeded()) {
             return
         }
 
@@ -3328,6 +3325,14 @@ class GameEngine(
         return bricks.any { it.alive && it.y <= breachY }
     }
 
+    private fun triggerVolleyBreachIfNeeded(): Boolean {
+        if (!hasVolleyBreach()) return false
+        logger?.logGameOver(score, levelIndex + 1, "volley_breach")
+        listener.onTip("Breach! Bricks reached the launch line.")
+        triggerGameOver()
+        return true
+    }
+
     private fun updateBallTrails(dt: Float) {
         balls.forEach { ball ->
             val speed = sqrt(ball.vx * ball.vx + ball.vy * ball.vy)
@@ -3431,6 +3436,7 @@ class GameEngine(
             if (destroyed) {
                 updateDailyChallenges(ChallengeType.BRICKS_DESTROYED)
                 runBricksBroken += 1
+                onBrickDestroyed(brick)
                 spawnBrickDestructionFx(brick, ball.x, ball.y, intensity = 1f)
 
                 if (brick.type == BrickType.BOSS) {
@@ -3542,6 +3548,7 @@ class GameEngine(
                 addScore(brick.scoreValue)
                 updateDailyChallenges(ChallengeType.BRICKS_DESTROYED)
                 runBricksBroken += 1
+                onBrickDestroyed(brick)
 
                 // Visual effects
                 renderer?.triggerScreenShake(2f, 0.15f)
@@ -4316,17 +4323,26 @@ class GameEngine(
     }
 
     private fun tunnelGateIntegrityPercent(): Int {
+        if (!tunnelGateIntegrityDirty) {
+            return cachedTunnelGateIntegrityPercent
+        }
         val gateZone = tunnelGateZone() ?: return 100
         val gateBreakables = bricks.filter { brick ->
             brick.type != BrickType.UNBREAKABLE &&
                 brick.gridX in gateZone.minCol..gateZone.maxCol &&
                 brick.gridY in gateZone.rows
         }
-        if (gateBreakables.isEmpty()) return 100
+        if (gateBreakables.isEmpty()) {
+            cachedTunnelGateIntegrityPercent = 100
+            tunnelGateIntegrityDirty = false
+            return 100
+        }
         val aliveGateBreakables = gateBreakables.count { it.alive }
-        return ((aliveGateBreakables.toFloat() / gateBreakables.size.toFloat()) * 100f)
+        cachedTunnelGateIntegrityPercent = ((aliveGateBreakables.toFloat() / gateBreakables.size.toFloat()) * 100f)
             .roundToInt()
             .coerceIn(0, 100)
+        tunnelGateIntegrityDirty = false
+        return cachedTunnelGateIntegrityPercent
     }
 
     private fun isTunnelGateBrick(brick: Brick): Boolean {
@@ -4335,11 +4351,76 @@ class GameEngine(
             brick.gridY in gateZone.rows
     }
 
+    private fun markTunnelGateIntegrityDirty() {
+        if (config.mode == GameMode.TUNNEL) {
+            tunnelGateIntegrityDirty = true
+        }
+    }
+
+    private fun onBrickDestroyed(brick: Brick) {
+        if (config.mode == GameMode.TUNNEL && isTunnelGateBrick(brick)) {
+            tunnelGateIntegrityDirty = true
+        }
+    }
+
     private fun tunnelBreakthroughPressure(): Float {
         if (config.mode != GameMode.TUNNEL) return 0f
         val gateIntegrityPressure = tunnelGateIntegrityPercent() / 100f
         val shotPressure = ((tunnelShotsFired - 6).coerceAtLeast(0) / 20f).coerceIn(0f, 1f)
         return (gateIntegrityPressure * (0.78f + shotPressure * 0.22f)).coerceIn(0f, 1f)
+    }
+
+    private fun maybeSpawnTunnelSupplyDrop() {
+        if (config.mode != GameMode.TUNNEL || state == GameState.PAUSED || state == GameState.GAME_OVER || awaitingNextLevel) return
+        val shotsSinceDrop = tunnelShotsFired - lastTunnelSupplyShot
+        if (shotsSinceDrop <= 0) return
+
+        val gatePressure = tunnelBreakthroughPressure()
+        val gateIntegrity = tunnelGateIntegrityPercent()
+        val requiredShots = when {
+            gatePressure >= 0.78f -> 5
+            gatePressure >= 0.6f -> 7
+            else -> 9
+        }
+        if (shotsSinceDrop < requiredShots) return
+
+        val hasBreakthroughActive =
+            activeEffects.containsKey(PowerUpType.PIERCE) ||
+                activeEffects.containsKey(PowerUpType.FIREBALL) ||
+                activeEffects.containsKey(PowerUpType.LASER)
+        val hasBreakthroughDropQueued = powerups.any { power ->
+            power.type == PowerUpType.PIERCE ||
+                power.type == PowerUpType.FIREBALL ||
+                power.type == PowerUpType.LASER
+        }
+
+        val chance = (
+            0.2f +
+                gatePressure * 0.42f +
+                (if (gateIntegrity >= 70) 0.12f else 0f) -
+                (if (hasBreakthroughActive) 0.16f else 0f) -
+                (if (hasBreakthroughDropQueued) 0.1f else 0f)
+            ).coerceIn(0.16f, 0.78f)
+        if (random.nextFloat() > chance) return
+
+        val cols = ((currentLayout?.cols ?: 12) + layoutColBoost).coerceAtLeast(1)
+        val gateZone = tunnelGateZone()
+        val centerCol = if (gateZone != null) {
+            ((gateZone.minCol + gateZone.maxCol) * 0.5f).roundToInt().coerceIn(0, cols - 1)
+        } else {
+            cols / 2
+        }
+        val colWidth = worldWidth / cols.toFloat()
+        val laneX = (centerCol + 0.5f) * colWidth
+        val spread = (colWidth * 1.3f).coerceIn(2.5f, 9f)
+        val spawnX = (laneX + (random.nextFloat() - 0.5f) * spread).coerceIn(8f, worldWidth - 8f)
+        val spawnY = (worldHeight * if (gatePressure >= 0.68f) 0.52f else 0.6f)
+            .coerceIn(paddle.y + 12f, worldHeight * 0.82f)
+        spawnPowerup(spawnX, spawnY, randomPowerupType(PowerupSelectionHint.TUNNEL_BREAKTHROUGH))
+        lastTunnelSupplyShot = tunnelShotsFired
+        if (gatePressure >= 0.72f) {
+            listener.onTip("Tunnel supply drop inbound.")
+        }
     }
 
     private fun buildPowerupSnapshot(): List<PowerupStatus> {
@@ -4567,6 +4648,7 @@ class GameEngine(
                 addScore(neighbor.scoreValue)
                 updateDailyChallenges(ChallengeType.BRICKS_DESTROYED)
                 runBricksBroken += 1
+                onBrickDestroyed(neighbor)
                 spawnBrickDestructionFx(neighbor, brick.centerX, brick.centerY, intensity = 0.92f)
                 maybeSpawnPowerup(neighbor)
             }
@@ -5163,6 +5245,7 @@ class GameEngine(
                 }
                 if (created > 0) {
                     relayoutBricks()
+                    markTunnelGateIntegrityDirty()
                     return
                 }
             }
@@ -5193,6 +5276,7 @@ class GameEngine(
             bricks.add(childBrick)
         }
         spatialHashDirty = true
+        markTunnelGateIntegrityDirty()
     }
 
     private fun powerIntersectsPaddle(power: PowerUp): Boolean {
