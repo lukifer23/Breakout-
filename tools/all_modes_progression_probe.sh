@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "${ROOT_DIR}"
+
+export BP_PROGRESSION_MODES="${BP_PROGRESSION_MODES:-CLASSIC TIMED ENDLESS GOD RUSH VOLLEY TUNNEL SURVIVAL INVADERS ZEN}"
+export BP_PROGRESSION_RUN_SECONDS="${BP_PROGRESSION_RUN_SECONDS:-30}"
+export BP_PROGRESSION_WAIT_PAD_SECONDS="${BP_PROGRESSION_WAIT_PAD_SECONDS:-8}"
+
+"${ROOT_DIR}/tools/god_zen_progression_probe.sh"

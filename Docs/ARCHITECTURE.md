@@ -15,6 +15,8 @@
 - Layout generation: `LevelFactory.kt`
 - Mode tuning: `GameMode.kt`, `ModeBalance.kt`
 - Mode status formatting: `ModeStatusText.kt`
+- Tunnel mode pacing/supply logic: `TunnelModeSystem.kt`
+- Powerup drop-rate model: `PowerupDropModel.kt`
 - Drawing primitives: `Renderer2D.kt`
 - Audio playback/feedback: `GameAudioManager.kt`
 

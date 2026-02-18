@@ -36,7 +36,18 @@ This verifies on-device that GOD/ZEN can complete a level and auto-advance to at
 Optional env vars:
 - `BP_SERIAL=<adb-serial>`
 - `BP_PROGRESSION_MODES="GOD ZEN"`
-- `BP_PROGRESSION_RUN_SECONDS=35`
+- `BP_PROGRESSION_RUN_SECONDS=35` (minimum effective value is 20)
+- `BP_PROGRESSION_WAIT_PAD_SECONDS=8`
+
+## Deterministic All-Modes Progression Probe
+```bash
+tools/all_modes_progression_probe.sh
+```
+
+Optional env vars:
+- `BP_SERIAL=<adb-serial>`
+- `BP_PROGRESSION_MODES="CLASSIC TIMED ENDLESS GOD RUSH VOLLEY TUNNEL SURVIVAL INVADERS ZEN"`
+- `BP_PROGRESSION_RUN_SECONDS=30` (minimum effective value is 20)
 - `BP_PROGRESSION_WAIT_PAD_SECONDS=8`
 
 ## Manual Gameplay Checklist

@@ -429,7 +429,6 @@ class GameEngine(
 
     private fun updateDebugProgressionProbe(dt: Float) {
         if (dt <= 0f) return
-        if (!config.mode.godMode) return
         if (state != GameState.RUNNING || awaitingNextLevel) return
         debugProgressionProbeTimer -= dt
         if (debugProgressionProbeTimer > 0f) return
@@ -4366,12 +4365,6 @@ class GameEngine(
 
         val gatePressure = tunnelBreakthroughPressure()
         val gateIntegrity = tunnelGateIntegrityPercent()
-        val requiredShots = when {
-            gatePressure >= 0.78f -> 5
-            gatePressure >= 0.6f -> 7
-            else -> 9
-        }
-        if (shotsSinceDrop < requiredShots) return
 
         val hasBreakthroughActive =
             activeEffects.containsKey(PowerUpType.PIERCE) ||
@@ -4379,33 +4372,35 @@ class GameEngine(
                 activeEffects.containsKey(PowerUpType.LASER)
         val hasBreakthroughDropQueued = powerups.any { power ->
             power.type == PowerUpType.PIERCE ||
-                power.type == PowerUpType.FIREBALL ||
+            power.type == PowerUpType.FIREBALL ||
                 power.type == PowerUpType.LASER
         }
 
-        val chance = (
-            0.2f +
-                gatePressure * 0.42f +
-                (if (gateIntegrity >= 70) 0.12f else 0f) -
-                (if (hasBreakthroughActive) 0.16f else 0f) -
-                (if (hasBreakthroughDropQueued) 0.1f else 0f)
-            ).coerceIn(0.16f, 0.78f)
-        if (random.nextFloat() > chance) return
+        val gate = TunnelModeSystem.supplyDropGate(
+            gatePressure = gatePressure,
+            gateIntegrityPercent = gateIntegrity,
+            hasBreakthroughActive = hasBreakthroughActive,
+            hasBreakthroughDropQueued = hasBreakthroughDropQueued
+        )
+        if (shotsSinceDrop < gate.requiredShots) return
+        if (random.nextFloat() > gate.chance) return
 
         val cols = ((currentLayout?.cols ?: 12) + layoutColBoost).coerceAtLeast(1)
-        val gateZone = tunnelGateZone()
-        val centerCol = if (gateZone != null) {
-            ((gateZone.minCol + gateZone.maxCol) * 0.5f).roundToInt().coerceIn(0, cols - 1)
-        } else {
-            cols / 2
-        }
-        val colWidth = worldWidth / cols.toFloat()
-        val laneX = (centerCol + 0.5f) * colWidth
-        val spread = (colWidth * 1.3f).coerceIn(2.5f, 9f)
-        val spawnX = (laneX + (random.nextFloat() - 0.5f) * spread).coerceIn(8f, worldWidth - 8f)
-        val spawnY = (worldHeight * if (gatePressure >= 0.68f) 0.52f else 0.6f)
-            .coerceIn(paddle.y + 12f, worldHeight * 0.82f)
-        spawnPowerup(spawnX, spawnY, randomPowerupType(PowerupSelectionHint.TUNNEL_BREAKTHROUGH))
+        val lane = TunnelModeSystem.supplyLane(
+            worldWidth = worldWidth,
+            boardCols = cols,
+            gateZone = tunnelGateZone()
+        )
+        val spawn = TunnelModeSystem.supplySpawnPoint(
+            worldWidth = worldWidth,
+            worldHeight = worldHeight,
+            paddleY = paddle.y,
+            laneX = lane.laneX,
+            spread = lane.spread,
+            gatePressure = gatePressure,
+            xJitterUnit = random.nextFloat()
+        )
+        spawnPowerup(spawn.x, spawn.y, randomPowerupType(PowerupSelectionHint.TUNNEL_BREAKTHROUGH))
         lastTunnelSupplyShot = tunnelShotsFired
         if (gatePressure >= 0.72f) {
             listener.onTip("Tunnel supply drop inbound.")
@@ -4585,32 +4580,29 @@ class GameEngine(
 
     private fun maybeSpawnPowerup(brick: Brick) {
         if (config.mode == GameMode.VOLLEY) return
-        val baseChance = when (brick.type) {
-            BrickType.EXPLOSIVE -> 0.30f
-            BrickType.REINFORCED, BrickType.ARMORED -> 0.2f
-            BrickType.BOSS, BrickType.PHASE -> 0.27f
-            BrickType.SPAWNING -> 0.18f
-            BrickType.MOVING -> 0.15f
-            BrickType.INVADER -> 0.16f
-            else -> 0.12f
-        }
-        val levelBoost = (levelIndex * 0.0035f).coerceAtMost(0.06f)
+        val baseChance = PowerupDropModel.baseChance(brick.type)
         val modeBoost = ModeBalance.pacingFor(config.mode).dropChanceModeBoost
         var selectionHint = PowerupSelectionHint.DEFAULT
         var dynamicBoost = 0f
         if (config.mode == GameMode.TUNNEL) {
             val gatePressure = tunnelBreakthroughPressure()
             val gateBrick = isTunnelGateBrick(brick)
-            val stallBoost = ((tunnelShotsFired - 8).coerceAtLeast(0) / 16f).coerceAtMost(1f) * gatePressure * 0.04f
-            dynamicBoost += gatePressure * 0.06f + stallBoost
-            if (gateBrick) {
-                dynamicBoost += 0.07f
-            }
-            if (gateBrick || gatePressure >= 0.62f) {
+            val pacing = TunnelModeSystem.breakthroughPacing(
+                gatePressure = gatePressure,
+                tunnelShotsFired = tunnelShotsFired,
+                gateBrickHit = gateBrick
+            )
+            dynamicBoost += pacing.dynamicBoost
+            if (pacing.preferBreakthroughHint) {
                 selectionHint = PowerupSelectionHint.TUNNEL_BREAKTHROUGH
             }
         }
-        val dropChance = (baseChance + levelBoost + modeBoost + dynamicBoost).coerceIn(0.08f, 0.48f)
+        val dropChance = PowerupDropModel.dropChance(
+            baseChance = baseChance,
+            levelIndex = levelIndex,
+            modeBoost = modeBoost,
+            dynamicBoost = dynamicBoost
+        )
         if (random.nextFloat() < dropChance) {
             spawnPowerup(brick.centerX, brick.centerY, randomPowerupType(selectionHint))
         }

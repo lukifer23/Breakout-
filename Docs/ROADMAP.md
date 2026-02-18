@@ -52,6 +52,7 @@ Deliver a stable, consistent, performant Android release with no feature removal
 - `./gradlew :app:assembleDebug`
 - Device smoke run across all modes (`tools/mode_smoke_test.sh`)
 - Deterministic GOD/ZEN progression probe (`tools/god_zen_progression_probe.sh`)
+- Deterministic all-modes progression probe (`tools/all_modes_progression_probe.sh`)
 
 ## Non-Negotiables
 - No stubs, placeholders, fake behavior, or temporary feature bypasses.

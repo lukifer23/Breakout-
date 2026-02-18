@@ -12,6 +12,16 @@ RUN_SECONDS="${BP_PROGRESSION_RUN_SECONDS:-35}"
 WAIT_PAD_SECONDS="${BP_PROGRESSION_WAIT_PAD_SECONDS:-8}"
 MODES_RAW="${BP_PROGRESSION_MODES:-GOD ZEN}"
 
+if ! [[ "${RUN_SECONDS}" =~ ^[0-9]+$ ]]; then
+  RUN_SECONDS=35
+fi
+if [[ "${RUN_SECONDS}" -lt 20 ]]; then
+  RUN_SECONDS=20
+fi
+if ! [[ "${WAIT_PAD_SECONDS}" =~ ^[0-9]+$ ]]; then
+  WAIT_PAD_SECONDS=8
+fi
+
 if ! command -v "${ADB_BIN}" >/dev/null 2>&1; then
   echo "adb not found (set ADB_BIN if needed)." >&2
   exit 1
@@ -23,6 +33,26 @@ adb_cmd() {
   else
     "${ADB_BIN}" "$@"
   fi
+}
+
+ensure_device_awake() {
+  adb_cmd shell input keyevent KEYCODE_WAKEUP >/dev/null 2>&1 || true
+  adb_cmd shell wm dismiss-keyguard >/dev/null 2>&1 || true
+  adb_cmd shell input keyevent 82 >/dev/null 2>&1 || true
+}
+
+wait_with_keep_awake() {
+  local total_seconds="$1"
+  local remaining="${total_seconds}"
+  while [[ "${remaining}" -gt 0 ]]; do
+    local slice=5
+    if [[ "${remaining}" -lt "${slice}" ]]; then
+      slice="${remaining}"
+    fi
+    sleep "${slice}"
+    ensure_device_awake
+    remaining=$((remaining - slice))
+  done
 }
 
 has_fatal_crash() {
@@ -65,6 +95,7 @@ failures=0
 for mode in ${MODES_RAW}; do
   echo
   echo "[mode:${mode}] launch"
+  ensure_device_awake
   adb_cmd logcat -c >/dev/null 2>&1 || true
   adb_cmd shell am force-stop "${PACKAGE}" >/dev/null 2>&1 || true
   adb_cmd shell am start -W -n "${FULL_ACTIVITY}" \
@@ -80,7 +111,7 @@ for mode in ${MODES_RAW}; do
     continue
   fi
 
-  sleep "$((RUN_SECONDS + WAIT_PAD_SECONDS))"
+  wait_with_keep_awake "$((RUN_SECONDS + WAIT_PAD_SECONDS))"
   log_file="/tmp/bp_progression_${mode}.log"
   adb_cmd logcat -d >"${log_file}"
   if has_fatal_crash "${log_file}"; then

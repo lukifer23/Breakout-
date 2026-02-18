@@ -79,6 +79,11 @@ tools/mode_smoke_test.sh
 tools/god_zen_progression_probe.sh
 ```
 
+### All-Modes Progression Probe
+```bash
+tools/all_modes_progression_probe.sh
+```
+
 ## Repository Structure
 ```text
 app/        Android app (active release track)

@@ -167,8 +167,8 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             }
         )
 
-        // Show first-run tooltip if tips enabled
-        if (settings.tipsEnabled) {
+        // Keep debug automation sessions unblocked by tutorial overlays.
+        if (settings.tipsEnabled && !debugAutoPlaySession && !debugProgressionProbeSession) {
             showTooltip()
         }
 
@@ -843,7 +843,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             ProgressionManager.updateBestLevel(this, summary.level)
             currentXpTotal = ProgressionManager.addXp(this, ProgressionManager.xpForLevel(summary.level))
             updateHudMeta()
-            if (config.mode == GameMode.ZEN || config.mode == GameMode.GOD) {
+            if (debugProgressionProbeSession || config.mode == GameMode.ZEN || config.mode == GameMode.GOD) {
                 endOverlayState = EndOverlayState.NONE
                 hideOverlay(binding.endOverlay)
                 showLevelBanner(summary.level + 1)
