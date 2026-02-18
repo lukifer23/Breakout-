@@ -341,6 +341,7 @@ class GameEngine(
                 resolveVolleyTurnIfReady()
             }
         }
+        compactDeadVolleyBricksIfNeeded()
         if (shieldHitPulse > 0f) {
             shieldHitPulse = max(0f, shieldHitPulse - dt * 2.6f)
         }
@@ -1598,15 +1599,16 @@ class GameEngine(
         if (!preserveRowBoost) {
             val densityBoost = (levelIndex / 6).coerceAtMost(2)
             val slateExtraRows = when {
-                aspectRatio < 1.22f -> 2
-                aspectRatio < 1.34f -> 1
+                aspectRatio < 1.22f -> 3
+                aspectRatio < 1.34f -> 2
+                aspectRatio < 1.46f -> 1
                 else -> 0
             }
             val slateRowBoost = when {
-                aspectRatio < 1.24f -> 4
-                aspectRatio < 1.35f -> 3
-                aspectRatio < 1.48f -> 2
-                aspectRatio < 1.6f -> 1
+                aspectRatio < 1.24f -> 5
+                aspectRatio < 1.35f -> 4
+                aspectRatio < 1.48f -> 3
+                aspectRatio < 1.6f -> 2
                 else -> 0
             }
             val slateColBoost = when {
@@ -1632,7 +1634,7 @@ class GameEngine(
                 else -> 0
             }
 
-            val baseRowBoost = (if (isSlate) 6 else 4) + densityBoost + slateRowBoost + wideRowBoost + tallRowBoost + slateExtraRows
+            val baseRowBoost = (if (isSlate) 7 else 4) + densityBoost + slateRowBoost + wideRowBoost + tallRowBoost + slateExtraRows
             val baseColBoost = (if (isSlate) 4 else 3) + densityBoost + slateColBoost + wideColBoost
 
             when (config.mode) {
@@ -1650,9 +1652,9 @@ class GameEngine(
                 }
                 GameMode.VOLLEY -> {
                     val volleyRowBase = when {
-                        aspectRatio < 1.3f -> 6
-                        aspectRatio < 1.45f -> 5
-                        aspectRatio < 1.6f -> 3
+                        aspectRatio < 1.3f -> 7
+                        aspectRatio < 1.45f -> 6
+                        aspectRatio < 1.6f -> 4
                         aspectRatio > 2.2f -> 2
                         else -> 2
                     }
@@ -1663,9 +1665,9 @@ class GameEngine(
                 }
                 GameMode.TUNNEL -> {
                     val tunnelRowBase = when {
-                        aspectRatio < 1.3f -> 7
-                        aspectRatio < 1.45f -> 6
-                        aspectRatio < 1.6f -> 4
+                        aspectRatio < 1.3f -> 8
+                        aspectRatio < 1.45f -> 7
+                        aspectRatio < 1.6f -> 5
                         aspectRatio > 2.2f -> 2
                         else -> 3
                     }
@@ -3498,19 +3500,7 @@ class GameEngine(
                 // Log brick destruction
                 logger?.logBrickDestroyed(brick.type, Pair(brick.centerX, brick.centerY), combo)
 
-                // Play appropriate sound for brick type
-                val brickSound = when (brick.type) {
-                    BrickType.NORMAL -> GameSound.BRICK_NORMAL
-                    BrickType.REINFORCED -> GameSound.BRICK_REINFORCED
-                    BrickType.ARMORED -> GameSound.BRICK_ARMORED
-                    BrickType.EXPLOSIVE -> GameSound.BRICK_EXPLOSIVE
-                    BrickType.UNBREAKABLE -> GameSound.BRICK_UNBREAKABLE
-                    BrickType.MOVING -> GameSound.BRICK_MOVING
-                    BrickType.SPAWNING -> GameSound.BRICK_SPAWNING
-                    BrickType.PHASE -> GameSound.BRICK_PHASE
-                    BrickType.BOSS -> GameSound.BRICK_BOSS
-                    BrickType.INVADER -> GameSound.BRICK_NORMAL
-                }
+                val brickSound = brickSoundFor(brick.type)
 
                 // Calculate dynamic rate with combo scaling and random variation
                 val baseRate = brickSoundRate(brick.type)
@@ -3539,60 +3529,45 @@ class GameEngine(
         }
     }
 
-    private fun handleBrickCollisionFromBeam(beam: Beam) {
-        for (brick in bricks.toList()) {
-            if (!brick.alive) continue
-            if (!beamIntersectsBrick(beam, brick)) continue
-            val destroyed = brick.applyHit(true)
-            if (destroyed) {
-                addScore(brick.scoreValue)
-                updateDailyChallenges(ChallengeType.BRICKS_DESTROYED)
-                runBricksBroken += 1
-                onBrickDestroyed(brick)
+    private fun handleBrickCollisionFromBeam(beam: Beam, brick: Brick) {
+        val destroyed = brick.applyHit(true)
+        if (destroyed) {
+            addScore(brick.scoreValue)
+            updateDailyChallenges(ChallengeType.BRICKS_DESTROYED)
+            runBricksBroken += 1
+            onBrickDestroyed(brick)
 
-                // Visual effects
-                renderer?.triggerScreenShake(2f, 0.15f)
-                spawnBrickDestructionFx(brick, beam.x, beam.y, intensity = 0.84f)
-                // Play appropriate sound for brick type (softer for beam hits)
-                val brickSound = when (brick.type) {
-                    BrickType.NORMAL -> GameSound.BRICK_NORMAL
-                    BrickType.REINFORCED -> GameSound.BRICK_REINFORCED
-                    BrickType.ARMORED -> GameSound.BRICK_ARMORED
-                    BrickType.EXPLOSIVE -> GameSound.BRICK_EXPLOSIVE
-                    BrickType.UNBREAKABLE -> GameSound.BRICK_UNBREAKABLE
-                    BrickType.MOVING -> GameSound.BRICK_MOVING
-                    BrickType.SPAWNING -> GameSound.BRICK_SPAWNING
-                    BrickType.PHASE -> GameSound.BRICK_PHASE
-                    BrickType.BOSS -> GameSound.BRICK_BOSS
-                    BrickType.INVADER -> GameSound.BRICK_NORMAL
-                }
-                audio.play(brickSound, 0.4f, brickSoundRate(brick.type)) // Softer for beam hits
-                maybeSpawnPowerup(brick)
-                if (brick.type == BrickType.EXPLOSIVE) {
-                    triggerExplosion(brick)
-                }
-                if (brick.type == BrickType.SPAWNING) {
-                    spawnChildBricks(brick)
-                }
+            // Visual effects
+            renderer?.triggerScreenShake(2f, 0.15f)
+            spawnBrickDestructionFx(brick, beam.x, beam.y, intensity = 0.84f)
+            val brickSound = brickSoundFor(brick.type)
+            audio.play(brickSound, 0.4f, brickSoundRate(brick.type)) // Softer for beam hits
+            maybeSpawnPowerup(brick)
+            if (brick.type == BrickType.EXPLOSIVE) {
+                triggerExplosion(brick)
             }
-            reportScore()
-            break
+            if (brick.type == BrickType.SPAWNING) {
+                spawnChildBricks(brick)
+            }
         }
+        reportScore()
     }
 
     private fun handleBeamCollision() {
         val iterator = beams.iterator()
         while (iterator.hasNext()) {
             val beam = iterator.next()
-            var hit = false
-            for (brick in bricks.toList()) {
+            var hitBrick: Brick? = null
+            for (brick in bricks) {
                 if (!brick.alive) continue
                 if (!beamIntersectsBrick(beam, brick)) continue
-                hit = true
-                handleBrickCollisionFromBeam(beam)
+                hitBrick = brick
                 break
             }
-            if (hit) iterator.remove()
+            if (hitBrick != null) {
+                handleBrickCollisionFromBeam(beam, hitBrick)
+                iterator.remove()
+            }
         }
     }
 
@@ -4327,18 +4302,23 @@ class GameEngine(
             return cachedTunnelGateIntegrityPercent
         }
         val gateZone = tunnelGateZone() ?: return 100
-        val gateBreakables = bricks.filter { brick ->
-            brick.type != BrickType.UNBREAKABLE &&
-                brick.gridX in gateZone.minCol..gateZone.maxCol &&
-                brick.gridY in gateZone.rows
+        var totalGateBreakables = 0
+        var aliveGateBreakables = 0
+        for (brick in bricks) {
+            if (brick.type == BrickType.UNBREAKABLE) continue
+            if (brick.gridX !in gateZone.minCol..gateZone.maxCol) continue
+            if (brick.gridY !in gateZone.rows) continue
+            totalGateBreakables += 1
+            if (brick.alive) {
+                aliveGateBreakables += 1
+            }
         }
-        if (gateBreakables.isEmpty()) {
+        if (totalGateBreakables == 0) {
             cachedTunnelGateIntegrityPercent = 100
             tunnelGateIntegrityDirty = false
             return 100
         }
-        val aliveGateBreakables = gateBreakables.count { it.alive }
-        cachedTunnelGateIntegrityPercent = ((aliveGateBreakables.toFloat() / gateBreakables.size.toFloat()) * 100f)
+        cachedTunnelGateIntegrityPercent = ((aliveGateBreakables.toFloat() / totalGateBreakables.toFloat()) * 100f)
             .roundToInt()
             .coerceIn(0, 100)
         tunnelGateIntegrityDirty = false
@@ -4456,6 +4436,17 @@ class GameEngine(
                 listener.onTip("Streak bonus complete")
             }
         }
+    }
+
+    private fun compactDeadVolleyBricksIfNeeded() {
+        if (config.mode != GameMode.VOLLEY) return
+        val totalBricks = bricks.size
+        if (totalBricks < 260) return
+        val deadBricks = bricks.count { !it.alive }
+        if (deadBricks < 120 || deadBricks * 3 < totalBricks) return
+        bricks.removeAll { !it.alive }
+        spatialHashDirty = true
+        buildSpatialHash()
     }
 
     private fun reportScore() {
@@ -4851,6 +4842,21 @@ class GameEngine(
             )
         }
         renderer?.triggerScreenShake(1.2f * fxScale, 0.12f)
+    }
+
+    private fun brickSoundFor(type: BrickType): GameSound {
+        return when (type) {
+            BrickType.NORMAL -> GameSound.BRICK_NORMAL
+            BrickType.REINFORCED -> GameSound.BRICK_REINFORCED
+            BrickType.ARMORED -> GameSound.BRICK_ARMORED
+            BrickType.EXPLOSIVE -> GameSound.BRICK_EXPLOSIVE
+            BrickType.UNBREAKABLE -> GameSound.BRICK_UNBREAKABLE
+            BrickType.MOVING -> GameSound.BRICK_MOVING
+            BrickType.SPAWNING -> GameSound.BRICK_SPAWNING
+            BrickType.PHASE -> GameSound.BRICK_PHASE
+            BrickType.BOSS -> GameSound.BRICK_BOSS
+            BrickType.INVADER -> GameSound.BRICK_NORMAL
+        }
     }
 
     private fun brickSoundRate(type: BrickType): Float {

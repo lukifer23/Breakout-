@@ -776,10 +776,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
                 endOverlayState = EndOverlayState.NONE
                 hideOverlay(binding.endOverlay)
                 showLevelBanner(summary.level + 1)
-                if (!isFinishing && !isDestroyed) {
-                    binding.gameSurface.nextLevel()
-                    playGameFade()
-                }
+                advanceLevelWithAutoRecovery(summary)
                 config.dailyChallenges?.let { DailyChallengeStore.save(this, it) }
                 return@runOnUiThread
             }
@@ -790,6 +787,39 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             showOverlay(binding.endOverlay)
             config.dailyChallenges?.let { DailyChallengeStore.save(this, it) }
         }
+    }
+
+    private fun advanceLevelWithAutoRecovery(summary: GameSummary) {
+        if (isFinishing || isDestroyed) return
+        levelAdvanceInProgress = true
+        binding.buttonEndPrimary.isEnabled = false
+        binding.buttonEndSecondary.isEnabled = false
+        cancelLevelAdvanceRecovery()
+
+        val retry = Runnable {
+            if (!levelAdvanceInProgress || isFinishing || isDestroyed) return@Runnable
+            Log.w("GameActivity", "Auto level advance timed out; retrying nextLevel()")
+            binding.gameSurface.nextLevel()
+
+            val fallback = Runnable {
+                if (!levelAdvanceInProgress || isFinishing || isDestroyed) return@Runnable
+                Log.e("GameActivity", "Auto level advance failed; restoring manual next-level overlay")
+                levelAdvanceInProgress = false
+                binding.buttonEndPrimary.isEnabled = true
+                binding.buttonEndSecondary.isEnabled = true
+                endOverlayState = EndOverlayState.LEVEL_COMPLETE
+                binding.endTitle.text = getString(R.string.label_level_complete)
+                animateEndStats(summary, getString(R.string.label_level_complete))
+                binding.buttonEndPrimary.text = getString(R.string.label_next_level)
+                showOverlay(binding.endOverlay)
+            }
+            levelAdvanceRecoveryRunnable = fallback
+            binding.root.postDelayed(fallback, 1200L)
+        }
+        levelAdvanceRecoveryRunnable = retry
+        binding.root.postDelayed(retry, 1000L)
+        binding.gameSurface.nextLevel()
+        playGameFade()
     }
 
     private fun showTooltip() {
@@ -1103,9 +1133,9 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             hudChipTextPx = resources.getDimension(R.dimen.bp_hud_mode_size) * hudScale
 
             val reservedRatio = when {
-                largeSlate -> 0.142f
-                wideSlate && shortDp >= 720f -> 0.148f
-                wideSlate -> 0.154f
+                largeSlate -> 0.132f
+                wideSlate && shortDp >= 720f -> 0.138f
+                wideSlate -> 0.144f
                 shortDp >= 840f && aspect < 1.45f -> 0.158f
                 shortDp >= 840f -> 0.172f
                 shortDp >= 720f && aspect < 1.45f -> 0.16f
@@ -1117,8 +1147,8 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
                 else -> 0.21f
             }
             val reservedMaxDp = when {
-                largeSlate -> 176f
-                wideSlate -> 184f
+                largeSlate -> 168f
+                wideSlate -> 176f
                 shortDp >= 720f -> 194f
                 else -> 180f
             }
@@ -1406,6 +1436,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
                 pendingVolleyBalls = null
             }
             val fps = pendingFps
+            pendingFps = null
             if (fps != null && config.settings.showFpsCounter) {
                 binding.hudFps.text = getString(R.string.label_fps_format, fps)
                 binding.hudFps.visibility = View.VISIBLE
@@ -1414,7 +1445,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
                 }
             } else if (!config.settings.showFpsCounter) {
                 binding.hudFps.visibility = View.GONE
-                if (binding.hudPowerupChips.visibility != View.VISIBLE) {
+                if (binding.hudPowerupChips.childCount == 0) {
                     binding.hudPowerups.visibility = View.GONE
                 }
             }
