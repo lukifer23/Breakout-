@@ -142,6 +142,11 @@ class GameEngine(
     private var activePointerId = MotionEvent.INVALID_POINTER_ID
     private var touchWorldX = 0f
     private var touchWorldY = 0f
+    private var lastTouchLogTimeMs = 0L
+    private var lastTouchLogX = Float.NaN
+    private var lastTouchLogY = Float.NaN
+    private val touchMoveLogMinIntervalMs = 58L
+    private val touchMoveLogMinDistance = 0.9f
     private val aimSmoothingRate = 18f
     private val aimCenterDeadZone = 0.018f
     private var debugAutoPlayEnabled = false
@@ -157,6 +162,8 @@ class GameEngine(
     private var volleyReturnAnchorX = Float.NaN
     private var volleyReturnSumX = 0f
     private var volleyReturnCount = 0
+    private var volleyPreferredLaneCol = -1
+    private var lastVolleySupplyTurn = -99
 
     private var tunnelShotsFired = 0
     private var tunnelGateFlash = 0f
@@ -259,7 +266,8 @@ class GameEngine(
                 buildSpatialHash()
             }
             pendingInitialLayoutRetune = false
-        } else if (state == GameState.READY || state == GameState.PAUSED) {
+        } else {
+            // Keep active gameplay geometry in sync across fold/unfold/rotation changes.
             relayoutBricks()
         }
         lastResizeWidthPx = width
@@ -322,7 +330,9 @@ class GameEngine(
             updateInvaderShots(worldDt)
             updateParticles(worldDt)
             updateWaves(worldDt)
-            checkLevelCompletion()
+            if (state == GameState.RUNNING) {
+                checkLevelCompletion()
+            }
             if (config.mode == GameMode.VOLLEY && state == GameState.RUNNING) {
                 resolveVolleyTurnIfReady()
             }
@@ -432,37 +442,50 @@ class GameEngine(
 
         // Add theme-specific background effects
         val time = renderTimeSeconds
+        val backgroundFxDensity = when {
+            !settings.highRefreshRate -> 0.74f
+            worldHeight > 195f -> 0.86f
+            else -> 1f
+        } * (0.86f + cosmeticTier * 0.05f)
+        fun effectCount(base: Int, minCount: Int, maxCount: Int): Int {
+            return (base * backgroundFxDensity).roundToInt().coerceIn(minCount, maxCount)
+        }
         when (theme.name) {
             "Neon" -> {
                 // Animated grid pattern
-                val gridSize = 8f
-                for (x in 0 until (worldWidth / gridSize).toInt()) {
-                    for (y in 0 until (worldHeight / gridSize).toInt()) {
-                        if ((x + y) % 2 == 0) {
-                            val alpha = (kotlin.math.sin(time * 2f + x * 0.5f + y * 0.3f) * 0.5f + 0.5f) * 0.1f
-                            renderer.drawRect(
-                                x * gridSize,
-                                y * gridSize,
-                                gridSize,
-                                gridSize,
-                                fillColor(tempColor, 0.3f, 0.9f, 1f, alpha)
-                            )
-                        }
+                val cols = effectCount(base = 14, minCount = 10, maxCount = 20)
+                val rows = effectCount(base = 20, minCount = 12, maxCount = 28)
+                val tileWidth = worldWidth / cols.toFloat()
+                val tileHeight = worldHeight / rows.toFloat()
+                for (x in 0 until cols) {
+                    for (y in 0 until rows) {
+                        if ((x + y) % 3 != 0) continue
+                        val alpha = (kotlin.math.sin(time * 1.9f + x * 0.47f + y * 0.31f) * 0.5f + 0.5f) * 0.085f
+                        renderer.drawRect(
+                            x * tileWidth,
+                            y * tileHeight,
+                            tileWidth,
+                            tileHeight,
+                            fillColor(tempColor, 0.3f, 0.9f, 1f, alpha)
+                        )
                     }
                 }
             }
             "Sunset" -> {
                 // Floating particles
-                for (i in 0 until 15) {
-                    val x = (kotlin.math.sin(time * 0.5f + i) * 0.5f + 0.5f) * worldWidth
-                    val y = (kotlin.math.cos(time * 0.3f + i * 0.7f) * 0.5f + 0.5f) * worldHeight
-                    val size = 1f + kotlin.math.sin(time * 2f + i) * 0.5f
+                val particleCount = effectCount(base = 16, minCount = 10, maxCount = 24)
+                for (i in 0 until particleCount) {
+                    val phase = i * 0.67f
+                    val x = (kotlin.math.sin(time * 0.5f + phase) * 0.5f + 0.5f) * worldWidth
+                    val y = (kotlin.math.cos(time * 0.3f + phase * 0.7f) * 0.5f + 0.5f) * worldHeight
+                    val size = 0.9f + kotlin.math.sin(time * 2f + phase) * 0.45f
                     renderer.drawCircle(x, y, size, fillColor(tempColor, 1f, 0.6f, 0.3f, 0.3f))
                 }
             }
             "Aurora" -> {
                 // Wave patterns
-                for (i in 0 until 8) {
+                val waveCount = effectCount(base = 8, minCount = 5, maxCount = 12)
+                for (i in 0 until waveCount) {
                     val waveY = worldHeight * 0.3f + kotlin.math.sin(time + i * 0.8f) * worldHeight * 0.2f
                     val alpha = (kotlin.math.sin(time * 1.5f + i) * 0.5f + 0.5f) * 0.15f
                     renderer.drawRect(
@@ -476,7 +499,8 @@ class GameEngine(
             }
             "Invaders" -> {
                 // Starfield background
-                for (i in 0 until 36) {
+                val starCount = effectCount(base = 36, minCount = 22, maxCount = 46)
+                for (i in 0 until starCount) {
                     val seed = i * 37 + 13
                     val rx = kotlin.math.sin(time * 0.08f + seed) * 0.5f + 0.5f
                     val ry = kotlin.math.cos(time * 0.07f + seed * 1.7f) * 0.5f + 0.5f
@@ -510,7 +534,8 @@ class GameEngine(
                 fillColor(tempColor, theme.accent[0], theme.accent[1], theme.accent[2], 0.2f + accentAlpha)
             )
             val scanYOffset = laneY + worldHeight * 0.02f
-            for (i in 0 until 7) {
+            val scanLineCount = effectCount(base = 7, minCount = 4, maxCount = 8)
+            for (i in 0 until scanLineCount) {
                 val progress = ((time * (0.12f + i * 0.01f) + i * 0.19f) % 1f + 1f) % 1f
                 val width = worldWidth * (0.06f + (i % 3) * 0.01f)
                 val x = progress * (worldWidth + width) - width
@@ -523,7 +548,8 @@ class GameEngine(
                     fillColor(tempColor, 0.95f, 0.58f, 0.22f, alpha)
                 )
             }
-            for (i in 0 until 6) {
+            val laneBandCount = effectCount(base = 6, minCount = 4, maxCount = 7)
+            for (i in 0 until laneBandCount) {
                 val y = worldHeight * 0.58f + i * worldHeight * 0.055f
                 val alpha = (0.03f + (i % 2) * 0.015f + turnPulse * 0.01f).coerceIn(0.02f, 0.08f)
                 renderer.drawRect(
@@ -1545,6 +1571,15 @@ class GameEngine(
         }
         brickAreaBottomRatio =
             (brickAreaBottomRatio - wideVerticalExpansion - tallVerticalExpansion).coerceIn(0.48f, 0.72f)
+        if (isSlate) {
+            val slateVerticalBoost = when {
+                aspectRatio < 1.22f -> 0.058f
+                aspectRatio < 1.32f -> 0.05f
+                aspectRatio < 1.45f -> 0.04f
+                else -> 0f
+            }
+            brickAreaBottomRatio = (brickAreaBottomRatio - slateVerticalBoost).coerceAtLeast(0.5f)
+        }
 
         if (isSlate) {
             brickSpacing *= 0.9f
@@ -1558,6 +1593,11 @@ class GameEngine(
 
         if (!preserveRowBoost) {
             val densityBoost = (levelIndex / 6).coerceAtMost(2)
+            val slateExtraRows = when {
+                aspectRatio < 1.22f -> 2
+                aspectRatio < 1.34f -> 1
+                else -> 0
+            }
             val slateRowBoost = when {
                 aspectRatio < 1.24f -> 4
                 aspectRatio < 1.35f -> 3
@@ -1588,7 +1628,7 @@ class GameEngine(
                 else -> 0
             }
 
-            val baseRowBoost = (if (isSlate) 5 else 4) + densityBoost + slateRowBoost + wideRowBoost + tallRowBoost
+            val baseRowBoost = (if (isSlate) 6 else 4) + densityBoost + slateRowBoost + wideRowBoost + tallRowBoost + slateExtraRows
             val baseColBoost = (if (isSlate) 4 else 3) + densityBoost + slateColBoost + wideColBoost
 
             when (config.mode) {
@@ -1606,27 +1646,27 @@ class GameEngine(
                 }
                 GameMode.VOLLEY -> {
                     val volleyRowBase = when {
-                        aspectRatio < 1.3f -> 5
-                        aspectRatio < 1.45f -> 4
+                        aspectRatio < 1.3f -> 6
+                        aspectRatio < 1.45f -> 5
                         aspectRatio < 1.6f -> 3
                         aspectRatio > 2.2f -> 2
                         else -> 2
                     }
                     layoutRowBoost =
-                        (volleyRowBase + densityBoost / 2 + slateRowBoost / 2 + tallRowBoost).coerceAtLeast(2)
+                        (volleyRowBase + densityBoost / 2 + slateRowBoost / 2 + tallRowBoost + slateExtraRows).coerceAtLeast(2)
                     // Volley width is controlled by effectiveVolleyColumns() to avoid asymmetry.
                     layoutColBoost = 0
                 }
                 GameMode.TUNNEL -> {
                     val tunnelRowBase = when {
-                        aspectRatio < 1.3f -> 6
-                        aspectRatio < 1.45f -> 5
+                        aspectRatio < 1.3f -> 7
+                        aspectRatio < 1.45f -> 6
                         aspectRatio < 1.6f -> 4
                         aspectRatio > 2.2f -> 2
                         else -> 3
                     }
                     layoutRowBoost =
-                        (tunnelRowBase + densityBoost / 2 + slateRowBoost / 2 + tallRowBoost).coerceAtLeast(3)
+                        (tunnelRowBase + densityBoost / 2 + slateRowBoost / 2 + tallRowBoost + slateExtraRows).coerceAtLeast(3)
                     layoutColBoost = when {
                         aspectRatio < 1.34f -> 2
                         aspectRatio < 1.7f -> 1
@@ -1651,11 +1691,11 @@ class GameEngine(
         globalBrickScale = lerp(0.82f, 0.79f, tallness)
         if (isSlate) {
             val slatePenalty = when {
-                aspectRatio < 1.28f -> 0.075f
-                aspectRatio < 1.4f -> 0.06f
-                else -> 0.05f
+                aspectRatio < 1.28f -> 0.065f
+                aspectRatio < 1.4f -> 0.05f
+                else -> 0.04f
             }
-            globalBrickScale = (globalBrickScale - slatePenalty).coerceAtLeast(0.68f)
+            globalBrickScale = (globalBrickScale - slatePenalty).coerceAtLeast(0.7f)
         } else if (aspectRatio > 2.15f) {
             globalBrickScale = (globalBrickScale - 0.015f).coerceAtLeast(0.75f)
         }
@@ -1799,6 +1839,35 @@ class GameEngine(
         syncStuckBallsToPaddle()
     }
 
+    private fun shouldSnapTouchToPaddle(): Boolean {
+        return state == GameState.READY || balls.any { it.stuckToPaddle }
+    }
+
+    private fun shouldLogTouch(actionMasked: Int, x: Float, y: Float, eventTimeMs: Long): Boolean {
+        if (actionMasked != MotionEvent.ACTION_MOVE) {
+            lastTouchLogTimeMs = eventTimeMs
+            lastTouchLogX = x
+            lastTouchLogY = y
+            return true
+        }
+        val elapsedMs = eventTimeMs - lastTouchLogTimeMs
+        val movedDistance = if (lastTouchLogX.isFinite() && lastTouchLogY.isFinite()) {
+            kotlin.math.sqrt(
+                (x - lastTouchLogX) * (x - lastTouchLogX) +
+                    (y - lastTouchLogY) * (y - lastTouchLogY)
+            )
+        } else {
+            Float.POSITIVE_INFINITY
+        }
+        val shouldLog = elapsedMs >= touchMoveLogMinIntervalMs || movedDistance >= touchMoveLogMinDistance
+        if (shouldLog) {
+            lastTouchLogTimeMs = eventTimeMs
+            lastTouchLogX = x
+            lastTouchLogY = y
+        }
+        return shouldLog
+    }
+
     fun handleTouch(event: MotionEvent, viewWidth: Float, viewHeight: Float) {
         if (state == GameState.PAUSED || state == GameState.GAME_OVER) return
         if (config.mode == GameMode.VOLLEY && state == GameState.RUNNING) {
@@ -1846,7 +1915,9 @@ class GameEngine(
             MotionEvent.ACTION_UP -> "up"
             else -> "other"
         }
-        logger?.logTouchInput(actionString, trackedX, trackedY, trackedPressure)
+        if (shouldLogTouch(event.actionMasked, trackedX, trackedY, event.eventTime)) {
+            logger?.logTouchInput(actionString, trackedX, trackedY, trackedPressure)
+        }
 
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
@@ -1855,9 +1926,10 @@ class GameEngine(
                 val downY = pointerWorldY(activePointerId) ?: trackedY
                 touchWorldX = downX
                 touchWorldY = downY
+                val snapToTouch = shouldSnapTouchToPaddle()
                 updatePaddleFromTouch(
                     downX,
-                    snapImmediately = state == GameState.READY || balls.any { it.stuckToPaddle }
+                    snapImmediately = snapToTouch
                 )
                 isDragging = true
                 updateAimFromTouch()
@@ -1872,9 +1944,10 @@ class GameEngine(
                 val moveY = pointerWorldY(activePointerId) ?: trackedY
                 touchWorldX = moveX
                 touchWorldY = moveY
+                val snapToTouch = shouldSnapTouchToPaddle()
                 updatePaddleFromTouch(
                     moveX,
-                    snapImmediately = state == GameState.READY || balls.any { it.stuckToPaddle }
+                    snapImmediately = snapToTouch
                 )
                 isDragging = true
                 updateAimFromTouch()
@@ -1894,9 +1967,10 @@ class GameEngine(
                         activePointerId = event.getPointerId(replacementIndex)
                         touchWorldX = clampWorldX(event.getX(replacementIndex))
                         touchWorldY = clampWorldY(event.getY(replacementIndex))
+                        val snapToTouch = shouldSnapTouchToPaddle()
                         updatePaddleFromTouch(
                             touchWorldX,
-                            snapImmediately = state == GameState.READY || balls.any { it.stuckToPaddle }
+                            snapImmediately = snapToTouch
                         )
                         isDragging = true
                         updateAimFromTouch()
@@ -2025,6 +2099,9 @@ class GameEngine(
         aimAngle = Math.PI.toFloat() * 0.5f
         isDragging = false
         activePointerId = MotionEvent.INVALID_POINTER_ID
+        lastTouchLogTimeMs = 0L
+        lastTouchLogX = Float.NaN
+        lastTouchLogY = Float.NaN
         volleyTurnActive = false
         volleyQueuedBalls = 0
         volleyLaunchTimer = 0f
@@ -2034,6 +2111,8 @@ class GameEngine(
         volleyReturnAnchorX = Float.NaN
         volleyReturnSumX = 0f
         volleyReturnCount = 0
+        volleyPreferredLaneCol = -1
+        lastVolleySupplyTurn = -99
         tunnelShotsFired = 0
         tunnelGateFlash = 0f
         speedMultiplier = 1f
@@ -2198,7 +2277,8 @@ class GameEngine(
         }
         if (nearbyBrickBuffer.isEmpty() && bricks.isNotEmpty() && (spatialHashDirty || spatialHash.isEmpty())) {
             // Safety fallback: avoid collision loss if hash is temporarily stale.
-            return bricks
+            // Return a snapshot so collision handlers can mutate `bricks` safely.
+            return ArrayList(bricks)
         }
         return nearbyBrickBuffer
     }
@@ -2512,6 +2592,16 @@ class GameEngine(
         themePool.addAll(LevelThemes.bonusThemes().filter { it.name in unlocks.unlockedThemes })
         cosmeticTier = unlocks.cosmeticTier
         applyCosmeticTier()
+    }
+
+    fun currentSummary(): GameSummary {
+        return GameSummary(
+            score = score,
+            level = levelIndex + 1,
+            durationSeconds = elapsedSeconds.toInt().coerceAtLeast(0),
+            bricksBroken = runBricksBroken,
+            livesLost = runLivesLost
+        )
     }
 
     private fun applyCosmeticTier() {
@@ -2833,6 +2923,7 @@ class GameEngine(
     }
 
     private fun updateBalls(dt: Float) {
+        var lifeLossPending = false
         val iterator = balls.iterator()
         while (iterator.hasNext()) {
             val ball = iterator.next()
@@ -2916,7 +3007,7 @@ class GameEngine(
                     } else {
                         iterator.remove()
                         if (balls.isEmpty()) {
-                            loseLife()
+                            lifeLossPending = true
                         }
                         removed = true
                         return@repeat
@@ -2933,6 +3024,11 @@ class GameEngine(
                 clampBallSpeed(ball)
             }
         }
+        if (lifeLossPending && state != GameState.GAME_OVER) {
+            // Defer life-loss handling until after iteration to avoid mutating
+            // the balls list while its iterator is active.
+            loseLife()
+        }
     }
 
     private fun resolveVolleyTurnIfReady() {
@@ -2942,9 +3038,10 @@ class GameEngine(
         volleyTurnActive = false
         volleyTurnCount += 1
         volleyAdvanceRows += 1
+        val pressureBeforeSpawn = volleyLanePressure()
         audio.play(GameSound.BRICK_MOVING, 0.36f, 0.88f)
         renderer?.triggerScreenShake(0.7f, 0.07f)
-        if (shouldAwardVolleyBall(volleyTurnCount) && volleyBallCount < 20) {
+        if (shouldAwardVolleyBall(volleyTurnCount, volleyBallCount, pressureBeforeSpawn) && volleyBallCount < 20) {
             volleyBallCount += 1
             listener.onVolleyBallsUpdated(volleyBallCount)
             listener.onTip("Volley +1 ball (${volleyBallCount} total).")
@@ -2968,6 +3065,8 @@ class GameEngine(
             return
         }
 
+        val pressureAfterSpawn = volleyLanePressure()
+        maybeSpawnVolleySupplyDrop(pressureAfterSpawn)
         val averagedReturnX = if (volleyReturnCount > 0) {
             volleyReturnSumX / volleyReturnCount.toFloat()
         } else {
@@ -2981,6 +3080,8 @@ class GameEngine(
         val launchX = anchorX * 0.78f + paddle.targetX * 0.22f
         paddle.x = launchX.coerceIn(paddle.width / 2f, worldWidth - paddle.width / 2f)
         paddle.targetX = paddle.x
+        val laneCols = effectiveVolleyColumns((currentLayout?.cols ?: 10).coerceAtLeast(6))
+        volleyPreferredLaneCol = resolveVolleyLaneColumn(laneCols)
         volleyReturnAnchorX = Float.NaN
         volleyReturnSumX = 0f
         volleyReturnCount = 0
@@ -2990,12 +3091,15 @@ class GameEngine(
         updatePowerupStatus()
     }
 
-    private fun shouldAwardVolleyBall(turnCount: Int): Boolean {
+    private fun shouldAwardVolleyBall(turnCount: Int, currentBalls: Int, pressure: Float): Boolean {
+        val nearBreach = pressure >= 0.52f
+        if (nearBreach && currentBalls <= 9 && turnCount % 2 == 0) return true
+        if (currentBalls <= 6 && turnCount % 3 == 0) return true
         return when {
-            turnCount <= 3 -> true
-            turnCount <= 10 -> turnCount % 2 == 0
+            turnCount <= 4 -> true
+            turnCount <= 12 -> turnCount % 2 == 0
             turnCount <= 22 -> turnCount % 3 == 0 || turnCount % 5 == 0
-            else -> turnCount % 4 == 0
+            else -> turnCount % 4 == 0 || (currentBalls <= 7 && turnCount % 3 == 0)
         }
     }
 
@@ -3014,39 +3118,63 @@ class GameEngine(
         val softCap = (cols * 5).coerceAtLeast(24)
         val congestionPenalty = ((aliveBricks - softCap).coerceAtLeast(0) / softCap.toFloat()).coerceIn(0f, 0.38f)
         val earlyEase = when {
-            volleyTurnCount < 2 -> 0.16f
-            volleyTurnCount < 5 -> 0.09f
+            volleyTurnCount < 3 -> 0.2f
+            volleyTurnCount < 6 -> 0.11f
             else -> 0f
         }
         val breachY = paddle.y + paddle.height * 0.5f + 1.8f
         val closestY = bricks.asSequence()
             .filter { it.alive }
             .minOfOrNull { it.y } ?: worldHeight
-        val nearBreach = closestY <= breachY + worldHeight * 0.09f
-        val slateDensityBoost = if (currentAspectRatio < 1.45f) 0.03f else 0f
-        val dangerRelief = if (nearBreach) 0.12f else 0f
-        val density = (0.68f + levelIndex * 0.009f + volleyTurnCount * 0.005f + slateDensityBoost - congestionPenalty - earlyEase - dangerRelief)
-            .coerceIn(0.46f, 0.87f)
+        val laneWindow = worldHeight * 0.2f
+        val pressure = ((breachY + laneWindow - closestY) / laneWindow).coerceIn(0f, 1f)
+        val nearBreach = pressure >= 0.45f
+        val slateDensityBoost = if (currentAspectRatio < 1.45f) 0.04f else 0f
+        val lowBallRelief = when {
+            volleyBallCount <= 5 -> 0.1f
+            volleyBallCount <= 7 -> 0.06f
+            else -> 0f
+        }
+        val dangerRelief = pressure * 0.2f
+        val density = (
+            0.66f +
+                levelIndex * 0.008f +
+                volleyTurnCount * 0.003f +
+                slateDensityBoost -
+                congestionPenalty -
+                earlyEase -
+                lowBallRelief -
+                dangerRelief
+            ).coerceIn(0.42f, 0.86f)
 
-        val ballRelief = ((volleyBallCount - 5).coerceAtLeast(0) * 0.04f).coerceAtMost(0.24f)
-        val hpScale = (1f + levelIndex * 0.06f + volleyTurnCount * 0.024f - ballRelief - if (nearBreach) 0.18f else 0f)
-            .coerceAtLeast(0.78f)
+        val ballRelief = ((volleyBallCount - 5).coerceAtLeast(0) * 0.045f).coerceAtMost(0.26f)
+        val earlyHpRelief = if (volleyTurnCount < 4) 0.08f else 0f
+        val hpScale = (
+            0.94f +
+                levelIndex * 0.052f +
+                volleyTurnCount * 0.016f -
+                ballRelief -
+                pressure * 0.22f -
+                earlyHpRelief
+            ).coerceAtLeast(0.74f)
 
         val danger = (volleyTurnCount / 10f).coerceIn(0f, 1f)
-        val explosiveChance = (0.035f + danger * 0.05f).coerceAtMost(0.1f)
-        val reinforcedChance = (0.11f + danger * 0.09f).coerceAtMost(0.23f)
-        val armoredChance = if (volleyTurnCount < 2) 0f else ((0.06f + danger * 0.08f) * if (nearBreach) 0.55f else 1f).coerceAtMost(0.17f)
-        val movingChance = if (volleyTurnCount < 4) 0f else 0.05f * if (nearBreach) 0.6f else 1f
-        val phaseChance = if (volleyTurnCount < 6) 0f else 0.04f * if (nearBreach) 0.65f else 1f
-        val spawningChance = if (volleyTurnCount < 8) 0f else 0.03f * if (nearBreach) 0.65f else 1f
+        val pressureScale = 1f - pressure * 0.45f
+        val explosiveChance = (0.028f + danger * 0.045f - pressure * 0.02f).coerceIn(0.01f, 0.09f)
+        val reinforcedChance = ((0.1f + danger * 0.085f) * pressureScale).coerceIn(0.08f, 0.22f)
+        val armoredChance = if (volleyTurnCount < 3) 0f else ((0.055f + danger * 0.075f) * pressureScale).coerceAtMost(0.16f)
+        val movingChance = if (volleyTurnCount < 5) 0f else (0.045f * pressureScale).coerceAtMost(0.05f)
+        val phaseChance = if (volleyTurnCount < 7) 0f else (0.035f * pressureScale).coerceAtMost(0.04f)
+        val spawningChance = if (volleyTurnCount < 9) 0f else (0.028f * pressureScale).coerceAtMost(0.03f)
 
-        val forcedGapPrimary = random.nextInt(cols)
-        val forcedGapSecondary = if (volleyTurnCount < 5 && cols >= 8) {
+        val preferredLane = resolveVolleyLaneColumn(cols)
+        val forcedGapPrimary = preferredLane
+        val forcedGapSecondary = if (volleyTurnCount < 6 && cols >= 8) {
             (forcedGapPrimary + (cols / 3).coerceAtLeast(2)) % cols
         } else {
             -1
         }
-        val forcedGapTertiary = if (volleyTurnCount < 8 && cols >= 11) {
+        val forcedGapTertiary = if (volleyTurnCount < 9 && cols >= 11) {
             (forcedGapPrimary + (cols / 2)) % cols
         } else {
             -1
@@ -3056,13 +3184,26 @@ class GameEngine(
         if (forcedGapTertiary >= 0) forcedGaps.add(forcedGapTertiary)
         if (nearBreach && cols >= 7) {
             forcedGaps.add((forcedGapPrimary + (cols / 4).coerceAtLeast(1)) % cols)
+            forcedGaps.add(wrapVolleyColumn(forcedGapPrimary - (cols / 4).coerceAtLeast(1), cols))
+        }
+        if (volleyBallCount <= 6 && cols >= 9) {
+            forcedGaps.add(wrapVolleyColumn(forcedGapPrimary + 1, cols))
+            forcedGaps.add(wrapVolleyColumn(forcedGapPrimary - 1, cols))
         }
         var spawned = 0
 
         for (col in 0 until cols) {
             if (col in forcedGaps) continue
             if (occupied.contains(col)) continue
-            if (random.nextFloat() > density) continue
+            val laneDistance = volleyColumnDistance(col, preferredLane, cols)
+            val laneRelief = when {
+                laneDistance == 0 -> 0.26f + pressure * 0.12f
+                laneDistance == 1 -> (if (nearBreach) 0.18f else 0.11f) + pressure * 0.06f
+                laneDistance == 2 && pressure > 0.6f -> 0.06f
+                else -> 0f
+            }
+            val effectiveDensity = (density - laneRelief).coerceIn(0.36f, 0.87f)
+            if (random.nextFloat() > effectiveDensity) continue
             val typeRoll = random.nextFloat()
             val type = when {
                 typeRoll < explosiveChance -> BrickType.EXPLOSIVE
@@ -3129,6 +3270,56 @@ class GameEngine(
             val spawnPitch = (0.94f + spawned.coerceAtMost(8) * 0.02f).coerceAtMost(1.1f)
             audio.play(GameSound.BRICK_SPAWNING, 0.34f, spawnPitch)
         }
+    }
+
+    private fun volleyLanePressure(): Float {
+        if (config.mode != GameMode.VOLLEY) return 0f
+        val breachY = paddle.y + paddle.height * 0.5f + 1.8f
+        val closestY = bricks.asSequence()
+            .filter { it.alive }
+            .minOfOrNull { it.y } ?: worldHeight
+        val laneWindow = worldHeight * 0.2f
+        return ((breachY + laneWindow - closestY) / laneWindow).coerceIn(0f, 1f)
+    }
+
+    private fun maybeSpawnVolleySupplyDrop(pressure: Float) {
+        if (config.mode != GameMode.VOLLEY) return
+        val turnsSinceDrop = volleyTurnCount - lastVolleySupplyTurn
+        if (turnsSinceDrop <= 0) return
+        val nearBreach = pressure >= 0.52f
+        val lowBallBoost = when {
+            volleyBallCount <= 5 -> 0.3f
+            volleyBallCount <= 7 -> 0.18f
+            else -> 0f
+        }
+        val cadenceBoost = if (turnsSinceDrop >= 3) 0.12f else 0f
+        val overflowPenalty = if (volleyBallCount >= 12) 0.1f else 0f
+        val chance = (
+            0.16f +
+                levelIndex * 0.006f +
+                pressure * 0.34f +
+                lowBallBoost +
+                cadenceBoost -
+                overflowPenalty
+            ).coerceIn(0.12f, 0.72f)
+        val minTurnsBetweenDrops = if (nearBreach || volleyBallCount <= 6) 1 else 2
+        if (turnsSinceDrop < minTurnsBetweenDrops) return
+        if (random.nextFloat() > chance) return
+
+        val cols = effectiveVolleyColumns((currentLayout?.cols ?: 10).coerceAtLeast(6))
+        val laneCol = resolveVolleyLaneColumn(cols)
+        val laneX = ((laneCol.toFloat() + 0.5f) / cols.toFloat()) * worldWidth
+        val spread = worldWidth / (cols.toFloat() * 3.2f)
+        val spawnX = (laneX + (random.nextFloat() - 0.5f) * spread).coerceIn(8f, worldWidth - 8f)
+        val spawnY = (worldHeight * if (nearBreach) 0.46f else 0.58f)
+            .coerceIn(paddle.y + 12f, worldHeight * 0.8f)
+        val hint = if (nearBreach || pressure > 0.68f) {
+            PowerupSelectionHint.VOLLEY_SUPPLY_CRITICAL
+        } else {
+            PowerupSelectionHint.VOLLEY_SUPPLY
+        }
+        spawnPowerup(spawnX, spawnY, randomPowerupType(hint))
+        lastVolleySupplyTurn = volleyTurnCount
     }
 
     private fun hasVolleyBreach(): Boolean {
@@ -3343,7 +3534,7 @@ class GameEngine(
     }
 
     private fun handleBrickCollisionFromBeam(beam: Beam) {
-        for (brick in bricks) {
+        for (brick in bricks.toList()) {
             if (!brick.alive) continue
             if (!beamIntersectsBrick(beam, brick)) continue
             val destroyed = brick.applyHit(true)
@@ -3387,7 +3578,7 @@ class GameEngine(
         while (iterator.hasNext()) {
             val beam = iterator.next()
             var hit = false
-            for (brick in bricks) {
+            for (brick in bricks.toList()) {
                 if (!brick.alive) continue
                 if (!beamIntersectsBrick(beam, brick)) continue
                 hit = true
@@ -3535,6 +3726,7 @@ class GameEngine(
             invaderShotTimer = invaderShotCooldown * (0.7f + random.nextFloat() * 0.7f)
         }
 
+        var lifeLossPending = false
         val iterator = enemyShots.iterator()
         while (iterator.hasNext()) {
             val shot = iterator.next()
@@ -3549,9 +3741,15 @@ class GameEngine(
                 continue
             }
             if (shotIntersectsPaddle(shot)) {
-                handleInvaderShotHit(shot)
+                if (handleInvaderShotHit(shot)) {
+                    lifeLossPending = true
+                }
                 iterator.remove()
             }
+        }
+        if (lifeLossPending && state != GameState.GAME_OVER) {
+            // Defer life-loss side effects (which may clear enemyShots) until after iterator traversal.
+            loseLife()
         }
     }
 
@@ -3614,7 +3812,7 @@ class GameEngine(
         audio.play(GameSound.LASER, 0.35f)
     }
 
-    private fun handleInvaderShotHit(shot: EnemyShot) {
+    private fun handleInvaderShotHit(shot: EnemyShot): Boolean {
         spawnImpactSparks(shot.x, shot.y, shot.color, 6, 12f)
         if (invaderShield > 0f) {
             val damage = (12f + levelIndex * 1.2f).coerceAtMost(22f)
@@ -3639,8 +3837,9 @@ class GameEngine(
                 renderer?.triggerScreenShake(2f, 0.2f)
                 listener.onTip("Shield down! Dodge the incoming fire.")
             }
+            return false
         } else {
-            loseLife()
+            return true
         }
     }
 
@@ -3949,17 +4148,19 @@ class GameEngine(
                 .minOfOrNull { it.y } ?: worldHeight
             val laneClearance = (closestY - breachY).coerceAtLeast(0f)
             val status = "Volley balls: $volleyBallCount • Turn ${volleyTurnCount + 1}"
+                .plus(" • Depth ${volleyAdvanceRows}")
                 .plus(" • Bricks $alive • Lane ${String.format(Locale.getDefault(), "%.1f", laneClearance)}")
             if (force || status != lastPowerupStatus) {
                 lastPowerupStatus = status
                 listener.onPowerupStatus(status)
             }
-            emitPowerupSnapshot(emptyList())
+            emitPowerupSnapshot(buildPowerupSnapshot())
             return
         }
         if (config.mode == GameMode.TUNNEL) {
             val segments = mutableListOf<String>()
             segments.add("Shots: $tunnelShotsFired")
+            segments.add("Gate ${tunnelGateIntegrityPercent()}%")
             val totalBreakables = bricks.count { it.type != BrickType.UNBREAKABLE }.coerceAtLeast(1)
             val aliveBreakables = bricks.count { it.alive && it.type != BrickType.UNBREAKABLE }
             val breachPercent = (((totalBreakables - aliveBreakables).toFloat() / totalBreakables.toFloat()) * 100f)
@@ -4059,6 +4260,88 @@ class GameEngine(
 
     private fun displaySeconds(time: Float): Int = ceil(time).toInt().coerceAtLeast(1)
 
+    private fun resolveVolleyLaneColumn(cols: Int): Int {
+        val safeCols = cols.coerceAtLeast(1)
+        val rawAnchorX = when {
+            volleyReturnAnchorX.isFinite() -> volleyReturnAnchorX
+            else -> paddle.targetX
+        }.coerceIn(0f, worldWidth)
+        val normalized = (rawAnchorX / worldWidth).coerceIn(0f, 0.9999f)
+        val anchorCol = (normalized * safeCols).toInt().coerceIn(0, safeCols - 1)
+        val candidate = if (volleyPreferredLaneCol >= 0) {
+            val blend = (volleyPreferredLaneCol * 0.4f + anchorCol * 0.6f).roundToInt()
+            blend.coerceIn(0, safeCols - 1)
+        } else {
+            anchorCol
+        }
+        volleyPreferredLaneCol = candidate
+        return candidate
+    }
+
+    private fun volleyColumnDistance(a: Int, b: Int, cols: Int): Int {
+        val direct = kotlin.math.abs(a - b)
+        return min(direct, cols - direct)
+    }
+
+    private fun wrapVolleyColumn(index: Int, cols: Int): Int {
+        if (cols <= 0) return 0
+        return ((index % cols) + cols) % cols
+    }
+
+    private data class TunnelGateZone(
+        val minCol: Int,
+        val maxCol: Int,
+        val rows: IntRange
+    )
+
+    private fun tunnelGateZone(): TunnelGateZone? {
+        if (config.mode != GameMode.TUNNEL) return null
+        val layout = currentLayout ?: return null
+        val cols = layout.cols.coerceAtLeast(1)
+        val boardCols = (cols + layoutColBoost).coerceAtLeast(cols)
+        val rows = layout.rows.coerceAtLeast(1)
+        val colOffset = layoutColBoost / 2
+        val center = cols / 2 + colOffset
+        val gateHalfWidth = when {
+            levelIndex < 4 -> 2
+            levelIndex < 10 -> 1
+            else -> 1
+        }
+        val gateMinCol = (center - gateHalfWidth).coerceAtLeast(0)
+        val gateMaxCol = (center + gateHalfWidth).coerceAtMost(boardCols - 1)
+        val fortressBottomRow = (rows - 4).coerceAtLeast(0)
+        val gateRowMin = (fortressBottomRow - 1).coerceAtLeast(0)
+        val gateRowMax = (fortressBottomRow + 2).coerceAtMost(rows - 1)
+        return TunnelGateZone(gateMinCol, gateMaxCol, gateRowMin..gateRowMax)
+    }
+
+    private fun tunnelGateIntegrityPercent(): Int {
+        val gateZone = tunnelGateZone() ?: return 100
+        val gateBreakables = bricks.filter { brick ->
+            brick.type != BrickType.UNBREAKABLE &&
+                brick.gridX in gateZone.minCol..gateZone.maxCol &&
+                brick.gridY in gateZone.rows
+        }
+        if (gateBreakables.isEmpty()) return 100
+        val aliveGateBreakables = gateBreakables.count { it.alive }
+        return ((aliveGateBreakables.toFloat() / gateBreakables.size.toFloat()) * 100f)
+            .roundToInt()
+            .coerceIn(0, 100)
+    }
+
+    private fun isTunnelGateBrick(brick: Brick): Boolean {
+        val gateZone = tunnelGateZone() ?: return false
+        return brick.gridX in gateZone.minCol..gateZone.maxCol &&
+            brick.gridY in gateZone.rows
+    }
+
+    private fun tunnelBreakthroughPressure(): Float {
+        if (config.mode != GameMode.TUNNEL) return 0f
+        val gateIntegrityPressure = tunnelGateIntegrityPercent() / 100f
+        val shotPressure = ((tunnelShotsFired - 6).coerceAtLeast(0) / 20f).coerceIn(0f, 1f)
+        return (gateIntegrityPressure * (0.78f + shotPressure * 0.22f)).coerceIn(0f, 1f)
+    }
+
     private fun buildPowerupSnapshot(): List<PowerupStatus> {
         return sortedActiveEffects()
             .map { (type, time) ->
@@ -4119,6 +4402,7 @@ class GameEngine(
     }
 
     private fun checkLevelCompletion() {
+        if (state != GameState.RUNNING || awaitingNextLevel) return
         val remaining = bricks.count { it.alive && it.type != BrickType.UNBREAKABLE }
         if (remaining == 0) {
             val levelDuration = elapsedSeconds - levelStartTime
@@ -4191,6 +4475,7 @@ class GameEngine(
     }
 
     private fun triggerGameOver() {
+        if (state == GameState.GAME_OVER) return
         val summary = GameSummary(
             score = score,
             level = levelIndex + 1,
@@ -4202,8 +4487,8 @@ class GameEngine(
         audio.play(GameSound.GAME_OVER, 1f)
         audio.haptic(GameHaptic.HEAVY)
         audio.stopMusic() // Stop background music on game over
-        listener.onGameOver(summary)
         state = GameState.GAME_OVER
+        listener.onGameOver(summary)
     }
 
     private fun shootLaser() {
@@ -4230,9 +4515,23 @@ class GameEngine(
         }
         val levelBoost = (levelIndex * 0.0035f).coerceAtMost(0.06f)
         val modeBoost = ModeBalance.pacingFor(config.mode).dropChanceModeBoost
-        val dropChance = (baseChance + levelBoost + modeBoost).coerceIn(0.08f, 0.4f)
+        var selectionHint = PowerupSelectionHint.DEFAULT
+        var dynamicBoost = 0f
+        if (config.mode == GameMode.TUNNEL) {
+            val gatePressure = tunnelBreakthroughPressure()
+            val gateBrick = isTunnelGateBrick(brick)
+            val stallBoost = ((tunnelShotsFired - 8).coerceAtLeast(0) / 16f).coerceAtMost(1f) * gatePressure * 0.04f
+            dynamicBoost += gatePressure * 0.06f + stallBoost
+            if (gateBrick) {
+                dynamicBoost += 0.07f
+            }
+            if (gateBrick || gatePressure >= 0.62f) {
+                selectionHint = PowerupSelectionHint.TUNNEL_BREAKTHROUGH
+            }
+        }
+        val dropChance = (baseChance + levelBoost + modeBoost + dynamicBoost).coerceIn(0.08f, 0.48f)
         if (random.nextFloat() < dropChance) {
-            spawnPowerup(brick.centerX, brick.centerY, randomPowerupType())
+            spawnPowerup(brick.centerX, brick.centerY, randomPowerupType(selectionHint))
         }
     }
 
@@ -4487,8 +4786,21 @@ class GameEngine(
         }
     }
 
-    private fun randomPowerupType(): PowerUpType {
-        if (powerupDropsSinceLaser >= 5 && !activeEffects.containsKey(PowerUpType.LASER)) {
+    private enum class PowerupSelectionHint {
+        DEFAULT,
+        VOLLEY_SUPPLY,
+        VOLLEY_SUPPLY_CRITICAL,
+        TUNNEL_BREAKTHROUGH
+    }
+
+    private fun randomPowerupType(hint: PowerupSelectionHint = PowerupSelectionHint.DEFAULT): PowerUpType {
+        val laserGuaranteeThreshold = when (hint) {
+            PowerupSelectionHint.VOLLEY_SUPPLY,
+            PowerupSelectionHint.VOLLEY_SUPPLY_CRITICAL,
+            PowerupSelectionHint.TUNNEL_BREAKTHROUGH -> 4
+            PowerupSelectionHint.DEFAULT -> 5
+        }
+        if (powerupDropsSinceLaser >= laserGuaranteeThreshold && !activeEffects.containsKey(PowerUpType.LASER)) {
             return PowerUpType.LASER
         }
         val weights = mutableMapOf(
@@ -4557,6 +4869,49 @@ class GameEngine(
                 weights[PowerUpType.SLOW] = (weights[PowerUpType.SLOW] ?: 0f) + 0.1f
             }
             else -> Unit
+        }
+        when (hint) {
+            PowerupSelectionHint.VOLLEY_SUPPLY -> {
+                weights[PowerUpType.GUARDRAIL] = 0.02f
+                weights[PowerUpType.SHIELD] = 0.04f
+                weights[PowerUpType.LIFE] = (weights[PowerUpType.LIFE] ?: 0f) + 0.35f
+                weights[PowerUpType.WIDE_PADDLE] = (weights[PowerUpType.WIDE_PADDLE] ?: 0f) + 0.22f
+                weights[PowerUpType.MAGNET] = (weights[PowerUpType.MAGNET] ?: 0f) + 0.18f
+                weights[PowerUpType.LASER] = (weights[PowerUpType.LASER] ?: 0f) + 0.3f
+                weights[PowerUpType.MULTI_BALL] = (weights[PowerUpType.MULTI_BALL] ?: 0f) + 0.24f
+                weights[PowerUpType.BALL_SPLITTER] = (weights[PowerUpType.BALL_SPLITTER] ?: 0f) + 0.22f
+                weights[PowerUpType.PIERCE] = (weights[PowerUpType.PIERCE] ?: 0f) + 0.18f
+                weights[PowerUpType.FIREBALL] = (weights[PowerUpType.FIREBALL] ?: 0f) + 0.15f
+                weights[PowerUpType.SHRINK]?.let { weights[PowerUpType.SHRINK] = it * 0.35f }
+                weights[PowerUpType.OVERDRIVE]?.let { weights[PowerUpType.OVERDRIVE] = it * 0.45f }
+            }
+            PowerupSelectionHint.VOLLEY_SUPPLY_CRITICAL -> {
+                weights[PowerUpType.GUARDRAIL] = 0.01f
+                weights[PowerUpType.SHIELD] = 0.02f
+                weights[PowerUpType.LIFE] = (weights[PowerUpType.LIFE] ?: 0f) + 0.45f
+                weights[PowerUpType.WIDE_PADDLE] = (weights[PowerUpType.WIDE_PADDLE] ?: 0f) + 0.3f
+                weights[PowerUpType.SLOW] = (weights[PowerUpType.SLOW] ?: 0f) + 0.24f
+                weights[PowerUpType.FREEZE] = (weights[PowerUpType.FREEZE] ?: 0f) + 0.24f
+                weights[PowerUpType.TIME_WARP] = (weights[PowerUpType.TIME_WARP] ?: 0f) + 0.18f
+                weights[PowerUpType.MAGNET] = (weights[PowerUpType.MAGNET] ?: 0f) + 0.2f
+                weights[PowerUpType.LASER] = (weights[PowerUpType.LASER] ?: 0f) + 0.24f
+                weights[PowerUpType.MULTI_BALL] = (weights[PowerUpType.MULTI_BALL] ?: 0f) + 0.18f
+                weights[PowerUpType.SHRINK]?.let { weights[PowerUpType.SHRINK] = it * 0.3f }
+                weights[PowerUpType.OVERDRIVE]?.let { weights[PowerUpType.OVERDRIVE] = it * 0.4f }
+            }
+            PowerupSelectionHint.TUNNEL_BREAKTHROUGH -> {
+                weights[PowerUpType.PIERCE] = (weights[PowerUpType.PIERCE] ?: 0f) + 0.42f
+                weights[PowerUpType.FIREBALL] = (weights[PowerUpType.FIREBALL] ?: 0f) + 0.34f
+                weights[PowerUpType.LASER] = (weights[PowerUpType.LASER] ?: 0f) + 0.24f
+                weights[PowerUpType.MULTI_BALL] = (weights[PowerUpType.MULTI_BALL] ?: 0f) + 0.18f
+                weights[PowerUpType.BALL_SPLITTER] = (weights[PowerUpType.BALL_SPLITTER] ?: 0f) + 0.16f
+                weights[PowerUpType.GRAVITY_WELL] = (weights[PowerUpType.GRAVITY_WELL] ?: 0f) + 0.16f
+                weights[PowerUpType.SLOW] = (weights[PowerUpType.SLOW] ?: 0f) + 0.12f
+                weights[PowerUpType.WIDE_PADDLE] = (weights[PowerUpType.WIDE_PADDLE] ?: 0f) + 0.08f
+                weights[PowerUpType.SHRINK]?.let { weights[PowerUpType.SHRINK] = it * 0.6f }
+                weights[PowerUpType.OVERDRIVE]?.let { weights[PowerUpType.OVERDRIVE] = it * 0.7f }
+            }
+            PowerupSelectionHint.DEFAULT -> Unit
         }
         if (levelIndex <= 2) {
             weights[PowerUpType.SHRINK]?.let { weights[PowerUpType.SHRINK] = it * 0.45f }
@@ -4770,6 +5125,48 @@ class GameEngine(
         val spawnCount = 2 + kotlin.random.Random(parentBrick.gridX * 13 + parentBrick.gridY * 19).nextInt(2)
         val childSize = parentBrick.width * 0.6f
         val childHeight = parentBrick.height * 0.6f
+
+        if (config.mode == GameMode.VOLLEY && parentBrick.gridX >= 0) {
+            val layout = currentLayout
+            if (layout != null) {
+                val cols = effectiveVolleyColumns(layout.cols).coerceAtLeast(1)
+                val occupied = HashSet<Long>(bricks.size * 2)
+                fun key(col: Int, row: Int): Long = (col.toLong() shl 32) or (row.toLong() and 0xffffffffL)
+                bricks.forEach { brick ->
+                    if (brick.alive && brick.gridX >= 0) {
+                        occupied.add(key(brick.gridX, brick.gridY))
+                    }
+                }
+                val candidateOffsets = intArrayOf(0, -1, 1, -2, 2, -3, 3)
+                var created = 0
+                for (offset in candidateOffsets) {
+                    if (created >= spawnCount) break
+                    val childCol = wrapVolleyColumn(parentBrick.gridX + offset, cols)
+                    val childRow = parentBrick.gridY
+                    val cellKey = key(childCol, childRow)
+                    if (!occupied.add(cellKey)) continue
+                    val childBrick = Brick(
+                        gridX = childCol,
+                        gridY = childRow,
+                        x = parentBrick.x,
+                        y = parentBrick.y,
+                        width = childSize,
+                        height = childHeight,
+                        hitPoints = 1,
+                        maxHitPoints = 1,
+                        type = BrickType.NORMAL
+                    )
+                    childBrick.baseX = childBrick.x
+                    childBrick.baseY = childBrick.y
+                    bricks.add(childBrick)
+                    created += 1
+                }
+                if (created > 0) {
+                    relayoutBricks()
+                    return
+                }
+            }
+        }
 
         for (i in 0 until spawnCount) {
             val offsetX = (kotlin.random.Random(i * 7).nextFloat() - 0.5f) * parentBrick.width

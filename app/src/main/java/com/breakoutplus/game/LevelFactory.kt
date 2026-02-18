@@ -708,38 +708,55 @@ object LevelFactory {
         }
 
         // 2. Walls with Weak Points
+        val topWeakModulo = if (index < 6) 4 else 5
+        val sideWeakModulo = if (index < 6) 3 else 4
+        val bottomWeakModulo = if (index < 6) 5 else 6
+
         // Horizontal Walls
         for (col in (castleLeft + towerSize) until (castleRight - towerSize + 1)) {
             // Top Wall: Periodically weak
-            val isWeakTop = (col + index) % 5 == 0
+            val isWeakTop = (col + index) % topWeakModulo == 0
             val topType = if (isWeakTop) BrickType.ARMORED else BrickType.UNBREAKABLE
             addBrick(col, castleTop, topType, if (isWeakTop) (4 * difficulty).toInt() else 999)
         }
 
         // Vertical Walls
         for (row in (castleTop + towerSize) until (castleBottom - towerSize + 1)) {
-            val isWeakSide = (row + index) % 4 == 0
+            val isWeakSide = (row + index) % sideWeakModulo == 0
             val sideType = if (isWeakSide) BrickType.ARMORED else BrickType.UNBREAKABLE
             addBrick(castleLeft, row, sideType, if (isWeakSide) (4 * difficulty).toInt() else 999)
             addBrick(castleRight, row, sideType, if (isWeakSide) (4 * difficulty).toInt() else 999)
         }
 
         // 3. The Gate (Bottom Center)
-        val gateWidth = 2 + (index % 2)
+        val baseGateWidth = when {
+            index < 4 -> 4
+            index < 10 -> 3
+            else -> 2 + (index % 2)
+        }
+        val gateSpan = ((castleRight - towerSize + 1) - (castleLeft + towerSize)).coerceAtLeast(2)
+        val gateWidth = baseGateWidth.coerceIn(2, (gateSpan - 1).coerceAtLeast(2))
         val gateCenter = cols / 2
         val gateLeft = gateCenter - gateWidth / 2
         val gateRight = gateLeft + gateWidth - 1
-        val gateOpenCol = when {
-            gateWidth <= 1 -> gateCenter
-            gateWidth == 2 -> if (index % 2 == 0) gateLeft else gateRight
-            else -> gateCenter
+        val desiredOpenings = if (index < 4) 2 else 1
+        val gateOpenCols = mutableSetOf(gateCenter.coerceIn(gateLeft, gateRight))
+        if (desiredOpenings >= 2 && gateWidth >= 3) {
+            val secondary = (gateCenter + if (index % 2 == 0) -1 else 1).coerceIn(gateLeft, gateRight)
+            gateOpenCols.add(secondary)
+        }
+        if (gateOpenCols.size < desiredOpenings) {
+            for (col in gateLeft..gateRight) {
+                gateOpenCols.add(col)
+                if (gateOpenCols.size >= desiredOpenings) break
+            }
         }
 
         // Bottom Wall (interrupted by Gate)
         for (col in (castleLeft + towerSize) until (castleRight - towerSize + 1)) {
             if (col in gateLeft..gateRight) {
                 // Keep at least one true opening so the breach lane remains readable.
-                if (col == gateOpenCol) continue
+                if (col in gateOpenCols) continue
                 val gateType = when {
                     index >= 10 && col == gateCenter -> BrickType.ARMORED
                     index >= 4 -> BrickType.REINFORCED
@@ -754,7 +771,7 @@ object LevelFactory {
                 val gateHp = max(1, (gateBase * difficulty * (1f + index * 0.03f)).roundToInt())
                 addBrick(col, castleBottom, gateType, gateHp)
             } else {
-                val isWeakBot = (col + index * 2) % 6 == 0
+                val isWeakBot = (col + index * 2) % bottomWeakModulo == 0
                 val botType = if (isWeakBot) BrickType.ARMORED else BrickType.UNBREAKABLE
                 addBrick(col, castleBottom, botType, if (isWeakBot) (4 * difficulty).toInt() else 999)
             }
@@ -776,7 +793,7 @@ object LevelFactory {
         }
 
         // 5. Interior (The Keep & Guards)
-        val interiorDensity = 0.65f + (index * 0.012f).coerceAtMost(0.25f)
+        val interiorDensity = 0.61f + (index * 0.01f).coerceAtMost(0.23f)
         for (row in (castleTop + 1) until castleBottom) {
             for (col in (castleLeft + 1) until castleRight) {
                 if (occupied.contains(col to row)) continue
@@ -1014,26 +1031,6 @@ object LevelFactory {
         val towerSize = 2
         val margin = 1
         
-        // Define Towers
-        val corners = listOf(
-            margin to margin,
-            cols - 1 - margin to margin,
-            margin to rows - 1 - margin,
-            cols - 1 - margin to rows - 1 - margin
-        )
-        // Build Towers
-        for ((tx, ty) in corners) {
-            for (dx in 0 until towerSize) {
-                for (dy in 0 until towerSize) {
-                    // Check if inside bounds (account for tower size direction)
-                    // Simplified: just build block around tx,ty depending on corner
-                    // Note: tx,ty are top-left, top-right, bot-left, bot-right
-                    // We need to adjust direction.
-                    // Easier: Just treat tx,ty as Top-Left of the tower block, adjusting for corner.
-                }
-            }
-        }
-        // Actually, let's just use simple loops like in buildTunnelLevel but adapted
         val castleLeft = margin
         val castleRight = cols - 1 - margin
         val castleTop = margin
@@ -1195,8 +1192,8 @@ object LevelFactory {
 
                     // Mirror to right side
                     val mirrorCol = cols - 1 - col
-                    if (mirrorCol != col && !occupied.contains(mirrorCol to row)) {
-                        val mirrorRow = if (mirrorType == 1) rows - 1 - row else row // diagonal vs horizontal mirror
+                    val mirrorRow = if (mirrorType == 1) rows - 1 - row else row // diagonal vs horizontal mirror
+                    if (mirrorCol != col && !occupied.contains(mirrorCol to mirrorRow)) {
                         bricks.add(BrickSpec(mirrorCol, mirrorRow, type, hp))
                         occupied.add(mirrorCol to mirrorRow)
                     }

@@ -47,6 +47,30 @@ class LevelFactoryTest {
     }
 
     @Test
+    fun buildLevel_endlessProceduralLayoutsAvoidDuplicateCells() {
+        for (index in 50..140) {
+            val level = LevelFactory.buildLevel(index = index, difficulty = 1.45f, endless = true)
+            val uniqueCells = level.bricks.map { it.col to it.row }.toSet()
+            assertEquals("Procedural layout should not duplicate brick cells at index=$index", level.bricks.size, uniqueCells.size)
+        }
+    }
+
+    @Test
+    fun buildLevel_endlessMirrorTemplateAvoidsDuplicateMirroredCells() {
+        val mirrorIndex = (50..220).first { idx ->
+            val templateType = (idx + kotlin.random.Random(idx).nextInt(5)) % 7
+            templateType == 6
+        }
+        val level = LevelFactory.buildLevel(index = mirrorIndex, difficulty = 1.5f, endless = true)
+        val uniqueCells = level.bricks.map { it.col to it.row }.toSet()
+        assertEquals(
+            "Mirror template should not emit duplicate mirrored coordinates",
+            level.bricks.size,
+            uniqueCells.size
+        )
+    }
+
+    @Test
     fun buildLevel_patternFillKeepsDenseBoards() {
         val l = LevelFactory.buildLevel(index = 0, difficulty = 1.2f, endless = false)
         val occupancy = l.bricks.size.toFloat() / (l.rows * l.cols).toFloat()
@@ -90,6 +114,27 @@ class LevelFactoryTest {
         val gateRight = gateLeft + gateWidth - 1
         val gateOpenings = (gateLeft..gateRight).count { it !in occupiedBottom }
         assertTrue("Tunnel gate should preserve at least one true opening", gateOpenings >= 1)
+    }
+
+    @Test
+    fun buildTunnelLevel_earlyGameProvidesWiderGateReadability() {
+        val index = 2
+        val level = LevelFactory.buildTunnelLevel(
+            index = index,
+            difficulty = 1.2f,
+            theme = LevelThemes.COBALT
+        )
+        val fortressBottomRow = level.rows - 4
+        val occupiedBottom = level.bricks
+            .filter { it.row == fortressBottomRow }
+            .map { it.col }
+            .toSet()
+        val gateWidth = 4
+        val gateCenter = level.cols / 2
+        val gateLeft = gateCenter - gateWidth / 2
+        val gateRight = gateLeft + gateWidth - 1
+        val gateOpenings = (gateLeft..gateRight).count { it !in occupiedBottom }
+        assertTrue("Early tunnel should preserve at least two openings in the gate lane", gateOpenings >= 2)
     }
 
     @Test

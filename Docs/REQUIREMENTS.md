@@ -14,7 +14,7 @@
 ### Core Gameplay
 - 10 modes: `CLASSIC`, `TIMED`, `ENDLESS`, `GOD`, `RUSH`, `VOLLEY`, `TUNNEL`, `SURVIVAL`, `INVADERS`, `ZEN`
 - 10 brick types with mode-appropriate behavior and HP scaling
-- 15 powerups with visual feedback and timer/charge handling
+- 18 powerups with visual feedback and timer/charge handling
 - Accurate paddle/ball collision response with controllable launch aiming
 - Level progression and mode-specific completion/failure conditions
 

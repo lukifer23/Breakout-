@@ -65,6 +65,14 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     private val hudResizeDebounceMs = 120L
     private var hudResizingInProgress = false
     private var levelAdvanceRecoveryRunnable: Runnable? = null
+    private var runStatsRecorded = false
+    private var runSnapshotCaptureInFlight = false
+    private val overlayAnimationTokens = mutableMapOf<Int, Int>()
+    private var bannerAnimationToken = 0
+    private var hudMetaPulseToken = 0
+    private var shieldPulseToken = 0
+    private var shieldLabelFlashToken = 0
+    private var fadeAnimationToken = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -261,24 +269,33 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     }
 
     private fun restartGame() {
-        levelAdvanceInProgress = false
-        cancelLevelAdvanceRecovery()
-        hideOverlay(binding.endOverlay)
-        hideOverlay(binding.pauseOverlay)
-        hideOverlay(binding.tooltipOverlay)
-        endOverlayState = EndOverlayState.NONE
-        binding.buttonEndPrimary.isEnabled = true
-        binding.buttonEndSecondary.isEnabled = true
-        binding.gameSurface.resumeGame()
-        binding.gameSurface.restartGame()
-        playGameFade()
+        recordRunSnapshotIfNeeded {
+            levelAdvanceInProgress = false
+            cancelLevelAdvanceRecovery()
+            hideOverlay(binding.endOverlay)
+            hideOverlay(binding.pauseOverlay)
+            hideOverlay(binding.tooltipOverlay)
+            endOverlayState = EndOverlayState.NONE
+            binding.buttonEndPrimary.isEnabled = true
+            binding.buttonEndSecondary.isEnabled = true
+            binding.gameSurface.resumeGame()
+            binding.gameSurface.restartGame()
+            runStatsRecorded = false
+            playGameFade()
+        }
     }
 
     private fun exitToMenu() {
-        levelAdvanceInProgress = false
-        cancelLevelAdvanceRecovery()
-        finish()
-        startActivity(Intent(this, MainActivity::class.java))
+        recordRunSnapshotIfNeeded {
+            levelAdvanceInProgress = false
+            cancelLevelAdvanceRecovery()
+            startActivity(
+                Intent(this, MainActivity::class.java).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                }
+            )
+            finish()
+        }
     }
 
     private fun handleEndPrimary() {
@@ -583,23 +600,36 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             val percent = ((current.toFloat() / max.toFloat()) * 100f).toInt().coerceIn(0, 100)
             binding.hudShieldLabel.text = getString(R.string.label_shield_percent, percent)
             if (current < lastShieldValue) {
+                shieldPulseToken += 1
+                val pulseToken = shieldPulseToken
                 binding.hudShieldBar.animate().cancel()
                 binding.hudShieldBar.scaleX = 1f
                 binding.hudShieldBar.scaleY = 1f
                 binding.hudShieldBar.animate()
-                    .scaleX(1.08f)
-                    .scaleY(1.08f)
+                    .scaleX(UiMotion.SHIELD_PULSE_SCALE)
+                    .scaleY(UiMotion.SHIELD_PULSE_SCALE)
                     .setDuration(UiMotion.PULSE_IN_DURATION)
+                    .setInterpolator(UiMotion.EMPHASIS_OUT)
                     .withEndAction {
+                        if (pulseToken != shieldPulseToken) return@withEndAction
                         binding.hudShieldBar.animate()
                             .scaleX(1f)
                             .scaleY(1f)
                             .setDuration(UiMotion.PULSE_OUT_DURATION)
+                            .setInterpolator(UiMotion.EMPHASIS_OUT)
+                            .withEndAction {
+                                if (pulseToken != shieldPulseToken) return@withEndAction
+                                binding.hudShieldBar.scaleX = 1f
+                                binding.hudShieldBar.scaleY = 1f
+                            }
                             .start()
                     }
                     .start()
                 binding.hudShieldLabel.setTextColor(androidx.core.content.ContextCompat.getColor(this, R.color.bp_red))
+                shieldLabelFlashToken += 1
+                val labelFlashToken = shieldLabelFlashToken
                 binding.hudShieldLabel.postDelayed({
+                    if (labelFlashToken != shieldLabelFlashToken) return@postDelayed
                     binding.hudShieldLabel.setTextColor(androidx.core.content.ContextCompat.getColor(this, R.color.bp_white))
                 }, 260L)
             }
@@ -623,6 +653,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             binding.buttonLaser.visibility = View.GONE
             endOverlayState = EndOverlayState.GAME_OVER
             LifetimeStatsManager.recordRun(this, summary)
+            runStatsRecorded = true
             if (debugAutoPlaySession) {
                 Log.i(
                     "BreakoutAutoPlay",
@@ -775,19 +806,40 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             binding.tooltipOverlay.visibility != View.VISIBLE
     }
 
+    private fun overlayTokenKey(view: View): Int {
+        return if (view.id != View.NO_ID) view.id else System.identityHashCode(view)
+    }
+
+    private fun nextOverlayAnimationToken(view: View): Int {
+        val key = overlayTokenKey(view)
+        val next = (overlayAnimationTokens[key] ?: 0) + 1
+        overlayAnimationTokens[key] = next
+        return next
+    }
+
+    private fun isOverlayAnimationTokenCurrent(view: View, token: Int): Boolean {
+        return overlayAnimationTokens[overlayTokenKey(view)] == token
+    }
+
     private fun showOverlay(view: View) {
-        // Cancel any ongoing hide animation to prevent flashing
+        val token = nextOverlayAnimationToken(view)
         view.animate().cancel()
         view.visibility = View.VISIBLE
         view.alpha = 0f
-        view.scaleX = 0.96f
-        view.scaleY = 0.96f
+        view.scaleX = UiMotion.OVERLAY_ENTER_SCALE
+        view.scaleY = UiMotion.OVERLAY_ENTER_SCALE
         view.animate()
             .alpha(1f)
             .scaleX(1f)
             .scaleY(1f)
             .setDuration(UiMotion.OVERLAY_IN_DURATION)
             .setInterpolator(UiMotion.EMPHASIS_OUT)
+            .withEndAction {
+                if (!isOverlayAnimationTokenCurrent(view, token)) return@withEndAction
+                view.alpha = 1f
+                view.scaleX = 1f
+                view.scaleY = 1f
+            }
             .start()
     }
 
@@ -797,12 +849,14 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
 
     private fun showBanner(message: String) {
         val banner = binding.hudLevelBanner
+        bannerAnimationToken += 1
+        val token = bannerAnimationToken
         banner.text = message
         banner.animate().cancel()
         banner.visibility = View.VISIBLE
         banner.alpha = 0f
-        banner.scaleX = 0.92f
-        banner.scaleY = 0.92f
+        banner.scaleX = UiMotion.BANNER_ENTER_SCALE
+        banner.scaleY = UiMotion.BANNER_ENTER_SCALE
         banner.animate()
             .alpha(1f)
             .scaleX(1f)
@@ -810,14 +864,16 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             .setDuration(UiMotion.BANNER_IN_DURATION)
             .setInterpolator(UiMotion.EMPHASIS_OUT)
             .withEndAction {
+                if (token != bannerAnimationToken) return@withEndAction
                 banner.animate()
                     .alpha(0f)
-                    .scaleX(1.04f)
-                    .scaleY(1.04f)
+                    .scaleX(UiMotion.BANNER_EXIT_SCALE)
+                    .scaleY(UiMotion.BANNER_EXIT_SCALE)
                     .setStartDelay(UiMotion.BANNER_HOLD_DURATION)
                     .setDuration(UiMotion.BANNER_OUT_DURATION)
                     .setInterpolator(UiMotion.EMPHASIS_OUT)
                     .withEndAction {
+                        if (token != bannerAnimationToken) return@withEndAction
                         banner.visibility = View.INVISIBLE
                         banner.alpha = 1f
                         banner.scaleX = 1f
@@ -830,20 +886,28 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
 
     private fun pulseHudMeta() {
         val meta = binding.hudMeta
+        hudMetaPulseToken += 1
+        val token = hudMetaPulseToken
         meta.animate().cancel()
         meta.scaleX = 1f
         meta.scaleY = 1f
         meta.animate()
-            .scaleX(1.05f)
-            .scaleY(1.05f)
+            .scaleX(UiMotion.HUD_PULSE_SCALE)
+            .scaleY(UiMotion.HUD_PULSE_SCALE)
             .setDuration(UiMotion.PULSE_IN_DURATION)
             .setInterpolator(UiMotion.EMPHASIS_OUT)
             .withEndAction {
+                if (token != hudMetaPulseToken) return@withEndAction
                 meta.animate()
                     .scaleX(1f)
                     .scaleY(1f)
                     .setDuration(UiMotion.PULSE_OUT_DURATION)
                     .setInterpolator(UiMotion.EMPHASIS_OUT)
+                    .withEndAction {
+                        if (token != hudMetaPulseToken) return@withEndAction
+                        meta.scaleX = 1f
+                        meta.scaleY = 1f
+                    }
                     .start()
             }
             .start()
@@ -851,13 +915,16 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
 
     private fun hideOverlay(view: View) {
         if (view.visibility != View.VISIBLE) return
+        val token = nextOverlayAnimationToken(view)
+        view.animate().cancel()
         view.animate()
             .alpha(0f)
-            .scaleX(0.98f)
-            .scaleY(0.98f)
+            .scaleX(UiMotion.OVERLAY_EXIT_SCALE)
+            .scaleY(UiMotion.OVERLAY_EXIT_SCALE)
             .setDuration(UiMotion.OVERLAY_OUT_DURATION)
             .setInterpolator(UiMotion.EMPHASIS_OUT)
             .withEndAction {
+                if (!isOverlayAnimationTokenCurrent(view, token)) return@withEndAction
                 view.visibility = View.GONE
                 view.alpha = 1f
                 view.scaleX = 1f
@@ -878,8 +945,30 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         }
         binding.hudPowerups.visibility = View.VISIBLE
         container.visibility = View.VISIBLE
-        status.forEach { item ->
+        val metrics = resources.displayMetrics
+        val density = metrics.density.coerceAtLeast(1f)
+        val availableWidthPx = when {
+            binding.hudContainer.width > 0 -> binding.hudContainer.width
+            binding.root.width > 0 -> binding.root.width
+            else -> metrics.widthPixels
+        }
+        val availableWidthDp = (availableWidthPx / density).coerceAtLeast(0f)
+        val estimatedChipWidthDp = (72f * hudScale).coerceAtLeast(54f)
+        val widthBoundLimit = (availableWidthDp / estimatedChipWidthDp).toInt().coerceIn(1, 6)
+        val baseLimit = when {
+            availableWidthDp < 340f -> 2
+            availableWidthDp < 430f -> 3
+            availableWidthDp < 620f -> 4
+            else -> 5
+        }
+        val maxVisible = minOf(baseLimit, widthBoundLimit).coerceAtLeast(1)
+        val visibleItems = status.take(maxVisible)
+        visibleItems.forEach { item ->
             container.addView(buildPowerupChip(item))
+        }
+        val overflow = status.size - visibleItems.size
+        if (overflow > 0) {
+            container.addView(buildOverflowChip(overflow))
         }
     }
 
@@ -936,6 +1025,39 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         return chip
     }
 
+    private fun buildOverflowChip(overflowCount: Int): android.widget.TextView {
+        val chip = android.widget.TextView(this)
+        val chipScale = hudScale.coerceIn(0.82f, 1.24f)
+        val chipTextSize = if (hudChipTextPx > 0f) hudChipTextPx else resources.getDimension(R.dimen.bp_hud_mode_size)
+        chip.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, chipTextSize)
+        chip.setTypeface(android.graphics.Typeface.DEFAULT_BOLD)
+        chip.setSingleLine(true)
+        chip.text = getString(R.string.label_powerup_overflow_format, overflowCount)
+        chip.setTextColor(androidx.core.content.ContextCompat.getColor(this, R.color.bp_white))
+        chip.setPadding(
+            dp(10f * chipScale),
+            dp(6f * chipScale),
+            dp(10f * chipScale),
+            dp(6f * chipScale)
+        )
+        chip.letterSpacing = 0.02f
+
+        val stroke = androidx.core.content.ContextCompat.getColor(this, R.color.bp_line)
+        val drawable = android.graphics.drawable.GradientDrawable()
+        drawable.cornerRadius = dp(14f * chipScale).toFloat()
+        drawable.setColor(ColorUtils.setAlphaComponent(stroke, 38))
+        drawable.setStroke(dp(1f.coerceAtLeast(0.9f * chipScale)), ColorUtils.setAlphaComponent(stroke, 180))
+        chip.background = drawable
+
+        val params = android.widget.LinearLayout.LayoutParams(
+            android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
+            android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+        )
+        params.marginEnd = dp(8f * chipScale)
+        chip.layoutParams = params
+        return chip
+    }
+
     private fun applyResponsiveHudSizing() {
         // Prevent re-entry during layout changes
         if (hudResizingInProgress) return
@@ -953,6 +1075,9 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             val shortDp = minOf(widthDp, heightDp)
             val longDp = maxOf(widthDp, heightDp)
             val aspect = (longDp / shortDp).coerceAtLeast(1f)
+            val tabletClass = shortDp >= 600f
+            val wideSlate = tabletClass && aspect <= 1.85f
+            val largeSlate = wideSlate && shortDp >= 840f
 
             val baseScale = when {
                 shortDp >= 840f -> 1.14f
@@ -968,10 +1093,19 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
                 aspect >= 2.05f -> 0.92f
                 else -> 1f
             }
-            hudScale = (baseScale * tallFoldCompaction).coerceIn(0.82f, 1.24f)
+            val slateCompaction = when {
+                largeSlate -> 0.92f
+                wideSlate && shortDp >= 720f -> 0.95f
+                wideSlate -> 0.97f
+                else -> 1f
+            }
+            hudScale = (baseScale * tallFoldCompaction * slateCompaction).coerceIn(0.82f, 1.22f)
             hudChipTextPx = resources.getDimension(R.dimen.bp_hud_mode_size) * hudScale
 
             val reservedRatio = when {
+                largeSlate -> 0.142f
+                wideSlate && shortDp >= 720f -> 0.148f
+                wideSlate -> 0.154f
                 shortDp >= 840f && aspect < 1.45f -> 0.158f
                 shortDp >= 840f -> 0.172f
                 shortDp >= 720f && aspect < 1.45f -> 0.16f
@@ -982,8 +1116,22 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
                 aspect >= 2.0f -> 0.172f
                 else -> 0.21f
             }
+            val reservedMaxDp = when {
+                largeSlate -> 176f
+                wideSlate -> 184f
+                shortDp >= 720f -> 194f
+                else -> 180f
+            }
+            val reservedMinDp = when {
+                aspect >= 2.3f -> 84f
+                aspect >= 2.0f -> 88f
+                shortDp <= 380f -> 88f
+                shortDp <= 430f -> 92f
+                wideSlate -> 94f
+                else -> 98f
+            }
             val reservedHeightDp = (heightDp * reservedRatio)
-                .coerceIn(108f, if (shortDp >= 720f) 194f else 180f)
+                .coerceIn(reservedMinDp, reservedMaxDp)
             val hudParams = binding.hudContainer.layoutParams as ConstraintLayout.LayoutParams
             val targetHeightPx = dp(reservedHeightDp)
             if (hudParams.height != targetHeightPx) {
@@ -1004,14 +1152,14 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             binding.hudFps.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, modeSize)
             binding.hudLevelBanner.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, bannerSize)
 
-            val rowPadding = dp((10f * hudScale).coerceIn(8f, 16f))
+            val rowPadding = dp((10f * hudScale).coerceIn(8f, if (wideSlate) 14f else 16f))
             binding.hudRow.setPadding(rowPadding, rowPadding, rowPadding, rowPadding)
 
             val scoreParams = binding.hudScore.layoutParams as ConstraintLayout.LayoutParams
-            scoreParams.marginEnd = dp((10f * hudScale).coerceIn(8f, 18f))
+            scoreParams.marginEnd = dp((10f * hudScale).coerceIn(8f, if (wideSlate) 15f else 18f))
             binding.hudScore.layoutParams = scoreParams
 
-            val statGap = dp((14f * hudScale).coerceIn(10f, 24f))
+            val statGap = dp((14f * hudScale).coerceIn(10f, if (wideSlate) 20f else 24f))
             val timeParams = binding.hudTime.layoutParams as android.widget.LinearLayout.LayoutParams
             timeParams.marginStart = statGap
             binding.hudTime.layoutParams = timeParams
@@ -1019,7 +1167,12 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             levelParams.marginStart = statGap
             binding.hudLevel.layoutParams = levelParams
 
-            val statusTopMargin = dp((6f * hudScale).coerceIn(4f, 10f))
+            val statusTopMargin = dp(
+                (6f * hudScale).coerceIn(
+                    if (wideSlate) 3.5f else 4f,
+                    if (wideSlate) 8f else 10f
+                )
+            )
             val statusParams = binding.hudStatusRow.layoutParams as android.widget.LinearLayout.LayoutParams
             statusParams.topMargin = statusTopMargin
             binding.hudStatusRow.layoutParams = statusParams
@@ -1027,26 +1180,55 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             powerupsParams.topMargin = statusTopMargin
             binding.hudPowerups.layoutParams = powerupsParams
             val chipsParams = binding.hudPowerupChips.layoutParams as android.widget.LinearLayout.LayoutParams
-            chipsParams.bottomMargin = dp((4f * hudScale).coerceIn(2f, 8f))
+            chipsParams.bottomMargin = dp((4f * hudScale).coerceIn(2f, if (wideSlate) 6f else 8f))
             binding.hudPowerupChips.layoutParams = chipsParams
             val bannerParams = binding.hudLevelBanner.layoutParams as android.widget.LinearLayout.LayoutParams
-            bannerParams.topMargin = dp((10f * hudScale).coerceIn(6f, 14f))
+            bannerParams.topMargin = dp(
+                (10f * hudScale).coerceIn(
+                    if (wideSlate) 5f else 6f,
+                    if (wideSlate) 12f else 14f
+                )
+            )
             binding.hudLevelBanner.layoutParams = bannerParams
 
-            val actionMin = (44f * hudScale).coerceIn(38f, 60f)
+            val actionMin = if (wideSlate) {
+                (42f * hudScale).coerceIn(38f, 56f)
+            } else {
+                (44f * hudScale).coerceIn(38f, 60f)
+            }
             binding.buttonPause.minimumWidth = dp(actionMin)
             binding.buttonPause.minimumHeight = dp(actionMin)
-            binding.buttonPause.iconSize = dp((22f * hudScale).coerceIn(18f, 30f))
-            binding.buttonLaser.minimumWidth = dp((76f * hudScale).coerceIn(64f, 104f))
-            binding.buttonLaser.minimumHeight = dp((42f * hudScale).coerceIn(36f, 56f))
-            val laserMargin = dp((16f * hudScale).coerceIn(12f, 24f))
+            binding.buttonPause.iconSize = dp((22f * hudScale).coerceIn(18f, if (wideSlate) 28f else 30f))
+            val laserWidthBase = if (wideSlate) 72f else 76f
+            binding.buttonLaser.minimumWidth = dp(
+                (laserWidthBase * hudScale).coerceIn(62f, if (wideSlate) 98f else 104f)
+            )
+            binding.buttonLaser.minimumHeight = dp(
+                (42f * hudScale).coerceIn(34f, if (wideSlate) 52f else 56f)
+            )
+            val laserMargin = dp((16f * hudScale).coerceIn(10f, if (wideSlate) 20f else 24f))
             val laserParams = binding.buttonLaser.layoutParams as ConstraintLayout.LayoutParams
             laserParams.marginStart = laserMargin
             laserParams.marginEnd = laserMargin
-            laserParams.bottomMargin = laserMargin
+            val topAnchored =
+                laserParams.topToBottom != ConstraintLayout.LayoutParams.UNSET &&
+                    laserParams.bottomToTop == ConstraintLayout.LayoutParams.UNSET &&
+                    laserParams.bottomToBottom == ConstraintLayout.LayoutParams.UNSET
+            if (topAnchored) {
+                laserParams.topMargin = laserMargin
+                laserParams.bottomMargin = 0
+            } else {
+                laserParams.bottomMargin = laserMargin
+            }
             binding.buttonLaser.layoutParams = laserParams
 
-            val shieldWidthDp = (shortDp * if (aspect < 1.45f) 0.22f else 0.24f).coerceIn(116f, 186f)
+            val shieldRatio = when {
+                largeSlate -> 0.2f
+                wideSlate -> 0.215f
+                aspect < 1.45f -> 0.22f
+                else -> 0.24f
+            }
+            val shieldWidthDp = (shortDp * shieldRatio).coerceIn(112f, if (wideSlate) 176f else 186f)
             val shieldParams = binding.hudShieldBar.layoutParams as android.widget.LinearLayout.LayoutParams
             shieldParams.width = dp(shieldWidthDp)
             binding.hudShieldBar.layoutParams = shieldParams
@@ -1121,13 +1303,19 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
 
     private fun playGameFade() {
         val overlay = binding.gameFadeOverlay
+        fadeAnimationToken += 1
+        val token = fadeAnimationToken
+        overlay.animate().cancel()
         overlay.alpha = 1f
         overlay.visibility = View.VISIBLE
         overlay.animate()
             .alpha(0f)
             .setDuration(UiMotion.OVERLAY_IN_DURATION)
             .setInterpolator(UiMotion.EMPHASIS_OUT)
-            .withEndAction { overlay.visibility = View.GONE }
+            .withEndAction {
+                if (token != fadeAnimationToken) return@withEndAction
+                overlay.visibility = View.GONE
+            }
             .start()
     }
 
@@ -1135,9 +1323,18 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         binding.endTitle.text = title
         endStatsAnimator?.cancel()
         val timeText = formatDuration(summary.durationSeconds)
+        binding.endStats.text = getString(
+            R.string.label_end_stats_format,
+            0,
+            summary.level,
+            timeText,
+            summary.bricksBroken,
+            summary.livesLost
+        )
         val animator = android.animation.ValueAnimator.ofInt(0, summary.score)
         endStatsAnimator = animator
-        animator.duration = 700
+        animator.duration = UiMotion.scoreCountDuration(summary.score)
+        animator.interpolator = UiMotion.LINEAR
         animator.addUpdateListener { valueAnimator ->
             val value = valueAnimator.animatedValue as Int
             binding.endStats.text = getString(
@@ -1250,6 +1447,39 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     private fun cancelLevelAdvanceRecovery() {
         levelAdvanceRecoveryRunnable?.let { binding.root.removeCallbacks(it) }
         levelAdvanceRecoveryRunnable = null
+    }
+
+    private fun recordRunSnapshotIfNeeded(onComplete: () -> Unit) {
+        if (runStatsRecorded || endOverlayState == EndOverlayState.GAME_OVER) {
+            onComplete()
+            return
+        }
+        if (runSnapshotCaptureInFlight) return
+        runSnapshotCaptureInFlight = true
+        val timeout = Runnable {
+            if (!runSnapshotCaptureInFlight) return@Runnable
+            runSnapshotCaptureInFlight = false
+            onComplete()
+        }
+        binding.root.postDelayed(timeout, 220L)
+        binding.gameSurface.captureSummary { summary ->
+            if (!runSnapshotCaptureInFlight) return@captureSummary
+            binding.root.removeCallbacks(timeout)
+            if (!runStatsRecorded && summary != null && shouldRecordRunSummary(summary)) {
+                LifetimeStatsManager.recordRun(this, summary)
+                runStatsRecorded = true
+            }
+            runSnapshotCaptureInFlight = false
+            onComplete()
+        }
+    }
+
+    private fun shouldRecordRunSummary(summary: GameSummary): Boolean {
+        return summary.score > 0 ||
+            summary.level > 1 ||
+            summary.durationSeconds >= 8 ||
+            summary.bricksBroken > 0 ||
+            summary.livesLost > 0
     }
 
     private fun dp(value: Int): Int = dp(value.toFloat())

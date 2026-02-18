@@ -218,27 +218,24 @@ class GameLogger(private val context: Context, enabled: Boolean = true) {
 
             val logFile = File(logDir, "session_${sessionId}_${dateFormat.format(Date(sessionStartTime))}.json")
 
-            val jsonArray = JSONArray()
-            logBuffer.forEach { event ->
-                val jsonEvent = JSONObject().apply {
-                    put("timestamp", event.timestamp)
-                    put("type", event.type.name)
-                    put("data", JSONObject(event.data.mapValues { value ->
-                        when (value.value) {
-                            is Pair<*, *> -> JSONArray().apply {
-                                put((value.value as Pair<*, *>).first)
-                                put((value.value as Pair<*, *>).second)
-                            }
-                            else -> value.value
-                        }
-                    }))
-                }
-                jsonArray.put(jsonEvent)
-            }
-
             FileWriter(logFile, true).use { writer ->
-                writer.write(jsonArray.toString(2))
-                writer.write("\n")
+                logBuffer.forEach { event ->
+                    val jsonEvent = JSONObject().apply {
+                        put("timestamp", event.timestamp)
+                        put("type", event.type.name)
+                        put("data", JSONObject(event.data.mapValues { value ->
+                            when (value.value) {
+                                is Pair<*, *> -> JSONArray().apply {
+                                    put((value.value as Pair<*, *>).first)
+                                    put((value.value as Pair<*, *>).second)
+                                }
+                                else -> value.value
+                            }
+                        }))
+                    }
+                    writer.write(jsonEvent.toString())
+                    writer.write("\n")
+                }
             }
 
             logBuffer.clear()

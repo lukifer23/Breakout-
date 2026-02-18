@@ -2,7 +2,7 @@
 
 ## Completed (Android Foundation)
 - Full Android gameplay stack with OpenGL ES renderer and fixed-step simulation.
-- 10 game modes, 10 brick types, 15 powerups.
+- 10 game modes, 10 brick types, 18 powerups.
 - Fold-aware UI with phone/tablet/foldable layout support.
 - Per-mode scoreboards, daily challenges, progression, and local lifetime stats.
 - Advanced mode-specific systems:

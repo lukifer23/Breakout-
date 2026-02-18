@@ -32,6 +32,7 @@
         app:cardBackgroundColor="@color/bp_surface"
         app:cardCornerRadius="16dp"
         app:cardElevation="4dp"
+        app:layout_constraintWidth_max="1080dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/scoreSubtitle"
@@ -62,13 +63,85 @@
                 android:text="@string/label_lifetime_run_default"
                 android:textColor="@color/bp_white" />
 
-            <TextView
-                android:id="@+id/scoreLifetimeStats"
-                style="@style/Text.BreakoutPlus.Caption"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:text="@string/label_lifetime_stats_default" />
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/scoreBricksStat"
+                    style="@style/Text.BreakoutPlus.Caption"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_score_stat_chip"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:paddingStart="12dp"
+                    android:paddingTop="7dp"
+                    android:paddingEnd="12dp"
+                    android:paddingBottom="7dp"
+                    android:text="@string/label_stat_bricks_default"
+                    android:textColor="@color/bp_white" />
+
+                <TextView
+                    android:id="@+id/scoreLivesStat"
+                    style="@style/Text.BreakoutPlus.Caption"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_score_stat_chip"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:paddingStart="12dp"
+                    android:paddingTop="7dp"
+                    android:paddingEnd="12dp"
+                    android:paddingBottom="7dp"
+                    android:text="@string/label_stat_lives_lost_default"
+                    android:textColor="@color/bp_white" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/scorePlayStat"
+                    style="@style/Text.BreakoutPlus.Caption"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_score_stat_chip"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:paddingStart="12dp"
+                    android:paddingTop="7dp"
+                    android:paddingEnd="12dp"
+                    android:paddingBottom="7dp"
+                    android:text="@string/label_stat_play_time_default"
+                    android:textColor="@color/bp_white" />
+
+                <TextView
+                    android:id="@+id/scoreLongestStat"
+                    style="@style/Text.BreakoutPlus.Caption"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_score_stat_chip"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:paddingStart="12dp"
+                    android:paddingTop="7dp"
+                    android:paddingEnd="12dp"
+                    android:paddingBottom="7dp"
+                    android:text="@string/label_stat_longest_run_default"
+                    android:textColor="@color/bp_white" />
+            </LinearLayout>
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
@@ -77,6 +150,8 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_marginTop="16dp"
+        android:fillViewport="true"
+        app:layout_constraintWidth_max="1080dp"
         app:layout_constraintBottom_toTopOf="@id/scoreFooter"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -108,6 +183,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp"
         android:orientation="horizontal"
+        app:layout_constraintWidth_max="1080dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">

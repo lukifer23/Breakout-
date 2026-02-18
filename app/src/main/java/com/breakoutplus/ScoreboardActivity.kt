@@ -2,7 +2,9 @@ package com.breakoutplus
 
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.View
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.ColorUtils
 import com.google.android.material.card.MaterialCardView
 import com.breakoutplus.databinding.ActivityScoreboardBinding
 import com.breakoutplus.databinding.ItemScoreRowBinding
@@ -66,18 +68,35 @@ class ScoreboardActivity : FoldAwareActivity() {
         }
         binding.scoreList.removeAllViews()
 
-        // Update mode title
-        binding.scoreTitle.text = getString(R.string.label_leaderboard_format, currentMode.label)
+        val modeTitle = getString(R.string.label_leaderboard_format, currentMode.label)
+        val runCountText = resources.getQuantityString(
+            R.plurals.label_scoreboard_runs_count,
+            scores.size,
+            scores.size
+        )
+        binding.scoreTitle.text = getString(R.string.title_scoreboard)
+        binding.scoreSubtitle.text = getString(
+            R.string.label_scoreboard_mode_runs_format,
+            modeTitle,
+            runCountText
+        )
+        val accent = modeAccentColor(currentMode.mode)
+        binding.scoreSubtitle.setTextColor(accent)
+        val summaryStroke = ColorUtils.setAlphaComponent(accent, 170)
+        binding.scoreSummaryCard.strokeColor = summaryStroke
         binding.buttonScorePrev.isEnabled = modes.size > 1
         binding.buttonScoreNext.isEnabled = modes.size > 1
 
         if (scores.isEmpty()) {
             binding.scoreEmpty.text = getString(R.string.label_no_scores_mode, currentMode.label)
-            binding.scoreEmpty.visibility = android.view.View.VISIBLE
+            binding.scoreEmpty.visibility = View.VISIBLE
+            binding.scoreScroll.visibility = View.GONE
             return
         }
-        binding.scoreEmpty.visibility = android.view.View.GONE
+        binding.scoreEmpty.visibility = View.GONE
+        binding.scoreScroll.visibility = View.VISIBLE
         val inflater = LayoutInflater.from(this)
+        val baseSurface = ContextCompat.getColor(this, R.color.bp_surface)
         scores.forEachIndexed { index, entry ->
             val row = ItemScoreRowBinding.inflate(inflater, binding.scoreList, false)
             row.scoreRank.text = getString(R.string.label_rank_format, index + 1)
@@ -102,25 +121,38 @@ class ScoreboardActivity : FoldAwareActivity() {
                 2 -> R.color.bp_magenta
                 else -> R.color.bp_gray
             }
-            row.scoreRank.setTextColor(ContextCompat.getColor(this, rankColor))
+            val rankAccent = ContextCompat.getColor(this, rankColor)
+            row.scoreRank.setTextColor(rankAccent)
+            (row.scoreRank.background?.mutate() as? android.graphics.drawable.GradientDrawable)?.let { badge ->
+                val fillAlpha = if (index < 3) 56 else 34
+                val strokeAlpha = if (index < 3) 184 else 120
+                badge.setColor(ColorUtils.setAlphaComponent(rankAccent, fillAlpha))
+                badge.setStroke(dp(1f), ColorUtils.setAlphaComponent(rankAccent, strokeAlpha))
+            }
             val card = row.root as? MaterialCardView
             card?.strokeColor = ContextCompat.getColor(this, if (index < 3) rankColor else R.color.bp_line)
             card?.strokeWidth = if (index < 3) dp(1.5f) else dp(1f)
             card?.cardElevation = if (index < 3) dp(4f).toFloat() else dp(2f).toFloat()
+            card?.setCardBackgroundColor(
+                if (index < 3) ColorUtils.blendARGB(baseSurface, rankAccent, 0.1f) else baseSurface
+            )
+            row.scoreValue.setTextColor(
+                if (index < 3) rankAccent else ContextCompat.getColor(this, R.color.bp_white)
+            )
 
             // Add entrance animation
             val rowView = row.root
             rowView.alpha = 0f
-            rowView.translationX = -50f
-            rowView.scaleX = 0.98f
-            rowView.scaleY = 0.98f
+            rowView.translationY = 14f
+            rowView.scaleX = 0.985f
+            rowView.scaleY = 0.985f
             rowView.animate()
                 .alpha(1f)
-                .translationX(0f)
+                .translationY(0f)
                 .scaleX(1f)
                 .scaleY(1f)
                 .setDuration(UiMotion.LIST_ITEM_DURATION)
-                .setStartDelay(UiMotion.stagger(index, step = 52L))
+                .setStartDelay(UiMotion.stagger(index, step = 42L))
                 .setInterpolator(UiMotion.EMPHASIS_OUT)
                 .start()
 
@@ -133,9 +165,13 @@ class ScoreboardActivity : FoldAwareActivity() {
         val chapter = ProgressionManager.chapterForLevel(bestLevel)
         val stage = ProgressionManager.stageForLevel(bestLevel)
         val xp = ProgressionManager.loadXp(this)
-        val journey = getString(R.string.label_progress_format, chapter, stage, xp)
-        val best = getString(R.string.label_best_level_short, bestLevel)
-        binding.scoreProgress.text = "$journey • $best"
+        binding.scoreProgress.text = getString(
+            R.string.label_progress_with_best_format,
+            chapter,
+            stage,
+            xp,
+            bestLevel
+        )
     }
 
     private fun updateLifetimeStats() {
@@ -153,11 +189,20 @@ class ScoreboardActivity : FoldAwareActivity() {
             stats.highestScore,
             avgScore
         )
-        binding.scoreLifetimeStats.text = getString(
-            R.string.label_lifetime_stats_format,
-            stats.totalBricksBroken,
-            stats.totalLivesLost,
-            playTime,
+        binding.scoreBricksStat.text = getString(
+            R.string.label_stat_bricks_format,
+            stats.totalBricksBroken
+        )
+        binding.scoreLivesStat.text = getString(
+            R.string.label_stat_lives_lost_format,
+            stats.totalLivesLost
+        )
+        binding.scorePlayStat.text = getString(
+            R.string.label_stat_play_time_format,
+            playTime
+        )
+        binding.scoreLongestStat.text = getString(
+            R.string.label_stat_longest_run_format,
             longestRun
         )
     }
@@ -187,8 +232,31 @@ class ScoreboardActivity : FoldAwareActivity() {
         return (value * resources.displayMetrics.density).toInt().coerceAtLeast(1)
     }
 
+    private fun modeAccentColor(mode: GameMode?): Int {
+        val res = when (mode) {
+            null -> R.color.bp_cyan
+            GameMode.CLASSIC -> R.color.bp_cyan
+            GameMode.TIMED -> R.color.bp_gold
+            GameMode.ENDLESS -> R.color.bp_green
+            GameMode.GOD -> R.color.bp_magenta
+            GameMode.RUSH -> R.color.bp_red
+            GameMode.VOLLEY -> R.color.bp_azure
+            GameMode.TUNNEL -> R.color.bp_orange
+            GameMode.SURVIVAL -> R.color.bp_orange
+            GameMode.INVADERS -> R.color.bp_violet
+            GameMode.ZEN -> R.color.bp_gray
+        }
+        return ContextCompat.getColor(this, res)
+    }
+
     private fun animateEntry() {
-        val views = listOf(binding.scoreTitle, binding.scoreScroll, binding.scoreFooter)
+        val views = listOf(
+            binding.scoreTitle,
+            binding.scoreSubtitle,
+            binding.scoreSummaryCard,
+            binding.scoreScroll,
+            binding.scoreFooter
+        )
         views.forEachIndexed { index, view ->
             view.alpha = 0f
             view.translationY = 18f

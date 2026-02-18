@@ -12,7 +12,7 @@ Android-first brick breaker built for modern phones and foldables, with a separa
 - Choreographer-paced rendering with fixed-step simulation in `GameRenderer`
 - 10 game modes
 - 10 brick types
-- 15 powerups
+- 18 powerups
 - Journey progression (chapter/stage labels every 10 levels)
 - Daily challenges, per-mode scoreboard, lifetime stats
 - Fold-aware and large-screen layout handling
@@ -33,10 +33,11 @@ Android-first brick breaker built for modern phones and foldables, with a separa
 - Normal, Reinforced, Armored, Explosive, Unbreakable
 - Moving, Spawning, Phase, Boss, Invader
 
-## Powerups (15)
+## Powerups (18)
 - Multi-ball, Laser, Guardrail, Shield, Extra life
 - Wide paddle, Shrink, Slow, Overdrive, Fireball
 - Magnet, Gravity Well, Ball Splitter, Freeze, Pierce
+- Ricochet, Time Warp, 2x Score
 
 ## Android Build & Run (CLI)
 

@@ -21,10 +21,11 @@ Modes:
 - Invaders: enemy fleet movement, telegraphed shots, and shield pressure.
 - Zen Mode: relaxed flow without score/life pressure.
 
-Powerups (15):
+Powerups (18):
 - Multi-ball, Laser, Guardrail, Shield, Extra Life
 - Wide Paddle, Shrink, Slow, Overdrive, Fireball
 - Magnet, Gravity Well, Ball Splitter, Freeze, Pierce
+- Ricochet, Time Warp, 2x Score
 
 Brick types (10):
 - Normal, Reinforced, Armored, Explosive, Unbreakable

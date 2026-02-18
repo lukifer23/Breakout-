@@ -40,6 +40,11 @@ class GameRenderer(
     private var debugAutoPlayEnabled = false
     private var recoveryAttempts = 0
     private val maxRecoveryAttempts = 2
+    private var perfLogSampleTimer = 0f
+    private var fpsUiSampleTimer = 0f
+    private var lastReportedFps = 0
+    private val performanceSampleInterval = 0.25f
+    private val fpsUiSampleInterval = 0.16f
     private val shakeAmplitudeScale = 0.34f
     private val maxShakeAmplitude = 1.15f
     private val comboFlashDuration = 0.28f
@@ -48,7 +53,7 @@ class GameRenderer(
     fun triggerScreenShake(intensity: Float = 3f, duration: Float = 0.2f) {
         val clampedIntensity = intensity.coerceIn(0f, 2.4f)
         val clampedDuration = duration.coerceIn(0.03f, 0.24f)
-        shakeIntensity = max(shakeIntensity * 0.82f, clampedIntensity)
+        shakeIntensity = max(shakeIntensity, clampedIntensity)
         screenShakeDuration = max(screenShakeDuration, clampedDuration)
         screenShake = max(screenShake, clampedDuration)
     }
@@ -62,7 +67,7 @@ class GameRenderer(
     }
 
     fun triggerImpactFlash(intensity: Float) {
-        impactFlash = max(impactFlash, intensity.coerceIn(0f, 1f))
+        impactFlash = (impactFlash + intensity.coerceIn(0f, 1f) * 0.62f).coerceIn(0f, 1f)
     }
 
     fun setTargetFrameRate(fps: Float) {
@@ -83,6 +88,7 @@ class GameRenderer(
         viewportState.update(width, height)
         worldWidth = 100f
         worldHeight = worldWidth * (height.toFloat() / width.toFloat())
+        resetVisualEffects()
         engine.onResize(width, height)
     }
 
@@ -170,16 +176,25 @@ class GameRenderer(
             if (!paused) {
                 val frameTime = (System.nanoTime() - frameStart) / 1_000_000f // Convert to milliseconds
                 val fps = if (delta > 0f) (1f / delta).toInt() else 0
-                logger.logPerformanceMetric(fps.toFloat(), frameTime, engine.getObjectCount())
-                if (config.settings.showFpsCounter) {
+                perfLogSampleTimer += delta
+                fpsUiSampleTimer += delta
+                if (perfLogSampleTimer >= performanceSampleInterval) {
+                    logger.logPerformanceMetric(fps.toFloat(), frameTime, engine.getObjectCount())
+                    perfLogSampleTimer = 0f
+                }
+                if (config.settings.showFpsCounter &&
+                    (fpsUiSampleTimer >= fpsUiSampleInterval || lastReportedFps == 0)
+                ) {
                     listener.onFpsUpdate(fps)
+                    fpsUiSampleTimer = 0f
+                    lastReportedFps = fps
                 }
             }
             if (recoveryAttempts > 0) {
                 recoveryAttempts = 0
             }
         } catch (t: Throwable) {
-            handleFatalRenderError(t)
+            handleFatalRenderError(t, "onDrawFrame")
         }
     }
 
@@ -219,14 +234,21 @@ class GameRenderer(
         }
         lastTimeNs = 0L
         simulationAccumulator = 0f
+        perfLogSampleTimer = 0f
+        fpsUiSampleTimer = 0f
+        lastReportedFps = 0
     }
 
     fun restart() {
         engine = GameEngine(config, listener, audioManager, logger, config.dailyChallenges, this)
         engine.setDebugAutoPlay(debugAutoPlayEnabled)
         reapplyViewportToEngine()
+        resetVisualEffects()
         lastTimeNs = 0L
         simulationAccumulator = 0f
+        perfLogSampleTimer = 0f
+        fpsUiSampleTimer = 0f
+        lastReportedFps = 0
         recoveryAttempts = 0
     }
 
@@ -241,7 +263,11 @@ class GameRenderer(
         engine = GameEngine(config, listener, audioManager, logger, config.dailyChallenges, this)
         engine.setDebugAutoPlay(debugAutoPlayEnabled)
         reapplyViewportToEngine()
+        resetVisualEffects()
         simulationAccumulator = 0f
+        perfLogSampleTimer = 0f
+        fpsUiSampleTimer = 0f
+        lastReportedFps = 0
         recoveryAttempts = 0
     }
 
@@ -257,6 +283,14 @@ class GameRenderer(
         engine.updateUnlocks(unlocks)
     }
 
+    fun snapshotSummary(): GameSummary {
+        return engine.currentSummary()
+    }
+
+    fun reportExternalError(source: String, t: Throwable) {
+        handleFatalRenderError(t, source)
+    }
+
     fun release() {
         audioManager.release()
     }
@@ -266,34 +300,47 @@ class GameRenderer(
         return t * t * (3f - 2f * t)
     }
 
+    private fun resetVisualEffects() {
+        screenShake = 0f
+        screenShakeDuration = 0f
+        shakeIntensity = 0f
+        shakePhase = 0f
+        comboFlash = 0f
+        levelClearFlash = 0f
+        impactFlash = 0f
+        renderer2D.setOffset(0f, 0f)
+    }
+
     private fun reapplyViewportToEngine() {
         viewportState.reapply { width, height -> engine.onResize(width, height) }
     }
 
-    private fun handleFatalRenderError(t: Throwable) {
+    private fun handleFatalRenderError(t: Throwable, source: String) {
         Log.e("GameRenderer", "Fatal render/update error", t)
         logger.logError(
             "render_crash",
             mapOf(
+                "source" to source,
                 "type" to (t::class.java.simpleName ?: "Throwable"),
                 "message" to (t.message ?: "unknown")
             )
         )
-        if (recoveryAttempts >= maxRecoveryAttempts) {
+        if (t is VirtualMachineError || t is LinkageError) {
+            resetVisualEffects()
             paused = true
+            engine.pause()
+            return
+        }
+        if (recoveryAttempts >= maxRecoveryAttempts) {
+            resetVisualEffects()
+            paused = true
+            engine.pause()
             return
         }
         recoveryAttempts += 1
-        runCatching {
-            paused = false
-            simulationAccumulator = 0f
-            lastTimeNs = 0L
-            engine = GameEngine(config, listener, audioManager, logger, config.dailyChallenges, this)
-            engine.setDebugAutoPlay(debugAutoPlayEnabled)
-            reapplyViewportToEngine()
-        }.onFailure { recoveryFailure ->
-            Log.e("GameRenderer", "Renderer recovery failed", recoveryFailure)
-            paused = true
-        }
+        // Preserve in-flight run state: drop the bad frame and continue.
+        simulationAccumulator = 0f
+        lastTimeNs = 0L
+        resetVisualEffects()
     }
 }

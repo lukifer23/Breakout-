@@ -21,9 +21,15 @@ class GameGLSurfaceView @JvmOverloads constructor(
     private var targetFps: Float = 0f
     private var surfaceReady = false
 
-    private fun queueRendererAction(action: (GameRenderer) -> Unit) {
+    private fun queueRendererAction(actionName: String, action: (GameRenderer) -> Unit) {
         val renderer = rendererImpl ?: return
-        queueEvent { action(renderer) }
+        queueEvent {
+            try {
+                action(renderer)
+            } catch (t: Throwable) {
+                runCatching { renderer.reportExternalError(actionName, t) }
+            }
+        }
     }
 
     init {
@@ -53,58 +59,75 @@ class GameGLSurfaceView @JvmOverloads constructor(
             renderMode = RENDERMODE_WHEN_DIRTY
             framePacer.start()
         } else {
-            queueRendererAction { it.reset(config) }
+            queueRendererAction("reset") { it.reset(config) }
             framePacer.start()
         }
-        queueRendererAction { it.setTargetFrameRate(targetFps) }
+        queueRendererAction("setTargetFrameRate") { it.setTargetFrameRate(targetFps) }
     }
 
     fun pauseGame() {
         framePacer.stop()
-        queueRendererAction { it.pause() }
+        queueRendererAction("pause") { it.pause() }
         renderMode = RENDERMODE_WHEN_DIRTY
         requestRender()
     }
 
     fun resumeGame() {
-        queueRendererAction { it.resume() }
+        queueRendererAction("resume") { it.resume() }
         renderMode = RENDERMODE_WHEN_DIRTY
         framePacer.start()
     }
 
     fun restartGame() {
-        queueRendererAction { it.restart() }
+        queueRendererAction("restart") { it.restart() }
     }
 
     fun nextLevel() {
-        queueRendererAction { it.nextLevel() }
+        queueRendererAction("nextLevel") { it.nextLevel() }
     }
 
     fun setTargetFrameRate(fps: Float) {
         targetFps = if (fps.isFinite() && fps > 0f) fps else 0f
         framePacer.setTargetFps(targetFps)
-        queueRendererAction { it.setTargetFrameRate(targetFps) }
+        queueRendererAction("setTargetFrameRate") { it.setTargetFrameRate(targetFps) }
         applySurfaceFrameRate()
     }
 
     fun applySettings(settings: com.breakoutplus.SettingsManager.Settings) {
-        queueRendererAction { it.updateSettings(settings) }
+        queueRendererAction("applySettings") { it.updateSettings(settings) }
     }
 
     fun applyUnlocks(unlocks: com.breakoutplus.UnlockManager.UnlockState) {
-        queueRendererAction { it.updateUnlocks(unlocks) }
+        queueRendererAction("applyUnlocks") { it.updateUnlocks(unlocks) }
     }
 
     fun fireLaser() {
-        queueRendererAction { it.fireLaser() }
+        queueRendererAction("fireLaser") { it.fireLaser() }
     }
 
     fun debugSpawnPowerup(type: PowerUpType) {
-        queueRendererAction { it.debugSpawnPowerup(type) }
+        queueRendererAction("debugSpawnPowerup") { it.debugSpawnPowerup(type) }
     }
 
     fun setDebugAutoPlay(enabled: Boolean) {
-        queueRendererAction { it.setDebugAutoPlay(enabled) }
+        queueRendererAction("setDebugAutoPlay") { it.setDebugAutoPlay(enabled) }
+    }
+
+    fun captureSummary(callback: (GameSummary?) -> Unit) {
+        val renderer = rendererImpl
+        if (renderer == null) {
+            post { callback(null) }
+            return
+        }
+        queueEvent {
+            val summary = try {
+                renderer.snapshotSummary()
+            } catch (t: Throwable) {
+                runCatching { renderer.reportExternalError("captureSummary", t) }
+                null
+            }
+            post { callback(summary) }
+        }
     }
 
     fun isGameRunning(): Boolean {
@@ -112,12 +135,11 @@ class GameGLSurfaceView @JvmOverloads constructor(
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        val renderer = rendererImpl
-        if (renderer != null) {
+        if (rendererImpl != null) {
             val copy = MotionEvent.obtain(event)
             val viewWidth = width.toFloat()
             val viewHeight = height.toFloat()
-            queueEvent {
+            queueRendererAction("touch") { renderer ->
                 try {
                     renderer.handleTouch(copy, viewWidth, viewHeight)
                 } finally {
