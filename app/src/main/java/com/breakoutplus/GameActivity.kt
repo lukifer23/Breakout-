@@ -149,8 +149,10 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         binding.buttonPause.setOnClickListener { showPause(true) }
         binding.buttonResume.setOnClickListener { showPause(false) }
         binding.buttonSkipLevel?.setOnClickListener {
-            showPause(false)
+            // Keep engine state paused for GOD-mode force-skip validation.
             binding.gameSurface.nextLevel()
+            showPause(false)
+            playGameFade()
         }
         binding.buttonRestart.setOnClickListener { restartGame() }
         binding.buttonExit.setOnClickListener { exitToMenu() }
@@ -879,34 +881,23 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             Log.i("BreakoutAutoPlay", "event=next_level_request mode=${config.mode.name} from_level=${summary.level} target_level=${summary.level + 1} source=auto")
         }
 
-        val retry = Runnable {
+        val fallback = Runnable {
             if (!levelAdvanceInProgress || isFinishing || isDestroyed) return@Runnable
-            Log.w("GameActivity", "Auto level advance timed out; retrying nextLevel()")
+            Log.e("GameActivity", "Auto level advance failed; restoring manual next-level overlay")
             if (debugAutoPlaySession) {
-                Log.i("BreakoutAutoPlay", "event=next_level_retry mode=${config.mode.name} from_level=${summary.level} target_level=${summary.level + 1}")
+                Log.i("BreakoutAutoPlay", "event=next_level_fallback mode=${config.mode.name} from_level=${summary.level} target_level=${summary.level + 1}")
             }
-            binding.gameSurface.nextLevel()
-
-            val fallback = Runnable {
-                if (!levelAdvanceInProgress || isFinishing || isDestroyed) return@Runnable
-                Log.e("GameActivity", "Auto level advance failed; restoring manual next-level overlay")
-                if (debugAutoPlaySession) {
-                    Log.i("BreakoutAutoPlay", "event=next_level_fallback mode=${config.mode.name} from_level=${summary.level} target_level=${summary.level + 1}")
-                }
-                levelAdvanceInProgress = false
-                binding.buttonEndPrimary.isEnabled = true
-                binding.buttonEndSecondary.isEnabled = true
-                endOverlayState = EndOverlayState.LEVEL_COMPLETE
-                binding.endTitle.text = getString(R.string.label_level_complete)
-                animateEndStats(summary, getString(R.string.label_level_complete))
-                binding.buttonEndPrimary.text = getString(R.string.label_next_level)
-                showOverlay(binding.endOverlay)
-            }
-            levelAdvanceRecoveryRunnable = fallback
-            binding.root.postDelayed(fallback, 1200L)
+            levelAdvanceInProgress = false
+            binding.buttonEndPrimary.isEnabled = true
+            binding.buttonEndSecondary.isEnabled = true
+            endOverlayState = EndOverlayState.LEVEL_COMPLETE
+            binding.endTitle.text = getString(R.string.label_level_complete)
+            animateEndStats(summary, getString(R.string.label_level_complete))
+            binding.buttonEndPrimary.text = getString(R.string.label_next_level)
+            showOverlay(binding.endOverlay)
         }
-        levelAdvanceRecoveryRunnable = retry
-        binding.root.postDelayed(retry, 1000L)
+        levelAdvanceRecoveryRunnable = fallback
+        binding.root.postDelayed(fallback, 1400L)
         binding.gameSurface.nextLevel()
         playGameFade()
     }

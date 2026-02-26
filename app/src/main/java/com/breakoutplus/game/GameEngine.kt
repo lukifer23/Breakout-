@@ -1594,7 +1594,8 @@ class GameEngine(
 
     private fun applyLayoutTuning(aspectRatio: Float, preserveRowBoost: Boolean) {
         val tallness = ((aspectRatio - 1.25f) / 0.85f).coerceIn(0f, 1f)
-        val isSlate = aspectRatio < 1.45f
+        val normalizedAspect = max(aspectRatio, 1f / aspectRatio.coerceAtLeast(0.0001f))
+        val isSlate = normalizedAspect <= 1.85f
 
         // Shared baseline, with specific adjustments for slate/tablet devices to prevent cramping.
         brickAreaTopRatio = if (isSlate) 0.96f else lerp(0.992f, 0.978f, tallness)
@@ -1950,10 +1951,14 @@ class GameEngine(
             state == GameState.PAUSED &&
                 config.mode.godMode &&
                 bricks.none { it.alive && it.type != BrickType.UNBREAKABLE }
-        
-        // God Mode Bypass: Allow forcing next level even if state is slightly off, 
-        // as long as we aren't already game over or dead.
-        val godModeForce = config.mode.godMode && state != GameState.GAME_OVER && lives > 0
+
+        // Manual GOD-mode skip is valid only from pause state to prevent duplicate
+        // auto-advance calls from skipping multiple levels.
+        val godModeForce =
+            config.mode.godMode &&
+                state == GameState.PAUSED &&
+                !awaitingNextLevel &&
+                lives > 0
 
         // Defensive checks to prevent invalid level advancement
         if (!awaitingNextLevel && !clearedBoardWhilePaused && !godModeForce) {

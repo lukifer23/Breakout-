@@ -11,6 +11,14 @@ val releaseSigningAvailable = !releaseStoreFile.isNullOrBlank() &&
     !releaseStorePassword.isNullOrBlank() &&
     !releaseKeyAlias.isNullOrBlank() &&
     !releaseKeyPassword.isNullOrBlank()
+val requestedTasks = gradle.startParameter.taskNames.joinToString(" ").lowercase()
+val releaseTaskRequested = requestedTasks.contains("release") || requestedTasks.contains("bundle")
+if (releaseTaskRequested && !releaseSigningAvailable) {
+    throw GradleException(
+        "Release signing vars are required for release tasks. " +
+            "Set BP_RELEASE_STORE_FILE, BP_RELEASE_STORE_PASSWORD, BP_RELEASE_KEY_ALIAS, BP_RELEASE_KEY_PASSWORD."
+    )
+}
 
 android {
     namespace = "com.breakoutplus"
@@ -47,11 +55,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = if (releaseSigningAvailable) {
-                signingConfigs.getByName("release")
-            } else {
-                signingConfigs.getByName("debug")
-            }
+            signingConfig = signingConfigs.findByName("release")
         }
         debug {
             applicationIdSuffix = ".debug"

@@ -39,8 +39,8 @@ Output:
 - `app/build/outputs/bundle/release/app-release.aab`
 
 Important:
-- If `BP_RELEASE_*` signing env vars are not set, the Gradle release build currently falls back to debug signing.
-- That fallback bundle is not accepted by Play for apps that already have an upload key registered.
+- `BP_RELEASE_*` signing env vars are required for release tasks.
+- Release/bundle tasks now fail fast if signing vars are missing to avoid producing invalid artifacts.
 
 ## Fastlane Play Uploads
 Install gems:

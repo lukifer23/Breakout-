@@ -72,7 +72,7 @@ class ModeSelectActivity : FoldAwareActivity() {
                 GameMode.GOD -> R.color.bp_magenta
                 GameMode.RUSH -> R.color.bp_red
                 GameMode.VOLLEY -> R.color.bp_azure
-                GameMode.TUNNEL -> R.color.bp_gold
+                GameMode.TUNNEL -> R.color.bp_orange
                 GameMode.SURVIVAL -> R.color.bp_orange
                 GameMode.INVADERS -> R.color.bp_violet
                 GameMode.ZEN -> R.color.bp_gray

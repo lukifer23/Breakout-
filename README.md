@@ -3,7 +3,7 @@
 Android-first brick breaker for phones, foldables, and slates.  
 The repository also includes an iOS port (`ios/`), but Android is the active release track.
 
-## Current Project State (As Of 2026-02-18)
+## Current Project State (As Of 2026-02-26)
 - Android foundation is strong and feature-complete:
   - 10 game modes
   - 10 brick types
@@ -14,6 +14,10 @@ The repository also includes an iOS port (`ios/`), but Android is the active rel
   - consistent HUD/animation behavior across foldables and large slates
   - long-session performance hardening
   - complexity reduction in core runtime files without removing features
+- Recent patch focus:
+  - hardened GOD/ZEN progression and skip-level flow
+  - restored tablet/slate GOD skip control parity
+  - tightened slate/fold board-density consistency
 
 ## Active Engineering Goals
 1. Preserve all existing features and mode identities.

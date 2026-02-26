@@ -1,5 +1,8 @@
 # Play Release Gaps (Android) - 2026-02-14
 
+> Historical snapshot: release-signing fallback behavior described below was hardened on 2026-02-26.
+> Release/bundle tasks now fail fast when `BP_RELEASE_*` vars are missing.
+
 ## Build Status
 - New release candidate built: `app/build/outputs/bundle/release/app-release.aab`
 - Current app version: `versionCode 10`, `versionName 1.0.9`

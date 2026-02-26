@@ -1,7 +1,8 @@
 Breakout+ 1.0.9 release candidate
 - Improved slate/fold HUD scaling consistency.
 - Increased vertical brick density for wide/slate gameplay.
-- Fixed God mode next-level progression edge case.
+- Fixed GOD/ZEN next-level progression edge cases.
+- Restored GOD pause-menu skip-level control on tablets/slates.
 - Reset Tunnel Siege shot/flash state between levels.
 - Reduced renderer overhead for smoother effects under load.
 - Unified activity transition behavior across key screens.

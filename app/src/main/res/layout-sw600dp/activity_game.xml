@@ -275,6 +275,16 @@
                 android:text="@string/label_resume" />
 
             <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonSkipLevel"
+                style="@style/Widget.BreakoutPlus.Button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/label_next_level"
+                android:backgroundTint="@color/bp_violet"
+                android:visibility="gone" />
+
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/buttonRestart"
                 style="@style/Widget.BreakoutPlus.Button"
                 android:layout_width="wrap_content"
