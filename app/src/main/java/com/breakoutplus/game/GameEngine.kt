@@ -352,6 +352,7 @@ class GameEngine(
             if (volleyCompactionCheckTimer <= 0f) {
                 volleyCompactionCheckTimer = 0.5f
                 compactDeadVolleyBricksIfNeeded()
+                updateVolleyDanger()
             }
         } else {
             volleyCompactionCheckTimer = 0f
@@ -1595,197 +1596,62 @@ class GameEngine(
         val tallness = ((aspectRatio - 1.25f) / 0.85f).coerceIn(0f, 1f)
         val isSlate = aspectRatio < 1.45f
 
-        // Shared baseline for all modes so switching feels visually stable.
-        brickAreaTopRatio = lerp(0.992f, 0.978f, tallness)
-        brickAreaBottomRatio = lerp(0.69f, 0.62f, tallness)
-        brickSpacing = lerp(0.31f, 0.37f, tallness)
-
-        val wideVerticalExpansion = when {
-            aspectRatio < 1.24f -> 0.11f
-            aspectRatio < 1.34f -> 0.1f
-            aspectRatio < 1.46f -> 0.08f
-            else -> 0f
-        }
-        val tallVerticalExpansion = when {
-            aspectRatio > 2.2f -> 0.06f
-            aspectRatio > 1.9f -> 0.045f
-            aspectRatio > 1.72f -> 0.03f
-            else -> 0f
-        }
-        brickAreaBottomRatio =
-            (brickAreaBottomRatio - wideVerticalExpansion - tallVerticalExpansion).coerceIn(0.48f, 0.72f)
-        if (isSlate) {
-            val slateVerticalBoost = when {
-                aspectRatio < 1.22f -> 0.058f
-                aspectRatio < 1.32f -> 0.05f
-                aspectRatio < 1.45f -> 0.04f
-                else -> 0f
-            }
-            brickAreaBottomRatio = (brickAreaBottomRatio - slateVerticalBoost).coerceAtLeast(0.5f)
-        }
-
-        if (isSlate) {
-            brickSpacing *= 0.9f
-        }
-        if (aspectRatio < 1.5f) {
-            brickSpacing -= 0.035f
-        } else if (aspectRatio > 2.1f) {
-            brickSpacing -= 0.02f
-        }
-        brickSpacing = brickSpacing.coerceIn(0.22f, 0.42f)
+        // Shared baseline, with specific adjustments for slate/tablet devices to prevent cramping.
+        brickAreaTopRatio = if (isSlate) 0.96f else lerp(0.992f, 0.978f, tallness)
+        brickAreaBottomRatio = if (isSlate) 0.54f else lerp(0.69f, 0.62f, tallness)
+        brickSpacing = if (isSlate) 0.24f else lerp(0.31f, 0.37f, tallness)
 
         if (!preserveRowBoost) {
+            // Adjust row boost to ensure density on taller screens, but relax it for slates.
             val densityBoost = (levelIndex / 6).coerceAtMost(2)
-            val slateExtraRows = when {
-                aspectRatio < 1.22f -> 3
-                aspectRatio < 1.34f -> 2
-                aspectRatio < 1.46f -> 1
-                else -> 0
-            }
-            val slateRowBoost = when {
-                aspectRatio < 1.24f -> 5
-                aspectRatio < 1.35f -> 4
-                aspectRatio < 1.48f -> 3
-                aspectRatio < 1.6f -> 2
-                else -> 0
-            }
-            val slateColBoost = when {
-                aspectRatio < 1.28f -> 3
-                aspectRatio < 1.42f -> 2
-                aspectRatio < 1.56f -> 1
-                else -> 0
-            }
-            val tallRowBoost = when {
-                aspectRatio > 2.25f -> 3
-                aspectRatio > 2.0f -> 2
-                aspectRatio > 1.8f -> 1
-                else -> 0
-            }
-            val wideRowBoost = when {
-                aspectRatio < 1.34f -> 2
-                aspectRatio < 1.52f -> 1
-                else -> 0
-            }
-            val wideColBoost = when {
-                aspectRatio < 1.34f -> 2
-                aspectRatio < 1.52f -> 1
-                else -> 0
-            }
-
-            val baseRowBoost = (if (isSlate) 7 else 4) + densityBoost + slateRowBoost + wideRowBoost + tallRowBoost + slateExtraRows
-            val baseColBoost = (if (isSlate) 4 else 3) + densityBoost + slateColBoost + wideColBoost
+            val baseRowBoost = if (isSlate) 8 else if (aspectRatio > 2.05f) 4 else if (aspectRatio > 1.85f) 2 else 0
+            val baseColBoost = if (isSlate) 4 else 0
 
             when (config.mode) {
                 GameMode.RUSH -> {
-                    layoutRowBoost = (baseRowBoost - 2).coerceAtLeast(0)
-                    layoutColBoost = (baseColBoost - 2).coerceAtLeast(0)
-                }
-                GameMode.TIMED -> {
-                    layoutRowBoost = (baseRowBoost - 1).coerceAtLeast(1)
-                    layoutColBoost = (baseColBoost - 1).coerceAtLeast(1)
+                   layoutRowBoost = (baseRowBoost - 2).coerceAtLeast(0)
+                   layoutColBoost = (baseColBoost - 2).coerceAtLeast(0)
                 }
                 GameMode.GOD -> {
-                    layoutRowBoost = (baseRowBoost + slateRowBoost / 2).coerceAtLeast(2)
-                    layoutColBoost = (baseColBoost - 1).coerceAtLeast(1)
+                    layoutRowBoost = baseRowBoost + 2 + densityBoost
+                    layoutColBoost = baseColBoost
                 }
                 GameMode.VOLLEY -> {
-                    val volleyRowBase = when {
-                        aspectRatio < 1.3f -> 7
-                        aspectRatio < 1.45f -> 6
-                        aspectRatio < 1.6f -> 4
-                        aspectRatio > 2.2f -> 2
-                        else -> 2
-                    }
-                    layoutRowBoost =
-                        (volleyRowBase + densityBoost / 2 + slateRowBoost / 2 + tallRowBoost + slateExtraRows).coerceAtLeast(2)
-                    // Volley width is controlled by effectiveVolleyColumns() to avoid asymmetry.
+                    val volleyRows = if (isSlate) 5 else if (aspectRatio > 2.0f) 2 else 6
+                    layoutRowBoost = volleyRows
+                    // Volley width is fixed
                     layoutColBoost = 0
                 }
                 GameMode.TUNNEL -> {
-                    val tunnelRowBase = when {
-                        aspectRatio < 1.3f -> 8
-                        aspectRatio < 1.45f -> 7
-                        aspectRatio < 1.6f -> 5
-                        aspectRatio > 2.2f -> 2
-                        else -> 3
-                    }
-                    layoutRowBoost =
-                        (tunnelRowBase + densityBoost / 2 + slateRowBoost / 2 + tallRowBoost + slateExtraRows).coerceAtLeast(3)
-                    layoutColBoost = when {
-                        aspectRatio < 1.34f -> 2
-                        aspectRatio < 1.7f -> 1
-                        else -> 0
-                    }
+                     layoutRowBoost = baseRowBoost + 3 + densityBoost
+                     layoutColBoost = baseColBoost
                 }
                 GameMode.SURVIVAL -> {
-                    layoutRowBoost = baseRowBoost + 1
+                    layoutRowBoost = baseRowBoost + 1 + densityBoost
                     layoutColBoost = baseColBoost
                 }
-                GameMode.ENDLESS,
-                GameMode.CLASSIC,
-                GameMode.ZEN,
-                GameMode.INVADERS -> {
-                    layoutRowBoost = baseRowBoost
+                else -> {
+                    layoutRowBoost = baseRowBoost + densityBoost
                     layoutColBoost = baseColBoost
                 }
             }
         }
-
-        // Smaller bricks keep the board less zoomed-in while preserving readability.
-        globalBrickScale = lerp(0.82f, 0.79f, tallness)
-        if (isSlate) {
-            val slatePenalty = when {
-                aspectRatio < 1.28f -> 0.065f
-                aspectRatio < 1.4f -> 0.05f
-                else -> 0.04f
-            }
-            globalBrickScale = (globalBrickScale - slatePenalty).coerceAtLeast(0.7f)
-        } else if (aspectRatio > 2.15f) {
-            globalBrickScale = (globalBrickScale - 0.015f).coerceAtLeast(0.75f)
-        }
-
-        when (config.mode) {
-            GameMode.RUSH -> {
-                globalBrickScale = (globalBrickScale + 0.03f).coerceAtMost(0.88f)
-                brickSpacing = (brickSpacing + 0.03f).coerceAtMost(0.42f)
-            }
-            GameMode.VOLLEY -> {
-                globalBrickScale = (globalBrickScale + 0.008f).coerceAtMost(0.85f)
-                brickAreaBottomRatio = (brickAreaBottomRatio - 0.02f).coerceAtLeast(0.61f)
-                if (isSlate) {
-                    brickAreaBottomRatio = (brickAreaBottomRatio - 0.025f).coerceAtLeast(0.58f)
-                }
-            }
-            GameMode.TUNNEL -> {
-                // Tunnel should occupy more vertical space so fortress identity reads clearly.
-                globalBrickScale = (globalBrickScale + 0.02f).coerceAtMost(0.87f)
-                brickAreaBottomRatio = (brickAreaBottomRatio - 0.06f).coerceAtLeast(0.58f)
-                brickSpacing = (brickSpacing + 0.02f).coerceAtMost(0.42f)
-                if (isSlate) {
-                    brickAreaBottomRatio = (brickAreaBottomRatio - 0.02f).coerceAtLeast(0.55f)
-                }
-            }
-            GameMode.TIMED -> {
-                globalBrickScale = (globalBrickScale + 0.01f).coerceAtMost(0.86f)
-            }
-            GameMode.SURVIVAL -> {
-                globalBrickScale = (globalBrickScale - 0.01f).coerceAtLeast(0.75f)
-            }
-            else -> Unit
-        }
-
+        
+        // Slightly reduce global scale for slate to fit more content comfortably.
+        globalBrickScale = if (isSlate) 0.92f else lerp(1f, 0.9f, tallness)
+        
         if (config.mode.invaders) {
-            brickAreaBottomRatio = (brickAreaBottomRatio + lerp(0.035f, 0.05f, tallness)).coerceAtMost(0.79f)
-            brickSpacing *= 0.95f
-            invaderScale = lerp(0.5f, 0.47f, tallness)
-            invaderRowDrift = lerp(0.8f, 0.65f, tallness)
-            invaderRowPhaseOffset = lerp(0.45f, 0.6f, tallness)
-            if (!preserveRowBoost) {
-                layoutRowBoost = 0
-                layoutColBoost = 0
-            }
+             brickAreaBottomRatio = (brickAreaBottomRatio + 0.05f).coerceAtMost(0.79f)
+             brickSpacing *= 0.95f
+             invaderScale = lerp(0.5f, 0.47f, tallness)
+             invaderRowDrift = lerp(0.8f, 0.65f, tallness)
+             invaderRowPhaseOffset = lerp(0.45f, 0.6f, tallness)
+             if (!preserveRowBoost) {
+                 layoutRowBoost = 0
+                 layoutColBoost = 0
+             }
         } else {
-            invaderScale = 1f
+             invaderScale = 1f
         }
     }
 
@@ -2084,8 +1950,13 @@ class GameEngine(
             state == GameState.PAUSED &&
                 config.mode.godMode &&
                 bricks.none { it.alive && it.type != BrickType.UNBREAKABLE }
+        
+        // God Mode Bypass: Allow forcing next level even if state is slightly off, 
+        // as long as we aren't already game over or dead.
+        val godModeForce = config.mode.godMode && state != GameState.GAME_OVER && lives > 0
+
         // Defensive checks to prevent invalid level advancement
-        if (!awaitingNextLevel && !clearedBoardWhilePaused) {
+        if (!awaitingNextLevel && !clearedBoardWhilePaused && !godModeForce) {
             logger?.logError("nextLevel called when not awaiting next level (state=$state, lives=$lives)")
             return
         }
@@ -2725,6 +2596,40 @@ class GameEngine(
         paddle.x = paddle.x.coerceIn(paddle.width / 2f, worldWidth - paddle.width / 2f)
         paddleVelocity = if (dt > 0f) (paddle.x - previousX) / dt else 0f
         updateAimFromPaddle()
+    }
+
+    private fun updateVolleyDanger() {
+        if (config.mode != GameMode.VOLLEY) {
+            renderer?.setVolleyDanger(0f)
+            return
+        }
+        // Find the lowest Y of any alive brick (closest to bottom)
+        var lowestY = 9999f
+        var found = false
+        for (brick in bricks) {
+            if (brick.alive && brick.y < lowestY) {
+                lowestY = brick.y
+                found = true
+            }
+        }
+        if (!found) {
+            renderer?.setVolleyDanger(0f)
+            return
+        }
+
+        // Danger zone definition:
+        // Paddle is at Y=8. "Death" usually happens if bricks hit bottom or paddle.
+        // Let's say danger starts appearing when bricks drop below Y=42
+        // And hits maximum intensity at Y=24 (very close to player space)
+        val dangerStart = 42f
+        val dangerMax = 24f
+
+        val danger = when {
+            lowestY > dangerStart -> 0f
+            lowestY < dangerMax -> 1f
+            else -> 1f - (lowestY - dangerMax) / (dangerStart - dangerMax)
+        }
+        renderer?.setVolleyDanger(danger)
     }
 
     private fun updateBricks(dt: Float) {
@@ -4445,9 +4350,11 @@ class GameEngine(
     private fun compactDeadVolleyBricksIfNeeded() {
         if (config.mode != GameMode.VOLLEY) return
         val totalBricks = bricks.size
-        if (totalBricks < 260) return
+        // Lower threshold to keep the board cleaner and more dynamic.
+        if (totalBricks < 120) return
         val deadBricks = bricks.count { !it.alive }
-        if (deadBricks < 120 || deadBricks * 3 < totalBricks) return
+        // Aggressively compact if a significant portion of the board is dead debris.
+        if (deadBricks < 40 || deadBricks * 3 < totalBricks) return
         bricks.removeAll { !it.alive }
         spatialHashDirty = true
         buildSpatialHash()
@@ -5551,6 +5458,8 @@ data class Brick(
             else -> BALANCED_VARIANTS
         }
     }
+
+
 
     private fun biasForType(): FloatArray {
         return when (type) {

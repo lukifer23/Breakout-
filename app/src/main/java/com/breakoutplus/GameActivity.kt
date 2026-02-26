@@ -148,6 +148,10 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
 
         binding.buttonPause.setOnClickListener { showPause(true) }
         binding.buttonResume.setOnClickListener { showPause(false) }
+        binding.buttonSkipLevel?.setOnClickListener {
+            showPause(false)
+            binding.gameSurface.nextLevel()
+        }
         binding.buttonRestart.setOnClickListener { restartGame() }
         binding.buttonExit.setOnClickListener { exitToMenu() }
         binding.buttonEndSecondary.setOnClickListener { exitToMenu() }
@@ -290,6 +294,11 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             showOverlay(binding.pauseOverlay)
             binding.gameSurface.pauseGame()
             binding.buttonLaser.visibility = View.GONE
+            if (config.mode == GameMode.GOD) {
+                binding.buttonSkipLevel?.visibility = View.VISIBLE
+            } else {
+                binding.buttonSkipLevel?.visibility = View.GONE
+            }
         } else {
             hideOverlay(binding.pauseOverlay)
             binding.gameSurface.resumeGame()
@@ -1190,9 +1199,9 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             val largeSlate = wideSlate && shortDp >= 840f
 
             val baseScale = when {
-                shortDp >= 840f -> 1.14f
-                shortDp >= 720f -> 1.1f
-                shortDp >= 600f -> 1.05f
+                shortDp >= 840f -> 1.25f // Increased for large tablets
+                shortDp >= 720f -> 1.15f
+                shortDp >= 600f -> 1.1f
                 shortDp <= 340f -> 0.82f
                 shortDp <= 380f -> 0.86f
                 shortDp <= 420f -> 0.92f
@@ -1203,32 +1212,34 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
                 aspect >= 2.05f -> 0.92f
                 else -> 1f
             }
+            // Relaxed compaction for slates to utilize the screen real estate
             val slateCompaction = when {
-                largeSlate -> 0.92f
-                wideSlate && shortDp >= 720f -> 0.95f
-                wideSlate -> 0.97f
+                largeSlate -> 1.05f 
+                wideSlate && shortDp >= 720f -> 1.0f
+                wideSlate -> 0.98f
                 else -> 1f
             }
-            hudScale = (baseScale * tallFoldCompaction * slateCompaction).coerceIn(0.82f, 1.22f)
+            hudScale = (baseScale * tallFoldCompaction * slateCompaction).coerceIn(0.82f, 1.35f)
             hudChipTextPx = resources.getDimension(R.dimen.bp_hud_mode_size) * hudScale
 
+            // Increased reserved ratios for Slates to prevent cramping
             val reservedRatio = when {
-                largeSlate -> 0.132f
-                wideSlate && shortDp >= 720f -> 0.138f
-                wideSlate -> 0.144f
-                shortDp >= 840f && aspect < 1.45f -> 0.158f
+                largeSlate -> 0.16f // Was 0.132f
+                wideSlate && shortDp >= 720f -> 0.165f // Was 0.138f
+                wideSlate -> 0.17f // Was 0.144f
+                shortDp >= 840f && aspect < 1.45f -> 0.17f
                 shortDp >= 840f -> 0.172f
-                shortDp >= 720f && aspect < 1.45f -> 0.16f
+                shortDp >= 720f && aspect < 1.45f -> 0.175f
                 shortDp >= 720f -> 0.168f
-                shortDp >= 600f && aspect < 1.5f -> 0.162f
+                shortDp >= 600f && aspect < 1.5f -> 0.175f
                 shortDp >= 600f -> 0.165f
                 aspect >= 2.3f -> 0.155f
                 aspect >= 2.0f -> 0.172f
                 else -> 0.21f
             }
             val reservedMaxDp = when {
-                largeSlate -> 168f
-                wideSlate -> 176f
+                largeSlate -> 192f // Was 168f
+                wideSlate -> 192f // Was 176f
                 shortDp >= 720f -> 194f
                 else -> 180f
             }
@@ -1237,7 +1248,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
                 aspect >= 2.0f -> 88f
                 shortDp <= 380f -> 88f
                 shortDp <= 430f -> 92f
-                wideSlate -> 94f
+                wideSlate -> 108f // Was 94f
                 else -> 98f
             }
             val reservedHeightDp = (heightDp * reservedRatio)

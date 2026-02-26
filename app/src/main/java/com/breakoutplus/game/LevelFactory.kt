@@ -792,7 +792,19 @@ object LevelFactory {
             }
         }
 
-        // 5. Interior (The Keep & Guards)
+        // 5. Interior Patrols (Moving Bricks)
+        if (index >= 3) {
+            val patrolRow = castleTop + 2 + (index % 3)
+            if (patrolRow < castleBottom - 2) {
+                for (col in (castleLeft + 2) until (castleRight - 1)) {
+                     if (col % 2 == 0) {
+                         addBrick(col, patrolRow, BrickType.MOVING, (2 * difficulty).toInt())
+                     }
+                }
+            }
+        }
+
+        // 6. Interior (The Keep & Guards)
         val interiorDensity = 0.61f + (index * 0.01f).coerceAtMost(0.23f)
         for (row in (castleTop + 1) until castleBottom) {
             for (col in (castleLeft + 1) until castleRight) {
@@ -826,11 +838,16 @@ object LevelFactory {
             }
         }
 
-        // 6. Keep Core defenders for late siege levels.
-        if (index >= 8) {
+        // 7. Keep Core defenders for late siege levels.
+        if (index >= 6) {
             val keepRow = castleTop + (castleBottom - castleTop) / 2
+            // Inner sanctum walls
+            if (index >= 12) {
+                 addBrick(gateCenter - 2, keepRow, BrickType.UNBREAKABLE, 999)
+                 addBrick(gateCenter + 2, keepRow, BrickType.UNBREAKABLE, 999)
+            }
             for (col in (gateCenter - 1)..(gateCenter + 1)) {
-                val type = if (index >= 14 && col == gateCenter) BrickType.BOSS else BrickType.PHASE
+                val type = if (index >= 10 && col == gateCenter) BrickType.BOSS else BrickType.PHASE
                 val hp = max(1, (baseHp(type) * difficulty * (1f + index * 0.04f)).roundToInt())
                 addBrick(col, keepRow, type, hp)
             }

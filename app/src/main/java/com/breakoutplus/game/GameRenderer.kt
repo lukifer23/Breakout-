@@ -34,6 +34,7 @@ class GameRenderer(
     private var comboFlash = 0f
     private var levelClearFlash = 0f
     private var impactFlash = 0f
+    private var volleyDanger = 0f
     private var musicWasPlaying = false
     private var fixedStepSeconds = 1f / 120f
     private var simulationAccumulator = 0f
@@ -169,8 +170,19 @@ class GameRenderer(
             }
 
             if (impactFlash > 0f) {
-                val alpha = (impactFlash * 0.6f).coerceIn(0f, 0.6f)
+                val t = (impactFlash).coerceIn(0f, 1f)
+                val alpha = (smoothStep(t) * 0.6f).coerceIn(0f, 0.6f)
                 renderer2D.drawRect(0f, 0f, worldWidth, worldHeight, floatArrayOf(1f, 1f, 1f, alpha))
+            }
+
+            // Volley Danger Zone Overlay
+            if (volleyDanger > 0f) {
+                val pulse = ((sin(now / 200_000_000.0) + 1.0) * 0.5).toFloat()
+                val alpha = (volleyDanger * (0.3f + 0.2f * pulse)).coerceIn(0f, 0.6f)
+                // Draw a gradient or semi-transparent red rect at the bottom
+                // In Ortho with y=0 at bottom, this needs to be at y=0.
+                val dangerHeight = worldHeight * 0.25f
+                renderer2D.drawRect(0f, 0f, worldWidth, dangerHeight, floatArrayOf(1f, 0f, 0f, alpha))
             }
 
             // Performance logging
@@ -197,6 +209,12 @@ class GameRenderer(
         } catch (t: Throwable) {
             handleFatalRenderError(t, "onDrawFrame")
         }
+    }
+
+    fun setVolleyDanger(danger: Float) {
+        val target = danger.coerceIn(0f, 1f)
+        // Smoothly interpolate towards target to avoid jarring transitions
+        volleyDanger = volleyDanger * 0.9f + target * 0.1f
     }
 
     fun handleTouch(event: MotionEvent, viewWidth: Float, viewHeight: Float) {
