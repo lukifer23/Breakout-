@@ -51,6 +51,10 @@ class GameRenderer(
     private val maxShakeAmplitude = 1.15f
     private val comboFlashDuration = 0.28f
     private val levelClearFlashDuration = 0.72f
+    private val comboFlashColor = floatArrayOf(0.9f, 0.98f, 1f, 0f)
+    private val levelClearFlashColor = floatArrayOf(1f, 0.85f, 0.35f, 0f)
+    private val impactFlashColor = floatArrayOf(1f, 1f, 1f, 0f)
+    private val volleyDangerColor = floatArrayOf(1f, 0f, 0f, 0f)
 
     fun triggerScreenShake(intensity: Float = 3f, duration: Float = 0.2f) {
         val clampedIntensity = intensity.coerceIn(0f, 2.4f)
@@ -160,19 +164,22 @@ class GameRenderer(
             if (comboFlash > 0f) {
                 val t = (comboFlash / comboFlashDuration).coerceIn(0f, 1f)
                 val alpha = (smoothStep(t) * 0.33f).coerceIn(0f, 0.33f)
-                renderer2D.drawRect(0f, 0f, worldWidth, worldHeight, floatArrayOf(0.9f, 0.98f, 1f, alpha))
+                comboFlashColor[3] = alpha
+                renderer2D.drawRect(0f, 0f, worldWidth, worldHeight, comboFlashColor)
             }
 
             if (levelClearFlash > 0f) {
                 val t = (levelClearFlash / levelClearFlashDuration).coerceIn(0f, 1f)
                 val alpha = (smoothStep(t) * 0.42f).coerceIn(0f, 0.42f)
-                renderer2D.drawRect(0f, 0f, worldWidth, worldHeight, floatArrayOf(1f, 0.85f, 0.35f, alpha))
+                levelClearFlashColor[3] = alpha
+                renderer2D.drawRect(0f, 0f, worldWidth, worldHeight, levelClearFlashColor)
             }
 
             if (impactFlash > 0f) {
                 val t = (impactFlash).coerceIn(0f, 1f)
                 val alpha = (smoothStep(t) * 0.6f).coerceIn(0f, 0.6f)
-                renderer2D.drawRect(0f, 0f, worldWidth, worldHeight, floatArrayOf(1f, 1f, 1f, alpha))
+                impactFlashColor[3] = alpha
+                renderer2D.drawRect(0f, 0f, worldWidth, worldHeight, impactFlashColor)
             }
 
             // Volley Danger Zone Overlay
@@ -182,7 +189,8 @@ class GameRenderer(
                 // Draw a gradient or semi-transparent red rect at the bottom
                 // In Ortho with y=0 at bottom, this needs to be at y=0.
                 val dangerHeight = worldHeight * 0.25f
-                renderer2D.drawRect(0f, 0f, worldWidth, dangerHeight, floatArrayOf(1f, 0f, 0f, alpha))
+                volleyDangerColor[3] = alpha
+                renderer2D.drawRect(0f, 0f, worldWidth, dangerHeight, volleyDangerColor)
             }
 
             // Performance logging
@@ -334,6 +342,7 @@ class GameRenderer(
         comboFlash = 0f
         levelClearFlash = 0f
         impactFlash = 0f
+        volleyDanger = 0f
         renderer2D.setOffset(0f, 0f)
     }
 

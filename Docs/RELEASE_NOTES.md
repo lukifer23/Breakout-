@@ -6,6 +6,10 @@
 - Unified slate detection between HUD and gameplay board tuning to improve foldable/slate consistency in density behavior.
 - Hardened release build signing safety: release tasks now fail fast when `BP_RELEASE_*` signing vars are missing.
 - Aligned Tunnel mode accent color between mode selection and scoreboard surfaces.
+- Unified Volley danger-overlay thresholds with board-pressure metrics to remove viewport-dependent danger FX inconsistency.
+- Fixed PHASE brick transitions so intermediate phases cannot remain alive at `0` HP.
+- Reduced render-loop allocation churn by reusing flash/overlay color buffers in `GameRenderer`.
+- Added regression coverage for PHASE brick transition HP behavior.
 
 ## 1.0.8 (2026-02-13)
 - Increased board density and vertical coverage tuning for foldable portrait and tablet/slate viewports across all gameplay modes.

@@ -18,6 +18,8 @@ The repository also includes an iOS port (`ios/`), but Android is the active rel
   - hardened GOD/ZEN progression and skip-level flow
   - restored tablet/slate GOD skip control parity
   - tightened slate/fold board-density consistency
+  - unified Volley danger FX behavior across viewport classes
+  - hardened PHASE brick transition logic and added regression test coverage
 
 ## Active Engineering Goals
 1. Preserve all existing features and mode identities.

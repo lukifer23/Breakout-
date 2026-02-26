@@ -1592,10 +1592,29 @@ class GameEngine(
 
     fun isGameRunning(): Boolean = state == GameState.RUNNING
 
+    private fun normalizedAspectRatio(aspectRatio: Float = currentAspectRatio): Float {
+        return max(aspectRatio, 1f / aspectRatio.coerceAtLeast(0.0001f))
+    }
+
+    private fun isSlateAspect(aspectRatio: Float = currentAspectRatio): Boolean {
+        return normalizedAspectRatio(aspectRatio) <= 1.85f
+    }
+
+    private fun currentVolleyMetrics(
+        laneWindowRatio: Float = 0.2f
+    ): ModeBoardMetrics.VolleyBoardMetrics {
+        return ModeBoardMetrics.volleyMetrics(
+            bricks = bricks,
+            paddleY = paddle.y,
+            paddleHeight = paddle.height,
+            worldHeight = worldHeight,
+            laneWindowRatio = laneWindowRatio
+        )
+    }
+
     private fun applyLayoutTuning(aspectRatio: Float, preserveRowBoost: Boolean) {
         val tallness = ((aspectRatio - 1.25f) / 0.85f).coerceIn(0f, 1f)
-        val normalizedAspect = max(aspectRatio, 1f / aspectRatio.coerceAtLeast(0.0001f))
-        val isSlate = normalizedAspect <= 1.85f
+        val isSlate = isSlateAspect(aspectRatio)
 
         // Shared baseline, with specific adjustments for slate/tablet devices to prevent cramping.
         brickAreaTopRatio = if (isSlate) 0.96f else lerp(0.992f, 0.978f, tallness)
@@ -2608,33 +2627,13 @@ class GameEngine(
             renderer?.setVolleyDanger(0f)
             return
         }
-        // Find the lowest Y of any alive brick (closest to bottom)
-        var lowestY = 9999f
-        var found = false
-        for (brick in bricks) {
-            if (brick.alive && brick.y < lowestY) {
-                lowestY = brick.y
-                found = true
-            }
-        }
-        if (!found) {
+        if (bricks.none { it.alive }) {
             renderer?.setVolleyDanger(0f)
             return
         }
 
-        // Danger zone definition:
-        // Paddle is at Y=8. "Death" usually happens if bricks hit bottom or paddle.
-        // Let's say danger starts appearing when bricks drop below Y=42
-        // And hits maximum intensity at Y=24 (very close to player space)
-        val dangerStart = 42f
-        val dangerMax = 24f
-
-        val danger = when {
-            lowestY > dangerStart -> 0f
-            lowestY < dangerMax -> 1f
-            else -> 1f - (lowestY - dangerMax) / (dangerStart - dangerMax)
-        }
-        renderer?.setVolleyDanger(danger)
+        // Reuse the same board-pressure model that drives Volley status text.
+        renderer?.setVolleyDanger(currentVolleyMetrics(laneWindowRatio = 0.24f).pressure)
     }
 
     private fun updateBricks(dt: Float) {
@@ -3070,14 +3069,9 @@ class GameEngine(
             volleyTurnCount < 6 -> 0.11f
             else -> 0f
         }
-        val pressure = ModeBoardMetrics.volleyMetrics(
-            bricks = bricks,
-            paddleY = paddle.y,
-            paddleHeight = paddle.height,
-            worldHeight = worldHeight
-        ).pressure
+        val pressure = currentVolleyMetrics().pressure
         val nearBreach = pressure >= 0.45f
-        val slateDensityBoost = if (currentAspectRatio < 1.45f) 0.04f else 0f
+        val slateDensityBoost = if (isSlateAspect()) 0.04f else 0f
         val lowBallRelief = when {
             volleyBallCount <= 5 -> 0.1f
             volleyBallCount <= 7 -> 0.06f
@@ -3222,12 +3216,7 @@ class GameEngine(
 
     private fun volleyLanePressure(): Float {
         if (config.mode != GameMode.VOLLEY) return 0f
-        return ModeBoardMetrics.volleyMetrics(
-            bricks = bricks,
-            paddleY = paddle.y,
-            paddleHeight = paddle.height,
-            worldHeight = worldHeight
-        ).pressure
+        return currentVolleyMetrics().pressure
     }
 
     private fun maybeSpawnVolleySupplyDrop(pressure: Float) {
@@ -4075,12 +4064,7 @@ class GameEngine(
             powerupStatusTick = 0f
         }
         if (config.mode == GameMode.VOLLEY) {
-            val volleyMetrics = ModeBoardMetrics.volleyMetrics(
-                bricks = bricks,
-                paddleY = paddle.y,
-                paddleHeight = paddle.height,
-                worldHeight = worldHeight
-            )
+            val volleyMetrics = currentVolleyMetrics()
             val status = ModeStatusText.volley(
                 volleyBallCount = volleyBallCount,
                 turnNumber = volleyTurnCount + 1,
@@ -5363,7 +5347,7 @@ data class Brick(
                         return true
                     } else {
                         // Reset hitpoints for next phase
-                        hitPoints = maxHitPoints / (phase + 1)
+                        hitPoints = max(1, maxHitPoints / (phase + 1))
                         hitFlash = 0.5f  // Longer flash for phase change
                         return false
                     }

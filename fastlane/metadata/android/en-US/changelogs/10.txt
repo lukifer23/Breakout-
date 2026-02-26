@@ -3,6 +3,8 @@ Breakout+ 1.0.9 release candidate
 - Increased vertical brick density for wide/slate gameplay.
 - Fixed GOD/ZEN next-level progression edge cases.
 - Restored GOD pause-menu skip-level control on tablets/slates.
+- Unified Volley danger FX behavior across viewport classes.
+- Fixed PHASE brick transitions so intermediate phases keep valid HP.
 - Reset Tunnel Siege shot/flash state between levels.
 - Reduced renderer overhead for smoother effects under load.
 - Unified activity transition behavior across key screens.
