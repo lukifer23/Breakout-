@@ -24,6 +24,7 @@
 - Responsive HUD scaling across phone/tablet/foldable aspect ratios
 - Reliable overlays for pause, level complete, game over, and high-score entry
 - Left-handed control layout support
+- Mode-readable telegraphing for high-pressure states (Volley breach lane, Tunnel gate/supply readiness)
 
 ### Persistence
 - Local settings persistence
@@ -36,8 +37,9 @@
 ### Rendering & Performance
 - OpenGL ES 2.0 renderer
 - Choreographer-paced frame requests (`RENDERMODE_WHEN_DIRTY`)
-- Fixed-step simulation in renderer loop for stable gameplay timing
+- Fixed-step-only simulation in renderer loop for stable gameplay timing
 - FX/object caps to prevent runaway perf degradation in heavy scenes
+- Consistent gameplay event feedback profiles (shake/impact/combo/clear) across all modes
 
 ### Quality Constraints
 - No feature removals for existing Android modes

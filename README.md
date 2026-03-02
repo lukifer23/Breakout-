@@ -3,7 +3,7 @@
 Android-first brick breaker for phones, foldables, and slates.  
 The repository also includes an iOS port (`ios/`), but Android is the active release track.
 
-## Current Project State (As Of 2026-02-26)
+## Current Project State (As Of 2026-03-02)
 - Android foundation is strong and feature-complete:
   - 10 game modes
   - 10 brick types
@@ -24,6 +24,10 @@ The repository also includes an iOS port (`ios/`), but Android is the active rel
   - added persistent Tunnel gate-lane telegraph and stronger forced-supply visual feedback
   - unified gameplay event flash/shake/combo/clear feedback through centralized visual profiles
   - hardened PHASE brick transition logic and added regression test coverage
+
+Latest validation snapshot:
+- `./gradlew :app:testDebugUnitTest` passing
+- Device smoke passing for `VOLLEY`, `TUNNEL`, `GOD`, `ZEN`, `INVADERS` on connected hardware
 
 ## Active Engineering Goals
 1. Preserve all existing features and mode identities.

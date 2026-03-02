@@ -20,6 +20,12 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 adb shell am start -n com.breakoutplus.debug/com.breakoutplus.MainActivity
 ```
 
+When multiple devices are connected, target a single device explicitly:
+```bash
+adb -s <serial> install -r app/build/outputs/apk/debug/app-debug.apk
+adb -s <serial> shell am start -n com.breakoutplus.debug/com.breakoutplus.MainActivity
+```
+
 ## Android Release Build
 ```bash
 export BP_RELEASE_STORE_FILE="/absolute/path/to/keystore.jks"
@@ -66,6 +72,7 @@ bundle exec fastlane android upload_internal
 ./gradlew :app:compileDebugKotlin
 ./gradlew :app:testDebugUnitTest
 ./gradlew :app:lintDebug
+./gradlew :app:assembleDebug
 ```
 
 ## Device Mode Smoke Test

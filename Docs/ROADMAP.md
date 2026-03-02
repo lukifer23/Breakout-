@@ -32,17 +32,24 @@ Deliver a stable, consistent, performant Android release with no feature removal
 - Add test coverage with each extraction to protect behavior.
 
 ## Architecture Decomposition Plan
-### Phase A (In Progress)
+### Phase A (Mostly Completed)
 - Extract status/text formatting and mode HUD status composition.
 - Remove duplicated mode/brick lookup logic.
 - Continue collision and hot-loop micro-optimizations.
 - Unify device-class policy across HUD and board tuning (`DeviceLayoutPolicy`) to reduce slate/fold divergence.
 - Normalize renderer-side visual timing paths (Volley danger pulse/smoothing) to reduce frame-rate dependent drift.
+- Centralize next-level acceptance guards (`LevelAdvancePolicy`) and harden GOD/ZEN auto/manual progression paths.
+- Centralize gameplay VFX event profiles to reduce per-mode effect inconsistency.
 
-### Phase B (Next)
+### Phase B (In Progress)
 - Extract collision subsystem (ball/brick/beam/paddle interactions).
 - Extract mode-state subsystem (`VOLLEY`, `TUNNEL`, `INVADERS` specialty flows).
 - Reduce `GameEngine.kt` responsibility surface while preserving APIs.
+
+Current Phase B priorities:
+- Continue hot-loop scan/allocation reductions in `GameEngine.update` paths.
+- Add long-session stress validation for dense boards, multi-ball, and heavy FX states.
+- Keep docs/release notes synchronized at the end of every patch tranche.
 
 ### Phase C (After)
 - Extract effects/powerup lifecycle subsystem.

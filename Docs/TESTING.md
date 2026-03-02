@@ -76,6 +76,9 @@ Optional env vars:
   - Responsive scaling across phone/tablet/foldable sizes.
   - No overlaps between score/meta/powerup chips/FPS/laser button.
   - HUD reserve height adapts per viewport without crowding gameplay surface.
+- Verify gameplay VFX consistency:
+  - Shake/impact/combo/level-clear responses feel consistent across `VOLLEY`, `TUNNEL`, `INVADERS`, and `CLASSIC`.
+  - Tunnel pity-drop and supply-ready moments emit clear, non-jarring feedback.
 - Verify controls:
   - Drag tracking and launch alignment with aim guide.
   - Laser button cooldown and visibility states.

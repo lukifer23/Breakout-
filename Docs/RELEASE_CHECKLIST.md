@@ -3,6 +3,10 @@
 ## Build Artifacts
 - [ ] `./gradlew bundleRelease` produces `app/build/outputs/bundle/release/app-release.aab`
 - [ ] Version code/name updated in `app/build.gradle.kts`
+- [ ] Android validation gates pass: `:app:testDebugUnitTest`, `:app:lintDebug`, `:app:assembleDebug`
+- [ ] Device smoke test passes across all modes (`tools/mode_smoke_test.sh`)
+- [ ] Deterministic progression probes pass (`tools/god_zen_progression_probe.sh` and `tools/all_modes_progression_probe.sh`)
+- [ ] If multiple devices are connected, `BP_SERIAL` is set for probe scripts
 
 ## Play Console Setup
 - [ ] App created in Play Console
@@ -32,3 +36,7 @@
 - [ ] Verify listing on Play Store
 - [ ] Monitor ANR/Crash reports
 - [ ] Review user feedback
+
+## Documentation Sync
+- [ ] `README.md` reflects latest Android runtime and validation state
+- [ ] `Docs/ARCHITECTURE.md`, `Docs/GAMEPLAY.md`, `Docs/TESTING.md`, and `Docs/RELEASE_NOTES.md` reflect shipped behavior
