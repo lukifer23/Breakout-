@@ -18,6 +18,7 @@
 - Mode layout policy: `ModeLayoutPolicy.kt`
 - Mode board metrics: `ModeBoardMetrics.kt`
 - Mode status formatting: `ModeStatusText.kt`
+- Gameplay VFX feedback profiles: centralized in `GameEngine` (event-profile mapping)
 - Tunnel mode pacing/supply logic: `TunnelModeSystem.kt`
 - Powerup drop-rate model: `PowerupDropModel.kt`
 - Drawing primitives: `Renderer2D.kt`

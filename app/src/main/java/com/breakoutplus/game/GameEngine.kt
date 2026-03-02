@@ -212,6 +212,59 @@ class GameEngine(
     private val streakBonusPerBrick = 20
     private val aimMinAngle = 0.30f
 
+    private enum class VisualFeedbackEvent {
+        VOLLEY_ROW_DROP,
+        BOSS_BREAK,
+        COMBO_STREAK,
+        BEAM_BRICK_BREAK,
+        INVADER_SHIELD_HIT,
+        INVADER_SHIELD_BREAK,
+        TUNNEL_PITY_SUPPLY,
+        EXPLOSION_BREAK,
+        INVADER_BURST,
+        LEVEL_CLEAR
+    }
+
+    private data class VisualFeedbackProfile(
+        val shakeIntensity: Float = 0f,
+        val shakeDuration: Float = 0f,
+        val impactFlash: Float = 0f,
+        val comboFlash: Boolean = false,
+        val levelClearFlash: Boolean = false
+    )
+
+    private fun visualFeedbackProfile(event: VisualFeedbackEvent): VisualFeedbackProfile {
+        return when (event) {
+            VisualFeedbackEvent.VOLLEY_ROW_DROP -> VisualFeedbackProfile(shakeIntensity = 0.7f, shakeDuration = 0.07f)
+            VisualFeedbackEvent.BOSS_BREAK -> VisualFeedbackProfile(shakeIntensity = 3.2f, shakeDuration = 0.22f, impactFlash = 0.42f)
+            VisualFeedbackEvent.COMBO_STREAK -> VisualFeedbackProfile(comboFlash = true)
+            VisualFeedbackEvent.BEAM_BRICK_BREAK -> VisualFeedbackProfile(shakeIntensity = 1.7f, shakeDuration = 0.12f, impactFlash = 0.1f)
+            VisualFeedbackEvent.INVADER_SHIELD_HIT -> VisualFeedbackProfile(shakeIntensity = 1.0f, shakeDuration = 0.08f)
+            VisualFeedbackEvent.INVADER_SHIELD_BREAK -> VisualFeedbackProfile(shakeIntensity = 2.0f, shakeDuration = 0.18f, impactFlash = 0.26f)
+            VisualFeedbackEvent.TUNNEL_PITY_SUPPLY -> VisualFeedbackProfile(shakeIntensity = 1.2f, shakeDuration = 0.08f, impactFlash = 0.18f)
+            VisualFeedbackEvent.EXPLOSION_BREAK -> VisualFeedbackProfile(shakeIntensity = 2.4f, shakeDuration = 0.16f, impactFlash = 0.24f)
+            VisualFeedbackEvent.INVADER_BURST -> VisualFeedbackProfile(shakeIntensity = 1.2f, shakeDuration = 0.12f, impactFlash = 0.08f)
+            VisualFeedbackEvent.LEVEL_CLEAR -> VisualFeedbackProfile(shakeIntensity = 1.0f, shakeDuration = 0.11f, levelClearFlash = true)
+        }
+    }
+
+    private fun emitVisualFeedback(event: VisualFeedbackEvent, scale: Float = 1f) {
+        val clampedScale = scale.coerceIn(0.5f, 1.6f)
+        val profile = visualFeedbackProfile(event)
+        if (profile.shakeIntensity > 0f && profile.shakeDuration > 0f) {
+            renderer?.triggerScreenShake(profile.shakeIntensity * clampedScale, profile.shakeDuration * clampedScale)
+        }
+        if (profile.impactFlash > 0f) {
+            renderer?.triggerImpactFlash(profile.impactFlash * clampedScale)
+        }
+        if (profile.comboFlash) {
+            renderer?.triggerComboFlash()
+        }
+        if (profile.levelClearFlash) {
+            renderer?.triggerLevelClearFlash()
+        }
+    }
+
     private fun spatialKey(cellX: Int, cellY: Int): Long {
         return (cellX.toLong() shl 32) or (cellY.toLong() and 0xffffffffL)
     }
@@ -3041,7 +3094,7 @@ class GameEngine(
         volleyAdvanceRows += 1
         val pressureBeforeSpawn = volleyLanePressure()
         audio.play(GameSound.BRICK_MOVING, 0.36f, 0.88f)
-        renderer?.triggerScreenShake(0.7f, 0.07f)
+        emitVisualFeedback(VisualFeedbackEvent.VOLLEY_ROW_DROP)
         if (shouldAwardVolleyBall(volleyTurnCount, volleyBallCount, pressureBeforeSpawn) && volleyBallCount < 20) {
             volleyBallCount += 1
             listener.onVolleyBallsUpdated(volleyBallCount)
@@ -3431,8 +3484,7 @@ class GameEngine(
                 spawnBrickDestructionFx(brick, ball.x, ball.y, intensity = 1f)
 
                 if (brick.type == BrickType.BOSS) {
-                    renderer?.triggerImpactFlash(0.4f)
-                    renderer?.triggerScreenShake(3.6f, 0.24f)
+                    emitVisualFeedback(VisualFeedbackEvent.BOSS_BREAK)
                     if (waves.size < maxWaves) {
                         waves.add(
                             ExplosionWave(
@@ -3474,7 +3526,7 @@ class GameEngine(
 
                 // Combo flash effect for high multipliers
                 if (multiplier >= 2f) {
-                    renderer?.triggerComboFlash()
+                    emitVisualFeedback(VisualFeedbackEvent.COMBO_STREAK)
                 }
 
                 val baseScore = (brick.scoreValue * multiplier).roundToInt()
@@ -3527,7 +3579,7 @@ class GameEngine(
             onBrickDestroyed(brick)
 
             // Visual effects
-            renderer?.triggerScreenShake(2f, 0.15f)
+            emitVisualFeedback(VisualFeedbackEvent.BEAM_BRICK_BREAK)
             spawnBrickDestructionFx(brick, beam.x, beam.y, intensity = 0.84f)
             val brickSound = brickSoundFor(brick.type)
             audio.play(brickSound, 0.4f, brickSoundRate(brick.type)) // Softer for beam hits
@@ -3794,7 +3846,7 @@ class GameEngine(
             shieldHitColor = adjustColor(shot.color, 1.2f, 1f)
             audio.play(GameSound.BOUNCE, 0.65f)
             audio.haptic(GameHaptic.LIGHT)
-            renderer?.triggerScreenShake(1.1f, 0.08f)
+            emitVisualFeedback(VisualFeedbackEvent.INVADER_SHIELD_HIT)
             if (!invaderShieldCritical && invaderShieldMax > 0f && invaderShield <= invaderShieldMax * 0.25f) {
                 invaderShieldCritical = true
                 listener.onTip("Shield critical! Avoid direct hits.")
@@ -3803,9 +3855,8 @@ class GameEngine(
             if (invaderShield <= 0f && !invaderShieldAlerted) {
                 invaderShieldAlerted = true
                 shieldBreakPulse = 1f
-                renderer?.triggerImpactFlash(0.25f)
                 audio.play(GameSound.EXPLOSION, 0.55f)
-                renderer?.triggerScreenShake(2f, 0.2f)
+                emitVisualFeedback(VisualFeedbackEvent.INVADER_SHIELD_BREAK)
                 listener.onTip("Shield down! Dodge the incoming fire.")
             }
             return false
@@ -4386,8 +4437,7 @@ class GameEngine(
             listener.onTip("Tunnel supply drop inbound.")
         } else if (dropDecision.forcedByPity) {
             listener.onTip("Tunnel supply guaranteed after sustained pressure.")
-            renderer?.triggerImpactFlash(0.18f)
-            renderer?.triggerScreenShake(1.2f, 0.08f)
+            emitVisualFeedback(VisualFeedbackEvent.TUNNEL_PITY_SUPPLY)
         }
     }
 
@@ -4483,7 +4533,7 @@ class GameEngine(
             }
             logger?.logLevelComplete(levelIndex + 1, score, elapsedSeconds, 0)
             levelClearFlash = 1.0f
-            renderer?.triggerLevelClearFlash()
+            emitVisualFeedback(VisualFeedbackEvent.LEVEL_CLEAR)
             spawnLevelCompleteConfetti()
             val summary = GameSummary(
                 score = score,
@@ -4615,8 +4665,7 @@ class GameEngine(
     private fun triggerExplosion(brick: Brick) {
         audio.play(GameSound.EXPLOSION, 0.8f)
         audio.haptic(GameHaptic.HEAVY)
-        renderer?.triggerImpactFlash(0.3f)
-        renderer?.triggerScreenShake(2.8f, 0.18f)
+        emitVisualFeedback(VisualFeedbackEvent.EXPLOSION_BREAK)
         val radius = 1
         for (neighbor in bricks) {
             if (!neighbor.alive || neighbor.gridX < 0 || neighbor.gridY < 0 || !neighbor.isNeighbor(brick, radius)) continue
@@ -4787,11 +4836,9 @@ class GameEngine(
             )
         }
 
-        if (shakeStrength > 0f) {
-            renderer?.triggerScreenShake(shakeStrength * fxScale, shakeDuration)
-        }
-        if (brick.type == BrickType.EXPLOSIVE || brick.type == BrickType.BOSS) {
-            renderer?.triggerImpactFlash(0.14f + 0.1f * fxScale)
+        if (shakeStrength > 0f || brick.type == BrickType.EXPLOSIVE || brick.type == BrickType.BOSS) {
+            val eventScale = ((shakeStrength / 2.4f).coerceAtLeast(0.55f) * fxScale).coerceIn(0.55f, 1.6f)
+            emitVisualFeedback(VisualFeedbackEvent.EXPLOSION_BREAK, eventScale)
         }
     }
 
@@ -4828,7 +4875,7 @@ class GameEngine(
                 )
             )
         }
-        renderer?.triggerScreenShake(1.2f * fxScale, 0.12f)
+        emitVisualFeedback(VisualFeedbackEvent.INVADER_BURST, fxScale)
     }
 
     private fun brickSoundFor(type: BrickType): GameSound {

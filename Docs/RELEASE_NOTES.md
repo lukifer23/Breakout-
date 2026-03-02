@@ -15,6 +15,7 @@
 - Expanded mode regression coverage for Tunnel supply decision/readiness and Volley in-flight classification.
 - Added persistent Tunnel gate-lane telegraph rendering and gate readiness fill cues for clearer Siege-state readability.
 - Added stronger visual feedback (impact flash + shake) when pity-drop forcing triggers after sustained Tunnel pressure.
+- Unified gameplay event VFX through centralized visual feedback profiles in `GameEngine` (shake/impact/combo/level-clear consistency across modes).
 
 ## 1.0.10 (2026-02-27)
 - Added shared `DeviceLayoutPolicy` to unify slate/foldable classification used by both HUD sizing (`GameActivity`) and gameplay board tuning (`GameEngine`).
