@@ -24,9 +24,10 @@ class ModeStatusTextTest {
             shotsFired = 18,
             gateIntegrityPercent = 64,
             breachPercent = 41,
-            combo = 3
+            combo = 3,
+            supplyReadinessPercent = 72
         )
-        assertEquals("Shots: 18 • Gate 64% • Breach 41% • Combo x3", text)
+        assertEquals("Shots: 18 • Gate 64% • Breach 41% • Supply 72% • Combo x3", text)
     }
 
     @Test
@@ -38,6 +39,18 @@ class ModeStatusTextTest {
             combo = 1
         )
         assertEquals("Shots: 8 • Gate 88% • Breach 12%", text)
+    }
+
+    @Test
+    fun tunnelStatusShowsSupplyReadyAtFullThreshold() {
+        val text = ModeStatusText.tunnel(
+            shotsFired = 11,
+            gateIntegrityPercent = 52,
+            breachPercent = 48,
+            combo = 1,
+            supplyReadinessPercent = 100
+        )
+        assertEquals("Shots: 11 • Gate 52% • Breach 48% • Supply READY", text)
     }
 
     @Test

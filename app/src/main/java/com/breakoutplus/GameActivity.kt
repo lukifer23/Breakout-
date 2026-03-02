@@ -80,6 +80,8 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     private var lastTipTimestampMs: Long = 0L
     private val tipMinGapMs = 900L
     private val tipDuplicateSuppressMs = 2800L
+    private val manualLevelAdvanceTimeoutMs = 1800L
+    private val autoLevelAdvanceTimeoutMs = 2600L
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -343,34 +345,14 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     private fun handleEndPrimary() {
         when (endOverlayState) {
             EndOverlayState.LEVEL_COMPLETE -> {
-                if (levelAdvanceInProgress) return
-                levelAdvanceInProgress = true
-                binding.buttonEndPrimary.isEnabled = false
-                binding.buttonEndSecondary.isEnabled = false
+                endOverlayState = EndOverlayState.NONE
                 hideOverlay(binding.endOverlay)
-                cancelLevelAdvanceRecovery()
-                val recovery = Runnable {
-                    if (!levelAdvanceInProgress || isFinishing || isDestroyed) return@Runnable
-                    levelAdvanceInProgress = false
-                    binding.buttonEndPrimary.isEnabled = true
-                    binding.buttonEndSecondary.isEnabled = true
-                    endOverlayState = EndOverlayState.LEVEL_COMPLETE
-                    showOverlay(binding.endOverlay)
-                    Log.w("GameActivity", "Level advance timed out; restored end overlay for retry")
-                }
-                levelAdvanceRecoveryRunnable = recovery
-                binding.root.postDelayed(recovery, 1400L)
-                if (!isFinishing && !isDestroyed) {
-                    Log.d("GameActivity", "Advancing to next level (activity state: finishing=$isFinishing, destroyed=$isDestroyed)")
-                    binding.gameSurface.nextLevel()
-                    playGameFade()
-                } else {
-                    Log.w("GameActivity", "Cannot advance level - activity finishing or destroyed")
-                    levelAdvanceInProgress = false
-                    binding.buttonEndPrimary.isEnabled = true
-                    binding.buttonEndSecondary.isEnabled = true
-                    cancelLevelAdvanceRecovery()
-                }
+                requestLevelAdvance(
+                    source = "manual",
+                    timeoutMs = manualLevelAdvanceTimeoutMs,
+                    restoreOverlayOnTimeout = true,
+                    fallbackSummary = null
+                )
                 endOverlayState = EndOverlayState.NONE
             }
             else -> restartGame()
@@ -872,32 +854,59 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     }
 
     private fun advanceLevelWithAutoRecovery(summary: GameSummary) {
-        if (isFinishing || isDestroyed) return
+        requestLevelAdvance(
+            source = "auto",
+            timeoutMs = autoLevelAdvanceTimeoutMs,
+            restoreOverlayOnTimeout = true,
+            fallbackSummary = summary
+        )
+    }
+
+    private fun requestLevelAdvance(
+        source: String,
+        timeoutMs: Long,
+        restoreOverlayOnTimeout: Boolean,
+        fallbackSummary: GameSummary?
+    ) {
+        if (levelAdvanceInProgress || isFinishing || isDestroyed) return
         levelAdvanceInProgress = true
         binding.buttonEndPrimary.isEnabled = false
         binding.buttonEndSecondary.isEnabled = false
         cancelLevelAdvanceRecovery()
+
         if (debugAutoPlaySession) {
-            Log.i("BreakoutAutoPlay", "event=next_level_request mode=${config.mode.name} from_level=${summary.level} target_level=${summary.level + 1} source=auto")
+            val fromLevel = fallbackSummary?.level ?: binding.hudLevel.text.toString().filter { it.isDigit() }.toIntOrNull()
+            val targetLevel = fromLevel?.plus(1)
+            Log.i(
+                "BreakoutAutoPlay",
+                "event=next_level_request mode=${config.mode.name} from_level=${fromLevel ?: -1} target_level=${targetLevel ?: -1} source=$source"
+            )
         }
 
-        val fallback = Runnable {
+        val recovery = Runnable {
             if (!levelAdvanceInProgress || isFinishing || isDestroyed) return@Runnable
-            Log.e("GameActivity", "Auto level advance failed; restoring manual next-level overlay")
-            if (debugAutoPlaySession) {
-                Log.i("BreakoutAutoPlay", "event=next_level_fallback mode=${config.mode.name} from_level=${summary.level} target_level=${summary.level + 1}")
-            }
             levelAdvanceInProgress = false
             binding.buttonEndPrimary.isEnabled = true
             binding.buttonEndSecondary.isEnabled = true
-            endOverlayState = EndOverlayState.LEVEL_COMPLETE
-            binding.endTitle.text = getString(R.string.label_level_complete)
-            animateEndStats(summary, getString(R.string.label_level_complete))
-            binding.buttonEndPrimary.text = getString(R.string.label_next_level)
-            showOverlay(binding.endOverlay)
+            if (restoreOverlayOnTimeout) {
+                endOverlayState = EndOverlayState.LEVEL_COMPLETE
+                binding.endTitle.text = getString(R.string.label_level_complete)
+                binding.buttonEndPrimary.text = getString(R.string.label_next_level)
+                fallbackSummary?.let { animateEndStats(it, getString(R.string.label_level_complete)) }
+                showOverlay(binding.endOverlay)
+            }
+            if (source == "auto") {
+                Log.e("GameActivity", "Auto level advance timed out; restored manual next-level overlay")
+            } else {
+                Log.w("GameActivity", "Manual level advance timed out; restored end overlay for retry")
+            }
+            if (debugAutoPlaySession) {
+                val level = fallbackSummary?.level ?: -1
+                Log.i("BreakoutAutoPlay", "event=next_level_fallback mode=${config.mode.name} from_level=$level target_level=${if (level > 0) level + 1 else -1} source=$source")
+            }
         }
-        levelAdvanceRecoveryRunnable = fallback
-        binding.root.postDelayed(fallback, 1400L)
+        levelAdvanceRecoveryRunnable = recovery
+        binding.root.postDelayed(recovery, timeoutMs)
         binding.gameSurface.nextLevel()
         playGameFade()
     }
@@ -1182,12 +1191,11 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
                 .takeIf { it > 0 } ?: metrics.heightPixels
             val widthDp = widthPx / metrics.density
             val heightDp = heightPx / metrics.density
-            val shortDp = minOf(widthDp, heightDp)
-            val longDp = maxOf(widthDp, heightDp)
-            val aspect = (longDp / shortDp).coerceAtLeast(1f)
-            val tabletClass = shortDp >= 600f
-            val wideSlate = tabletClass && aspect <= 1.85f
-            val largeSlate = wideSlate && shortDp >= 840f
+            val layoutClass = DeviceLayoutPolicy.classifyByDp(widthDp, heightDp)
+            val shortDp = layoutClass.shortDp
+            val aspect = layoutClass.aspectRatio
+            val wideSlate = layoutClass.wideSlate
+            val largeSlate = layoutClass.largeSlate
 
             val baseScale = when {
                 shortDp >= 840f -> 1.25f // Increased for large tablets
@@ -1210,28 +1218,28 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
                 wideSlate -> 0.98f
                 else -> 1f
             }
-            hudScale = (baseScale * tallFoldCompaction * slateCompaction).coerceIn(0.82f, 1.35f)
+            hudScale = (baseScale * tallFoldCompaction * slateCompaction).coerceIn(0.82f, 1.28f)
             hudChipTextPx = resources.getDimension(R.dimen.bp_hud_mode_size) * hudScale
 
-            // Increased reserved ratios for Slates to prevent cramping
+            // Keep HUD compact on large viewports so brick field gains vertical room.
             val reservedRatio = when {
-                largeSlate -> 0.16f // Was 0.132f
-                wideSlate && shortDp >= 720f -> 0.165f // Was 0.138f
-                wideSlate -> 0.17f // Was 0.144f
-                shortDp >= 840f && aspect < 1.45f -> 0.17f
-                shortDp >= 840f -> 0.172f
-                shortDp >= 720f && aspect < 1.45f -> 0.175f
-                shortDp >= 720f -> 0.168f
-                shortDp >= 600f && aspect < 1.5f -> 0.175f
-                shortDp >= 600f -> 0.165f
+                largeSlate -> 0.142f
+                wideSlate && shortDp >= 720f -> 0.148f
+                wideSlate -> 0.152f
+                shortDp >= 840f && aspect < 1.45f -> 0.154f
+                shortDp >= 840f -> 0.158f
+                shortDp >= 720f && aspect < 1.45f -> 0.162f
+                shortDp >= 720f -> 0.156f
+                shortDp >= 600f && aspect < 1.5f -> 0.164f
+                shortDp >= 600f -> 0.158f
                 aspect >= 2.3f -> 0.155f
                 aspect >= 2.0f -> 0.172f
                 else -> 0.21f
             }
             val reservedMaxDp = when {
-                largeSlate -> 192f // Was 168f
-                wideSlate -> 192f // Was 176f
-                shortDp >= 720f -> 194f
+                largeSlate -> 172f
+                wideSlate -> 176f
+                shortDp >= 720f -> 186f
                 else -> 180f
             }
             val reservedMinDp = when {
@@ -1239,7 +1247,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
                 aspect >= 2.0f -> 88f
                 shortDp <= 380f -> 88f
                 shortDp <= 430f -> 92f
-                wideSlate -> 108f // Was 94f
+                wideSlate -> 100f
                 else -> 98f
             }
             val reservedHeightDp = (heightDp * reservedRatio)

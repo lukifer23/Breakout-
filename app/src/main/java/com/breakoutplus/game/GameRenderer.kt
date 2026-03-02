@@ -6,7 +6,9 @@ import android.opengl.GLSurfaceView
 import android.util.Log
 import android.view.MotionEvent
 import com.breakoutplus.SettingsManager
+import kotlin.math.abs
 import kotlin.math.cos
+import kotlin.math.exp
 import kotlin.math.max
 import kotlin.math.sin
 
@@ -35,6 +37,8 @@ class GameRenderer(
     private var levelClearFlash = 0f
     private var impactFlash = 0f
     private var volleyDanger = 0f
+    private var volleyDangerTarget = 0f
+    private var visualTimeSeconds = 0f
     private var musicWasPlaying = false
     private var fixedStepSeconds = 1f / 120f
     private var simulationAccumulator = 0f
@@ -125,6 +129,14 @@ class GameRenderer(
             if (impactFlash > 0f) {
                 impactFlash = (impactFlash - delta * 2.0f).coerceAtLeast(0f)
             }
+            visualTimeSeconds += delta
+            if (volleyDanger != volleyDangerTarget) {
+                val response = if (delta > 0f) 1f - exp(-8f * delta) else 1f
+                volleyDanger += (volleyDangerTarget - volleyDanger) * response
+                if (abs(volleyDanger - volleyDangerTarget) < 0.002f) {
+                    volleyDanger = volleyDangerTarget
+                }
+            }
 
             if (!paused) {
                 val step = fixedStepSeconds.coerceIn(1f / 240f, 1f / 45f)
@@ -134,11 +146,6 @@ class GameRenderer(
                     engine.update(step)
                     simulationAccumulator -= step
                     updates += 1
-                }
-                if (updates == 0 && delta > 0f) {
-                    // Keep controls responsive when frame pacing temporarily outruns simulation step.
-                    engine.update(delta.coerceAtMost(step))
-                    simulationAccumulator = 0f
                 }
             }
 
@@ -184,7 +191,7 @@ class GameRenderer(
 
             // Volley Danger Zone Overlay
             if (volleyDanger > 0f) {
-                val pulse = ((sin(now / 200_000_000.0) + 1.0) * 0.5).toFloat()
+                val pulse = ((sin(visualTimeSeconds * 5f) + 1.0) * 0.5).toFloat()
                 val alpha = (volleyDanger * (0.3f + 0.2f * pulse)).coerceIn(0f, 0.6f)
                 // Draw a gradient or semi-transparent red rect at the bottom
                 // In Ortho with y=0 at bottom, this needs to be at y=0.
@@ -220,9 +227,7 @@ class GameRenderer(
     }
 
     fun setVolleyDanger(danger: Float) {
-        val target = danger.coerceIn(0f, 1f)
-        // Smoothly interpolate towards target to avoid jarring transitions
-        volleyDanger = volleyDanger * 0.9f + target * 0.1f
+        volleyDangerTarget = danger.coerceIn(0f, 1f)
     }
 
     fun handleTouch(event: MotionEvent, viewWidth: Float, viewHeight: Float) {
@@ -343,6 +348,8 @@ class GameRenderer(
         levelClearFlash = 0f
         impactFlash = 0f
         volleyDanger = 0f
+        volleyDangerTarget = 0f
+        visualTimeSeconds = 0f
         renderer2D.setOffset(0f, 0f)
     }
 

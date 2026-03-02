@@ -32,6 +32,7 @@ tools/god_zen_progression_probe.sh
 ```
 
 This verifies on-device that GOD/ZEN can complete a level and auto-advance to at least level 2 without fallback recovery.
+If `adb` reports `more than one device/emulator`, set `BP_SERIAL` explicitly.
 
 Optional env vars:
 - `BP_SERIAL=<adb-serial>`
@@ -43,6 +44,8 @@ Optional env vars:
 ```bash
 tools/all_modes_progression_probe.sh
 ```
+
+This wrapper forwards to `tools/god_zen_progression_probe.sh` and broadens `BP_PROGRESSION_MODES` by default.
 
 Optional env vars:
 - `BP_SERIAL=<adb-serial>`
@@ -62,8 +65,11 @@ Optional env vars:
   - `GOD` and `ZEN` auto-advance/continue without blocking progression.
 - Verify Volley behavior:
   - Turn launch queue, row descent, return anchor reposition, breach game-over.
+  - No false turn stalls from near-zero velocity jitter after balls settle.
 - Verify Tunnel behavior:
   - Fortress ring remains identifiable, gate lane stays open, interior density remains high in later levels.
+  - Supply readiness indicator progresses and reaches `Supply READY` under sustained shots.
+  - Pity-drop path prevents prolonged supply starvation in extended pressure phases.
 - Verify Invaders behavior:
   - Enemy shot telegraph/firing, shield hit/break feedback, paddle survival flow.
 - Verify HUD behavior:

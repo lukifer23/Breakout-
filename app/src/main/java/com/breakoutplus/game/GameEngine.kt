@@ -1,6 +1,7 @@
 package com.breakoutplus.game
 
 import android.view.MotionEvent
+import com.breakoutplus.DeviceLayoutPolicy
 import com.breakoutplus.SettingsManager
 import com.breakoutplus.UnlockManager
 import com.breakoutplus.game.LevelFactory.buildLevel
@@ -171,6 +172,7 @@ class GameEngine(
     private var tunnelShotsFired = 0
     private var tunnelGateFlash = 0f
     private var lastTunnelSupplyShot = 0
+    private var tunnelSupplyReadinessPercent = 0
     private var cachedTunnelGateIntegrityPercent = 100
     private var tunnelGateIntegrityDirty = true
 
@@ -1593,11 +1595,11 @@ class GameEngine(
     fun isGameRunning(): Boolean = state == GameState.RUNNING
 
     private fun normalizedAspectRatio(aspectRatio: Float = currentAspectRatio): Float {
-        return max(aspectRatio, 1f / aspectRatio.coerceAtLeast(0.0001f))
+        return DeviceLayoutPolicy.normalizedAspectRatio(aspectRatio)
     }
 
     private fun isSlateAspect(aspectRatio: Float = currentAspectRatio): Boolean {
-        return normalizedAspectRatio(aspectRatio) <= 1.85f
+        return DeviceLayoutPolicy.isSlateAspect(aspectRatio)
     }
 
     private fun currentVolleyMetrics(
@@ -1637,7 +1639,11 @@ class GameEngine(
                     layoutColBoost = baseColBoost
                 }
                 GameMode.VOLLEY -> {
-                    val volleyRows = if (isSlate) 5 else if (aspectRatio > 2.0f) 2 else 6
+                    val volleyRows = ModeLayoutPolicy.volleyRowBoost(
+                        aspectRatio = aspectRatio,
+                        isSlate = isSlate,
+                        levelIndex = levelIndex
+                    )
                     layoutRowBoost = volleyRows
                     // Volley width is fixed
                     layoutColBoost = 0
@@ -1966,22 +1972,19 @@ class GameEngine(
     }
 
     fun nextLevel() {
-        val clearedBoardWhilePaused =
-            state == GameState.PAUSED &&
-                config.mode.godMode &&
-                bricks.none { it.alive && it.type != BrickType.UNBREAKABLE }
+        val clearedBoard = bricks.none { it.alive && it.type != BrickType.UNBREAKABLE }
+        val decision = LevelAdvancePolicy.evaluate(
+            awaitingNextLevel = awaitingNextLevel,
+            state = state,
+            lives = lives,
+            clearedBoard = clearedBoard,
+            godModeEnabled = config.mode.godMode
+        )
 
-        // Manual GOD-mode skip is valid only from pause state to prevent duplicate
-        // auto-advance calls from skipping multiple levels.
-        val godModeForce =
-            config.mode.godMode &&
-                state == GameState.PAUSED &&
-                !awaitingNextLevel &&
-                lives > 0
-
-        // Defensive checks to prevent invalid level advancement
-        if (!awaitingNextLevel && !clearedBoardWhilePaused && !godModeForce) {
-            logger?.logError("nextLevel called when not awaiting next level (state=$state, lives=$lives)")
+        if (!decision.canAdvance) {
+            logger?.logError(
+                "nextLevel rejected (${decision.reason}, mode=${config.mode.name})"
+            )
             return
         }
         if (state == GameState.GAME_OVER) {
@@ -2050,6 +2053,7 @@ class GameEngine(
         tunnelShotsFired = 0
         tunnelGateFlash = 0f
         lastTunnelSupplyShot = 0
+        tunnelSupplyReadinessPercent = 0
         cachedTunnelGateIntegrityPercent = 100
         tunnelGateIntegrityDirty = true
         speedMultiplier = 1f
@@ -2633,7 +2637,7 @@ class GameEngine(
         }
 
         // Reuse the same board-pressure model that drives Volley status text.
-        renderer?.setVolleyDanger(currentVolleyMetrics(laneWindowRatio = 0.24f).pressure)
+        renderer?.setVolleyDanger(currentVolleyMetrics().pressure)
     }
 
     private fun updateBricks(dt: Float) {
@@ -2986,7 +2990,23 @@ class GameEngine(
 
     private fun resolveVolleyTurnIfReady() {
         if (!volleyTurnActive) return
-        if (volleyQueuedBalls > 0 || balls.isNotEmpty()) return
+
+        val stuckBalls = balls.count { it.stuckToPaddle }
+        val inFlightBalls = balls.count { ball ->
+            !ball.stuckToPaddle &&
+                VolleyModeSystem.isBallInFlight(ball.vx, ball.vy)
+        }
+        val decision = VolleyModeSystem.evaluateTurnDecision(
+            turnActive = volleyTurnActive,
+            queuedBalls = volleyQueuedBalls,
+            inFlightBalls = inFlightBalls,
+            stuckBalls = stuckBalls
+        )
+        if (decision.shouldAutoReleaseStuck) {
+            releaseStuckBalls()
+            return
+        }
+        if (!decision.shouldResolveTurn) return
 
         volleyTurnActive = false
         volleyTurnCount += 1
@@ -4081,17 +4101,46 @@ class GameEngine(
             return
         }
         if (config.mode == GameMode.TUNNEL) {
-            val gateIntegrityPercent = tunnelGateIntegrityPercent()
-            val counts = ModeBoardMetrics.breakableCounts(bricks)
-            val safeTotalBreakables = counts.totalBreakables.coerceAtLeast(1)
-            val breachPercent = (((safeTotalBreakables - counts.aliveBreakables).toFloat() / safeTotalBreakables.toFloat()) * 100f)
+            val tunnelMetrics = ModeBoardMetrics.tunnelBoardMetrics(
+                bricks = bricks,
+                gateZone = tunnelGateZone()
+            )
+            cachedTunnelGateIntegrityPercent = tunnelMetrics.gateIntegrityPercent
+            tunnelGateIntegrityDirty = false
+            val safeTotalBreakables = tunnelMetrics.totalBreakables.coerceAtLeast(1)
+            val breachPercent = (((safeTotalBreakables - tunnelMetrics.aliveBreakables).toFloat() / safeTotalBreakables.toFloat()) * 100f)
                 .roundToInt()
                 .coerceIn(0, 100)
+            val gatePressure = ModeBoardMetrics.tunnelBreakthroughPressure(
+                gateIntegrityPercent = tunnelMetrics.gateIntegrityPercent,
+                tunnelShotsFired = tunnelShotsFired
+            )
+            val hasBreakthroughActive =
+                activeEffects.containsKey(PowerUpType.PIERCE) ||
+                    activeEffects.containsKey(PowerUpType.FIREBALL) ||
+                    activeEffects.containsKey(PowerUpType.LASER)
+            val hasBreakthroughDropQueued = powerups.any { power ->
+                power.type == PowerUpType.PIERCE ||
+                    power.type == PowerUpType.FIREBALL ||
+                    power.type == PowerUpType.LASER
+            }
+            val supplyGate = TunnelModeSystem.supplyDropGate(
+                gatePressure = gatePressure,
+                gateIntegrityPercent = tunnelMetrics.gateIntegrityPercent,
+                hasBreakthroughActive = hasBreakthroughActive,
+                hasBreakthroughDropQueued = hasBreakthroughDropQueued
+            )
+            val shotsSinceDrop = (tunnelShotsFired - lastTunnelSupplyShot).coerceAtLeast(0)
+            tunnelSupplyReadinessPercent = TunnelModeSystem.supplyReadinessPercent(
+                shotsSinceDrop = shotsSinceDrop,
+                requiredShots = supplyGate.requiredShots
+            )
             val status = ModeStatusText.tunnel(
                 shotsFired = tunnelShotsFired,
-                gateIntegrityPercent = gateIntegrityPercent,
+                gateIntegrityPercent = tunnelMetrics.gateIntegrityPercent,
                 breachPercent = breachPercent,
-                combo = combo
+                combo = combo,
+                supplyReadinessPercent = tunnelSupplyReadinessPercent
             )
             if (force || status != lastPowerupStatus) {
                 lastPowerupStatus = status
@@ -4276,8 +4325,16 @@ class GameEngine(
             hasBreakthroughActive = hasBreakthroughActive,
             hasBreakthroughDropQueued = hasBreakthroughDropQueued
         )
-        if (shotsSinceDrop < gate.requiredShots) return
-        if (random.nextFloat() > gate.chance) return
+        val dropDecision = TunnelModeSystem.supplyDropDecision(
+            shotsSinceDrop = shotsSinceDrop,
+            gate = gate,
+            roll = random.nextFloat()
+        )
+        tunnelSupplyReadinessPercent = TunnelModeSystem.supplyReadinessPercent(
+            shotsSinceDrop = shotsSinceDrop,
+            requiredShots = gate.requiredShots
+        )
+        if (!dropDecision.shouldDrop) return
 
         val cols = ((currentLayout?.cols ?: 12) + layoutColBoost).coerceAtLeast(1)
         val lane = TunnelModeSystem.supplyLane(
@@ -4296,8 +4353,11 @@ class GameEngine(
         )
         spawnPowerup(spawn.x, spawn.y, randomPowerupType(PowerupSelectionHint.TUNNEL_BREAKTHROUGH))
         lastTunnelSupplyShot = tunnelShotsFired
+        tunnelSupplyReadinessPercent = 0
         if (gatePressure >= 0.72f) {
             listener.onTip("Tunnel supply drop inbound.")
+        } else if (dropDecision.forcedByPity) {
+            listener.onTip("Tunnel supply guaranteed after sustained pressure.")
         }
     }
 

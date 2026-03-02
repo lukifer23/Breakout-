@@ -36,6 +36,8 @@ Deliver a stable, consistent, performant Android release with no feature removal
 - Extract status/text formatting and mode HUD status composition.
 - Remove duplicated mode/brick lookup logic.
 - Continue collision and hot-loop micro-optimizations.
+- Unify device-class policy across HUD and board tuning (`DeviceLayoutPolicy`) to reduce slate/fold divergence.
+- Normalize renderer-side visual timing paths (Volley danger pulse/smoothing) to reduce frame-rate dependent drift.
 
 ### Phase B (Next)
 - Extract collision subsystem (ball/brick/beam/paddle interactions).

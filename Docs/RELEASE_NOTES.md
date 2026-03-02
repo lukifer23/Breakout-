@@ -1,5 +1,28 @@
 # Release Notes
 
+## 1.0.11 (Unreleased)
+- Made gameplay simulation deterministic in `GameRenderer` by removing variable-step fallback updates when no fixed tick is due.
+- Hardened next-level transition handling in `GameActivity` with a shared request/recovery path for both manual and auto advance flows.
+- Expanded GOD next-level acceptance to support READY-state manual skip and cleared-board recovery through centralized `LevelAdvancePolicy`.
+- Added `LevelAdvancePolicyTest` unit coverage to lock progression gate behavior and prevent regression.
+- Updated testing guidance with explicit multi-device `adb` targeting for progression probes (`BP_SERIAL`).
+- Tuned `ModeLayoutPolicy` to increase Volley vertical density on slate profiles with smoother per-level progression.
+- Unified Volley danger pressure with status pressure inputs to reduce visual-rule drift.
+- Consolidated Tunnel board status/integrity calculations into single-pass `ModeBoardMetrics.tunnelBoardMetrics`.
+- Rebalanced slate/fold HUD reserved-height clamps in `GameActivity` to reduce over-allocation and keep more gameplay space visible.
+- Added `VolleyModeSystem.isBallInFlight` thresholding to avoid turn-resolution stalls caused by near-zero motion jitter.
+- Added Tunnel supply readiness telemetry in HUD status and introduced pity-drop forcing in `TunnelModeSystem` to avoid long supply droughts.
+- Expanded mode regression coverage for Tunnel supply decision/readiness and Volley in-flight classification.
+
+## 1.0.10 (2026-02-27)
+- Added shared `DeviceLayoutPolicy` to unify slate/foldable classification used by both HUD sizing (`GameActivity`) and gameplay board tuning (`GameEngine`).
+- Added `ModeLayoutPolicy` and moved Volley row-boost selection into a centralized helper.
+- Increased Volley vertical brick density on slate/tablet profiles while preserving tall-phone compaction behavior.
+- Stabilized Volley danger overlay timing by moving pulse animation to frame-accumulated visual time instead of wall-clock sampling.
+- Normalized Volley danger smoothing to use delta-time response, reducing device/frame-rate dependent intensity drift.
+- Hardened GOD-mode next-level recovery path so cleared-board progression can advance even when `awaitingNextLevel` desynchronizes.
+- Added unit coverage for shared device layout classification and aspect normalization.
+
 ## 1.0.9 (2026-02-26)
 - Fixed GOD-mode manual skip and GOD/ZEN auto-advance interaction to avoid unintended multi-level jumps under recovery timing.
 - Restored GOD skip-level control parity on larger layouts (`sw600dp`, `sw720dp`) so tablet/slate pause UI matches phone behavior.

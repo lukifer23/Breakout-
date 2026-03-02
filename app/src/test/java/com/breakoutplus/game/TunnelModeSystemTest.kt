@@ -134,4 +134,53 @@ class TunnelModeSystemTest {
         )
         assertFalse(pacing.preferBreakthroughHint)
     }
+
+    @Test
+    fun supplyDropDecision_requiresShotThresholdAndRollPass() {
+        val gate = TunnelModeSystem.SupplyDropGate(requiredShots = 7, chance = 0.45f)
+
+        val tooEarly = TunnelModeSystem.supplyDropDecision(
+            shotsSinceDrop = 6,
+            gate = gate,
+            roll = 0.1f
+        )
+        val failedRoll = TunnelModeSystem.supplyDropDecision(
+            shotsSinceDrop = 7,
+            gate = gate,
+            roll = 0.7f
+        )
+        val success = TunnelModeSystem.supplyDropDecision(
+            shotsSinceDrop = 8,
+            gate = gate,
+            roll = 0.2f
+        )
+
+        assertFalse(tooEarly.shouldDrop)
+        assertFalse(failedRoll.shouldDrop)
+        assertTrue(success.shouldDrop)
+        assertFalse(success.forcedByPity)
+        assertEquals(7, success.requiredShots)
+        assertEquals(0.45f, success.chance, 0.0001f)
+    }
+
+    @Test
+    fun supplyDropDecision_forcesDropAfterPityThreshold() {
+        val gate = TunnelModeSystem.SupplyDropGate(requiredShots = 6, chance = 0.2f)
+
+        val pity = TunnelModeSystem.supplyDropDecision(
+            shotsSinceDrop = 10,
+            gate = gate,
+            roll = 0.99f
+        )
+
+        assertTrue(pity.shouldDrop)
+        assertTrue(pity.forcedByPity)
+    }
+
+    @Test
+    fun supplyReadinessPercent_tracksThresholdProgress() {
+        assertEquals(0, TunnelModeSystem.supplyReadinessPercent(shotsSinceDrop = 0, requiredShots = 7))
+        assertEquals(57, TunnelModeSystem.supplyReadinessPercent(shotsSinceDrop = 4, requiredShots = 7))
+        assertEquals(100, TunnelModeSystem.supplyReadinessPercent(shotsSinceDrop = 9, requiredShots = 7))
+    }
 }

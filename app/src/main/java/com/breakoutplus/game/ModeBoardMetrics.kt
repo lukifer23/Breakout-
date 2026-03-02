@@ -32,6 +32,12 @@ object ModeBoardMetrics {
         val integrityPercent: Int
     )
 
+    data class TunnelBoardMetrics(
+        val totalBreakables: Int,
+        val aliveBreakables: Int,
+        val gateIntegrityPercent: Int
+    )
+
     fun breakableCounts(bricks: List<Brick>): BreakableCounts {
         var total = 0
         var alive = 0
@@ -144,6 +150,44 @@ object ModeBoardMetrics {
             totalBreakables = totalGateBreakables,
             aliveBreakables = aliveGateBreakables,
             integrityPercent = integrityPercent
+        )
+    }
+
+    fun tunnelBoardMetrics(
+        bricks: List<Brick>,
+        gateZone: TunnelGateZone?
+    ): TunnelBoardMetrics {
+        var totalBreakables = 0
+        var aliveBreakables = 0
+        var totalGateBreakables = 0
+        var aliveGateBreakables = 0
+        for (brick in bricks) {
+            if (brick.type == BrickType.UNBREAKABLE) continue
+            totalBreakables += 1
+            if (brick.alive) {
+                aliveBreakables += 1
+            }
+            if (gateZone != null &&
+                brick.gridX in gateZone.minCol..gateZone.maxCol &&
+                brick.gridY in gateZone.rows
+            ) {
+                totalGateBreakables += 1
+                if (brick.alive) {
+                    aliveGateBreakables += 1
+                }
+            }
+        }
+        val gateIntegrityPercent = if (totalGateBreakables == 0) {
+            100
+        } else {
+            ((aliveGateBreakables.toFloat() / totalGateBreakables.toFloat()) * 100f)
+                .roundToInt()
+                .coerceIn(0, 100)
+        }
+        return TunnelBoardMetrics(
+            totalBreakables = totalBreakables,
+            aliveBreakables = aliveBreakables,
+            gateIntegrityPercent = gateIntegrityPercent
         )
     }
 

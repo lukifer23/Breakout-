@@ -17,6 +17,13 @@ object TunnelModeSystem {
         val chance: Float
     )
 
+    data class SupplyDropDecision(
+        val shouldDrop: Boolean,
+        val forcedByPity: Boolean,
+        val requiredShots: Int,
+        val chance: Float
+    )
+
     data class SupplyLane(
         val centerCol: Int,
         val laneX: Float,
@@ -102,5 +109,35 @@ object TunnelModeSystem {
         val spawnY = (worldHeight * if (gatePressure >= 0.68f) 0.52f else 0.6f)
             .coerceIn(paddleY + 12f, worldHeight * 0.82f)
         return SupplySpawnPoint(x = spawnX, y = spawnY)
+    }
+
+    fun supplyDropDecision(
+        shotsSinceDrop: Int,
+        gate: SupplyDropGate,
+        roll: Float
+    ): SupplyDropDecision {
+        val pityThreshold = gate.requiredShots + 4
+        val forcedByPity = shotsSinceDrop >= pityThreshold
+        val shouldDrop = shotsSinceDrop > 0 &&
+            (
+                forcedByPity ||
+                    (shotsSinceDrop >= gate.requiredShots && roll <= gate.chance)
+                )
+        return SupplyDropDecision(
+            shouldDrop = shouldDrop,
+            forcedByPity = forcedByPity,
+            requiredShots = gate.requiredShots,
+            chance = gate.chance
+        )
+    }
+
+    fun supplyReadinessPercent(
+        shotsSinceDrop: Int,
+        requiredShots: Int
+    ): Int {
+        if (shotsSinceDrop <= 0 || requiredShots <= 0) return 0
+        return ((shotsSinceDrop.toFloat() / requiredShots.toFloat()) * 100f)
+            .toInt()
+            .coerceIn(0, 100)
     }
 }

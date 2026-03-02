@@ -13,7 +13,7 @@
 - `God Mode`: endless practice, no life loss.
 - `Level Rush`: 1 life, 55-second level timer.
 - `Volley`: turn-based chain launch; rows descend each turn, starts with 5 balls and can grow.
-- `Tunnel Siege`: fortified unbreakable ring, narrow gate lane into dense interior core.
+- `Tunnel Siege`: fortified unbreakable ring, narrow gate lane into dense interior core, adaptive supply cadence with readiness telemetry.
 - `Survival`: 1 life with aggressive speed scaling.
 - `Invaders`: moving invader fleet fires back; shield and telegraph systems are active.
 - `Zen`: relaxed flow mode (no score/life pressure, continuous restarts/advances).
@@ -46,6 +46,13 @@
 - Ball Splitter
 - Freeze
 - Pierce
+- Ricochet
+- Time Warp
+- Double Score
+
+## Mode HUD Notes
+- `Volley` status shows: ball count, turn, depth, alive breakables, and lane clearance.
+- `Tunnel Siege` status shows: shots fired, gate integrity, breach %, and supply readiness (`Supply READY` at threshold).
 
 ## Scoring & Progression
 - Brick score values scale with combo multipliers.

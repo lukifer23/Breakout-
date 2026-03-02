@@ -6,6 +6,7 @@
 3. `GameGLSurfaceView.FramePacer` drives `requestRender()` via `Choreographer`.
 4. `GameRenderer` performs fixed-step simulation and render.
 5. `GameEngine` updates gameplay state and emits HUD/events through `GameEventListener`.
+6. `DeviceLayoutPolicy` provides shared slate/foldable classification used by both HUD and board-layout tuning.
 
 ## Main Components
 - UI layer: `app/src/main/java/com/breakoutplus/*.kt`
@@ -14,6 +15,8 @@
 - Core gameplay: `GameEngine.kt`
 - Layout generation: `LevelFactory.kt`
 - Mode tuning: `GameMode.kt`, `ModeBalance.kt`
+- Mode layout policy: `ModeLayoutPolicy.kt`
+- Mode board metrics: `ModeBoardMetrics.kt`
 - Mode status formatting: `ModeStatusText.kt`
 - Tunnel mode pacing/supply logic: `TunnelModeSystem.kt`
 - Powerup drop-rate model: `PowerupDropModel.kt`
@@ -33,13 +36,15 @@ Current decomposition strategy is incremental extraction with behavior parity:
 ## Loop Details
 - Render mode: `RENDERMODE_WHEN_DIRTY` (not continuous).
 - Frame requests: Choreographer callback pacing in `FramePacer`.
-- Simulation: fixed-step (`setTargetFrameRate` controls step size; clamped to 45-240 FPS bounds).
+- Simulation: fixed-step only (`setTargetFrameRate` controls step size; clamped to 45-240 FPS bounds).
 - Accumulator limit prevents runaway update bursts on frame drops.
+- Gameplay mutation stays on fixed ticks; renderer-time effects (shake/flash/pulse) continue to use frame delta for visual smoothing only.
 
 ## State & Events
 - Core states: `READY`, `RUNNING`, `PAUSED`, `GAME_OVER`.
 - `GameEngine` owns gameplay entities and progression.
 - `GameEventListener` updates HUD, overlays, score/lives/time, mode-specific indicators.
+- Next-level acceptance is centralized in `LevelAdvancePolicy` so GOD manual skip + recovery transitions are deterministic and testable.
 
 ## Data Persistence
 - `SettingsManager`: user settings in SharedPreferences.
@@ -51,6 +56,8 @@ Current decomposition strategy is incremental extraction with behavior parity:
 - Resource qualifiers for larger devices (`sw600dp`, `sw720dp`).
 - `FoldAwareActivity` applies hinge/inset-aware layout padding.
 - `GameActivity` applies responsive HUD scaling and reserved HUD height for varied aspect ratios.
+- HUD reservation is compacted on slate/fold profiles to preserve gameplay field height while maintaining control readability.
+- `GameEngine` board layout tuning uses the same shared `DeviceLayoutPolicy` classification to keep HUD and brick density aligned.
 
 ## Engineering Rules For Refactor Work
 - No feature removals.
@@ -62,4 +69,4 @@ Current decomposition strategy is incremental extraction with behavior parity:
 - OpenGL ES 2.0 rendering path.
 - Spatial hash used for brick collision broad-phase.
 - Particle/wave caps limit FX overhead in high-action scenes.
-- Single-frame timestamp usage keeps animation oscillators coherent.
+- Renderer visual overlays use frame-accumulated visual time for stable pulse timing across device refresh rates.

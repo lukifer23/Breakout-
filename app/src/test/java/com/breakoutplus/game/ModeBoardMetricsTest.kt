@@ -147,6 +147,28 @@ class ModeBoardMetricsTest {
     }
 
     @Test
+    fun tunnelBoardMetricsCombinesBreachAndGateIntegrityInSinglePass() {
+        val gateZone = ModeBoardMetrics.TunnelGateZone(
+            minCol = 5,
+            maxCol = 7,
+            rows = 4..7
+        )
+        val bricks = listOf(
+            gateBrick(gridX = 5, gridY = 4, type = BrickType.NORMAL, alive = true),
+            gateBrick(gridX = 6, gridY = 6, type = BrickType.REINFORCED, alive = false),
+            gateBrick(gridX = 2, gridY = 3, type = BrickType.NORMAL, alive = true),
+            gateBrick(gridX = 4, gridY = 3, type = BrickType.NORMAL, alive = false),
+            gateBrick(gridX = 7, gridY = 6, type = BrickType.UNBREAKABLE, alive = true)
+        )
+
+        val metrics = ModeBoardMetrics.tunnelBoardMetrics(bricks, gateZone)
+
+        assertEquals(4, metrics.totalBreakables)
+        assertEquals(2, metrics.aliveBreakables)
+        assertEquals(50, metrics.gateIntegrityPercent)
+    }
+
+    @Test
     fun tunnelBreakthroughPressureTracksIntegrityAndShotCadence() {
         val pressure = ModeBoardMetrics.tunnelBreakthroughPressure(
             gateIntegrityPercent = 80,

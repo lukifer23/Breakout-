@@ -30,12 +30,21 @@ object ModeStatusText {
         shotsFired: Int,
         gateIntegrityPercent: Int,
         breachPercent: Int,
-        combo: Int
+        combo: Int,
+        supplyReadinessPercent: Int? = null
     ): String {
         val segments = mutableListOf<String>()
         segments.add("Shots: $shotsFired")
         segments.add("Gate ${gateIntegrityPercent.coerceIn(0, 100)}%")
         segments.add("Breach ${breachPercent.coerceIn(0, 100)}%")
+        supplyReadinessPercent?.let { readiness ->
+            val clamped = readiness.coerceIn(0, 100)
+            if (clamped >= 100) {
+                segments.add("Supply READY")
+            } else {
+                segments.add("Supply ${clamped}%")
+            }
+        }
         if (combo >= 2) {
             segments.add("Combo x$combo")
         }

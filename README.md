@@ -19,6 +19,8 @@ The repository also includes an iOS port (`ios/`), but Android is the active rel
   - restored tablet/slate GOD skip control parity
   - tightened slate/fold board-density consistency
   - unified Volley danger FX behavior across viewport classes
+  - reduced Volley turn-stall edge cases from near-zero velocity jitter
+  - added Tunnel supply readiness telemetry and anti-starvation pity-drop behavior
   - hardened PHASE brick transition logic and added regression test coverage
 
 ## Active Engineering Goals
@@ -36,8 +38,9 @@ The repository also includes an iOS port (`ios/`), but Android is the active rel
 ## Android Runtime Snapshot
 - OpenGL ES 2.0 renderer (`GLSurfaceView` + `Renderer2D`)
 - Choreographer frame pacing (`RENDERMODE_WHEN_DIRTY`)
-- Fixed-step simulation in `GameRenderer`
+- Fixed-step-only simulation in `GameRenderer`
 - Core gameplay state machine in `GameEngine`
+- Extracted mode systems (`VolleyModeSystem`, `TunnelModeSystem`, `ModeLayoutPolicy`, `ModeBoardMetrics`, `LevelAdvancePolicy`) to reduce monolith risk
 - Fold-aware and large-screen responsive HUD strategy in `GameActivity`
 
 ## Game Content
