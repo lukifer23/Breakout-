@@ -71,3 +71,4 @@ Current decomposition strategy is incremental extraction with behavior parity:
 - Spatial hash used for brick collision broad-phase.
 - Particle/wave caps limit FX overhead in high-action scenes.
 - Renderer visual overlays use frame-accumulated visual time for stable pulse timing across device refresh rates.
+- `GameEngine` now maintains an alive-breakable counter for level-completion checks, avoiding repeated full-board scans each tick.

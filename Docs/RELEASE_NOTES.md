@@ -16,6 +16,8 @@
 - Added persistent Tunnel gate-lane telegraph rendering and gate readiness fill cues for clearer Siege-state readability.
 - Added stronger visual feedback (impact flash + shake) when pity-drop forcing triggers after sustained Tunnel pressure.
 - Unified gameplay event VFX through centralized visual feedback profiles in `GameEngine` (shake/impact/combo/level-clear consistency across modes).
+- Reduced hot-loop scan pressure by replacing per-tick breakable completion scans with a maintained alive-breakable counter.
+- Reduced Volley turn-resolution overhead by switching stuck/in-flight ball state detection to a single-pass count.
 
 ## 1.0.10 (2026-02-27)
 - Added shared `DeviceLayoutPolicy` to unify slate/foldable classification used by both HUD sizing (`GameActivity`) and gameplay board tuning (`GameEngine`).

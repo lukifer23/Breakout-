@@ -198,6 +198,7 @@ class GameEngine(
     private var layoutColBoost = 0
     private var invaderScale = 1f
     private var globalBrickScale = 0.9f
+    private var aliveBreakableBrickCount = 0
     private var levelClearFlash = 0f
     private var renderTimeSeconds = 0f
     private val hitFlashDecayRate = 2.0f
@@ -267,6 +268,39 @@ class GameEngine(
 
     private fun spatialKey(cellX: Int, cellY: Int): Long {
         return (cellX.toLong() shl 32) or (cellY.toLong() and 0xffffffffL)
+    }
+
+    private data class VolleyBallStateCounts(
+        val stuckBalls: Int,
+        val inFlightBalls: Int
+    )
+
+    private fun isBreakable(type: BrickType): Boolean = type != BrickType.UNBREAKABLE
+
+    private fun recalcAliveBreakableBrickCount() {
+        var alive = 0
+        for (brick in bricks) {
+            if (brick.alive && isBreakable(brick.type)) {
+                alive += 1
+            }
+        }
+        aliveBreakableBrickCount = alive
+    }
+
+    private fun countVolleyBallStates(): VolleyBallStateCounts {
+        var stuck = 0
+        var inFlight = 0
+        for (ball in balls) {
+            if (ball.stuckToPaddle) {
+                stuck += 1
+            } else if (VolleyModeSystem.isBallInFlight(ball.vx, ball.vy)) {
+                inFlight += 1
+            }
+        }
+        return VolleyBallStateCounts(
+            stuckBalls = stuck,
+            inFlightBalls = inFlight
+        )
     }
 
     init {
@@ -2481,6 +2515,7 @@ class GameEngine(
         if (config.mode.invaders) {
             invaderBricks.addAll(bricks.filter { it.type == BrickType.INVADER })
         }
+        recalcAliveBreakableBrickCount()
         dynamicBrickLayout = config.mode.invaders || bricks.any { it.type == BrickType.MOVING }
         markTunnelGateIntegrityDirty()
         buildSpatialHash()
@@ -3072,16 +3107,12 @@ class GameEngine(
     private fun resolveVolleyTurnIfReady() {
         if (!volleyTurnActive) return
 
-        val stuckBalls = balls.count { it.stuckToPaddle }
-        val inFlightBalls = balls.count { ball ->
-            !ball.stuckToPaddle &&
-                VolleyModeSystem.isBallInFlight(ball.vx, ball.vy)
-        }
+        val states = countVolleyBallStates()
         val decision = VolleyModeSystem.evaluateTurnDecision(
             turnActive = volleyTurnActive,
             queuedBalls = volleyQueuedBalls,
-            inFlightBalls = inFlightBalls,
-            stuckBalls = stuckBalls
+            inFlightBalls = states.inFlightBalls,
+            stuckBalls = states.stuckBalls
         )
         if (decision.shouldAutoReleaseStuck) {
             releaseStuckBalls()
@@ -3278,6 +3309,9 @@ class GameEngine(
                 brick.spawnCount = 2
             }
             bricks.add(brick)
+            if (isBreakable(type)) {
+                aliveBreakableBrickCount += 1
+            }
             spawned += 1
         }
         if (spawned == 0 && cols > forcedGaps.size) {
@@ -3305,6 +3339,7 @@ class GameEngine(
                         type = BrickType.NORMAL
                     )
                 )
+                aliveBreakableBrickCount += 1
                 spawned = 1
             }
         }
@@ -4367,6 +4402,9 @@ class GameEngine(
     }
 
     private fun onBrickDestroyed(brick: Brick) {
+        if (isBreakable(brick.type) && aliveBreakableBrickCount > 0) {
+            aliveBreakableBrickCount -= 1
+        }
         if (config.mode == GameMode.TUNNEL && isTunnelGateBrick(brick)) {
             tunnelGateIntegrityDirty = true
         }
@@ -4515,7 +4553,7 @@ class GameEngine(
 
     private fun checkLevelCompletion() {
         if (state != GameState.RUNNING || awaitingNextLevel) return
-        val hasRemainingBreakables = bricks.any { it.alive && it.type != BrickType.UNBREAKABLE }
+        val hasRemainingBreakables = aliveBreakableBrickCount > 0
         if (!hasRemainingBreakables) {
             val levelDuration = elapsedSeconds - levelStartTime
             dailyChallenges?.let { challenges ->
@@ -5281,6 +5319,7 @@ class GameEngine(
                     childBrick.baseX = childBrick.x
                     childBrick.baseY = childBrick.y
                     bricks.add(childBrick)
+                    aliveBreakableBrickCount += 1
                     created += 1
                 }
                 if (created > 0) {
@@ -5314,6 +5353,7 @@ class GameEngine(
             childBrick.baseX = childX
             childBrick.baseY = childY
             bricks.add(childBrick)
+            aliveBreakableBrickCount += 1
         }
         spatialHashDirty = true
         markTunnelGateIntegrityDirty()

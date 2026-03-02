@@ -48,6 +48,7 @@ Deliver a stable, consistent, performant Android release with no feature removal
 
 Current Phase B priorities:
 - Continue hot-loop scan/allocation reductions in `GameEngine.update` paths.
+- Keep single-pass counters/caches for per-tick mode checks where behavior can be preserved exactly.
 - Add long-session stress validation for dense boards, multi-ball, and heavy FX states.
 - Keep docs/release notes synchronized at the end of every patch tranche.
 
