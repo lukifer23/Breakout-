@@ -607,25 +607,53 @@ class GameEngine(
                 )
             }
         }
-        if (config.mode == GameMode.TUNNEL && tunnelGateFlash > 0f) {
-            val gatePulse = tunnelGateFlash.coerceIn(0f, 1f)
-            val gateWidth = (worldWidth * 0.16f).coerceIn(10f, 18f)
-            val gateX = worldWidth * 0.5f - gateWidth * 0.5f
+        if (config.mode == GameMode.TUNNEL) {
+            val gateZone = tunnelGateZone()
+            val boardCols = ((currentLayout?.cols ?: 12) + layoutColBoost).coerceAtLeast(1)
+            val colWidth = worldWidth / boardCols.toFloat()
+            val centerCol = gateZone?.let {
+                ((it.minCol + it.maxCol) * 0.5f).roundToInt().coerceIn(0, boardCols - 1)
+            } ?: (boardCols / 2)
+            val gateWidthCols = gateZone?.let { (it.maxCol - it.minCol + 1).coerceAtLeast(1) } ?: 3
+            val gateWidth = (colWidth * gateWidthCols).coerceIn(8f, 20f)
+            val gateX = ((centerCol + 0.5f) * colWidth - gateWidth * 0.5f).coerceIn(0f, worldWidth - gateWidth)
             val gateY = worldHeight * 0.52f
             val gateHeight = worldHeight * 0.36f
+            val gatePulse = tunnelGateFlash.coerceIn(0f, 1f)
+            val readiness = (tunnelSupplyReadinessPercent / 100f).coerceIn(0f, 1f)
+            val integrity = (cachedTunnelGateIntegrityPercent / 100f).coerceIn(0f, 1f)
+            val urgency = (1f - integrity).coerceIn(0f, 1f)
+            val pulse = (kotlin.math.sin(time * 4.4f) * 0.5f + 0.5f)
+
+            val laneAlpha = (0.04f + readiness * 0.05f + urgency * 0.05f + pulse * 0.02f).coerceIn(0.04f, 0.16f)
+            renderer.drawRect(
+                gateX,
+                paddle.y + paddle.height * 0.8f,
+                gateWidth,
+                gateY - paddle.y,
+                fillColor(tempColor, theme.accent[0], theme.accent[1], theme.accent[2], laneAlpha)
+            )
+
             renderer.drawRect(
                 gateX,
                 gateY,
                 gateWidth,
                 gateHeight,
-                fillColor(tempColor, theme.accent[0], theme.accent[1], theme.accent[2], 0.08f + gatePulse * 0.17f)
+                fillColor(tempColor, theme.accent[0], theme.accent[1], theme.accent[2], 0.07f + gatePulse * 0.17f + readiness * 0.08f)
             )
             renderer.drawRect(
                 gateX + gateWidth * 0.24f,
                 gateY,
                 gateWidth * 0.52f,
                 gateHeight,
-                fillColor(tempColor, 1f, 0.95f, 0.85f, 0.05f + gatePulse * 0.12f)
+                fillColor(tempColor, 1f, 0.95f, 0.85f, 0.04f + gatePulse * 0.1f + readiness * 0.06f)
+            )
+            renderer.drawRect(
+                gateX,
+                gateY + gateHeight * 0.92f,
+                gateWidth * readiness,
+                gateHeight * 0.06f,
+                fillColor(tempColor, 0.5f + readiness * 0.5f, 0.9f, 0.55f + readiness * 0.4f, 0.24f + readiness * 0.24f)
             )
         }
 
@@ -4358,6 +4386,8 @@ class GameEngine(
             listener.onTip("Tunnel supply drop inbound.")
         } else if (dropDecision.forcedByPity) {
             listener.onTip("Tunnel supply guaranteed after sustained pressure.")
+            renderer?.triggerImpactFlash(0.18f)
+            renderer?.triggerScreenShake(1.2f, 0.08f)
         }
     }
 

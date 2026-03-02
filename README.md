@@ -21,6 +21,7 @@ The repository also includes an iOS port (`ios/`), but Android is the active rel
   - unified Volley danger FX behavior across viewport classes
   - reduced Volley turn-stall edge cases from near-zero velocity jitter
   - added Tunnel supply readiness telemetry and anti-starvation pity-drop behavior
+  - added persistent Tunnel gate-lane telegraph and stronger forced-supply visual feedback
   - hardened PHASE brick transition logic and added regression test coverage
 
 ## Active Engineering Goals

@@ -13,6 +13,8 @@
 - Added `VolleyModeSystem.isBallInFlight` thresholding to avoid turn-resolution stalls caused by near-zero motion jitter.
 - Added Tunnel supply readiness telemetry in HUD status and introduced pity-drop forcing in `TunnelModeSystem` to avoid long supply droughts.
 - Expanded mode regression coverage for Tunnel supply decision/readiness and Volley in-flight classification.
+- Added persistent Tunnel gate-lane telegraph rendering and gate readiness fill cues for clearer Siege-state readability.
+- Added stronger visual feedback (impact flash + shake) when pity-drop forcing triggers after sustained Tunnel pressure.
 
 ## 1.0.10 (2026-02-27)
 - Added shared `DeviceLayoutPolicy` to unify slate/foldable classification used by both HUD sizing (`GameActivity`) and gameplay board tuning (`GameEngine`).

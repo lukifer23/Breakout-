@@ -54,6 +54,12 @@
 - `Volley` status shows: ball count, turn, depth, alive breakables, and lane clearance.
 - `Tunnel Siege` status shows: shots fired, gate integrity, breach %, and supply readiness (`Supply READY` at threshold).
 
+## Tunnel Siege Readability Cues
+- Persistent gate-lane telegraph from paddle corridor to fortress gate.
+- Gate chamber accent intensity scales with supply readiness and pressure.
+- Readiness bar fills on the gate lane and resets when supply drops.
+- Sustained-pressure pity drops emit stronger impact/shake feedback for clear state change.
+
 ## Scoring & Progression
 - Brick score values scale with combo multipliers.
 - Combo windows reward sustained hit streaks.
