@@ -12,12 +12,12 @@ Deliver a stable, consistent, performant Android release with no feature removal
 
 ## Active Workstreams
 ### 1. Mode Stability + Identity
-- `VOLLEY`: improve turn reliability, pressure readability, late-run performance.
-- `TUNNEL`: strengthen gate/breach clarity and supply-drop pacing.
-- `GOD`/`ZEN`: guarantee seamless level progression and auto-advance reliability.
+- `VOLLEY`: continue late-run performance tuning after turn-reliability hardening.
+- `TUNNEL`: continue long-session pacing/perf tuning after gate-integrity/readiness consistency fixes.
+- `GOD`/`ZEN`: monitor progression stability after bounded auto-advance retry hardening.
 
 ### 2. Visual + UX Consistency
-- Unify animation/effect behavior across game events and device classes.
+- Continue animation/effect balancing after renderer feedback normalization rollout.
 - Keep HUD scaling and control placement consistent on phone/fold/slate.
 - Preserve gameplay readability while increasing slate vertical density.
 
@@ -32,7 +32,7 @@ Deliver a stable, consistent, performant Android release with no feature removal
 - Add test coverage with each extraction to protect behavior.
 
 ## Architecture Decomposition Plan
-### Phase A (Mostly Completed)
+### Phase A (Completed)
 - Extract status/text formatting and mode HUD status composition.
 - Remove duplicated mode/brick lookup logic.
 - Continue collision and hot-loop micro-optimizations.

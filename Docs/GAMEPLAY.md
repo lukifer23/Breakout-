@@ -12,7 +12,7 @@
 - `Endless`: infinite progression with scaling layouts.
 - `God Mode`: endless practice, no life loss.
 - `Level Rush`: 1 life, 55-second level timer.
-- `Volley`: turn-based chain launch; rows descend each turn, starts with 5 balls and can grow.
+- `Volley`: turn-based chain launch; rows descend each turn, starts with 3 balls and can grow.
 - `Tunnel Siege`: fortified unbreakable ring, narrow gate lane into dense interior core, adaptive supply cadence with readiness telemetry.
 - `Survival`: 1 life with aggressive speed scaling.
 - `Invaders`: moving invader fleet fires back; shield and telegraph systems are active.

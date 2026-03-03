@@ -82,6 +82,8 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     private val tipDuplicateSuppressMs = 2800L
     private val manualLevelAdvanceTimeoutMs = 1800L
     private val autoLevelAdvanceTimeoutMs = 2600L
+    private val autoLevelAdvanceRetryTimeoutMs = 1600L
+    private val maxAutoLevelAdvanceRetries = 1
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -882,31 +884,51 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
                 "event=next_level_request mode=${config.mode.name} from_level=${fromLevel ?: -1} target_level=${targetLevel ?: -1} source=$source"
             )
         }
+        var retryAttempt = 0
 
-        val recovery = Runnable {
-            if (!levelAdvanceInProgress || isFinishing || isDestroyed) return@Runnable
-            levelAdvanceInProgress = false
-            binding.buttonEndPrimary.isEnabled = true
-            binding.buttonEndSecondary.isEnabled = true
-            if (restoreOverlayOnTimeout) {
-                endOverlayState = EndOverlayState.LEVEL_COMPLETE
-                binding.endTitle.text = getString(R.string.label_level_complete)
-                binding.buttonEndPrimary.text = getString(R.string.label_next_level)
-                fallbackSummary?.let { animateEndStats(it, getString(R.string.label_level_complete)) }
-                showOverlay(binding.endOverlay)
+        fun scheduleRecovery(waitMs: Long) {
+            val recovery = Runnable {
+                if (!levelAdvanceInProgress || isFinishing || isDestroyed) return@Runnable
+                if (source == "auto" && retryAttempt < maxAutoLevelAdvanceRetries) {
+                    retryAttempt += 1
+                    if (debugAutoPlaySession) {
+                        val level = fallbackSummary?.level ?: -1
+                        Log.i(
+                            "BreakoutAutoPlay",
+                            "event=next_level_retry mode=${config.mode.name} from_level=$level target_level=${if (level > 0) level + 1 else -1} source=$source attempt=$retryAttempt"
+                        )
+                    }
+                    scheduleRecovery(autoLevelAdvanceRetryTimeoutMs)
+                    binding.gameSurface.nextLevel()
+                    playGameFade()
+                    return@Runnable
+                }
+
+                levelAdvanceInProgress = false
+                binding.buttonEndPrimary.isEnabled = true
+                binding.buttonEndSecondary.isEnabled = true
+                if (restoreOverlayOnTimeout) {
+                    endOverlayState = EndOverlayState.LEVEL_COMPLETE
+                    binding.endTitle.text = getString(R.string.label_level_complete)
+                    binding.buttonEndPrimary.text = getString(R.string.label_next_level)
+                    fallbackSummary?.let { animateEndStats(it, getString(R.string.label_level_complete)) }
+                    showOverlay(binding.endOverlay)
+                }
+                if (source == "auto") {
+                    Log.e("GameActivity", "Auto level advance timed out; restored manual next-level overlay")
+                } else {
+                    Log.w("GameActivity", "Manual level advance timed out; restored end overlay for retry")
+                }
+                if (debugAutoPlaySession) {
+                    val level = fallbackSummary?.level ?: -1
+                    Log.i("BreakoutAutoPlay", "event=next_level_fallback mode=${config.mode.name} from_level=$level target_level=${if (level > 0) level + 1 else -1} source=$source")
+                }
             }
-            if (source == "auto") {
-                Log.e("GameActivity", "Auto level advance timed out; restored manual next-level overlay")
-            } else {
-                Log.w("GameActivity", "Manual level advance timed out; restored end overlay for retry")
-            }
-            if (debugAutoPlaySession) {
-                val level = fallbackSummary?.level ?: -1
-                Log.i("BreakoutAutoPlay", "event=next_level_fallback mode=${config.mode.name} from_level=$level target_level=${if (level > 0) level + 1 else -1} source=$source")
-            }
+            levelAdvanceRecoveryRunnable = recovery
+            binding.root.postDelayed(recovery, waitMs)
         }
-        levelAdvanceRecoveryRunnable = recovery
-        binding.root.postDelayed(recovery, timeoutMs)
+
+        scheduleRecovery(timeoutMs)
         binding.gameSurface.nextLevel()
         playGameFade()
     }
@@ -1194,13 +1216,14 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             val layoutClass = DeviceLayoutPolicy.classifyByDp(widthDp, heightDp)
             val shortDp = layoutClass.shortDp
             val aspect = layoutClass.aspectRatio
+            val tabletClass = layoutClass.tabletClass
             val wideSlate = layoutClass.wideSlate
             val largeSlate = layoutClass.largeSlate
 
             val baseScale = when {
-                shortDp >= 840f -> 1.25f // Increased for large tablets
-                shortDp >= 720f -> 1.15f
-                shortDp >= 600f -> 1.1f
+                shortDp >= 840f -> 1.16f
+                shortDp >= 720f -> 1.1f
+                shortDp >= 600f -> 1.04f
                 shortDp <= 340f -> 0.82f
                 shortDp <= 380f -> 0.86f
                 shortDp <= 420f -> 0.92f
@@ -1213,7 +1236,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             }
             // Relaxed compaction for slates to utilize the screen real estate
             val slateCompaction = when {
-                largeSlate -> 1.05f 
+                largeSlate -> 0.98f
                 wideSlate && shortDp >= 720f -> 1.0f
                 wideSlate -> 0.98f
                 else -> 1f
@@ -1223,9 +1246,9 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
 
             // Keep HUD compact on large viewports so brick field gains vertical room.
             val reservedRatio = when {
-                largeSlate -> 0.142f
-                wideSlate && shortDp >= 720f -> 0.148f
-                wideSlate -> 0.152f
+                largeSlate -> 0.134f
+                wideSlate && shortDp >= 720f -> 0.14f
+                wideSlate -> 0.145f
                 shortDp >= 840f && aspect < 1.45f -> 0.154f
                 shortDp >= 840f -> 0.158f
                 shortDp >= 720f && aspect < 1.45f -> 0.162f
@@ -1237,8 +1260,8 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
                 else -> 0.21f
             }
             val reservedMaxDp = when {
-                largeSlate -> 172f
-                wideSlate -> 176f
+                largeSlate -> 164f
+                wideSlate -> 170f
                 shortDp >= 720f -> 186f
                 else -> 180f
             }
@@ -1272,14 +1295,14 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             binding.hudFps.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, modeSize)
             binding.hudLevelBanner.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, bannerSize)
 
-            val rowPadding = dp((10f * hudScale).coerceIn(8f, if (wideSlate) 14f else 16f))
+            val rowPadding = dp((10f * hudScale).coerceIn(8f, if (tabletClass) 13f else 16f))
             binding.hudRow.setPadding(rowPadding, rowPadding, rowPadding, rowPadding)
 
             val scoreParams = binding.hudScore.layoutParams as ConstraintLayout.LayoutParams
-            scoreParams.marginEnd = dp((10f * hudScale).coerceIn(8f, if (wideSlate) 15f else 18f))
+            scoreParams.marginEnd = dp((10f * hudScale).coerceIn(8f, if (tabletClass) 14f else 18f))
             binding.hudScore.layoutParams = scoreParams
 
-            val statGap = dp((14f * hudScale).coerceIn(10f, if (wideSlate) 20f else 24f))
+            val statGap = dp((14f * hudScale).coerceIn(10f, if (tabletClass) 18f else 24f))
             val timeParams = binding.hudTime.layoutParams as android.widget.LinearLayout.LayoutParams
             timeParams.marginStart = statGap
             binding.hudTime.layoutParams = timeParams
@@ -1300,7 +1323,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             powerupsParams.topMargin = statusTopMargin
             binding.hudPowerups.layoutParams = powerupsParams
             val chipsParams = binding.hudPowerupChips.layoutParams as android.widget.LinearLayout.LayoutParams
-            chipsParams.bottomMargin = dp((4f * hudScale).coerceIn(2f, if (wideSlate) 6f else 8f))
+            chipsParams.bottomMargin = dp((4f * hudScale).coerceIn(2f, if (tabletClass) 6f else 8f))
             binding.hudPowerupChips.layoutParams = chipsParams
             val bannerParams = binding.hudLevelBanner.layoutParams as android.widget.LinearLayout.LayoutParams
             bannerParams.topMargin = dp(
@@ -1311,22 +1334,22 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             )
             binding.hudLevelBanner.layoutParams = bannerParams
 
-            val actionMin = if (wideSlate) {
+            val actionMin = if (tabletClass) {
                 (42f * hudScale).coerceIn(38f, 56f)
             } else {
                 (44f * hudScale).coerceIn(38f, 60f)
             }
             binding.buttonPause.minimumWidth = dp(actionMin)
             binding.buttonPause.minimumHeight = dp(actionMin)
-            binding.buttonPause.iconSize = dp((22f * hudScale).coerceIn(18f, if (wideSlate) 28f else 30f))
-            val laserWidthBase = if (wideSlate) 72f else 76f
+            binding.buttonPause.iconSize = dp((22f * hudScale).coerceIn(18f, if (tabletClass) 26f else 30f))
+            val laserWidthBase = if (tabletClass) 70f else 76f
             binding.buttonLaser.minimumWidth = dp(
-                (laserWidthBase * hudScale).coerceIn(62f, if (wideSlate) 98f else 104f)
+                (laserWidthBase * hudScale).coerceIn(62f, if (tabletClass) 94f else 104f)
             )
             binding.buttonLaser.minimumHeight = dp(
-                (42f * hudScale).coerceIn(34f, if (wideSlate) 52f else 56f)
+                (42f * hudScale).coerceIn(34f, if (tabletClass) 50f else 56f)
             )
-            val laserMargin = dp((16f * hudScale).coerceIn(10f, if (wideSlate) 20f else 24f))
+            val laserMargin = dp((16f * hudScale).coerceIn(10f, if (tabletClass) 18f else 24f))
             val laserParams = binding.buttonLaser.layoutParams as ConstraintLayout.LayoutParams
             laserParams.marginStart = laserMargin
             laserParams.marginEnd = laserMargin

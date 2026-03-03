@@ -7,11 +7,11 @@ object ModeLayoutPolicy {
         levelIndex: Int
     ): Int {
         if (isSlate) {
-            val progressionBoost = (levelIndex / 7).coerceIn(0, 3)
+            val progressionBoost = (levelIndex / 6).coerceIn(0, 4)
             val slateBase = when {
-                aspectRatio <= 1.45f -> 10
-                aspectRatio <= 1.7f -> 9
-                else -> 8
+                aspectRatio <= 1.45f -> 11
+                aspectRatio <= 1.7f -> 10
+                else -> 9
             }
             return slateBase + progressionBoost
         }
@@ -21,5 +21,29 @@ object ModeLayoutPolicy {
             aspectRatio > 1.75f -> 5
             else -> 6
         }
+    }
+
+    fun tunnelRowBoost(
+        aspectRatio: Float,
+        isSlate: Boolean,
+        levelIndex: Int
+    ): Int {
+        if (isSlate) {
+            val progressionBoost = (levelIndex / 7).coerceIn(0, 3)
+            val slateBase = when {
+                aspectRatio <= 1.45f -> 13
+                aspectRatio <= 1.7f -> 12
+                else -> 11
+            }
+            return slateBase + progressionBoost
+        }
+
+        val densityBoost = (levelIndex / 6).coerceAtMost(2)
+        val baseRowBoost = when {
+            aspectRatio > 2.05f -> 4
+            aspectRatio > 1.85f -> 2
+            else -> 0
+        }
+        return baseRowBoost + 3 + densityBoost
     }
 }

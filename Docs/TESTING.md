@@ -67,12 +67,14 @@ Optional env vars:
   - Unfolded/tablet landscape.
 - Verify level flow:
   - Level-complete overlay advances correctly in normal modes.
-  - `GOD` and `ZEN` auto-advance/continue without blocking progression.
+  - `GOD` and `ZEN` auto-advance/continue without blocking progression; transient handoff misses should retry once before manual fallback UI appears.
 - Verify Volley behavior:
   - Turn launch queue, row descent, return anchor reposition, breach game-over.
-  - No false turn stalls from near-zero velocity jitter after balls settle.
+  - No turn desync from stalled non-moving balls after queue drains (balls should be nudged back in-flight, then resolve normally).
+  - Slate/tablet layouts maintain denser vertical rows than fold/phone profiles without clipping HUD elements.
 - Verify Tunnel behavior:
   - Fortress ring remains identifiable, gate lane stays open, interior density remains high in later levels.
+  - Gate integrity % reacts to partial gate damage immediately (no stale HUD/cache values between hits).
   - Supply readiness indicator progresses and reaches `Supply READY` under sustained shots.
   - Pity-drop path prevents prolonged supply starvation in extended pressure phases.
 - Verify Invaders behavior:
@@ -81,8 +83,10 @@ Optional env vars:
   - Responsive scaling across phone/tablet/foldable sizes.
   - No overlaps between score/meta/powerup chips/FPS/laser button.
   - HUD reserve height adapts per viewport without crowding gameplay surface.
+  - Tablet/slate controls and text do not appear oversized relative to gameplay area after orientation changes.
 - Verify gameplay VFX consistency:
   - Shake/impact/combo/level-clear responses feel consistent across `VOLLEY`, `TUNNEL`, `INVADERS`, and `CLASSIC`.
+  - Burst-heavy moments (explosions, boss breaks, chain clears) avoid sudden full-screen whiteout spikes while retaining clear feedback intensity differences.
   - Tunnel pity-drop and supply-ready moments emit clear, non-jarring feedback.
 - Verify controls:
   - Drag tracking and launch alignment with aim guide.

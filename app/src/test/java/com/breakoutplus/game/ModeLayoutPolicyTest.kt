@@ -19,7 +19,7 @@ class ModeLayoutPolicyTest {
         )
 
         assertTrue(slateRows > phoneRows)
-        assertEquals(9, slateRows)
+        assertEquals(10, slateRows)
         assertEquals(6, phoneRows)
     }
 
@@ -36,8 +36,8 @@ class ModeLayoutPolicyTest {
             levelIndex = 18
         )
 
-        assertEquals(9, early)
-        assertEquals(11, late)
+        assertEquals(10, early)
+        assertEquals(13, late)
     }
 
     @Test
@@ -61,5 +61,23 @@ class ModeLayoutPolicyTest {
         assertEquals(2, veryTall)
         assertEquals(3, tall)
         assertEquals(5, midTall)
+    }
+
+    @Test
+    fun tunnelRowBoost_increasesSlateVerticalDensity() {
+        val slateRows = ModeLayoutPolicy.tunnelRowBoost(
+            aspectRatio = 1.55f,
+            isSlate = true,
+            levelIndex = 0
+        )
+        val phoneRows = ModeLayoutPolicy.tunnelRowBoost(
+            aspectRatio = 1.95f,
+            isSlate = false,
+            levelIndex = 0
+        )
+
+        assertEquals(12, slateRows)
+        assertEquals(5, phoneRows)
+        assertTrue(slateRows > phoneRows)
     }
 }

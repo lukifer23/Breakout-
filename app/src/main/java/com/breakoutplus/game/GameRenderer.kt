@@ -53,16 +53,22 @@ class GameRenderer(
     private val fpsUiSampleInterval = 0.16f
     private val shakeAmplitudeScale = 0.34f
     private val maxShakeAmplitude = 1.15f
+    private val maxShakeIntensity = 3.4f
+    private val minShakeDuration = 0.03f
+    private val maxShakeDuration = 0.32f
     private val comboFlashDuration = 0.28f
     private val levelClearFlashDuration = 0.72f
+    private val impactFlashDecayRate = 1.85f
+    private val impactFlashGain = 0.72f
+    private val impactFlashCarry = 0.35f
     private val comboFlashColor = floatArrayOf(0.9f, 0.98f, 1f, 0f)
     private val levelClearFlashColor = floatArrayOf(1f, 0.85f, 0.35f, 0f)
     private val impactFlashColor = floatArrayOf(1f, 1f, 1f, 0f)
     private val volleyDangerColor = floatArrayOf(1f, 0f, 0f, 0f)
 
     fun triggerScreenShake(intensity: Float = 3f, duration: Float = 0.2f) {
-        val clampedIntensity = intensity.coerceIn(0f, 2.4f)
-        val clampedDuration = duration.coerceIn(0.03f, 0.24f)
+        val clampedIntensity = intensity.coerceIn(0f, maxShakeIntensity)
+        val clampedDuration = duration.coerceIn(minShakeDuration, maxShakeDuration)
         shakeIntensity = max(shakeIntensity, clampedIntensity)
         screenShakeDuration = max(screenShakeDuration, clampedDuration)
         screenShake = max(screenShake, clampedDuration)
@@ -77,7 +83,9 @@ class GameRenderer(
     }
 
     fun triggerImpactFlash(intensity: Float) {
-        impactFlash = (impactFlash + intensity.coerceIn(0f, 1f) * 0.62f).coerceIn(0f, 1f)
+        val clamped = intensity.coerceIn(0f, 1f)
+        val blended = (impactFlash * impactFlashCarry) + (clamped * impactFlashGain)
+        impactFlash = max(impactFlash, blended.coerceIn(0f, 1f))
     }
 
     fun setTargetFrameRate(fps: Float) {
@@ -127,7 +135,7 @@ class GameRenderer(
                 levelClearFlash = (levelClearFlash - delta).coerceAtLeast(0f)
             }
             if (impactFlash > 0f) {
-                impactFlash = (impactFlash - delta * 2.0f).coerceAtLeast(0f)
+                impactFlash = (impactFlash - delta * impactFlashDecayRate).coerceAtLeast(0f)
             }
             visualTimeSeconds += delta
             if (volleyDanger != volleyDangerTarget) {
@@ -184,7 +192,7 @@ class GameRenderer(
 
             if (impactFlash > 0f) {
                 val t = (impactFlash).coerceIn(0f, 1f)
-                val alpha = (smoothStep(t) * 0.6f).coerceIn(0f, 0.6f)
+                val alpha = (smoothStep(t) * 0.52f).coerceIn(0f, 0.52f)
                 impactFlashColor[3] = alpha
                 renderer2D.drawRect(0f, 0f, worldWidth, worldHeight, impactFlashColor)
             }

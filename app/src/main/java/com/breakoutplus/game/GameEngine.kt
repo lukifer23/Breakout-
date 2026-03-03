@@ -273,7 +273,8 @@ class GameEngine(
 
     private data class VolleyBallStateCounts(
         val stuckBalls: Int,
-        val inFlightBalls: Int
+        val inFlightBalls: Int,
+        val stalledBalls: Int
     )
 
     private fun isBreakable(type: BrickType): Boolean = type != BrickType.UNBREAKABLE
@@ -297,17 +298,41 @@ class GameEngine(
     private fun countVolleyBallStates(): VolleyBallStateCounts {
         var stuck = 0
         var inFlight = 0
+        var stalled = 0
         for (ball in balls) {
             if (ball.stuckToPaddle) {
                 stuck += 1
             } else if (VolleyModeSystem.isBallInFlight(ball.vx, ball.vy)) {
                 inFlight += 1
+            } else {
+                stalled += 1
             }
         }
         return VolleyBallStateCounts(
             stuckBalls = stuck,
-            inFlightBalls = inFlight
+            inFlightBalls = inFlight,
+            stalledBalls = stalled
         )
+    }
+
+    private fun nudgeStalledVolleyBalls() {
+        if (config.mode != GameMode.VOLLEY) return
+        var nudgedCount = 0
+        val baseSpeed = (config.mode.launchSpeed * 0.9f).coerceAtLeast(18f)
+        val targetX = paddle.targetX.coerceIn(paddle.width / 2f, worldWidth - paddle.width / 2f)
+        for (ball in balls) {
+            if (ball.stuckToPaddle) continue
+            if (VolleyModeSystem.isBallInFlight(ball.vx, ball.vy)) continue
+            val horizontal = ((targetX - ball.x) / worldWidth).coerceIn(-0.65f, 0.65f)
+            val vx = baseSpeed * horizontal
+            val vyMagnitude = sqrt((baseSpeed * baseSpeed - vx * vx).coerceAtLeast(baseSpeed * baseSpeed * 0.36f))
+            ball.vx = vx
+            ball.vy = vyMagnitude
+            nudgedCount += 1
+        }
+        if (nudgedCount > 0) {
+            audio.play(GameSound.BOUNCE, 0.2f, 1.04f)
+        }
     }
 
     private fun hasStuckBall(): Boolean {
@@ -1764,8 +1789,9 @@ class GameEngine(
     }
 
     private fun applyLayoutTuning(aspectRatio: Float, preserveRowBoost: Boolean) {
-        val tallness = ((aspectRatio - 1.25f) / 0.85f).coerceIn(0f, 1f)
-        val isSlate = isSlateAspect(aspectRatio)
+        val normalizedAspect = normalizedAspectRatio(aspectRatio)
+        val tallness = ((normalizedAspect - 1.25f) / 0.85f).coerceIn(0f, 1f)
+        val isSlate = isSlateAspect(normalizedAspect)
 
         // Shared baseline, with specific adjustments for slate/tablet devices to prevent cramping.
         brickAreaTopRatio = if (isSlate) 0.96f else lerp(0.992f, 0.978f, tallness)
@@ -1775,7 +1801,7 @@ class GameEngine(
         if (!preserveRowBoost) {
             // Adjust row boost to ensure density on taller screens, but relax it for slates.
             val densityBoost = (levelIndex / 6).coerceAtMost(2)
-            val baseRowBoost = if (isSlate) 8 else if (aspectRatio > 2.05f) 4 else if (aspectRatio > 1.85f) 2 else 0
+            val baseRowBoost = if (isSlate) 9 else if (normalizedAspect > 2.05f) 4 else if (normalizedAspect > 1.85f) 2 else 0
             val baseColBoost = if (isSlate) 4 else 0
 
             when (config.mode) {
@@ -1789,7 +1815,7 @@ class GameEngine(
                 }
                 GameMode.VOLLEY -> {
                     val volleyRows = ModeLayoutPolicy.volleyRowBoost(
-                        aspectRatio = aspectRatio,
+                        aspectRatio = normalizedAspect,
                         isSlate = isSlate,
                         levelIndex = levelIndex
                     )
@@ -1798,7 +1824,11 @@ class GameEngine(
                     layoutColBoost = 0
                 }
                 GameMode.TUNNEL -> {
-                     layoutRowBoost = baseRowBoost + 3 + densityBoost
+                     layoutRowBoost = ModeLayoutPolicy.tunnelRowBoost(
+                         aspectRatio = normalizedAspect,
+                         isSlate = isSlate,
+                         levelIndex = levelIndex
+                     )
                      layoutColBoost = baseColBoost
                 }
                 GameMode.SURVIVAL -> {
@@ -3148,10 +3178,15 @@ class GameEngine(
             turnActive = volleyTurnActive,
             queuedBalls = volleyQueuedBalls,
             inFlightBalls = states.inFlightBalls,
-            stuckBalls = states.stuckBalls
+            stuckBalls = states.stuckBalls,
+            stalledBalls = states.stalledBalls
         )
         if (decision.shouldAutoReleaseStuck) {
             releaseStuckBalls()
+            return
+        }
+        if (decision.shouldNudgeStalledBalls) {
+            nudgeStalledVolleyBalls()
             return
         }
         if (!decision.shouldResolveTurn) return
@@ -3558,6 +3593,7 @@ class GameEngine(
                 comboTimer = 0f
                 audio.play(GameSound.BOUNCE, 0.5f)
             }
+            markTunnelGateIntegrityDirtyIfGateBrick(brick)
 
             spawnImpactSparks(ball.x, ball.y, brick.currentColor(theme), 4, 12f)
             reportScore()
@@ -3636,6 +3672,7 @@ class GameEngine(
 
     private fun handleBrickCollisionFromBeam(beam: Beam, brick: Brick) {
         val destroyed = brick.applyHit(true)
+        markTunnelGateIntegrityDirtyIfGateBrick(brick)
         if (destroyed) {
             addScore(brick.scoreValue)
             updateDailyChallenges(ChallengeType.BRICKS_DESTROYED)
@@ -4419,6 +4456,12 @@ class GameEngine(
 
     private fun markTunnelGateIntegrityDirty() {
         if (config.mode == GameMode.TUNNEL) {
+            tunnelGateIntegrityDirty = true
+        }
+    }
+
+    private fun markTunnelGateIntegrityDirtyIfGateBrick(brick: Brick) {
+        if (config.mode == GameMode.TUNNEL && isTunnelGateBrick(brick)) {
             tunnelGateIntegrityDirty = true
         }
     }

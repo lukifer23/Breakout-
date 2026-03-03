@@ -9,6 +9,7 @@ import kotlin.math.abs
 object VolleyModeSystem {
     data class TurnDecision(
         val shouldAutoReleaseStuck: Boolean,
+        val shouldNudgeStalledBalls: Boolean,
         val shouldResolveTurn: Boolean
     )
 
@@ -21,34 +22,47 @@ object VolleyModeSystem {
         turnActive: Boolean,
         queuedBalls: Int,
         inFlightBalls: Int,
-        stuckBalls: Int
+        stuckBalls: Int,
+        stalledBalls: Int
     ): TurnDecision {
         if (!turnActive) {
             return TurnDecision(
                 shouldAutoReleaseStuck = false,
+                shouldNudgeStalledBalls = false,
                 shouldResolveTurn = false
             )
         }
         if (queuedBalls > 0) {
             return TurnDecision(
                 shouldAutoReleaseStuck = false,
+                shouldNudgeStalledBalls = false,
                 shouldResolveTurn = false
             )
         }
         if (inFlightBalls > 0) {
             return TurnDecision(
                 shouldAutoReleaseStuck = false,
+                shouldNudgeStalledBalls = false,
+                shouldResolveTurn = false
+            )
+        }
+        if (stalledBalls > 0) {
+            return TurnDecision(
+                shouldAutoReleaseStuck = false,
+                shouldNudgeStalledBalls = true,
                 shouldResolveTurn = false
             )
         }
         if (stuckBalls > 0) {
             return TurnDecision(
                 shouldAutoReleaseStuck = true,
+                shouldNudgeStalledBalls = false,
                 shouldResolveTurn = false
             )
         }
         return TurnDecision(
             shouldAutoReleaseStuck = false,
+            shouldNudgeStalledBalls = false,
             shouldResolveTurn = true
         )
     }
