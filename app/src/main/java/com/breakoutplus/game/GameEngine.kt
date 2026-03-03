@@ -199,6 +199,7 @@ class GameEngine(
     private var invaderScale = 1f
     private var globalBrickScale = 0.9f
     private var aliveBreakableBrickCount = 0
+    private var aliveExplosiveBrickCount = 0
     private var levelClearFlash = 0f
     private var renderTimeSeconds = 0f
     private val hitFlashDecayRate = 2.0f
@@ -277,14 +278,20 @@ class GameEngine(
 
     private fun isBreakable(type: BrickType): Boolean = type != BrickType.UNBREAKABLE
 
-    private fun recalcAliveBreakableBrickCount() {
-        var alive = 0
+    private fun recalcAliveBrickCounters() {
+        var aliveBreakable = 0
+        var aliveExplosive = 0
         for (brick in bricks) {
-            if (brick.alive && isBreakable(brick.type)) {
-                alive += 1
+            if (!brick.alive) continue
+            if (isBreakable(brick.type)) {
+                aliveBreakable += 1
+            }
+            if (brick.type == BrickType.EXPLOSIVE) {
+                aliveExplosive += 1
             }
         }
-        aliveBreakableBrickCount = alive
+        aliveBreakableBrickCount = aliveBreakable
+        aliveExplosiveBrickCount = aliveExplosive
     }
 
     private fun countVolleyBallStates(): VolleyBallStateCounts {
@@ -409,7 +416,7 @@ class GameEngine(
         if (state == GameState.READY) {
             attachBallToPaddle()
             // Show explosive brick tip if not shown yet and explosive bricks exist
-            if (!explosiveTipShown && bricks.any { it.type == BrickType.EXPLOSIVE && it.alive }) {
+            if (!explosiveTipShown && aliveExplosiveBrickCount > 0) {
                 listener.onTip("Explosive bricks damage neighbors when destroyed.")
                 explosiveTipShown = true
             }
@@ -2174,6 +2181,8 @@ class GameEngine(
         speedMultiplier = 1f
         levelClearFlash = 0f
         activeEffects.clear()
+        aliveBreakableBrickCount = 0
+        aliveExplosiveBrickCount = 0
         balls.clear()
         beams.clear()
         powerups.clear()
@@ -2515,7 +2524,7 @@ class GameEngine(
         if (config.mode.invaders) {
             invaderBricks.addAll(bricks.filter { it.type == BrickType.INVADER })
         }
-        recalcAliveBreakableBrickCount()
+        recalcAliveBrickCounters()
         dynamicBrickLayout = config.mode.invaders || bricks.any { it.type == BrickType.MOVING }
         markTunnelGateIntegrityDirty()
         buildSpatialHash()
@@ -3311,6 +3320,9 @@ class GameEngine(
             bricks.add(brick)
             if (isBreakable(type)) {
                 aliveBreakableBrickCount += 1
+            }
+            if (type == BrickType.EXPLOSIVE) {
+                aliveExplosiveBrickCount += 1
             }
             spawned += 1
         }
@@ -4404,6 +4416,9 @@ class GameEngine(
     private fun onBrickDestroyed(brick: Brick) {
         if (isBreakable(brick.type) && aliveBreakableBrickCount > 0) {
             aliveBreakableBrickCount -= 1
+        }
+        if (brick.type == BrickType.EXPLOSIVE && aliveExplosiveBrickCount > 0) {
+            aliveExplosiveBrickCount -= 1
         }
         if (config.mode == GameMode.TUNNEL && isTunnelGateBrick(brick)) {
             tunnelGateIntegrityDirty = true
