@@ -20,6 +20,7 @@
 - Reduced Volley turn-resolution overhead by switching stuck/in-flight ball state detection to a single-pass count.
 - Removed READY-state per-frame explosive-brick scans by maintaining an alive-explosive counter for tip gating.
 - Extracted collision combo/audio feedback math into `BrickCollisionFeedback` and added focused unit coverage to preserve score multiplier and dynamic pitch behavior.
+- Hardened progression probes for wireless-device stability with serial auto-resolution, device-ready waits, and per-mode retries (`BP_PROGRESSION_MODE_ATTEMPTS`).
 
 ## 1.0.10 (2026-02-27)
 - Added shared `DeviceLayoutPolicy` to unify slate/foldable classification used by both HUD sizing (`GameActivity`) and gameplay board tuning (`GameEngine`).

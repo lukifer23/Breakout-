@@ -42,6 +42,7 @@ Optional env vars:
 - `BP_PROGRESSION_MODES="GOD ZEN"`
 - `BP_PROGRESSION_RUN_SECONDS=35` (minimum effective value is 20)
 - `BP_PROGRESSION_WAIT_PAD_SECONDS=8`
+- `BP_PROGRESSION_MODE_ATTEMPTS=2` (per-mode retry count for flaky wireless `adb` sessions)
 
 ## Deterministic All-Modes Progression Probe
 ```bash
@@ -55,6 +56,7 @@ Optional env vars:
 - `BP_PROGRESSION_MODES="CLASSIC TIMED ENDLESS GOD RUSH VOLLEY TUNNEL SURVIVAL INVADERS ZEN"`
 - `BP_PROGRESSION_RUN_SECONDS=30` (minimum effective value is 20)
 - `BP_PROGRESSION_WAIT_PAD_SECONDS=8`
+- `BP_PROGRESSION_MODE_ATTEMPTS=2`
 
 ## Manual Gameplay Checklist
 - Launch app and verify Main, Mode Select, Scoreboard, Settings, How-To, Daily Challenges, Privacy screens.
