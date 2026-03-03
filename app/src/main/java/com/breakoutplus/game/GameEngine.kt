@@ -3525,86 +3525,7 @@ class GameEngine(
             val destroyed = brick.applyHit(fireballActive || pierceActive)
 
             if (destroyed) {
-                updateDailyChallenges(ChallengeType.BRICKS_DESTROYED)
-                runBricksBroken += 1
-                onBrickDestroyed(brick)
-                spawnBrickDestructionFx(brick, ball.x, ball.y, intensity = 1f)
-
-                if (brick.type == BrickType.BOSS) {
-                    emitVisualFeedback(VisualFeedbackEvent.BOSS_BREAK)
-                    if (waves.size < maxWaves) {
-                        waves.add(
-                            ExplosionWave(
-                                x = brick.centerX,
-                                y = brick.centerY,
-                                radius = 1.5f,
-                                color = brick.currentColor(theme).copyOf(),
-                                life = 1.6f,
-                                maxLife = 1.6f,
-                                speed = 26f
-                            )
-                        )
-                    }
-                    spawnPowerup(brick.centerX, brick.centerY, randomPowerupType())
-                    listener.onTip("Boss down! Powerup dropped.")
-                }
-
-                // Combo system: consecutive breaks within 2 seconds get multipliers
-                comboTimer = 2f  // Reset combo timer
-                val oldCombo = combo
-                combo += 1
-
-                // Spawn combo streak particles for milestones
-                if (combo >= 5 && combo % 2 == 0 && combo > oldCombo) {
-                    spawnComboStreakParticles(brick.centerX, brick.centerY, combo)
-                }
-
-                // Update daily challenges
-                updateDailyChallenges(ChallengeType.COMBO_MULTIPLIER, combo)
-
-                // Calculate multiplier based on combo
-                val multiplier = when {
-                    combo >= 10 -> 5f
-                    combo >= 7 -> 3f
-                    combo >= 4 -> 2f
-                    combo >= 2 -> 1.5f
-                    else -> 1f
-                }
-
-                // Combo flash effect for high multipliers
-                if (multiplier >= 2f) {
-                    emitVisualFeedback(VisualFeedbackEvent.COMBO_STREAK)
-                }
-
-                val baseScore = (brick.scoreValue * multiplier).roundToInt()
-                addScore(baseScore)
-
-                // Show combo feedback if significant
-                if (combo >= 3) {
-                    logger?.logComboAchieved(combo, multiplier, (brick.scoreValue * multiplier).toInt())
-                    listener.onTip("Combo x${combo}!")
-                }
-
-                // Log brick destruction
-                logger?.logBrickDestroyed(brick.type, Pair(brick.centerX, brick.centerY), combo)
-
-                val brickSound = brickSoundFor(brick.type)
-
-                // Calculate dynamic rate with combo scaling and random variation
-                val baseRate = brickSoundRate(brick.type)
-                val comboPitchBoost = (combo.coerceAtMost(10) * 0.02f).coerceAtMost(0.2f) // Up to +0.2 for high combos
-                val randomVariation = (random.nextFloat() - 0.5f) * 0.3f // ±0.15 random variation
-                val dynamicRate = (baseRate + comboPitchBoost + randomVariation).coerceIn(0.7f, 1.3f)
-
-                audio.play(brickSound, 0.7f, dynamicRate)
-                audio.haptic(GameHaptic.LIGHT)
-                maybeSpawnPowerup(brick)
-                if (brick.type == BrickType.EXPLOSIVE) {
-                    triggerExplosion(brick)
-                }
-                if (brick.type == BrickType.SPAWNING) {
-                    spawnChildBricks(brick)
-                }
+                handleBrickDestroyedByBall(ball, brick)
             } else {
                 combo = 0
                 comboTimer = 0f
@@ -3614,6 +3535,75 @@ class GameEngine(
             spawnImpactSparks(ball.x, ball.y, brick.currentColor(theme), 4, 12f)
             reportScore()
             break
+        }
+    }
+
+    private fun handleBrickDestroyedByBall(ball: Ball, brick: Brick) {
+        updateDailyChallenges(ChallengeType.BRICKS_DESTROYED)
+        runBricksBroken += 1
+        onBrickDestroyed(brick)
+        spawnBrickDestructionFx(brick, ball.x, ball.y, intensity = 1f)
+
+        if (brick.type == BrickType.BOSS) {
+            emitVisualFeedback(VisualFeedbackEvent.BOSS_BREAK)
+            if (waves.size < maxWaves) {
+                waves.add(
+                    ExplosionWave(
+                        x = brick.centerX,
+                        y = brick.centerY,
+                        radius = 1.5f,
+                        color = brick.currentColor(theme).copyOf(),
+                        life = 1.6f,
+                        maxLife = 1.6f,
+                        speed = 26f
+                    )
+                )
+            }
+            spawnPowerup(brick.centerX, brick.centerY, randomPowerupType())
+            listener.onTip("Boss down! Powerup dropped.")
+        }
+
+        comboTimer = 2f
+        val oldCombo = combo
+        combo += 1
+
+        if (combo >= 5 && combo % 2 == 0 && combo > oldCombo) {
+            spawnComboStreakParticles(brick.centerX, brick.centerY, combo)
+        }
+
+        updateDailyChallenges(ChallengeType.COMBO_MULTIPLIER, combo)
+
+        val multiplier = BrickCollisionFeedback.comboMultiplier(combo)
+        if (BrickCollisionFeedback.shouldTriggerComboFlash(multiplier)) {
+            emitVisualFeedback(VisualFeedbackEvent.COMBO_STREAK)
+        }
+
+        val baseScore = (brick.scoreValue * multiplier).roundToInt()
+        addScore(baseScore)
+
+        if (combo >= 3) {
+            logger?.logComboAchieved(combo, multiplier, (brick.scoreValue * multiplier).toInt())
+            listener.onTip("Combo x${combo}!")
+        }
+
+        logger?.logBrickDestroyed(brick.type, Pair(brick.centerX, brick.centerY), combo)
+
+        val brickSound = brickSoundFor(brick.type)
+        val baseRate = brickSoundRate(brick.type)
+        val dynamicRate = BrickCollisionFeedback.dynamicBrickSoundRate(
+            baseRate = baseRate,
+            combo = combo,
+            randomUnit = random.nextFloat()
+        )
+
+        audio.play(brickSound, 0.7f, dynamicRate)
+        audio.haptic(GameHaptic.LIGHT)
+        maybeSpawnPowerup(brick)
+        if (brick.type == BrickType.EXPLOSIVE) {
+            triggerExplosion(brick)
+        }
+        if (brick.type == BrickType.SPAWNING) {
+            spawnChildBricks(brick)
         }
     }
 

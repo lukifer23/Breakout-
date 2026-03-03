@@ -26,6 +26,9 @@ Optional env vars:
 - `BP_AUTO_PLAY_SECONDS=20`
 - `BP_DEBUG_PROGRESSION_PROBE=1` (debug-only deterministic board-clear assist for GOD/ZEN progression checks)
 
+Serial selection note:
+- Use `adb devices -l` and copy the serial exactly; wireless targets may use full IDs like `adb-<device>._adb-tls-connect._tcp`.
+
 ## Deterministic GOD/ZEN Progression Probe
 ```bash
 tools/god_zen_progression_probe.sh
