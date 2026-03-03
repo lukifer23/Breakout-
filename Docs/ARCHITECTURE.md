@@ -74,3 +74,4 @@ Current decomposition strategy is incremental extraction with behavior parity:
 - Renderer visual overlays use frame-accumulated visual time for stable pulse timing across device refresh rates.
 - `GameEngine` now maintains an alive-breakable counter for level-completion checks, avoiding repeated full-board scans each tick.
 - `GameEngine` also maintains an alive-explosive counter so READY-state tip gating avoids per-frame explosive-brick scans.
+- Stuck-ball state checks are centralized via a helper in `GameEngine` to avoid repeated lambda-based scans in input/render/autoplay branches.

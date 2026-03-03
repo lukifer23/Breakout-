@@ -310,6 +310,15 @@ class GameEngine(
         )
     }
 
+    private fun hasStuckBall(): Boolean {
+        for (ball in balls) {
+            if (ball.stuckToPaddle) {
+                return true
+            }
+        }
+        return false
+    }
+
     init {
         themePool = LevelThemes.baseThemes().toMutableList()
         themePool.addAll(LevelThemes.bonusThemes().filter { it.name in config.unlocks.unlockedThemes })
@@ -511,7 +520,7 @@ class GameEngine(
                         paddle.targetX = (incoming.x + lead).coerceIn(minX, maxX)
                     }
                 }
-                if (magnetActive && balls.any { it.stuckToPaddle } && debugAutoPlayActionTimer <= 0f) {
+                if (magnetActive && hasStuckBall() && debugAutoPlayActionTimer <= 0f) {
                     releaseStuckBalls()
                     debugAutoPlayActionTimer = 0.24f
                 }
@@ -1081,7 +1090,7 @@ class GameEngine(
         }
         renderer.flushCircleBatch()
 
-        if (state == GameState.READY || balls.any { it.stuckToPaddle }) {
+        if (state == GameState.READY || hasStuckBall()) {
             renderAimGuide(renderer)
         }
 
@@ -1845,7 +1854,7 @@ class GameEngine(
     }
 
     private fun syncAimForLaunch() {
-        val stuckReadyBall = state == GameState.READY && balls.any { it.stuckToPaddle }
+        val stuckReadyBall = state == GameState.READY && hasStuckBall()
         if (isDragging && stuckReadyBall) {
             // Preserve finger-directed intent so launch trajectory matches the aim guide.
             updateAimFromTouch()
@@ -1898,7 +1907,7 @@ class GameEngine(
     }
 
     private fun shouldSnapTouchToPaddle(): Boolean {
-        return state == GameState.READY || balls.any { it.stuckToPaddle }
+        return state == GameState.READY || hasStuckBall()
     }
 
     private fun shouldLogTouch(actionMasked: Int, x: Float, y: Float, eventTimeMs: Long): Boolean {
@@ -2050,7 +2059,7 @@ class GameEngine(
                     } else {
                         listener.onTip("Tap with two fingers to fire when laser is active")
                     }
-                } else if (magnetActive && balls.any { it.stuckToPaddle }) {
+                } else if (magnetActive && hasStuckBall()) {
                     releaseStuckBalls()
                 }
                 isDragging = false
@@ -2729,7 +2738,7 @@ class GameEngine(
     private fun updatePaddle(dt: Float) {
         val previousX = paddle.x
         val target = paddle.targetX
-        val snapToFinger = isDragging && (state == GameState.READY || balls.any { it.stuckToPaddle })
+        val snapToFinger = isDragging && (state == GameState.READY || hasStuckBall())
         if (snapToFinger) {
             paddle.x = target
         } else {

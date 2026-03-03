@@ -21,6 +21,7 @@
 - Removed READY-state per-frame explosive-brick scans by maintaining an alive-explosive counter for tip gating.
 - Extracted collision combo/audio feedback math into `BrickCollisionFeedback` and added focused unit coverage to preserve score multiplier and dynamic pitch behavior.
 - Hardened progression probes for wireless-device stability with serial auto-resolution, device-ready waits, and per-mode retries (`BP_PROGRESSION_MODE_ATTEMPTS`).
+- Reduced repeated stuck-ball scans in `GameEngine` by centralizing paddle-attached ball detection in a helper used by input, aim-guide, and autoplay paths.
 
 ## 1.0.10 (2026-02-27)
 - Added shared `DeviceLayoutPolicy` to unify slate/foldable classification used by both HUD sizing (`GameActivity`) and gameplay board tuning (`GameEngine`).
