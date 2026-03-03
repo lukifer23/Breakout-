@@ -75,3 +75,4 @@ Current decomposition strategy is incremental extraction with behavior parity:
 - `GameEngine` now maintains an alive-breakable counter for level-completion checks, avoiding repeated full-board scans each tick.
 - `GameEngine` also maintains an alive-explosive counter so READY-state tip gating avoids per-frame explosive-brick scans.
 - Stuck-ball state checks are centralized via a helper in `GameEngine` to avoid repeated lambda-based scans in input/render/autoplay branches.
+- Tunnel breakthrough-state checks (active effects + queued drops) are centralized in `GameEngine` helpers and reused by status + supply logic.

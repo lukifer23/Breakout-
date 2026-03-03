@@ -319,6 +319,24 @@ class GameEngine(
         return false
     }
 
+    private fun hasBreakthroughActiveEffect(): Boolean {
+        return activeEffects.containsKey(PowerUpType.PIERCE) ||
+            activeEffects.containsKey(PowerUpType.FIREBALL) ||
+            activeEffects.containsKey(PowerUpType.LASER)
+    }
+
+    private fun hasQueuedBreakthroughDrop(): Boolean {
+        for (power in powerups) {
+            if (power.type == PowerUpType.PIERCE ||
+                power.type == PowerUpType.FIREBALL ||
+                power.type == PowerUpType.LASER
+            ) {
+                return true
+            }
+        }
+        return false
+    }
+
     init {
         themePool = LevelThemes.baseThemes().toMutableList()
         themePool.addAll(LevelThemes.bonusThemes().filter { it.name in config.unlocks.unlockedThemes })
@@ -4240,15 +4258,8 @@ class GameEngine(
                 gateIntegrityPercent = tunnelMetrics.gateIntegrityPercent,
                 tunnelShotsFired = tunnelShotsFired
             )
-            val hasBreakthroughActive =
-                activeEffects.containsKey(PowerUpType.PIERCE) ||
-                    activeEffects.containsKey(PowerUpType.FIREBALL) ||
-                    activeEffects.containsKey(PowerUpType.LASER)
-            val hasBreakthroughDropQueued = powerups.any { power ->
-                power.type == PowerUpType.PIERCE ||
-                    power.type == PowerUpType.FIREBALL ||
-                    power.type == PowerUpType.LASER
-            }
+            val hasBreakthroughActive = hasBreakthroughActiveEffect()
+            val hasBreakthroughDropQueued = hasQueuedBreakthroughDrop()
             val supplyGate = TunnelModeSystem.supplyDropGate(
                 gatePressure = gatePressure,
                 gateIntegrityPercent = tunnelMetrics.gateIntegrityPercent,
@@ -4440,15 +4451,8 @@ class GameEngine(
         val gatePressure = tunnelBreakthroughPressure()
         val gateIntegrity = tunnelGateIntegrityPercent()
 
-        val hasBreakthroughActive =
-            activeEffects.containsKey(PowerUpType.PIERCE) ||
-                activeEffects.containsKey(PowerUpType.FIREBALL) ||
-                activeEffects.containsKey(PowerUpType.LASER)
-        val hasBreakthroughDropQueued = powerups.any { power ->
-            power.type == PowerUpType.PIERCE ||
-            power.type == PowerUpType.FIREBALL ||
-                power.type == PowerUpType.LASER
-        }
+        val hasBreakthroughActive = hasBreakthroughActiveEffect()
+        val hasBreakthroughDropQueued = hasQueuedBreakthroughDrop()
 
         val gate = TunnelModeSystem.supplyDropGate(
             gatePressure = gatePressure,
