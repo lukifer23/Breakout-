@@ -60,17 +60,17 @@ object TunnelModeSystem {
     ): SupplyDropGate {
         val pressure = gatePressure.coerceIn(0f, 1f)
         val requiredShots = when {
-            pressure >= 0.78f -> 5
-            pressure >= 0.6f -> 7
-            else -> 9
+            pressure >= 0.75f -> 3
+            pressure >= 0.5f -> 4
+            else -> 6
         }
         val chance = (
-            0.2f +
-                pressure * 0.42f +
+            0.35f +
+                pressure * 0.45f +
                 (if (gateIntegrityPercent >= 70) 0.12f else 0f) -
                 (if (hasBreakthroughActive) 0.16f else 0f) -
                 (if (hasBreakthroughDropQueued) 0.1f else 0f)
-            ).coerceIn(0.16f, 0.78f)
+            ).coerceIn(0.20f, 0.85f)
         return SupplyDropGate(
             requiredShots = requiredShots,
             chance = chance

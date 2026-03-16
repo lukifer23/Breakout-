@@ -47,7 +47,7 @@ Latest validation snapshot:
 - Fixed-step-only simulation in `GameRenderer`
 - Core gameplay state machine in `GameEngine`
 - Extracted mode systems (`VolleyModeSystem`, `TunnelModeSystem`, `ModeLayoutPolicy`, `ModeBoardMetrics`, `LevelAdvancePolicy`) to reduce monolith risk
-- Fold-aware and large-screen responsive HUD strategy in `GameActivity`
+- Fold-aware and large-screen responsive HUD strategy managed by `GameHudController`
 
 ## Game Content
 ### Modes (10)

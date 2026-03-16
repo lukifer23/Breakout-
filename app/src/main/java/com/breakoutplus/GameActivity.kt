@@ -33,29 +33,11 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
 
     private lateinit var binding: ActivityGameBinding
     private lateinit var config: GameConfig
-    private var currentMode: GameMode = GameMode.CLASSIC
-    private var currentModeLabel: String = "Classic"
-    private var currentPowerupSummary: String = "Powerups: none"
-    private var currentCombo: Int = 0
-    private var currentPowerupCount: Int = 0
-    private var currentJourneyLabel: String = ""
-    private var currentXpTotal: Int = 0
-    private var laserActive: Boolean = false
-    private var laserCooldownEndMs: Long = 0L
-    private var laserCooldownRunnable: Runnable? = null
-    private var lastShieldValue: Int = 0
-    private var endStatsAnimator: android.animation.ValueAnimator? = null
-    private val hudUpdateQueued = AtomicBoolean(false)
+    private lateinit var hud: GameHudController
     private var endOverlayState: EndOverlayState = EndOverlayState.NONE
     private var maxInsetTop = 0
     private var maxInsetBottom = 0
     private var baseSurfaceBottomMargin = 0
-    @Volatile private var pendingScore: Int? = null
-    @Volatile private var pendingLives: Int? = null
-    @Volatile private var pendingFps: Int? = null
-    @Volatile private var pendingVolleyBalls: Int? = null
-    private var hudScale: Float = 1f
-    private var hudChipTextPx: Float = 0f
     private var lastHudAvailWidthPx: Int = -1
     private var lastHudAvailHeightPx: Int = -1
     private var levelAdvanceInProgress = false
@@ -69,11 +51,6 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     private var runStatsRecorded = false
     private var runSnapshotCaptureInFlight = false
     private val overlayAnimationTokens = mutableMapOf<Int, Int>()
-    private var bannerAnimationToken = 0
-    private var hudMetaPulseToken = 0
-    private var shieldPulseToken = 0
-    private var shieldLabelFlashToken = 0
-    private var fadeAnimationToken = 0
     private var tipBannerRunnable: Runnable? = null
     private var queuedTipMessage: String? = null
     private var lastTipMessage: String = ""
@@ -89,10 +66,11 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         super.onCreate(savedInstanceState)
         binding = ActivityGameBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        hud = GameHudController(this, binding)
         setFoldAwareRoot(binding.root)
         configureSystemUi()
         observeViewportChanges()
-        applyResponsiveHudSizing()
+        hud.applyResponsiveHudSizing()
         baseSurfaceBottomMargin =
             (binding.gameSurface.layoutParams as ConstraintLayout.LayoutParams).bottomMargin
         applyWindowInsets()
@@ -104,10 +82,10 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         val dailyChallenges = DailyChallengeStore.load(this)
         val unlocks = UnlockManager.load(this)
         config = GameConfig(mode, settings, dailyChallenges, unlocks)
-        currentMode = mode
-        currentXpTotal = ProgressionManager.loadXp(this)
-        updateJourneyLabel(1)
-        applyModeHud(mode)
+        hud.currentMode = mode
+        hud.currentXpTotal = ProgressionManager.loadXp(this)
+        hud.updateJourneyLabel(1)
+        hud.applyModeHud(mode)
 
         binding.gameSurface.start(config, this)
         applyFrameRatePreference()
@@ -156,7 +134,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             // Keep engine state paused for GOD-mode force-skip validation.
             binding.gameSurface.nextLevel()
             showPause(false)
-            playGameFade()
+            hud.playGameFade()
         }
         binding.buttonRestart.setOnClickListener { restartGame() }
         binding.buttonExit.setOnClickListener { exitToMenu() }
@@ -182,12 +160,12 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             showTooltip()
         }
 
-        playGameFade()
+        hud.playGameFade()
     }
 
     override fun onResume() {
         super.onResume()
-        applyResponsiveHudSizing()
+        hud.applyResponsiveHudSizing()
         applyGameGestureExclusion()
         refreshSettings()
         applyFrameRatePreference()
@@ -203,7 +181,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         levelAdvanceInProgress = false
         cancelLevelAdvanceRecovery()
         config.dailyChallenges?.let { DailyChallengeStore.save(this, it) }
-        laserCooldownRunnable?.let { binding.buttonLaser.removeCallbacks(it) }
+        hud.clearLaserCooldown()
         debugAutoPlayStopRunnable?.let { binding.gameSurface.removeCallbacks(it) }
         debugAutoPlayStopRunnable = null
         hudResizeRunnable?.let { binding.root.removeCallbacks(it) }
@@ -230,7 +208,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         binding.root.post {
-            applyResponsiveHudSizing()
+            hud.applyResponsiveHudSizing()
             applyGameGestureExclusion()
         }
     }
@@ -308,7 +286,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         } else {
             hideOverlay(binding.pauseOverlay)
             binding.gameSurface.resumeGame()
-            if (laserActive) {
+            if (hud.laserActive) {
                 binding.buttonLaser.visibility = View.VISIBLE
             }
         }
@@ -327,7 +305,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             binding.gameSurface.resumeGame()
             binding.gameSurface.restartGame()
             runStatsRecorded = false
-            playGameFade()
+            hud.playGameFade()
         }
     }
 
@@ -457,7 +435,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             // Debounce HUD resize to prevent rapid layout changes
             hudResizeRunnable?.let { binding.root.removeCallbacks(it) }
             val runnable = Runnable {
-                applyResponsiveHudSizing()
+                hud.applyResponsiveHudSizing()
                 applyGameGestureExclusion()
             }
             hudResizeRunnable = runnable
@@ -481,23 +459,20 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
     }
 
     override fun onScoreUpdated(score: Int) {
-        pendingScore = score
-        scheduleHudUpdate()
+        hud.queueScoreUpdate(score)
     }
 
     override fun onLivesUpdated(lives: Int) {
-        pendingLives = lives
-        scheduleHudUpdate()
+        hud.queueLivesUpdate(lives)
     }
 
     override fun onVolleyBallsUpdated(volleyBalls: Int) {
-        pendingVolleyBalls = volleyBalls
-        scheduleHudUpdate()
+        hud.queueVolleyBallsUpdate(volleyBalls)
     }
 
     override fun onTimeUpdated(secondsRemaining: Int) {
         runOnUiThread {
-            if (currentMode == GameMode.ZEN) {
+            if (hud.currentMode == GameMode.ZEN) {
                 binding.hudTime.visibility = View.GONE
                 return@runOnUiThread
             }
@@ -528,8 +503,8 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             binding.buttonEndPrimary.isEnabled = true
             binding.buttonEndSecondary.isEnabled = true
             binding.hudLevel.text = getString(R.string.label_level_format, level)
-            updateJourneyLabel(level)
-            updateHudMeta()
+            hud.updateJourneyLabel(level)
+            hud.updateHudMeta()
             if (debugAutoPlaySession) {
                 Log.i("BreakoutAutoPlay", "event=level_start mode=${config.mode.name} level=$level")
             }
@@ -538,52 +513,52 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
 
     override fun onModeUpdated(mode: GameMode) {
         runOnUiThread {
-            currentMode = mode
-            currentModeLabel = mode.displayName
-            applyModeHud(mode)
-            updateHudMeta()
-            updateShieldVisibility(mode.invaders)
+            hud.currentMode = mode
+            hud.currentModeLabel = mode.displayName
+            hud.applyModeHud(mode)
+            hud.updateHudMeta()
+            hud.updateShieldVisibility(mode.invaders)
         }
     }
 
     override fun onPowerupStatus(status: String) {
         runOnUiThread {
-            currentPowerupSummary = status
-            updateHudMeta()
+            hud.currentPowerupSummary = status
+            hud.updateHudMeta()
         }
     }
 
     override fun onPowerupsUpdated(status: List<PowerupStatus>, combo: Int) {
         runOnUiThread {
-            val previousCount = currentPowerupCount
-            val previousCombo = currentCombo
-            renderPowerupChips(status)
-            currentCombo = combo
-            currentPowerupCount = status.size
+            val previousCount = hud.currentPowerupCount
+            val previousCombo = hud.currentCombo
+            hud.renderPowerupChips(status)
+            hud.currentCombo = combo
+            hud.currentPowerupCount = status.size
             val preserveModeSummary =
-                currentMode == GameMode.VOLLEY ||
-                    currentMode == GameMode.TUNNEL ||
-                    currentMode == GameMode.SURVIVAL ||
-                    currentMode == GameMode.ZEN
+                hud.currentMode == GameMode.VOLLEY ||
+                    hud.currentMode == GameMode.TUNNEL ||
+                    hud.currentMode == GameMode.SURVIVAL ||
+                    hud.currentMode == GameMode.ZEN
             if (!preserveModeSummary) {
-                currentPowerupSummary = if (status.isEmpty()) {
+                hud.currentPowerupSummary = if (status.isEmpty()) {
                     getString(R.string.label_powerups_none)
                 } else {
                     resources.getQuantityString(R.plurals.label_powerups_active, status.size, status.size)
                 }
             }
-            updateLaserButton(status)
-            updateHudMeta()
+            hud.updateLaserButton(status)
+            hud.updateHudMeta()
             if (status.size > previousCount || combo > previousCombo) {
-                pulseHudMeta()
+                hud.pulseHudMeta()
             }
         }
     }
 
     override fun onLaserFired(cooldownSeconds: Float) {
         runOnUiThread {
-            if (!laserActive) return@runOnUiThread
-            startLaserCooldown(cooldownSeconds)
+            if (!hud.laserActive) return@runOnUiThread
+            hud.startLaserCooldown(cooldownSeconds)
         }
     }
 
@@ -593,7 +568,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             val updated = UnlockManager.unlockTheme(this, themeName)
             config = config.copy(unlocks = updated)
             binding.gameSurface.applyUnlocks(updated)
-            showBanner(getString(R.string.label_theme_unlocked, themeName))
+            hud.showBanner(getString(R.string.label_theme_unlocked, themeName))
         }
     }
 
@@ -603,61 +578,17 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             val updated = UnlockManager.setCosmeticTier(this, newTier)
             config = config.copy(unlocks = updated)
             binding.gameSurface.applyUnlocks(updated)
-            showBanner(getString(R.string.label_cosmetic_unlocked))
+            hud.showBanner(getString(R.string.label_cosmetic_unlocked))
         }
     }
 
     override fun onFpsUpdate(fps: Int) {
-        pendingFps = fps
-        scheduleHudUpdate()
+        hud.queueFpsUpdate(fps)
     }
 
     override fun onShieldUpdated(current: Int, max: Int) {
         runOnUiThread {
-            if (max <= 0) {
-                updateShieldVisibility(false)
-                return@runOnUiThread
-            }
-            updateShieldVisibility(true)
-            binding.hudShieldBar.max = max
-            binding.hudShieldBar.progress = current.coerceIn(0, max)
-            val percent = ((current.toFloat() / max.toFloat()) * 100f).toInt().coerceIn(0, 100)
-            binding.hudShieldLabel.text = getString(R.string.label_shield_percent, percent)
-            if (current < lastShieldValue) {
-                shieldPulseToken += 1
-                val pulseToken = shieldPulseToken
-                binding.hudShieldBar.animate().cancel()
-                binding.hudShieldBar.scaleX = 1f
-                binding.hudShieldBar.scaleY = 1f
-                binding.hudShieldBar.animate()
-                    .scaleX(UiMotion.SHIELD_PULSE_SCALE)
-                    .scaleY(UiMotion.SHIELD_PULSE_SCALE)
-                    .setDuration(UiMotion.PULSE_IN_DURATION)
-                    .setInterpolator(UiMotion.EMPHASIS_OUT)
-                    .withEndAction {
-                        if (pulseToken != shieldPulseToken) return@withEndAction
-                        binding.hudShieldBar.animate()
-                            .scaleX(1f)
-                            .scaleY(1f)
-                            .setDuration(UiMotion.PULSE_OUT_DURATION)
-                            .setInterpolator(UiMotion.EMPHASIS_OUT)
-                            .withEndAction {
-                                if (pulseToken != shieldPulseToken) return@withEndAction
-                                binding.hudShieldBar.scaleX = 1f
-                                binding.hudShieldBar.scaleY = 1f
-                            }
-                            .start()
-                    }
-                    .start()
-                binding.hudShieldLabel.setTextColor(androidx.core.content.ContextCompat.getColor(this, R.color.bp_red))
-                shieldLabelFlashToken += 1
-                val labelFlashToken = shieldLabelFlashToken
-                binding.hudShieldLabel.postDelayed({
-                    if (labelFlashToken != shieldLabelFlashToken) return@postDelayed
-                    binding.hudShieldLabel.setTextColor(androidx.core.content.ContextCompat.getColor(this, R.color.bp_white))
-                }, 260L)
-            }
-            lastShieldValue = current
+            hud.onShieldUpdated(current, max)
         }
     }
 
@@ -676,7 +607,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             }
             val sinceLast = now - lastTipTimestampMs
             if (sinceLast >= tipMinGapMs) {
-                showBanner(normalized)
+                hud.showBanner(normalized)
                 lastTipMessage = normalized
                 lastTipTimestampMs = now
                 queuedTipMessage = null
@@ -696,7 +627,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
                     tipBannerRunnable = null
                     return@Runnable
                 }
-                showBanner(queued)
+                hud.showBanner(queued)
                 lastTipMessage = queued
                 lastTipTimestampMs = emitTime
                 queuedTipMessage = null
@@ -741,7 +672,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             } else {
                 // Not a high score, just show game over screen
                 binding.endTitle.text = getString(R.string.label_game_over)
-                animateEndStats(summary, getString(R.string.label_game_over))
+                hud.animateEndStats(summary, getString(R.string.label_game_over))
                 binding.buttonEndPrimary.text = getString(R.string.label_restart)
                 showOverlay(binding.endOverlay)
             }
@@ -793,7 +724,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         val finishDialog = {
             endOverlayState = EndOverlayState.GAME_OVER
             binding.endTitle.text = getString(R.string.label_game_over)
-            animateEndStats(summary, getString(R.string.label_game_over))
+            hud.animateEndStats(summary, getString(R.string.label_game_over))
             binding.buttonEndPrimary.text = getString(R.string.label_restart)
             showOverlay(binding.endOverlay)
         }
@@ -836,19 +767,19 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
                 )
             }
             ProgressionManager.updateBestLevel(this, summary.level)
-            currentXpTotal = ProgressionManager.addXp(this, ProgressionManager.xpForLevel(summary.level))
-            updateHudMeta()
-            if (debugProgressionProbeSession || config.mode == GameMode.ZEN || config.mode == GameMode.GOD) {
+            hud.currentXpTotal = ProgressionManager.addXp(this, ProgressionManager.xpForLevel(summary.level))
+            hud.updateHudMeta()
+            if (debugProgressionProbeSession || config.mode == GameMode.ZEN) {
                 endOverlayState = EndOverlayState.NONE
                 hideOverlay(binding.endOverlay)
-                showLevelBanner(summary.level + 1)
+                hud.showLevelBanner(summary.level + 1)
                 advanceLevelWithAutoRecovery(summary)
                 config.dailyChallenges?.let { DailyChallengeStore.save(this, it) }
                 return@runOnUiThread
             }
             endOverlayState = EndOverlayState.LEVEL_COMPLETE
             binding.endTitle.text = getString(R.string.label_level_complete)
-            animateEndStats(summary, getString(R.string.label_level_complete))
+            hud.animateEndStats(summary, getString(R.string.label_level_complete))
             binding.buttonEndPrimary.text = getString(R.string.label_next_level)
             showOverlay(binding.endOverlay)
             config.dailyChallenges?.let { DailyChallengeStore.save(this, it) }
@@ -900,7 +831,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
                     }
                     scheduleRecovery(autoLevelAdvanceRetryTimeoutMs)
                     binding.gameSurface.nextLevel()
-                    playGameFade()
+                    hud.playGameFade()
                     return@Runnable
                 }
 
@@ -911,7 +842,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
                     endOverlayState = EndOverlayState.LEVEL_COMPLETE
                     binding.endTitle.text = getString(R.string.label_level_complete)
                     binding.buttonEndPrimary.text = getString(R.string.label_next_level)
-                    fallbackSummary?.let { animateEndStats(it, getString(R.string.label_level_complete)) }
+                    fallbackSummary?.let { hud.animateEndStats(it, getString(R.string.label_level_complete)) }
                     showOverlay(binding.endOverlay)
                 }
                 if (source == "auto") {
@@ -930,7 +861,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
 
         scheduleRecovery(timeoutMs)
         binding.gameSurface.nextLevel()
-        playGameFade()
+        hud.playGameFade()
     }
 
     private fun showTooltip() {
@@ -984,75 +915,9 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             .start()
     }
 
-    private fun showLevelBanner(level: Int) {
-        showBanner(getString(R.string.label_level_format, level))
-    }
 
-    private fun showBanner(message: String) {
-        val banner = binding.hudLevelBanner
-        bannerAnimationToken += 1
-        val token = bannerAnimationToken
-        banner.text = message
-        banner.animate().cancel()
-        banner.visibility = View.VISIBLE
-        banner.alpha = 0f
-        banner.scaleX = UiMotion.BANNER_ENTER_SCALE
-        banner.scaleY = UiMotion.BANNER_ENTER_SCALE
-        banner.animate()
-            .alpha(1f)
-            .scaleX(1f)
-            .scaleY(1f)
-            .setDuration(UiMotion.BANNER_IN_DURATION)
-            .setInterpolator(UiMotion.EMPHASIS_OUT)
-            .withEndAction {
-                if (token != bannerAnimationToken) return@withEndAction
-                banner.animate()
-                    .alpha(0f)
-                    .scaleX(UiMotion.BANNER_EXIT_SCALE)
-                    .scaleY(UiMotion.BANNER_EXIT_SCALE)
-                    .setStartDelay(UiMotion.BANNER_HOLD_DURATION)
-                    .setDuration(UiMotion.BANNER_OUT_DURATION)
-                    .setInterpolator(UiMotion.EMPHASIS_OUT)
-                    .withEndAction {
-                        if (token != bannerAnimationToken) return@withEndAction
-                        banner.visibility = View.INVISIBLE
-                        banner.alpha = 1f
-                        banner.scaleX = 1f
-                        banner.scaleY = 1f
-                    }
-                    .start()
-            }
-            .start()
-    }
 
-    private fun pulseHudMeta() {
-        val meta = binding.hudMeta
-        hudMetaPulseToken += 1
-        val token = hudMetaPulseToken
-        meta.animate().cancel()
-        meta.scaleX = 1f
-        meta.scaleY = 1f
-        meta.animate()
-            .scaleX(UiMotion.HUD_PULSE_SCALE)
-            .scaleY(UiMotion.HUD_PULSE_SCALE)
-            .setDuration(UiMotion.PULSE_IN_DURATION)
-            .setInterpolator(UiMotion.EMPHASIS_OUT)
-            .withEndAction {
-                if (token != hudMetaPulseToken) return@withEndAction
-                meta.animate()
-                    .scaleX(1f)
-                    .scaleY(1f)
-                    .setDuration(UiMotion.PULSE_OUT_DURATION)
-                    .setInterpolator(UiMotion.EMPHASIS_OUT)
-                    .withEndAction {
-                        if (token != hudMetaPulseToken) return@withEndAction
-                        meta.scaleX = 1f
-                        meta.scaleY = 1f
-                    }
-                    .start()
-            }
-            .start()
-    }
+
 
     private fun hideOverlay(view: View) {
         if (view.visibility != View.VISIBLE) return
@@ -1074,519 +939,9 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             .start()
     }
 
-    private fun renderPowerupChips(status: List<PowerupStatus>) {
-        val container = binding.hudPowerupChips
-        container.removeAllViews()
-        if (status.isEmpty()) {
-            container.visibility = View.GONE
-            if (binding.hudFps.visibility != View.VISIBLE) {
-                binding.hudPowerups.visibility = View.GONE
-            }
-            return
-        }
-        binding.hudPowerups.visibility = View.VISIBLE
-        container.visibility = View.VISIBLE
-        val metrics = resources.displayMetrics
-        val density = metrics.density.coerceAtLeast(1f)
-        val availableWidthPx = when {
-            binding.hudContainer.width > 0 -> binding.hudContainer.width
-            binding.root.width > 0 -> binding.root.width
-            else -> metrics.widthPixels
-        }
-        val availableWidthDp = (availableWidthPx / density).coerceAtLeast(0f)
-        val estimatedChipWidthDp = (72f * hudScale).coerceAtLeast(54f)
-        val widthBoundLimit = (availableWidthDp / estimatedChipWidthDp).toInt().coerceIn(1, 6)
-        val baseLimit = when {
-            availableWidthDp < 340f -> 2
-            availableWidthDp < 430f -> 3
-            availableWidthDp < 620f -> 4
-            else -> 5
-        }
-        val maxVisible = minOf(baseLimit, widthBoundLimit).coerceAtLeast(1)
-        val visibleItems = status.take(maxVisible)
-        visibleItems.forEach { item ->
-            container.addView(buildPowerupChip(item))
-        }
-        val overflow = status.size - visibleItems.size
-        if (overflow > 0) {
-            container.addView(buildOverflowChip(overflow))
-        }
-    }
 
-    private fun buildPowerupChip(status: PowerupStatus): android.widget.TextView {
-        val chip = android.widget.TextView(this)
-        val chipScale = hudScale.coerceIn(0.82f, 1.24f)
-        val chipTextSize = if (hudChipTextPx > 0f) hudChipTextPx else resources.getDimension(R.dimen.bp_hud_mode_size)
-        chip.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, chipTextSize)
-        chip.setTypeface(android.graphics.Typeface.DEFAULT_BOLD)
-        chip.setSingleLine(true)
-        chip.setPadding(
-            dp(10f * chipScale),
-            dp(6f * chipScale),
-            dp(10f * chipScale),
-            dp(6f * chipScale)
-        )
-        chip.letterSpacing = 0.02f
 
-        val label = if (status.type == PowerUpType.SHIELD && status.charges > 0) {
-            "${powerupLabel(status.type)} x${status.charges} ${status.remainingSeconds}s"
-        } else {
-            "${powerupLabel(status.type)} ${status.remainingSeconds}s"
-        }
-        val text = "● $label"
-        val spannable = android.text.SpannableString(text)
-        val color = android.graphics.Color.rgb(
-            (status.type.color[0] * 255).toInt().coerceIn(0, 255),
-            (status.type.color[1] * 255).toInt().coerceIn(0, 255),
-            (status.type.color[2] * 255).toInt().coerceIn(0, 255)
-        )
-        spannable.setSpan(
-            android.text.style.ForegroundColorSpan(color),
-            0,
-            1,
-            android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-        )
-        chip.text = spannable
-        chip.setTextColor(androidx.core.content.ContextCompat.getColor(this, R.color.bp_white))
 
-        val backgroundColor = ColorUtils.setAlphaComponent(color, 46)
-        val strokeColor = ColorUtils.setAlphaComponent(color, 120)
-        val drawable = android.graphics.drawable.GradientDrawable()
-        drawable.cornerRadius = dp(14f * chipScale).toFloat()
-        drawable.setColor(backgroundColor)
-        drawable.setStroke(dp(1f.coerceAtLeast(0.9f * chipScale)), strokeColor)
-        chip.background = drawable
-
-        val params = android.widget.LinearLayout.LayoutParams(
-            android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
-            android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
-        )
-        params.marginEnd = dp(8f * chipScale)
-        chip.layoutParams = params
-        return chip
-    }
-
-    private fun buildOverflowChip(overflowCount: Int): android.widget.TextView {
-        val chip = android.widget.TextView(this)
-        val chipScale = hudScale.coerceIn(0.82f, 1.24f)
-        val chipTextSize = if (hudChipTextPx > 0f) hudChipTextPx else resources.getDimension(R.dimen.bp_hud_mode_size)
-        chip.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, chipTextSize)
-        chip.setTypeface(android.graphics.Typeface.DEFAULT_BOLD)
-        chip.setSingleLine(true)
-        chip.text = getString(R.string.label_powerup_overflow_format, overflowCount)
-        chip.setTextColor(androidx.core.content.ContextCompat.getColor(this, R.color.bp_white))
-        chip.setPadding(
-            dp(10f * chipScale),
-            dp(6f * chipScale),
-            dp(10f * chipScale),
-            dp(6f * chipScale)
-        )
-        chip.letterSpacing = 0.02f
-
-        val stroke = androidx.core.content.ContextCompat.getColor(this, R.color.bp_line)
-        val drawable = android.graphics.drawable.GradientDrawable()
-        drawable.cornerRadius = dp(14f * chipScale).toFloat()
-        drawable.setColor(ColorUtils.setAlphaComponent(stroke, 38))
-        drawable.setStroke(dp(1f.coerceAtLeast(0.9f * chipScale)), ColorUtils.setAlphaComponent(stroke, 180))
-        chip.background = drawable
-
-        val params = android.widget.LinearLayout.LayoutParams(
-            android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
-            android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
-        )
-        params.marginEnd = dp(8f * chipScale)
-        chip.layoutParams = params
-        return chip
-    }
-
-    private fun applyResponsiveHudSizing() {
-        // Prevent re-entry during layout changes
-        if (hudResizingInProgress) return
-        hudResizingInProgress = true
-
-        try {
-            val metrics = resources.displayMetrics
-            if (metrics.density <= 0f) return
-            val widthPx = (binding.root.width - binding.root.paddingLeft - binding.root.paddingRight)
-                .takeIf { it > 0 } ?: metrics.widthPixels
-            val heightPx = (binding.root.height - binding.root.paddingTop - binding.root.paddingBottom)
-                .takeIf { it > 0 } ?: metrics.heightPixels
-            val widthDp = widthPx / metrics.density
-            val heightDp = heightPx / metrics.density
-            val layoutClass = DeviceLayoutPolicy.classifyByDp(widthDp, heightDp)
-            val shortDp = layoutClass.shortDp
-            val aspect = layoutClass.aspectRatio
-            val tabletClass = layoutClass.tabletClass
-            val wideSlate = layoutClass.wideSlate
-            val largeSlate = layoutClass.largeSlate
-
-            val baseScale = when {
-                shortDp >= 840f -> 1.16f
-                shortDp >= 720f -> 1.1f
-                shortDp >= 600f -> 1.04f
-                shortDp <= 340f -> 0.82f
-                shortDp <= 380f -> 0.86f
-                shortDp <= 420f -> 0.92f
-                else -> 1f
-            }
-            val tallFoldCompaction = when {
-                aspect >= 2.3f -> 0.88f
-                aspect >= 2.05f -> 0.92f
-                else -> 1f
-            }
-            // Relaxed compaction for slates to utilize the screen real estate
-            val slateCompaction = when {
-                largeSlate -> 0.98f
-                wideSlate && shortDp >= 720f -> 1.0f
-                wideSlate -> 0.98f
-                else -> 1f
-            }
-            hudScale = (baseScale * tallFoldCompaction * slateCompaction).coerceIn(0.82f, 1.28f)
-            hudChipTextPx = resources.getDimension(R.dimen.bp_hud_mode_size) * hudScale
-
-            // Keep HUD compact on large viewports so brick field gains vertical room.
-            val reservedRatio = when {
-                largeSlate -> 0.134f
-                wideSlate && shortDp >= 720f -> 0.14f
-                wideSlate -> 0.145f
-                shortDp >= 840f && aspect < 1.45f -> 0.154f
-                shortDp >= 840f -> 0.158f
-                shortDp >= 720f && aspect < 1.45f -> 0.162f
-                shortDp >= 720f -> 0.156f
-                shortDp >= 600f && aspect < 1.5f -> 0.164f
-                shortDp >= 600f -> 0.158f
-                aspect >= 2.3f -> 0.155f
-                aspect >= 2.0f -> 0.172f
-                else -> 0.21f
-            }
-            val reservedMaxDp = when {
-                largeSlate -> 164f
-                wideSlate -> 170f
-                shortDp >= 720f -> 186f
-                else -> 180f
-            }
-            val reservedMinDp = when {
-                aspect >= 2.3f -> 84f
-                aspect >= 2.0f -> 88f
-                shortDp <= 380f -> 88f
-                shortDp <= 430f -> 92f
-                wideSlate -> 100f
-                else -> 98f
-            }
-            val reservedHeightDp = (heightDp * reservedRatio)
-                .coerceIn(reservedMinDp, reservedMaxDp)
-            val hudParams = binding.hudContainer.layoutParams as ConstraintLayout.LayoutParams
-            val targetHeightPx = dp(reservedHeightDp)
-            if (hudParams.height != targetHeightPx) {
-                hudParams.height = targetHeightPx
-                binding.hudContainer.layoutParams = hudParams
-            }
-
-            val scoreSize = resources.getDimension(R.dimen.bp_hud_score_size) * hudScale
-            val statSize = resources.getDimension(R.dimen.bp_hud_stat_size) * hudScale
-            val modeSize = resources.getDimension(R.dimen.bp_hud_mode_size) * hudScale
-            val bannerSize = resources.getDimension(R.dimen.bp_hud_banner_size) * hudScale
-            binding.hudScore.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, scoreSize)
-            binding.hudLives.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, statSize)
-            binding.hudTime.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, statSize)
-            binding.hudLevel.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, statSize)
-            binding.hudMeta.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, modeSize)
-            binding.hudShieldLabel.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, modeSize)
-            binding.hudFps.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, modeSize)
-            binding.hudLevelBanner.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, bannerSize)
-
-            val rowPadding = dp((10f * hudScale).coerceIn(8f, if (tabletClass) 13f else 16f))
-            binding.hudRow.setPadding(rowPadding, rowPadding, rowPadding, rowPadding)
-
-            val scoreParams = binding.hudScore.layoutParams as ConstraintLayout.LayoutParams
-            scoreParams.marginEnd = dp((10f * hudScale).coerceIn(8f, if (tabletClass) 14f else 18f))
-            binding.hudScore.layoutParams = scoreParams
-
-            val statGap = dp((14f * hudScale).coerceIn(10f, if (tabletClass) 18f else 24f))
-            val timeParams = binding.hudTime.layoutParams as android.widget.LinearLayout.LayoutParams
-            timeParams.marginStart = statGap
-            binding.hudTime.layoutParams = timeParams
-            val levelParams = binding.hudLevel.layoutParams as android.widget.LinearLayout.LayoutParams
-            levelParams.marginStart = statGap
-            binding.hudLevel.layoutParams = levelParams
-
-            val statusTopMargin = dp(
-                (6f * hudScale).coerceIn(
-                    if (wideSlate) 3.5f else 4f,
-                    if (wideSlate) 8f else 10f
-                )
-            )
-            val statusParams = binding.hudStatusRow.layoutParams as android.widget.LinearLayout.LayoutParams
-            statusParams.topMargin = statusTopMargin
-            binding.hudStatusRow.layoutParams = statusParams
-            val powerupsParams = binding.hudPowerups.layoutParams as android.widget.LinearLayout.LayoutParams
-            powerupsParams.topMargin = statusTopMargin
-            binding.hudPowerups.layoutParams = powerupsParams
-            val chipsParams = binding.hudPowerupChips.layoutParams as android.widget.LinearLayout.LayoutParams
-            chipsParams.bottomMargin = dp((4f * hudScale).coerceIn(2f, if (tabletClass) 6f else 8f))
-            binding.hudPowerupChips.layoutParams = chipsParams
-            val bannerParams = binding.hudLevelBanner.layoutParams as android.widget.LinearLayout.LayoutParams
-            bannerParams.topMargin = dp(
-                (10f * hudScale).coerceIn(
-                    if (wideSlate) 5f else 6f,
-                    if (wideSlate) 12f else 14f
-                )
-            )
-            binding.hudLevelBanner.layoutParams = bannerParams
-
-            val actionMin = if (tabletClass) {
-                (42f * hudScale).coerceIn(38f, 56f)
-            } else {
-                (44f * hudScale).coerceIn(38f, 60f)
-            }
-            binding.buttonPause.minimumWidth = dp(actionMin)
-            binding.buttonPause.minimumHeight = dp(actionMin)
-            binding.buttonPause.iconSize = dp((22f * hudScale).coerceIn(18f, if (tabletClass) 26f else 30f))
-            val laserWidthBase = if (tabletClass) 70f else 76f
-            binding.buttonLaser.minimumWidth = dp(
-                (laserWidthBase * hudScale).coerceIn(62f, if (tabletClass) 94f else 104f)
-            )
-            binding.buttonLaser.minimumHeight = dp(
-                (42f * hudScale).coerceIn(34f, if (tabletClass) 50f else 56f)
-            )
-            val laserMargin = dp((16f * hudScale).coerceIn(10f, if (tabletClass) 18f else 24f))
-            val laserParams = binding.buttonLaser.layoutParams as ConstraintLayout.LayoutParams
-            laserParams.marginStart = laserMargin
-            laserParams.marginEnd = laserMargin
-            val topAnchored =
-                laserParams.topToBottom != ConstraintLayout.LayoutParams.UNSET &&
-                    laserParams.bottomToTop == ConstraintLayout.LayoutParams.UNSET &&
-                    laserParams.bottomToBottom == ConstraintLayout.LayoutParams.UNSET
-            if (topAnchored) {
-                laserParams.topMargin = laserMargin
-                laserParams.bottomMargin = 0
-            } else {
-                laserParams.bottomMargin = laserMargin
-            }
-            binding.buttonLaser.layoutParams = laserParams
-
-            val shieldRatio = when {
-                largeSlate -> 0.2f
-                wideSlate -> 0.215f
-                aspect < 1.45f -> 0.22f
-                else -> 0.24f
-            }
-            val shieldWidthDp = (shortDp * shieldRatio).coerceIn(112f, if (wideSlate) 176f else 186f)
-            val shieldParams = binding.hudShieldBar.layoutParams as android.widget.LinearLayout.LayoutParams
-            shieldParams.width = dp(shieldWidthDp)
-            binding.hudShieldBar.layoutParams = shieldParams
-        } finally {
-            hudResizingInProgress = false
-        }
-    }
-
-    private fun updateHudMeta() {
-        val parts = mutableListOf<String>()
-        if (currentModeLabel.isNotBlank()) parts.add(currentModeLabel)
-        if (currentJourneyLabel.isNotBlank()) parts.add(currentJourneyLabel)
-        if (currentMode == GameMode.ZEN) {
-            parts.add(getString(R.string.label_zen_flow))
-        } else {
-            parts.add(getString(R.string.label_xp_format, currentXpTotal))
-        }
-        val modeSummary = statusSummaryForHud()
-        if (!modeSummary.isNullOrBlank()) {
-            parts.add(modeSummary)
-        }
-        val comboLabel = getString(R.string.label_combo_format, currentCombo)
-        if (currentCombo >= 2 && (modeSummary == null || !modeSummary.contains(comboLabel))) {
-            parts.add(comboLabel)
-        }
-        binding.hudMeta.text = parts.joinToString(" • ")
-    }
-
-    private fun statusSummaryForHud(): String? {
-        val summary = currentPowerupSummary.trim()
-        if (summary.isBlank() || summary == getString(R.string.label_powerups_none)) return null
-        return when (currentMode) {
-            GameMode.VOLLEY,
-            GameMode.TUNNEL,
-            GameMode.SURVIVAL -> summary
-            else -> null
-        }
-    }
-
-    private fun updateJourneyLabel(level: Int) {
-        val chapter = ProgressionManager.chapterForLevel(level)
-        val stage = ProgressionManager.stageForLevel(level)
-        currentJourneyLabel = getString(R.string.label_journey_format, chapter, stage)
-    }
-
-    private fun updateShieldVisibility(show: Boolean) {
-        binding.hudShieldRow.visibility = if (show) View.VISIBLE else View.GONE
-    }
-
-    private fun applyModeHud(mode: GameMode) {
-        val zen = mode == GameMode.ZEN
-        binding.hudScore.visibility = if (zen) View.GONE else View.VISIBLE
-        binding.hudLives.visibility = if (zen) View.GONE else View.VISIBLE
-        binding.hudTime.visibility = if (zen) View.GONE else View.VISIBLE
-        if (zen) {
-            currentPowerupSummary = getString(R.string.label_zen_flow)
-        }
-    }
-
-    private fun updateLaserButton(status: List<PowerupStatus>) {
-        val hasLaser = status.any { it.type == PowerUpType.LASER }
-        laserActive = hasLaser
-        if (!hasLaser) {
-            laserCooldownEndMs = 0L
-            laserCooldownRunnable?.let { binding.buttonLaser.removeCallbacks(it) }
-            binding.buttonLaser.text = getString(R.string.label_fire)
-            binding.buttonLaser.isEnabled = true
-            binding.buttonLaser.alpha = 1f
-        }
-        binding.buttonLaser.visibility = if (hasLaser) View.VISIBLE else View.GONE
-    }
-
-    private fun playGameFade() {
-        val overlay = binding.gameFadeOverlay
-        fadeAnimationToken += 1
-        val token = fadeAnimationToken
-        overlay.animate().cancel()
-        overlay.alpha = 1f
-        overlay.visibility = View.VISIBLE
-        overlay.animate()
-            .alpha(0f)
-            .setDuration(UiMotion.OVERLAY_IN_DURATION)
-            .setInterpolator(UiMotion.EMPHASIS_OUT)
-            .withEndAction {
-                if (token != fadeAnimationToken) return@withEndAction
-                overlay.visibility = View.GONE
-            }
-            .start()
-    }
-
-    private fun animateEndStats(summary: GameSummary, title: String) {
-        binding.endTitle.text = title
-        endStatsAnimator?.cancel()
-        val timeText = formatDuration(summary.durationSeconds)
-        binding.endStats.text = getString(
-            R.string.label_end_stats_format,
-            0,
-            summary.level,
-            timeText,
-            summary.bricksBroken,
-            summary.livesLost
-        )
-        val animator = android.animation.ValueAnimator.ofInt(0, summary.score)
-        endStatsAnimator = animator
-        animator.duration = UiMotion.scoreCountDuration(summary.score)
-        animator.interpolator = UiMotion.LINEAR
-        animator.addUpdateListener { valueAnimator ->
-            val value = valueAnimator.animatedValue as Int
-            binding.endStats.text = getString(
-                R.string.label_end_stats_format,
-                value,
-                summary.level,
-                timeText,
-                summary.bricksBroken,
-                summary.livesLost
-            )
-        }
-        animator.start()
-    }
-
-    private fun formatDuration(seconds: Int): String {
-        val clamped = seconds.coerceAtLeast(0)
-        val minutes = clamped / 60
-        val remainingSeconds = clamped % 60
-        return String.format(java.util.Locale.getDefault(), "%02d:%02d", minutes, remainingSeconds)
-    }
-
-    private fun startLaserCooldown(seconds: Float) {
-        val durationMs = (seconds * 1000f).toLong().coerceAtLeast(100L)
-        laserCooldownEndMs = System.currentTimeMillis() + durationMs
-        binding.buttonLaser.isEnabled = false
-        binding.buttonLaser.alpha = 0.6f
-        laserCooldownRunnable?.let { binding.buttonLaser.removeCallbacks(it) }
-        val runner = Runnable { updateLaserCooldown() }
-        laserCooldownRunnable = runner
-        binding.buttonLaser.post(runner)
-    }
-
-    private fun updateLaserCooldown() {
-        val remainingMs = laserCooldownEndMs - System.currentTimeMillis()
-        if (!laserActive || remainingMs <= 0L) {
-            binding.buttonLaser.text = getString(R.string.label_fire)
-            binding.buttonLaser.isEnabled = true
-            binding.buttonLaser.alpha = 1f
-            return
-        }
-        val remaining = remainingMs / 1000f
-        binding.buttonLaser.text = getString(R.string.label_laser_cooldown, remaining)
-        val runner = laserCooldownRunnable
-        if (runner != null) {
-            binding.buttonLaser.postDelayed(runner, 60L)
-        }
-    }
-
-    private fun scheduleHudUpdate() {
-        if (!hudUpdateQueued.compareAndSet(false, true)) return
-        binding.root.postOnAnimation {
-            hudUpdateQueued.set(false)
-            pendingScore?.let {
-                binding.hudScore.text = getString(R.string.label_score_format, it)
-                pendingScore = null
-            }
-            pendingLives?.let {
-                if (config.mode == GameMode.VOLLEY) {
-                    binding.hudLives.text = getString(R.string.label_volley_balls_format, it)
-                } else {
-                    binding.hudLives.text = getString(R.string.label_lives_format, it)
-                }
-                pendingLives = null
-            }
-            pendingVolleyBalls?.let {
-                if (config.mode == GameMode.VOLLEY) {
-                    binding.hudLives.text = getString(R.string.label_volley_balls_format, it)
-                }
-                pendingVolleyBalls = null
-            }
-            val fps = pendingFps
-            pendingFps = null
-            if (fps != null && config.settings.showFpsCounter) {
-                binding.hudFps.text = getString(R.string.label_fps_format, fps)
-                binding.hudFps.visibility = View.VISIBLE
-                if (binding.hudPowerups.visibility != View.VISIBLE) {
-                    binding.hudPowerups.visibility = View.VISIBLE
-                }
-            } else if (!config.settings.showFpsCounter) {
-                binding.hudFps.visibility = View.GONE
-                if (binding.hudPowerupChips.childCount == 0) {
-                    binding.hudPowerups.visibility = View.GONE
-                }
-            }
-        }
-    }
-
-    private fun powerupLabel(type: PowerUpType): String {
-        return when (type) {
-            PowerUpType.MULTI_BALL -> "MB"
-            PowerUpType.LASER -> "LZR"
-            PowerUpType.GUARDRAIL -> "GRD"
-            PowerUpType.LIFE -> "1UP"
-            PowerUpType.SHIELD -> "SHD"
-            PowerUpType.WIDE_PADDLE -> "WIDE"
-            PowerUpType.SHRINK -> "SHRK"
-            PowerUpType.SLOW -> "SLOW"
-            PowerUpType.OVERDRIVE -> "FAST"
-            PowerUpType.FIREBALL -> "FIRE"
-            PowerUpType.MAGNET -> "MAG"
-            PowerUpType.GRAVITY_WELL -> "GRAV"
-            PowerUpType.BALL_SPLITTER -> "SPLIT"
-            PowerUpType.FREEZE -> "FRZ"
-            PowerUpType.PIERCE -> "PRC"
-            PowerUpType.RICOCHET -> "RICO"
-            PowerUpType.TIME_WARP -> "WARP"
-            PowerUpType.DOUBLE_SCORE -> "2X"
-        }
-    }
 
     private fun cancelLevelAdvanceRecovery() {
         levelAdvanceRecoveryRunnable?.let { binding.root.removeCallbacks(it) }

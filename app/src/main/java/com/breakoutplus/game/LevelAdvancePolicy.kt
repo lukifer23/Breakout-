@@ -16,7 +16,7 @@ internal object LevelAdvancePolicy {
         val clearedBoardWhilePaused = state == GameState.PAUSED && godModeEnabled && clearedBoard
         val godModeForce =
             godModeEnabled &&
-                (state == GameState.PAUSED || state == GameState.READY) &&
+                (state == GameState.PAUSED || state == GameState.READY || state == GameState.RUNNING) &&
                 !awaitingNextLevel &&
                 lives > 0
         val godModeRecoveryForce =
@@ -25,7 +25,7 @@ internal object LevelAdvancePolicy {
                 lives > 0 &&
                 clearedBoard
 
-        val canAdvance = awaitingNextLevel || clearedBoardWhilePaused || godModeForce || godModeRecoveryForce
+        val canAdvance = awaitingNextLevel || clearedBoardWhilePaused || godModeForce || godModeRecoveryForce || (godModeEnabled && clearedBoard)
         val reason = if (canAdvance) {
             "accepted"
         } else {

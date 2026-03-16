@@ -9,9 +9,9 @@ object ModeLayoutPolicy {
         if (isSlate) {
             val progressionBoost = (levelIndex / 6).coerceIn(0, 4)
             val slateBase = when {
-                aspectRatio <= 1.45f -> 11
-                aspectRatio <= 1.7f -> 10
-                else -> 9
+                aspectRatio <= 1.45f -> 14
+                aspectRatio <= 1.7f -> 13
+                else -> 12
             }
             return slateBase + progressionBoost
         }
@@ -31,9 +31,9 @@ object ModeLayoutPolicy {
         if (isSlate) {
             val progressionBoost = (levelIndex / 7).coerceIn(0, 3)
             val slateBase = when {
-                aspectRatio <= 1.45f -> 13
-                aspectRatio <= 1.7f -> 12
-                else -> 11
+                aspectRatio <= 1.45f -> 16
+                aspectRatio <= 1.7f -> 15
+                else -> 14
             }
             return slateBase + progressionBoost
         }

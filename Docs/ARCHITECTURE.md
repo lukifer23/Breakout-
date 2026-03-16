@@ -10,6 +10,7 @@
 
 ## Main Components
 - UI layer: `app/src/main/java/com/breakoutplus/*.kt`
+- HUD orchestration: `GameHudController.kt`
 - Render surface: `GameGLSurfaceView.kt`
 - Render/sim loop: `GameRenderer.kt`
 - Core gameplay: `GameEngine.kt`
@@ -27,7 +28,7 @@
 
 ## Current Hotspots (Complexity)
 - `GameEngine.kt` is the primary complexity concentration (gameplay, mode logic, collisions, FX, and status output mixed together).
-- `GameActivity.kt` contains significant UI/hud/orchestration logic that needs continued cleanup.
+- `GameActivity.kt` handles lifecycle and orchestration. HUD logic has been successfully extracted to `GameHudController.kt`.
 - `LevelFactory.kt` is large and contains multiple generation strategies with high branching.
 
 Current decomposition strategy is incremental extraction with behavior parity:
@@ -56,8 +57,8 @@ Current decomposition strategy is incremental extraction with behavior parity:
 
 ## Foldable/Large-Screen Strategy
 - Resource qualifiers for larger devices (`sw600dp`, `sw720dp`).
-- `FoldAwareActivity` applies hinge/inset-aware layout padding.
-- `GameActivity` applies responsive HUD scaling and reserved HUD height for varied aspect ratios.
+- Fold-aware Activity applies hinge/inset-aware layout padding.
+- `GameHudController` applies responsive HUD scaling and reserved HUD height for varied aspect ratios.
 - HUD reservation is compacted on slate/fold profiles to preserve gameplay field height while maintaining control readability.
 - `GameEngine` board layout tuning uses the same shared `DeviceLayoutPolicy` classification to keep HUD and brick density aligned.
 

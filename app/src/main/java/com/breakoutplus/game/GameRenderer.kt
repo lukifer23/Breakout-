@@ -33,9 +33,9 @@ class GameRenderer(
     private var screenShakeDuration = 0f
     private var shakeIntensity = 0f
     private var shakePhase = 0f
-    private var comboFlash = 0f
-    private var levelClearFlash = 0f
-    private var impactFlash = 0f
+    private val comboFlash = VisualFlashEffect(0.28f, 0.33f)
+    private val levelClearFlash = VisualFlashEffect(0.72f, 0.42f)
+    private val impactFlash = VisualFlashEffect(0.54f, 0.52f)
     private var volleyDanger = 0f
     private var volleyDangerTarget = 0f
     private var visualTimeSeconds = 0f
@@ -56,12 +56,7 @@ class GameRenderer(
     private val maxShakeIntensity = 3.4f
     private val minShakeDuration = 0.03f
     private val maxShakeDuration = 0.32f
-    private val comboFlashDuration = 0.28f
-    private val levelClearFlashDuration = 0.72f
-    private val impactFlashDecayRate = 1.85f
-    private val impactFlashGain = 0.72f
-    private val impactFlashCarry = 0.35f
-    private val comboFlashColor = floatArrayOf(0.9f, 0.98f, 1f, 0f)
+                        private val comboFlashColor = floatArrayOf(0.9f, 0.98f, 1f, 0f)
     private val levelClearFlashColor = floatArrayOf(1f, 0.85f, 0.35f, 0f)
     private val impactFlashColor = floatArrayOf(1f, 1f, 1f, 0f)
     private val volleyDangerColor = floatArrayOf(1f, 0f, 0f, 0f)
@@ -75,17 +70,15 @@ class GameRenderer(
     }
 
     fun triggerComboFlash() {
-        comboFlash = max(comboFlash, comboFlashDuration)
+        comboFlash.trigger()
     }
 
     fun triggerLevelClearFlash() {
-        levelClearFlash = max(levelClearFlash, levelClearFlashDuration)
+        levelClearFlash.trigger()
     }
 
     fun triggerImpactFlash(intensity: Float) {
-        val clamped = intensity.coerceIn(0f, 1f)
-        val blended = (impactFlash * impactFlashCarry) + (clamped * impactFlashGain)
-        impactFlash = max(impactFlash, blended.coerceIn(0f, 1f))
+        impactFlash.trigger(intensity)
     }
 
     fun setTargetFrameRate(fps: Float) {
@@ -128,15 +121,9 @@ class GameRenderer(
                 screenShake = (screenShake - delta).coerceAtLeast(0f)
                 shakePhase += delta * (24f + shakeIntensity * 10f)
             }
-            if (comboFlash > 0f) {
-                comboFlash = (comboFlash - delta).coerceAtLeast(0f)
-            }
-            if (levelClearFlash > 0f) {
-                levelClearFlash = (levelClearFlash - delta).coerceAtLeast(0f)
-            }
-            if (impactFlash > 0f) {
-                impactFlash = (impactFlash - delta * impactFlashDecayRate).coerceAtLeast(0f)
-            }
+            comboFlash.update(delta)
+            levelClearFlash.update(delta)
+            impactFlash.update(delta)
             visualTimeSeconds += delta
             if (volleyDanger != volleyDangerTarget) {
                 val response = if (delta > 0f) 1f - exp(-8f * delta) else 1f
@@ -176,36 +163,36 @@ class GameRenderer(
 
             engine.render(renderer2D)
 
-            if (comboFlash > 0f) {
-                val t = (comboFlash / comboFlashDuration).coerceIn(0f, 1f)
-                val alpha = (smoothStep(t) * 0.33f).coerceIn(0f, 0.33f)
-                comboFlashColor[3] = alpha
+            if (comboFlash.remainingTime > 0f) {
+                comboFlashColor[3] = comboFlash.getAlpha()
                 renderer2D.drawRect(0f, 0f, worldWidth, worldHeight, comboFlashColor)
             }
 
-            if (levelClearFlash > 0f) {
-                val t = (levelClearFlash / levelClearFlashDuration).coerceIn(0f, 1f)
-                val alpha = (smoothStep(t) * 0.42f).coerceIn(0f, 0.42f)
-                levelClearFlashColor[3] = alpha
+            if (levelClearFlash.remainingTime > 0f) {
+                levelClearFlashColor[3] = levelClearFlash.getAlpha()
                 renderer2D.drawRect(0f, 0f, worldWidth, worldHeight, levelClearFlashColor)
             }
 
-            if (impactFlash > 0f) {
-                val t = (impactFlash).coerceIn(0f, 1f)
-                val alpha = (smoothStep(t) * 0.52f).coerceIn(0f, 0.52f)
-                impactFlashColor[3] = alpha
+            if (impactFlash.remainingTime > 0f) {
+                impactFlashColor[3] = impactFlash.getAlpha()
                 renderer2D.drawRect(0f, 0f, worldWidth, worldHeight, impactFlashColor)
             }
 
             // Volley Danger Zone Overlay
             if (volleyDanger > 0f) {
-                val pulse = ((sin(visualTimeSeconds * 5f) + 1.0) * 0.5).toFloat()
-                val alpha = (volleyDanger * (0.3f + 0.2f * pulse)).coerceIn(0f, 0.6f)
-                // Draw a gradient or semi-transparent red rect at the bottom
-                // In Ortho with y=0 at bottom, this needs to be at y=0.
-                val dangerHeight = worldHeight * 0.25f
-                volleyDangerColor[3] = alpha
-                renderer2D.drawRect(0f, 0f, worldWidth, dangerHeight, volleyDangerColor)
+                val pulse = ((sin(visualTimeSeconds * 6f) + 1.0) * 0.5).toFloat()
+                val pulseFast = ((sin(visualTimeSeconds * 12f) + 1.0) * 0.5).toFloat()
+                val alpha = (volleyDanger * (0.4f + 0.2f * pulse + 0.1f * pulseFast)).coerceIn(0f, 0.85f)
+                val dangerHeight = worldHeight * 0.40f
+                val steps = 12
+                val stepHeight = dangerHeight / steps
+                for (i in 0 until steps) {
+                    val stepAlpha = alpha * (1f - (i.toFloat() / steps))
+                    volleyDangerColor[3] = stepAlpha
+                    // Radiate from the bottom upwards!
+                    val y = worldHeight - (i + 1) * stepHeight
+                    renderer2D.drawRect(0f, y, worldWidth, stepHeight, volleyDangerColor)
+                }
             }
 
             // Performance logging
@@ -352,10 +339,7 @@ class GameRenderer(
         screenShakeDuration = 0f
         shakeIntensity = 0f
         shakePhase = 0f
-        comboFlash = 0f
-        levelClearFlash = 0f
-        impactFlash = 0f
-        volleyDanger = 0f
+                volleyDanger = 0f
         volleyDangerTarget = 0f
         visualTimeSeconds = 0f
         renderer2D.setOffset(0f, 0f)

@@ -23,198 +23,198 @@ import kotlin.random.Random
  * World coordinates: 100 units wide, height scales to aspect ratio.
  */
 class GameEngine(
-    private val config: GameConfig,
-    private val listener: GameEventListener,
-    private val audio: GameAudioManager,
-    private val logger: GameLogger? = null,
-    private val dailyChallenges: MutableList<DailyChallenge>? = null,
-    private val renderer: GameRenderer? = null
+    internal val config: GameConfig,
+    internal val listener: GameEventListener,
+    internal val audio: GameAudioManager,
+    internal val logger: GameLogger? = null,
+    internal val dailyChallenges: MutableList<DailyChallenge>? = null,
+    internal val renderer: GameRenderer? = null
 ) {
-    private val random = Random(System.nanoTime())
-    private var settings: SettingsManager.Settings = config.settings
-    private val balls = mutableListOf<Ball>()
-    private val bricks = mutableListOf<Brick>()
-    private val powerups = mutableListOf<PowerUp>()
-    private val beams = mutableListOf<Beam>()
-    private val enemyShots = mutableListOf<EnemyShot>()
-    private val particles = mutableListOf<Particle>()
-    private val waves = mutableListOf<ExplosionWave>()
-    private val activeEffects = mutableMapOf<PowerUpType, Float>()
+    internal val random = Random(System.nanoTime())
+    internal var settings: SettingsManager.Settings = config.settings
+    internal val balls = mutableListOf<Ball>()
+    internal val bricks = mutableListOf<Brick>()
+    internal val powerups = mutableListOf<PowerUp>()
+    internal val beams = mutableListOf<Beam>()
+    internal val enemyShots = mutableListOf<EnemyShot>()
+    internal val particles = mutableListOf<Particle>()
+    internal val waves = mutableListOf<ExplosionWave>()
+    internal val activeEffects = mutableMapOf<PowerUpType, Float>()
 
-    private var worldWidth = 100f
-    private var worldHeight = 160f
+    internal var worldWidth = 100f
+    internal var worldHeight = 160f
 
-    private var paddle = Paddle(x = worldWidth / 2f, y = 8f, width = 22f, height = 2.6f)
-    private var basePaddleWidth = paddle.width
-    private var paddleVelocity = 0f
+    internal var paddle = Paddle(x = worldWidth / 2f, y = 8f, width = 22f, height = 2.6f)
+    internal var basePaddleWidth = paddle.width
+    internal var paddleVelocity = 0f
 
-    private var state = GameState.READY
-    private var stateBeforePause = state
-    private var score = 0
-    private var levelIndex = 0
-    private var lives = config.mode.baseLives
-    private var awaitingNextLevel = false
-    private var timeRemaining = config.mode.timeLimitSeconds.toFloat()
-    private var lastReportedSecond = -1
-    private var elapsedSeconds = 0f
-    private var levelStartTime = 0f
-    private var runBricksBroken = 0
-    private var runLivesLost = 0
-    private var combo = 0
-    private var comboTimer = 0f
-    private var guardrailActive = false
-    private var shieldCharges = 0
-    private var laserCooldown = 0f
-    private val laserCooldownDuration = 0.4f
-    private var speedMultiplier = 1f
-    private var timeWarpMultiplier = 1f
-    private var fireballActive = false
-    private var magnetActive = false
-    private var gravityWellActive = false
-    private var freezeActive = false
-    private var pierceActive = false
-    private var explosiveTipShown = false
-    private var lastPowerupStatus = ""
-    private var lastPowerupSnapshot: List<PowerupStatus> = emptyList()
-    private var lastComboReported = 0
-    private var powerupStatusTick = 0f
-    private var lostLifeThisLevel = false
-    private var laserTipShown = false
-    private var magnetTipShown = false
-    private var magnetCatchTipShown = false
-    private var godModeTipShown = false
-    private val powerupTipShown = mutableSetOf<PowerUpType>()
-    private var invaderDirection = 1f
-    private var invaderSpeed = 6f
-    private var invaderBaseSpeed = 6f
-    private var invaderShotTimer = 0f
-    private var invaderShotCooldown = 1.6f
-    private var invaderBaseShotCooldown = 1.6f
-    private val invaderTelegraphLead = 0.28f
-    private var invaderWaveStyle = 0
-    private var invaderVolleyTimer = 0f
-    private var invaderPauseTimer = 0f
-    private var invaderBurstCount = 0
-    private var invaderShield = 0f
-    private var invaderShieldMax = 0f
-    private var invaderShieldAlerted = false
-    private var invaderShieldCritical = false
-    private var invaderTelegraphKey: Long? = null
-    private var invaderTotal = 0
-    private val invaderBricks = mutableListOf<Brick>()
-    private var invaderFormationOffset = 0f
-    private var invaderRowPhase = 0f
-    private var invaderRowDrift = 0.75f
-    private var invaderRowPhaseOffset = 0.5f
-    private val invaderFormationCompression = 0.74f
-    private var invaderTurnSoundCooldown = 0f
-    private val invaderTurnSoundMinInterval = 0.32f
-    private var shieldHitPulse = 0f
-    private var shieldHitX = 0f
-    private var shieldHitColor = floatArrayOf(0.8f, 0.95f, 1f, 1f)
-    private val tunnelWallColor = floatArrayOf(0.76f, 0.83f, 0.93f, 1f)
-    private val tempColor = FloatArray(4)
-    private val scratchColor0 = FloatArray(4)
-    private val scratchColor1 = FloatArray(4)
-    private val scratchColor2 = FloatArray(4)
-    private val scratchColor3 = FloatArray(4)
-    private val scratchColor4 = FloatArray(4)
-    private val scratchColor5 = FloatArray(4)
-    private val scratchColor6 = FloatArray(4)
-    private val scratchColor7 = FloatArray(4)
-    private val scratchColor8 = FloatArray(4)
-    private val scratchColor9 = FloatArray(4)
-    private val scratchColor10 = FloatArray(4)
-    private val scratchColor11 = FloatArray(4)
-    private val aliveInvaderBuffer = ArrayList<Brick>(72)
-    private var shieldBreakPulse = 0f
-    private var powerupCollectionPulse = 0f
-    private var powerupDropsSinceLaser = 0
-    private val recentPowerups = ArrayDeque<PowerUpType>()
-    private val recentPowerupLimit = 4
-    private var powerupsSinceOffense = 0
-    private var powerupsSinceDefense = 0
-    private var powerupsSinceControl = 0
-    private var aimNormalized = 0f
-    private var aimNormalizedTarget = 0f
-    private var aimAngle = (Math.PI.toFloat() * 0.5f)
-    private var aimHasInput = false
-    private var isDragging = false
-    private var activePointerId = MotionEvent.INVALID_POINTER_ID
-    private var touchWorldX = 0f
-    private var touchWorldY = 0f
-    private var lastTouchLogTimeMs = 0L
-    private var lastTouchLogX = Float.NaN
-    private var lastTouchLogY = Float.NaN
-    private val touchMoveLogMinIntervalMs = 58L
-    private val touchMoveLogMinDistance = 0.9f
-    private val aimSmoothingRate = 18f
-    private val aimCenterDeadZone = 0.018f
-    private var debugAutoPlayEnabled = false
-    private var debugAutoPlayActionTimer = 0f
-    private var debugAutoPlayWave = 0f
-    private var debugProgressionProbeEnabled = false
-    private var debugProgressionProbeTimer = 0f
-    private var volleyBallCount = 3
-    private var volleyQueuedBalls = 0
-    private var volleyLaunchTimer = 0f
-    private var volleyTurnActive = false
-    private var volleyTurnCount = 0
-    private var volleyAdvanceRows = 0
-    private var volleyLaunchX = worldWidth * 0.5f
-    private var volleyReturnAnchorX = Float.NaN
-    private var volleyReturnSumX = 0f
-    private var volleyReturnCount = 0
-    private var volleyPreferredLaneCol = -1
-    private var lastVolleySupplyTurn = -99
-    private var volleyCompactionCheckTimer = 0f
+    internal var state = GameState.READY
+    internal var stateBeforePause = state
+    internal var score = 0
+    internal var levelIndex = 0
+    internal var lives = config.mode.baseLives
+    internal var awaitingNextLevel = false
+    internal var timeRemaining = config.mode.timeLimitSeconds.toFloat()
+    internal var lastReportedSecond = -1
+    internal var elapsedSeconds = 0f
+    internal var levelStartTime = 0f
+    internal var runBricksBroken = 0
+    internal var runLivesLost = 0
+    internal var combo = 0
+    internal var comboTimer = 0f
+    internal var guardrailActive = false
+    internal var shieldCharges = 0
+    internal var laserCooldown = 0f
+    internal val laserCooldownDuration = 0.4f
+    internal var speedMultiplier = 1f
+    internal var timeWarpMultiplier = 1f
+    internal var fireballActive = false
+    internal var magnetActive = false
+    internal var gravityWellActive = false
+    internal var freezeActive = false
+    internal var pierceActive = false
+    internal var explosiveTipShown = false
+    internal var lastPowerupStatus = ""
+    internal var lastPowerupSnapshot: List<PowerupStatus> = emptyList()
+    internal var lastComboReported = 0
+    internal var powerupStatusTick = 0f
+    internal var lostLifeThisLevel = false
+    internal var laserTipShown = false
+    internal var magnetTipShown = false
+    internal var magnetCatchTipShown = false
+    internal var godModeTipShown = false
+    internal val powerupTipShown = mutableSetOf<PowerUpType>()
+    internal var invaderDirection = 1f
+    internal var invaderSpeed = 6f
+    internal var invaderBaseSpeed = 6f
+    internal var invaderShotTimer = 0f
+    internal var invaderShotCooldown = 1.6f
+    internal var invaderBaseShotCooldown = 1.6f
+    internal val invaderTelegraphLead = 0.28f
+    internal var invaderWaveStyle = 0
+    internal var invaderVolleyTimer = 0f
+    internal var invaderPauseTimer = 0f
+    internal var invaderBurstCount = 0
+    internal var invaderShield = 0f
+    internal var invaderShieldMax = 0f
+    internal var invaderShieldAlerted = false
+    internal var invaderShieldCritical = false
+    internal var invaderTelegraphKey: Long? = null
+    internal var invaderTotal = 0
+    internal val invaderBricks = mutableListOf<Brick>()
+    internal var invaderFormationOffset = 0f
+    internal var invaderRowPhase = 0f
+    internal var invaderRowDrift = 0.75f
+    internal var invaderRowPhaseOffset = 0.5f
+    internal val invaderFormationCompression = 0.74f
+    internal var invaderTurnSoundCooldown = 0f
+    internal val invaderTurnSoundMinInterval = 0.32f
+    internal var shieldHitPulse = 0f
+    internal var shieldHitX = 0f
+    internal var shieldHitColor = floatArrayOf(0.8f, 0.95f, 1f, 1f)
+    internal val tunnelWallColor = floatArrayOf(0.76f, 0.83f, 0.93f, 1f)
+    internal val tempColor = FloatArray(4)
+    internal val scratchColor0 = FloatArray(4)
+    internal val scratchColor1 = FloatArray(4)
+    internal val scratchColor2 = FloatArray(4)
+    internal val scratchColor3 = FloatArray(4)
+    internal val scratchColor4 = FloatArray(4)
+    internal val scratchColor5 = FloatArray(4)
+    internal val scratchColor6 = FloatArray(4)
+    internal val scratchColor7 = FloatArray(4)
+    internal val scratchColor8 = FloatArray(4)
+    internal val scratchColor9 = FloatArray(4)
+    internal val scratchColor10 = FloatArray(4)
+    internal val scratchColor11 = FloatArray(4)
+    internal val aliveInvaderBuffer = ArrayList<Brick>(72)
+    internal var shieldBreakPulse = 0f
+    internal var powerupCollectionPulse = 0f
+    internal var powerupDropsSinceLaser = 0
+    internal val recentPowerups = ArrayDeque<PowerUpType>()
+    internal val recentPowerupLimit = 4
+    internal var powerupsSinceOffense = 0
+    internal var powerupsSinceDefense = 0
+    internal var powerupsSinceControl = 0
+    internal var aimNormalized = 0f
+    internal var aimNormalizedTarget = 0f
+    internal var aimAngle = (Math.PI.toFloat() * 0.5f)
+    internal var aimHasInput = false
+    internal var isDragging = false
+    internal var activePointerId = MotionEvent.INVALID_POINTER_ID
+    internal var touchWorldX = 0f
+    internal var touchWorldY = 0f
+    internal var lastTouchLogTimeMs = 0L
+    internal var lastTouchLogX = Float.NaN
+    internal var lastTouchLogY = Float.NaN
+    internal val touchMoveLogMinIntervalMs = 58L
+    internal val touchMoveLogMinDistance = 0.9f
+    internal val aimSmoothingRate = 18f
+    internal val aimCenterDeadZone = 0.018f
+    internal var debugAutoPlayEnabled = false
+    internal var debugAutoPlayActionTimer = 0f
+    internal var debugAutoPlayWave = 0f
+    internal var debugProgressionProbeEnabled = false
+    internal var debugProgressionProbeTimer = 0f
+    internal var volleyBallCount = 3
+    internal var volleyQueuedBalls = 0
+    internal var volleyLaunchTimer = 0f
+    internal var volleyTurnActive = false
+    internal var volleyTurnCount = 0
+    internal var volleyAdvanceRows = 0
+    internal var volleyLaunchX = worldWidth * 0.5f
+    internal var volleyReturnAnchorX = Float.NaN
+    internal var volleyReturnSumX = 0f
+    internal var volleyReturnCount = 0
+    internal var volleyPreferredLaneCol = -1
+    internal var lastVolleySupplyTurn = -99
+    internal var volleyCompactionCheckTimer = 0f
 
-    private var tunnelShotsFired = 0
-    private var tunnelGateFlash = 0f
-    private var lastTunnelSupplyShot = 0
-    private var tunnelSupplyReadinessPercent = 0
-    private var cachedTunnelGateIntegrityPercent = 100
-    private var tunnelGateIntegrityDirty = true
+    internal var tunnelShotsFired = 0
+    internal var tunnelGateFlash = 0f
+    internal var lastTunnelSupplyShot = 0
+    internal var tunnelSupplyReadinessPercent = 0
+    internal var cachedTunnelGateIntegrityPercent = 100
+    internal var tunnelGateIntegrityDirty = true
 
     // Spatial hash for brick collisions (packed key avoids per-frame Pair allocation).
-    private val spatialHashCellSize = 8f
-    private val spatialHash = mutableMapOf<Long, MutableList<Brick>>()
-    private val nearbyBrickBuffer = ArrayList<Brick>(96)
-    private val nearbyBrickSeen = HashSet<Brick>(96)
-    private var spatialHashDirty = true
-    private var dynamicBrickLayout = false
-    private var pendingInitialLayoutRetune = true
-    private var lastResizeWidthPx = 0
-    private var lastResizeHeightPx = 0
+    internal val spatialHashCellSize = 8f
+    internal val spatialHash = mutableMapOf<Long, MutableList<Brick>>()
+    internal val nearbyBrickBuffer = ArrayList<Brick>(96)
+    internal val nearbyBrickSeen = HashSet<Brick>(96)
+    internal var spatialHashDirty = true
+    internal var dynamicBrickLayout = false
+    internal var pendingInitialLayoutRetune = true
+    internal var lastResizeWidthPx = 0
+    internal var lastResizeHeightPx = 0
 
-    private var theme: LevelTheme = LevelThemes.DEFAULT
-    private var themePool: MutableList<LevelTheme> = LevelThemes.baseThemes().toMutableList()
-    private var currentLayout: LevelFactory.LevelLayout? = null
-    private var currentAspectRatio = worldHeight / worldWidth
-    private var brickAreaTopRatio = 0.92f
-    private var brickAreaBottomRatio = 0.52f
-    private var brickSpacing = 0.42f
-    private var layoutRowBoost = 0
-    private var layoutColBoost = 0
-    private var invaderScale = 1f
-    private var globalBrickScale = 0.9f
-    private var aliveBreakableBrickCount = 0
-    private var aliveExplosiveBrickCount = 0
-    private var levelClearFlash = 0f
-    private var renderTimeSeconds = 0f
-    private val hitFlashDecayRate = 2.0f
-    private val maxParticles = 240
-    private val maxWaves = 10
-    private var trailLife = 0.28f
-    private var maxTrailPoints = 8
-    private var cosmeticTier = config.unlocks.cosmeticTier
-    private var rewardScoreMultiplier = 0f
-    private var streakBonusRemaining = 0
-    private var streakBonusActive = false
-    private val streakBonusPerBrick = 20
-    private val aimMinAngle = 0.30f
+    internal var theme: LevelTheme = LevelThemes.DEFAULT
+    internal var themePool: MutableList<LevelTheme> = LevelThemes.baseThemes().toMutableList()
+    internal var currentLayout: LevelFactory.LevelLayout? = null
+    internal var currentAspectRatio = worldHeight / worldWidth
+    internal var brickAreaTopRatio = 0.92f
+    internal var brickAreaBottomRatio = 0.52f
+    internal var brickSpacing = 0.42f
+    internal var layoutRowBoost = 0
+    internal var layoutColBoost = 0
+    internal var invaderScale = 1f
+    internal var globalBrickScale = 0.9f
+    internal var aliveBreakableBrickCount = 0
+    internal var aliveExplosiveBrickCount = 0
+    internal var levelClearFlash = 0f
+    internal var renderTimeSeconds = 0f
+    internal val hitFlashDecayRate = 2.0f
+    internal val maxParticles = 240
+    internal val maxWaves = 10
+    internal var trailLife = 0.28f
+    internal var maxTrailPoints = 8
+    internal var cosmeticTier = config.unlocks.cosmeticTier
+    internal var rewardScoreMultiplier = 0f
+    internal var streakBonusRemaining = 0
+    internal var streakBonusActive = false
+    internal val streakBonusPerBrick = 20
+    internal val aimMinAngle = 0.30f
 
-    private enum class VisualFeedbackEvent {
+    internal enum class VisualFeedbackEvent {
         VOLLEY_ROW_DROP,
         BOSS_BREAK,
         COMBO_STREAK,
@@ -222,12 +222,13 @@ class GameEngine(
         INVADER_SHIELD_HIT,
         INVADER_SHIELD_BREAK,
         TUNNEL_PITY_SUPPLY,
+        TUNNEL_GATE_BREACH,
         EXPLOSION_BREAK,
         INVADER_BURST,
         LEVEL_CLEAR
     }
 
-    private data class VisualFeedbackProfile(
+    internal data class VisualFeedbackProfile(
         val shakeIntensity: Float = 0f,
         val shakeDuration: Float = 0f,
         val impactFlash: Float = 0f,
@@ -235,7 +236,7 @@ class GameEngine(
         val levelClearFlash: Boolean = false
     )
 
-    private fun visualFeedbackProfile(event: VisualFeedbackEvent): VisualFeedbackProfile {
+    internal fun visualFeedbackProfile(event: VisualFeedbackEvent): VisualFeedbackProfile {
         return when (event) {
             VisualFeedbackEvent.VOLLEY_ROW_DROP -> VisualFeedbackProfile(shakeIntensity = 0.7f, shakeDuration = 0.07f)
             VisualFeedbackEvent.BOSS_BREAK -> VisualFeedbackProfile(shakeIntensity = 3.2f, shakeDuration = 0.22f, impactFlash = 0.42f)
@@ -244,13 +245,14 @@ class GameEngine(
             VisualFeedbackEvent.INVADER_SHIELD_HIT -> VisualFeedbackProfile(shakeIntensity = 1.0f, shakeDuration = 0.08f)
             VisualFeedbackEvent.INVADER_SHIELD_BREAK -> VisualFeedbackProfile(shakeIntensity = 2.0f, shakeDuration = 0.18f, impactFlash = 0.26f)
             VisualFeedbackEvent.TUNNEL_PITY_SUPPLY -> VisualFeedbackProfile(shakeIntensity = 1.2f, shakeDuration = 0.08f, impactFlash = 0.18f)
+            VisualFeedbackEvent.TUNNEL_GATE_BREACH -> VisualFeedbackProfile(shakeIntensity = 2.8f, shakeDuration = 0.20f, impactFlash = 0.35f)
             VisualFeedbackEvent.EXPLOSION_BREAK -> VisualFeedbackProfile(shakeIntensity = 2.4f, shakeDuration = 0.16f, impactFlash = 0.24f)
             VisualFeedbackEvent.INVADER_BURST -> VisualFeedbackProfile(shakeIntensity = 1.2f, shakeDuration = 0.12f, impactFlash = 0.08f)
             VisualFeedbackEvent.LEVEL_CLEAR -> VisualFeedbackProfile(shakeIntensity = 1.0f, shakeDuration = 0.11f, levelClearFlash = true)
         }
     }
 
-    private fun emitVisualFeedback(event: VisualFeedbackEvent, scale: Float = 1f) {
+    internal fun emitVisualFeedback(event: VisualFeedbackEvent, scale: Float = 1f) {
         val clampedScale = scale.coerceIn(0.5f, 1.6f)
         val profile = visualFeedbackProfile(event)
         if (profile.shakeIntensity > 0f && profile.shakeDuration > 0f) {
@@ -267,19 +269,19 @@ class GameEngine(
         }
     }
 
-    private fun spatialKey(cellX: Int, cellY: Int): Long {
+    internal fun spatialKey(cellX: Int, cellY: Int): Long {
         return (cellX.toLong() shl 32) or (cellY.toLong() and 0xffffffffL)
     }
 
-    private data class VolleyBallStateCounts(
+    internal data class VolleyBallStateCounts(
         val stuckBalls: Int,
         val inFlightBalls: Int,
         val stalledBalls: Int
     )
 
-    private fun isBreakable(type: BrickType): Boolean = type != BrickType.UNBREAKABLE
+    internal fun isBreakable(type: BrickType): Boolean = type != BrickType.UNBREAKABLE
 
-    private fun recalcAliveBrickCounters() {
+    internal fun recalcAliveBrickCounters() {
         var aliveBreakable = 0
         var aliveExplosive = 0
         for (brick in bricks) {
@@ -295,7 +297,7 @@ class GameEngine(
         aliveExplosiveBrickCount = aliveExplosive
     }
 
-    private fun countVolleyBallStates(): VolleyBallStateCounts {
+    internal fun countVolleyBallStates(): VolleyBallStateCounts {
         var stuck = 0
         var inFlight = 0
         var stalled = 0
@@ -315,7 +317,7 @@ class GameEngine(
         )
     }
 
-    private fun nudgeStalledVolleyBalls() {
+    internal fun nudgeStalledVolleyBalls() {
         if (config.mode != GameMode.VOLLEY) return
         var nudgedCount = 0
         val baseSpeed = (config.mode.launchSpeed * 0.9f).coerceAtLeast(18f)
@@ -335,7 +337,7 @@ class GameEngine(
         }
     }
 
-    private fun hasStuckBall(): Boolean {
+    internal fun hasStuckBall(): Boolean {
         for (ball in balls) {
             if (ball.stuckToPaddle) {
                 return true
@@ -344,13 +346,13 @@ class GameEngine(
         return false
     }
 
-    private fun hasBreakthroughActiveEffect(): Boolean {
+    internal fun hasBreakthroughActiveEffect(): Boolean {
         return activeEffects.containsKey(PowerUpType.PIERCE) ||
             activeEffects.containsKey(PowerUpType.FIREBALL) ||
             activeEffects.containsKey(PowerUpType.LASER)
     }
 
-    private fun hasQueuedBreakthroughDrop(): Boolean {
+    internal fun hasQueuedBreakthroughDrop(): Boolean {
         for (power in powerups) {
             if (power.type == PowerUpType.PIERCE ||
                 power.type == PowerUpType.FIREBALL ||
@@ -429,7 +431,7 @@ class GameEngine(
         lastResizeHeightPx = height
     }
 
-    private fun resolveBasePaddleWidth(aspectRatio: Float): Float {
+    internal fun resolveBasePaddleWidth(aspectRatio: Float): Float {
         val tallness = ((aspectRatio - 1.25f) / 0.85f).coerceIn(0f, 1f)
         val aspectBoost = lerp(1.1f, 1.02f, tallness)
         val modeBoost = when (config.mode) {
@@ -505,17 +507,20 @@ class GameEngine(
         } else {
             volleyCompactionCheckTimer = 0f
         }
+        val fastPulseDecay = dt * 2.5f
+        val slowPulseDecay = dt * 1.2f
+        
         if (shieldHitPulse > 0f) {
-            shieldHitPulse = max(0f, shieldHitPulse - dt * 2.6f)
+            shieldHitPulse = max(0f, shieldHitPulse - fastPulseDecay)
         }
         if (shieldBreakPulse > 0f) {
-            shieldBreakPulse = max(0f, shieldBreakPulse - dt * 2.4f)
+            shieldBreakPulse = max(0f, shieldBreakPulse - fastPulseDecay)
         }
         if (powerupCollectionPulse > 0f) {
-            powerupCollectionPulse = max(0f, powerupCollectionPulse - dt * 2.2f)
+            powerupCollectionPulse = max(0f, powerupCollectionPulse - fastPulseDecay)
         }
         if (tunnelGateFlash > 0f) {
-            tunnelGateFlash = max(0f, tunnelGateFlash - dt * 2.1f)
+            tunnelGateFlash = max(0f, tunnelGateFlash - slowPulseDecay) // prolonged flash
         }
     }
 
@@ -534,7 +539,7 @@ class GameEngine(
         debugProgressionProbeTimer = 0f
     }
 
-    private fun updateDebugAutoPlay(dt: Float) {
+    internal fun updateDebugAutoPlay(dt: Float) {
         if (dt <= 0f) return
         debugAutoPlayActionTimer -= dt
         val minX = paddle.width / 2f
@@ -576,7 +581,7 @@ class GameEngine(
         }
     }
 
-    private fun updateDebugProgressionProbe(dt: Float) {
+    internal fun updateDebugProgressionProbe(dt: Float) {
         if (dt <= 0f) return
         if (state != GameState.RUNNING || awaitingNextLevel) return
         debugProgressionProbeTimer -= dt
@@ -595,1172 +600,29 @@ class GameEngine(
         debugProgressionProbeTimer = 0.03f
     }
 
-    fun render(renderer: Renderer2D) {
-        renderer.setWorldSize(worldWidth, worldHeight)
-        renderTimeSeconds = System.nanoTime() / 1_000_000_000f
-        // Enhanced background with subtle gradient and flash effect
-        val flashIntensity = levelClearFlash * 0.8f
-        val bgTop = if (flashIntensity > 0f) {
-            adjustColor(scratchColor0, theme.background, 1.1f + flashIntensity, 1f)
-        } else {
-            adjustColor(scratchColor0, theme.background, 1.1f, 1f)
-        }
-        val bgBottom = if (flashIntensity > 0f) {
-            adjustColor(scratchColor1, theme.background, 0.9f + flashIntensity, 1f)
-        } else {
-            adjustColor(scratchColor1, theme.background, 0.9f, 1f)
-        }
+    
 
-        // Draw gradient background (top to bottom)
-        val gradientSteps = 20
-        val stepHeight = worldHeight / gradientSteps
-        for (i in 0 until gradientSteps) {
-            val y = i * stepHeight
-            val ratio = i.toFloat() / gradientSteps.toFloat()
-            renderer.drawRect(
-                0f,
-                y,
-                worldWidth,
-                stepHeight,
-                fillColor(
-                    tempColor,
-                    bgTop[0] * (1f - ratio) + bgBottom[0] * ratio,
-                    bgTop[1] * (1f - ratio) + bgBottom[1] * ratio,
-                    bgTop[2] * (1f - ratio) + bgBottom[2] * ratio,
-                    1f
-                )
-            )
-        }
+    
 
-        // Add theme-specific background effects
-        val time = renderTimeSeconds
-        val backgroundFxDensity = when {
-            !settings.highRefreshRate -> 0.74f
-            worldHeight > 195f -> 0.86f
-            else -> 1f
-        } * (0.86f + cosmeticTier * 0.05f)
-        fun effectCount(base: Int, minCount: Int, maxCount: Int): Int {
-            return (base * backgroundFxDensity).roundToInt().coerceIn(minCount, maxCount)
-        }
-        when (theme.name) {
-            "Neon" -> {
-                // Animated grid pattern
-                val cols = effectCount(base = 14, minCount = 10, maxCount = 20)
-                val rows = effectCount(base = 20, minCount = 12, maxCount = 28)
-                val tileWidth = worldWidth / cols.toFloat()
-                val tileHeight = worldHeight / rows.toFloat()
-                for (x in 0 until cols) {
-                    for (y in 0 until rows) {
-                        if ((x + y) % 3 != 0) continue
-                        val alpha = (kotlin.math.sin(time * 1.9f + x * 0.47f + y * 0.31f) * 0.5f + 0.5f) * 0.085f
-                        renderer.drawRect(
-                            x * tileWidth,
-                            y * tileHeight,
-                            tileWidth,
-                            tileHeight,
-                            fillColor(tempColor, 0.3f, 0.9f, 1f, alpha)
-                        )
-                    }
-                }
-            }
-            "Sunset" -> {
-                // Floating particles
-                val particleCount = effectCount(base = 16, minCount = 10, maxCount = 24)
-                for (i in 0 until particleCount) {
-                    val phase = i * 0.67f
-                    val x = (kotlin.math.sin(time * 0.5f + phase) * 0.5f + 0.5f) * worldWidth
-                    val y = (kotlin.math.cos(time * 0.3f + phase * 0.7f) * 0.5f + 0.5f) * worldHeight
-                    val size = 0.9f + kotlin.math.sin(time * 2f + phase) * 0.45f
-                    renderer.drawCircle(x, y, size, fillColor(tempColor, 1f, 0.6f, 0.3f, 0.3f))
-                }
-            }
-            "Aurora" -> {
-                // Wave patterns
-                val waveCount = effectCount(base = 8, minCount = 5, maxCount = 12)
-                for (i in 0 until waveCount) {
-                    val waveY = worldHeight * 0.3f + kotlin.math.sin(time + i * 0.8f) * worldHeight * 0.2f
-                    val alpha = (kotlin.math.sin(time * 1.5f + i) * 0.5f + 0.5f) * 0.15f
-                    renderer.drawRect(
-                        0f,
-                        waveY,
-                        worldWidth,
-                        2f,
-                        fillColor(tempColor, 0.3f, 0.8f, 0.5f, alpha)
-                    )
-                }
-            }
-            "Invaders" -> {
-                // Starfield background
-                val starCount = effectCount(base = 36, minCount = 22, maxCount = 46)
-                for (i in 0 until starCount) {
-                    val seed = i * 37 + 13
-                    val rx = kotlin.math.sin(time * 0.08f + seed) * 0.5f + 0.5f
-                    val ry = kotlin.math.cos(time * 0.07f + seed * 1.7f) * 0.5f + 0.5f
-                    val x = rx * worldWidth
-                    val y = ry * worldHeight
-                    val twinkle = (kotlin.math.sin(time * 2.2f + seed) * 0.5f + 0.5f)
-                    val alpha = 0.12f + twinkle * 0.25f
-                    val size = 0.3f + twinkle * 0.4f
-                    renderer.drawCircle(x, y, size, fillColor(tempColor, 0.6f, 0.8f, 1f, alpha))
-                }
-            }
-        }
+    
 
-        if (config.mode == GameMode.VOLLEY) {
-            val turnPulse = (kotlin.math.sin(time * 2.4f) * 0.5f + 0.5f)
-            val accentAlpha = 0.08f + turnPulse * 0.08f
-            val laneY = paddle.y + paddle.height * 0.5f + 1.8f
-            val warningBandHeight = (worldHeight * 0.09f).coerceIn(3f, 7f)
-            renderer.drawRect(
-                0f,
-                0f,
-                worldWidth,
-                warningBandHeight,
-                fillColor(tempColor, 1f, 0.43f, 0.2f, 0.06f + turnPulse * 0.05f)
-            )
-            renderer.drawRect(
-                0f,
-                laneY,
-                worldWidth,
-                0.3f,
-                fillColor(tempColor, theme.accent[0], theme.accent[1], theme.accent[2], 0.2f + accentAlpha)
-            )
-            val scanYOffset = laneY + worldHeight * 0.02f
-            val scanLineCount = effectCount(base = 7, minCount = 4, maxCount = 8)
-            for (i in 0 until scanLineCount) {
-                val progress = ((time * (0.12f + i * 0.01f) + i * 0.19f) % 1f + 1f) % 1f
-                val width = worldWidth * (0.06f + (i % 3) * 0.01f)
-                val x = progress * (worldWidth + width) - width
-                val alpha = (0.04f + turnPulse * 0.03f - i * 0.004f).coerceAtLeast(0.015f)
-                renderer.drawRect(
-                    x,
-                    scanYOffset + i * 0.42f,
-                    width,
-                    0.12f,
-                    fillColor(tempColor, 0.95f, 0.58f, 0.22f, alpha)
-                )
-            }
-            val laneBandCount = effectCount(base = 6, minCount = 4, maxCount = 7)
-            for (i in 0 until laneBandCount) {
-                val y = worldHeight * 0.58f + i * worldHeight * 0.055f
-                val alpha = (0.03f + (i % 2) * 0.015f + turnPulse * 0.01f).coerceIn(0.02f, 0.08f)
-                renderer.drawRect(
-                    0f,
-                    y,
-                    worldWidth,
-                    0.22f,
-                    fillColor(tempColor, theme.paddle[0], theme.paddle[1], theme.paddle[2], alpha)
-                )
-            }
-        }
-        if (config.mode == GameMode.TUNNEL) {
-            val gateZone = tunnelGateZone()
-            val boardCols = ((currentLayout?.cols ?: 12) + layoutColBoost).coerceAtLeast(1)
-            val colWidth = worldWidth / boardCols.toFloat()
-            val centerCol = gateZone?.let {
-                ((it.minCol + it.maxCol) * 0.5f).roundToInt().coerceIn(0, boardCols - 1)
-            } ?: (boardCols / 2)
-            val gateWidthCols = gateZone?.let { (it.maxCol - it.minCol + 1).coerceAtLeast(1) } ?: 3
-            val gateWidth = (colWidth * gateWidthCols).coerceIn(8f, 20f)
-            val gateX = ((centerCol + 0.5f) * colWidth - gateWidth * 0.5f).coerceIn(0f, worldWidth - gateWidth)
-            val gateY = worldHeight * 0.52f
-            val gateHeight = worldHeight * 0.36f
-            val gatePulse = tunnelGateFlash.coerceIn(0f, 1f)
-            val readiness = (tunnelSupplyReadinessPercent / 100f).coerceIn(0f, 1f)
-            val integrity = (cachedTunnelGateIntegrityPercent / 100f).coerceIn(0f, 1f)
-            val urgency = (1f - integrity).coerceIn(0f, 1f)
-            val pulse = (kotlin.math.sin(time * 4.4f) * 0.5f + 0.5f)
+    internal data class AimHit(val t: Float, val nx: Float, val ny: Float, val hitsBrick: Boolean = false)
 
-            val laneAlpha = (0.04f + readiness * 0.05f + urgency * 0.05f + pulse * 0.02f).coerceIn(0.04f, 0.16f)
-            renderer.drawRect(
-                gateX,
-                paddle.y + paddle.height * 0.8f,
-                gateWidth,
-                gateY - paddle.y,
-                fillColor(tempColor, theme.accent[0], theme.accent[1], theme.accent[2], laneAlpha)
-            )
+    
 
-            renderer.drawRect(
-                gateX,
-                gateY,
-                gateWidth,
-                gateHeight,
-                fillColor(tempColor, theme.accent[0], theme.accent[1], theme.accent[2], 0.07f + gatePulse * 0.17f + readiness * 0.08f)
-            )
-            renderer.drawRect(
-                gateX + gateWidth * 0.24f,
-                gateY,
-                gateWidth * 0.52f,
-                gateHeight,
-                fillColor(tempColor, 1f, 0.95f, 0.85f, 0.04f + gatePulse * 0.1f + readiness * 0.06f)
-            )
-            renderer.drawRect(
-                gateX,
-                gateY + gateHeight * 0.92f,
-                gateWidth * readiness,
-                gateHeight * 0.06f,
-                fillColor(tempColor, 0.5f + readiness * 0.5f, 0.9f, 0.55f + readiness * 0.4f, 0.24f + readiness * 0.24f)
-            )
-        }
+    
 
-        if (gravityWellActive) {
-            val centerX = worldWidth * 0.5f
-            val centerY = worldHeight * 0.62f
-            for (i in 0 until 6) {
-                val radius = 2f + i * 2.4f
-                val angle = time * (0.8f + i * 0.12f)
-                val x = centerX + kotlin.math.cos(angle) * radius
-                val y = centerY + kotlin.math.sin(angle) * radius
-                val alpha = (0.18f - i * 0.02f).coerceAtLeast(0.05f)
-                renderer.drawCircle(x, y, 0.6f + i * 0.12f, fillColor(tempColor, 0.45f, 0.65f, 1f, alpha))
-            }
-        }
-
-        if (activeEffects.containsKey(PowerUpType.FREEZE) || activeEffects.containsKey(PowerUpType.SLOW)) {
-            val chillAlpha = if (activeEffects.containsKey(PowerUpType.FREEZE)) 0.12f else 0.08f
-            renderer.drawRect(0f, 0f, worldWidth, worldHeight, fillColor(tempColor, 0.35f, 0.6f, 1f, chillAlpha))
-        }
-
-        if (guardrailActive) {
-            val pulse = (kotlin.math.sin(time * 3f) * 0.5f + 0.5f)
-            renderer.drawRect(
-                0f,
-                2f,
-                worldWidth,
-                0.6f,
-                fillColor(tempColor, theme.accent[0], theme.accent[1], theme.accent[2], 0.5f + pulse * 0.4f)
-            )
-        }
-
-        if (config.mode.invaders && invaderTelegraphKey != null) {
-            val target = invaderBricks.firstOrNull { it.alive && invaderKey(it) == invaderTelegraphKey }
-            if (target != null) {
-                val alpha = ((invaderTelegraphLead - invaderShotTimer).coerceIn(0f, invaderTelegraphLead) / invaderTelegraphLead)
-                val pulse = (kotlin.math.sin(time * 16f) * 0.5f + 0.5f)
-                val beamAlpha = (0.15f + alpha * 0.5f + pulse * 0.2f).coerceIn(0f, 0.8f)
-                val beamWidth = 0.5f + alpha * 0.8f
-                val beamX = target.centerX - beamWidth / 2f
-                val beamY = target.y - worldHeight * 0.02f
-                val beamHeight = target.y - paddle.y + paddle.height * 0.6f
-                renderer.drawRect(
-                    beamX,
-                    paddle.y + paddle.height * 0.2f,
-                    beamWidth,
-                    beamHeight,
-                    fillColor(tempColor, theme.accent[0], theme.accent[1], theme.accent[2], beamAlpha)
-                )
-            }
-        }
-
-        for (brick in bricks) {
-            if (!brick.alive) continue
-            if (!renderer.isRectVisible(brick.x, brick.y, brick.width, brick.height)) continue
-            val color = if (config.mode == GameMode.TUNNEL && brick.type == BrickType.UNBREAKABLE) {
-                // Keep tunnel walls visually distinct from regular bricks.
-                tunnelWallColor
-            } else {
-                brick.currentColor(theme)
-            }
-
-            if (brick.type == BrickType.INVADER) {
-                drawInvaderShip(renderer, brick, color)
-                if (brick.maxHitPoints >= 2) {
-                    val armor = adjustColor(scratchColor2, color, 0.82f, 0.9f)
-                    val count = if (brick.maxHitPoints >= 3) 2 else 1
-                    drawStripe(renderer, brick, armor, count)
-                if (brick.maxHitPoints >= 3) {
-                    val core = adjustColor(scratchColor3, color, 1.4f, 0.9f)
-                    renderer.drawCircle(brick.centerX, brick.centerY, brick.height * 0.08f, core)
-                }
-            }
-            continue
-        }
-
-            // 3D depth effect: base shadow
-            val shadowOffset = brick.width * 0.02f
-            val shadowColor = adjustColor(scratchColor4, color, 0.4f, 0.3f)
-            renderer.drawRect(brick.x + shadowOffset, brick.y + shadowOffset, brick.width, brick.height, shadowColor)
-
-            // Main brick body
-            renderer.drawRect(brick.x, brick.y, brick.width, brick.height, color)
-
-            // 3D highlights and bevels
-            val highlight = adjustColor(scratchColor5, color, 1.3f, 1f)
-            val midtone = adjustColor(scratchColor6, color, 0.9f, 1f)
-            val lowlight = adjustColor(scratchColor7, color, 0.6f, 1f)
-
-            // Top bevel (highlight)
-            val topBevelHeight = brick.height * 0.08f
-            renderer.drawRect(brick.x, brick.y, brick.width, topBevelHeight, highlight)
-
-            // Left bevel (highlight)
-            val leftBevelWidth = brick.width * 0.06f
-            renderer.drawRect(brick.x, brick.y, leftBevelWidth, brick.height, midtone)
-
-            // Bottom bevel (lowlight/shadow)
-            val bottomBevelHeight = brick.height * 0.1f
-            renderer.drawRect(brick.x, brick.y + brick.height - bottomBevelHeight, brick.width, bottomBevelHeight, lowlight)
-
-            // Right bevel (lowlight/shadow)
-            val rightBevelWidth = brick.width * 0.08f
-            renderer.drawRect(brick.x + brick.width - rightBevelWidth, brick.y, rightBevelWidth, brick.height, lowlight)
-
-            when (brick.type) {
-                BrickType.REINFORCED -> drawStripe(renderer, brick, adjustColor(scratchColor8, color, 0.85f, 1f), 1)
-                BrickType.ARMORED -> drawStripe(renderer, brick, adjustColor(scratchColor9, color, 0.78f, 1f), 2)
-                BrickType.UNBREAKABLE -> {
-                    drawStripe(renderer, brick, adjustColor(scratchColor10, color, 0.66f, 1f), 3)
-                    if (config.mode == GameMode.TUNNEL) {
-                        val lock = adjustColor(scratchColor9, color, 0.48f, 1f)
-                        val cap = adjustColor(scratchColor11, color, 1.12f, 0.95f)
-                        val barWidth = brick.width * 0.14f
-                        val barHeight = brick.height * 0.5f
-                        renderer.drawRect(
-                            brick.centerX - barWidth * 0.5f,
-                            brick.centerY - barHeight * 0.5f,
-                            barWidth,
-                            barHeight,
-                            lock
-                        )
-                        renderer.drawRect(
-                            brick.centerX - brick.width * 0.24f,
-                            brick.centerY - brick.height * 0.06f,
-                            brick.width * 0.48f,
-                            brick.height * 0.12f,
-                            cap
-                        )
-                    }
-                }
-                BrickType.MOVING -> {
-                    // Add movement indicator
-                    val indicatorColor = adjustColor(scratchColor8, color, 1.3f, 0.8f)
-                    renderer.drawRect(brick.x + brick.width * 0.1f, brick.y + brick.height * 0.1f,
-                                    brick.width * 0.8f, brick.height * 0.05f, indicatorColor)
-                }
-                BrickType.SPAWNING -> {
-                    // Add spawn indicator (dots)
-                    val dotColor = adjustColor(scratchColor8, color, 1.2f, 0.9f)
-                    val dotSize = brick.width * 0.08f
-                    for (i in 0 until brick.spawnCount) {
-                        val dotX = brick.x + brick.width * 0.2f + i * brick.width * 0.15f
-                        val dotY = brick.y + brick.height * 0.85f
-                        renderer.drawCircle(dotX, dotY, dotSize, dotColor)
-                    }
-                }
-                BrickType.PHASE -> {
-                    // Phase indicator (colored bars)
-                    val phaseColor = when (brick.phase) {
-                        0 -> fillColor(tempColor, 0f, 1f, 0f, 0.8f) // Green
-                        1 -> fillColor(tempColor, 1f, 1f, 0f, 0.8f) // Yellow
-                        else -> fillColor(tempColor, 1f, 0f, 0f, 0.8f) // Red
-                    }
-                    val barHeight = brick.height * 0.1f
-                    val barY = brick.y + brick.height - barHeight
-                    renderer.drawRect(brick.x, barY, brick.width, barHeight, phaseColor)
-                }
-                BrickType.BOSS -> {
-                    // Boss indicator (pulsing border)
-                    val pulse = (kotlin.math.sin(time * 4f) * 0.5f + 0.5f) * 0.3f + 0.7f
-                    val bossColor = adjustColor(scratchColor8, color, pulse, 1f)
-                    val borderWidth = brick.width * 0.05f
-                    // Draw border by drawing slightly larger rect underneath
-                    renderer.drawRect(brick.x - borderWidth, brick.y - borderWidth,
-                                    brick.width + borderWidth * 2, brick.height + borderWidth * 2, bossColor)
-                }
-                else -> Unit
-            }
-        }
-
-        powerups.forEach { power ->
-            renderPowerup(renderer, power)
-
-            // Magnet indicator: show attraction line when magnet is active
-            if (magnetActive) {
-                val dx = paddle.x - power.x
-                val dy = paddle.y + paddle.height / 2f - power.y
-                val distance = kotlin.math.sqrt(dx * dx + dy * dy)
-                if (distance > 0.1f && distance < 25f) { // Only show for nearby powerups
-                    val steps = 8
-                    val lineAlpha = (0.15f * (1f - distance / 25f)).coerceIn(0.02f, 0.15f)
-                    val lineColor = fillColor(tempColor, 0.8f, 0.4f, 1f, lineAlpha)
-                    repeat(steps) { step ->
-                        val t = step.toFloat() / (steps - 1)
-                        val x = power.x + dx * t
-                        val y = power.y + dy * t
-                        val dotSize = 0.15f + (1f - t) * 0.1f
-                        renderer.drawCircle(x, y, dotSize, lineColor)
-                    }
-                }
-            }
-        }
-
-        beams.forEach { beam ->
-            renderer.drawBeam(beam.x, beam.y, beam.width, beam.height, beam.color)
-        }
-
-        enemyShots.forEach { shot ->
-            val speed = kotlin.math.abs(shot.vy)
-            val glow = adjustColor(scratchColor2, shot.color, 1.2f + speed * 0.002f, 0.5f)
-            renderer.drawCircle(shot.x, shot.y, shot.radius * 1.9f, glow)
-            val trailLen = when (shot.style) {
-                1 -> 5.0f
-                2 -> 4.2f
-                else -> if (shot.wiggle > 0f) 3.8f else 3.2f
-            }
-            val trailColor = when (shot.style) {
-                1 -> fillColor(tempColor, 1f, 0.85f, 0.55f, 0.45f)
-                2 -> fillColor(tempColor, 0.85f, 0.55f, 1f, 0.4f)
-                else -> fillColor(tempColor, shot.color[0], shot.color[1], shot.color[2], 0.35f)
-            }
-            renderer.drawRect(
-                shot.x - shot.radius * 0.28f,
-                shot.y + shot.radius * 0.6f,
-                shot.radius * 0.56f,
-                shot.radius * trailLen,
-                trailColor
-            )
-            when (shot.style) {
-                1 -> {
-                    renderer.drawRect(
-                        shot.x - shot.radius * 0.4f,
-                        shot.y - shot.radius * 1.2f,
-                        shot.radius * 0.8f,
-                        shot.radius * 2.4f,
-                        shot.color
-                    )
-                    renderer.drawCircle(
-                        shot.x,
-                        shot.y + shot.radius * 1.1f,
-                        shot.radius * 0.6f,
-                        adjustColor(scratchColor3, shot.color, 1.4f, 0.8f)
-                    )
-                }
-                2 -> {
-                    renderer.drawCircle(
-                        shot.x,
-                        shot.y,
-                        shot.radius * 1.35f,
-                        adjustColor(scratchColor3, shot.color, 1.4f, 0.45f)
-                    )
-                    renderer.drawCircle(shot.x, shot.y, shot.radius * 0.65f, shot.color)
-                }
-                else -> {
-                    renderer.drawCircle(shot.x, shot.y, shot.radius, shot.color)
-                }
-            }
-        }
-
-        if (config.mode.invaders && invaderShieldMax > 0f) {
-            val ratio = (invaderShield / invaderShieldMax).coerceIn(0f, 1f)
-            val pulse = if (invaderShieldCritical) (kotlin.math.sin(time * 6f) * 0.5f + 0.5f) else 0f
-            val shieldY = paddle.y + paddle.height * 1.15f
-            val thickness = 0.6f + ratio * 0.5f
-            val alpha = (0.15f + ratio * 0.35f + shieldHitPulse * 0.25f + pulse * 0.2f).coerceIn(0.1f, 0.75f)
-            val baseColor = if (invaderShieldCritical) {
-                fillColor(scratchColor11, 1f, 0.45f, 0.45f, alpha)
-            } else {
-                fillColor(scratchColor11, 0.45f, 0.9f, 1f, alpha)
-            }
-            val shieldX = worldWidth * 0.06f
-            val shieldWidth = worldWidth * 0.88f
-            renderer.drawRect(shieldX, shieldY - thickness / 2f, shieldWidth, thickness, baseColor)
-
-            val segments = 10
-            val segmentWidth = shieldWidth / segments
-            for (i in 0 until segments) {
-                val shimmer = (kotlin.math.sin(time * 3.2f + i) * 0.4f + 0.6f).coerceIn(0.3f, 1f)
-                val segAlpha = (alpha * shimmer).coerceIn(0f, 0.8f)
-                val segX = shieldX + i * segmentWidth + 0.35f
-                renderer.drawRect(
-                    segX,
-                    shieldY - thickness * 0.28f,
-                    segmentWidth - 0.7f,
-                    thickness * 0.56f,
-                    fillColor(tempColor, baseColor[0], baseColor[1], baseColor[2], segAlpha)
-                )
-            }
-
-            if (shieldHitPulse > 0f) {
-                val ringAlpha = (0.4f * shieldHitPulse).coerceIn(0f, 0.6f)
-                val ringX = shieldHitX.coerceIn(shieldX, shieldX + shieldWidth)
-                renderer.drawCircle(
-                    ringX,
-                    shieldY + thickness * 0.15f,
-                    1.2f + 2.2f * shieldHitPulse,
-                    fillColor(tempColor, baseColor[0], baseColor[1], baseColor[2], ringAlpha)
-                )
-            }
-
-            if (shieldBreakPulse > 0f) {
-                val breakAlpha = (shieldBreakPulse * 0.55f).coerceIn(0f, 0.7f)
-                renderer.drawRect(
-                    shieldX,
-                    shieldY - thickness,
-                    shieldWidth,
-                    thickness * 2.2f,
-                    fillColor(tempColor, 1f, 0.4f, 0.4f, breakAlpha)
-                )
-            }
-        }
-
-        waves.forEach { wave ->
-            // Render explosion wave with gradient effect
-            val lifeRatio = wave.life / wave.maxLife
-            val baseAlpha = (lifeRatio * 0.7f).coerceIn(0f, 0.7f)
-
-            // Outer ring (most transparent)
-            renderer.drawCircle(
-                wave.x, wave.y, wave.radius,
-                fillColor(tempColor, wave.color[0], wave.color[1], wave.color[2], baseAlpha * 0.3f)
-            )
-
-            // Middle ring
-            renderer.drawCircle(
-                wave.x, wave.y, wave.radius * 0.75f,
-                fillColor(tempColor, wave.color[0], wave.color[1], wave.color[2], baseAlpha * 0.6f)
-            )
-
-            // Inner core (most opaque)
-            renderer.drawCircle(
-                wave.x, wave.y, wave.radius * 0.5f,
-                fillColor(tempColor, wave.color[0], wave.color[1], wave.color[2], baseAlpha)
-            )
-        }
-        particles.forEach { particle ->
-            if (renderer.isCircleVisible(particle.x, particle.y, particle.radius)) {
-                renderer.drawCircleBatch(particle.x, particle.y, particle.radius, particle.color)
-            }
-        }
-        renderer.flushCircleBatch()
-
-        if (state == GameState.READY || hasStuckBall()) {
-            renderAimGuide(renderer)
-        }
-
-        if (activeEffects.containsKey(PowerUpType.LASER) || shieldCharges > 0) {
-            val glowAlpha = if (activeEffects.containsKey(PowerUpType.LASER)) 0.55f else 0.35f
-            renderer.drawRect(
-                paddle.x - paddle.width / 2f - 1.2f,
-                paddle.y - paddle.height / 2f - 0.6f,
-                paddle.width + 2.4f,
-                paddle.height + 1.2f,
-                fillColor(tempColor, theme.accent[0], theme.accent[1], theme.accent[2], glowAlpha)
-            )
-        }
-        renderer.drawRect(paddle.x - paddle.width / 2f, paddle.y - paddle.height / 2f, paddle.width, paddle.height, theme.paddle)
-        if (cosmeticTier >= 2) {
-            renderer.drawRect(
-                paddle.x - paddle.width / 2f,
-                paddle.y + paddle.height * 0.38f,
-                paddle.width,
-                paddle.height * 0.08f,
-                fillColor(tempColor, theme.accent[0], theme.accent[1], theme.accent[2], 0.6f)
-            )
-        }
-        if (shieldHitPulse > 0f) {
-            val pulseAlpha = (shieldHitPulse * 0.65f).coerceIn(0f, 0.65f)
-            val pulseWidth = paddle.width + 3.2f * shieldHitPulse
-            val pulseHeight = paddle.height + 1.4f * shieldHitPulse
-            renderer.drawRect(
-                paddle.x - pulseWidth / 2f,
-                paddle.y - pulseHeight / 2f,
-                pulseWidth,
-                pulseHeight,
-                fillColor(tempColor, shieldHitColor[0], shieldHitColor[1], shieldHitColor[2], pulseAlpha)
-            )
-            val hitX = shieldHitX.coerceIn(paddle.x - paddle.width / 2f, paddle.x + paddle.width / 2f)
-            renderer.drawCircle(
-                hitX,
-                paddle.y + paddle.height / 2f + 0.6f,
-                0.8f + 1.4f * shieldHitPulse,
-                fillColor(tempColor, shieldHitColor[0], shieldHitColor[1], shieldHitColor[2], pulseAlpha)
-            )
-        }
-
-        if (powerupCollectionPulse > 0f) {
-            val pulseAlpha = (powerupCollectionPulse * 0.5f).coerceIn(0f, 0.5f)
-            val pulseWidth = paddle.width + 2.8f * powerupCollectionPulse
-            val pulseHeight = paddle.height + 1.6f * powerupCollectionPulse
-            renderer.drawRect(
-                paddle.x - pulseWidth / 2f,
-                paddle.y - pulseHeight / 2f,
-                pulseWidth,
-                pulseHeight,
-                fillColor(tempColor, 0.9f, 0.95f, 1f, pulseAlpha)
-            )
-        }
-
-        balls.forEach { ball ->
-            val speed = kotlin.math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy)
-            val glowStrength = (speed / 70f).coerceIn(0.2f, 0.55f) + cosmeticTier * 0.04f
-            val glowBase = when {
-                ball.isFireball -> PowerUpType.FIREBALL.color
-                pierceActive -> PowerUpType.PIERCE.color
-                else -> theme.accent
-            }
-
-            ball.trail.forEach { point ->
-                val lifeRatio = (point.life / point.maxLife).coerceIn(0f, 1f)
-                val alpha = lifeRatio * (0.35f + cosmeticTier * 0.06f)
-                renderer.drawCircle(
-                    point.x,
-                    point.y,
-                    point.radius * lifeRatio,
-                    fillColor(tempColor, glowBase[0], glowBase[1], glowBase[2], alpha)
-                )
-                if (cosmeticTier >= 2) {
-                    renderer.drawCircle(
-                        point.x,
-                        point.y,
-                        point.radius * lifeRatio * 0.6f,
-                        fillColor(tempColor, theme.paddle[0], theme.paddle[1], theme.paddle[2], alpha * 0.6f)
-                    )
-                }
-            }
-
-            renderer.drawCircle(
-                ball.x,
-                ball.y,
-                ball.radius * 1.8f,
-                fillColor(tempColor, glowBase[0], glowBase[1], glowBase[2], glowStrength)
-            )
-            if (cosmeticTier >= 3) {
-                renderer.drawCircle(
-                    ball.x,
-                    ball.y,
-                    ball.radius * 2.4f,
-                    fillColor(tempColor, glowBase[0], glowBase[1], glowBase[2], 0.18f + cosmeticTier * 0.04f)
-                )
-            }
-            renderer.drawCircle(ball.x, ball.y, ball.radius, ball.color)
-        }
-    }
-
-    private fun renderPowerup(renderer: Renderer2D, power: PowerUp) {
-        val time = renderTimeSeconds
-        val isNegative = power.type == PowerUpType.SHRINK || power.type == PowerUpType.OVERDRIVE
-        val pulseSpeed = if (isNegative) 4f else 3f // Faster pulse for negative powerups
-        val pulse = (kotlin.math.sin(time * pulseSpeed) * 0.5f + 0.5f)
-        val wobble = kotlin.math.sin(time * 2.1f) * 0.03f // Gentle wobble rotation effect
-        val size = power.size * (0.9f + pulse * 0.12f)
-
-        // Enhanced outer glow effect - red tint for negative powerups
-        val glowColor = if (isNegative) {
-            fillColor(tempColor, 0.8f + pulse * 0.2f, 0.2f, 0.2f, 0.6f + pulse * 0.2f)
-        } else {
-            adjustColor(scratchColor0, power.type.color, 0.25f + pulse * 0.2f, 0.6f)
-        }
-        renderer.drawRect(power.x - size * 0.6f, power.y - size * 0.6f, size * 1.2f, size * 1.2f, glowColor)
-        // Rotating ring effect - simple pulsing ring
-        val ringPulse = (kotlin.math.sin(time * 2.5f) * 0.5f + 0.5f)
-        val ringSize = size * (0.75f + ringPulse * 0.15f)
-        val ringAlpha = 0.12f + pulse * 0.08f
-        renderer.drawCircle(
-            power.x,
-            power.y,
-            ringSize,
-            fillColor(tempColor, power.type.color[0], power.type.color[1], power.type.color[2], ringAlpha)
-        )
-
-        val innerRingAlpha = 0.08f + pulse * 0.12f
-        renderer.drawCircle(
-            power.x,
-            power.y,
-            size * 0.62f,
-            fillColor(tempColor, power.type.color[0], power.type.color[1], power.type.color[2], innerRingAlpha)
-        )
-
-        // Main powerup body with gradient
-        val outer = adjustColor(scratchColor1, power.type.color, 0.7f, 1f)
-        val inner = adjustColor(scratchColor2, power.type.color, 1.1f + pulse * 0.05f, 1f)
-
-        // Draw with rounded appearance using multiple rects
-        val cornerInset = size * 0.1f
-        val x = power.x - size / 2f + wobble * size * 0.5f
-        val y = power.y - size / 2f + wobble * size * 0.3f
-        renderer.drawRect(x, y, size, size, outer)
-        renderer.drawRect(x + cornerInset, y + cornerInset, size - cornerInset * 2f, size - cornerInset * 2f, inner)
-        val highlight = fillColor(tempColor, 1f, 1f, 1f, 0.18f + pulse * 0.12f)
-        renderer.drawRect(x + size * 0.12f, y + size * 0.62f, size * 0.76f, size * 0.18f, highlight)
-
-        // Add subtle glow effect for better visibility
-        val outerGlowColor = adjustColor(scratchColor3, power.type.color, 1.2f, 0.4f)
-        renderer.drawCircle(power.x, power.y, size * 1.4f, outerGlowColor)
-
-        val glyph = adjustColor(scratchColor4, power.type.color, 1.5f, 0.95f)
-        val glyphSoft = adjustColor(scratchColor5, power.type.color, 1.15f, 0.78f)
-        val outlineColor = adjustColor(scratchColor6, power.type.color, 1.8f, 0.3f)
-        renderer.drawCircle(power.x, power.y, size * 0.95f, outlineColor)
-
-        when (power.type) {
-            PowerUpType.MULTI_BALL -> {
-                renderer.drawCircle(power.x, power.y + size * 0.16f, size * 0.12f, glyph)
-                renderer.drawCircle(power.x - size * 0.14f, power.y - size * 0.08f, size * 0.12f, glyph)
-                renderer.drawCircle(power.x + size * 0.14f, power.y - size * 0.08f, size * 0.12f, glyph)
-                renderer.drawRect(power.x - size * 0.02f, power.y - size * 0.22f, size * 0.04f, size * 0.44f, glyphSoft)
-            }
-            PowerUpType.LASER -> {
-                renderer.drawRect(power.x - size * 0.18f, power.y - size * 0.26f, size * 0.08f, size * 0.52f, glyph)
-                renderer.drawRect(power.x + size * 0.10f, power.y - size * 0.26f, size * 0.08f, size * 0.52f, glyph)
-                renderer.drawCircle(power.x - size * 0.14f, power.y + size * 0.28f, size * 0.06f, glyphSoft)
-                renderer.drawCircle(power.x + size * 0.14f, power.y + size * 0.28f, size * 0.06f, glyphSoft)
-                renderer.drawRect(power.x - size * 0.06f, power.y - size * 0.04f, size * 0.12f, size * 0.08f, glyphSoft)
-            }
-            PowerUpType.GUARDRAIL -> {
-                renderer.drawRect(power.x - size * 0.32f, power.y - size * 0.02f, size * 0.64f, size * 0.1f, glyph)
-                renderer.drawRect(power.x - size * 0.26f, power.y - size * 0.2f, size * 0.08f, size * 0.18f, glyphSoft)
-                renderer.drawRect(power.x + size * 0.18f, power.y - size * 0.2f, size * 0.08f, size * 0.18f, glyphSoft)
-                renderer.drawRect(power.x - size * 0.22f, power.y + size * 0.08f, size * 0.44f, size * 0.06f, glyphSoft)
-            }
-            PowerUpType.SHIELD -> {
-                renderer.drawCircle(power.x, power.y + size * 0.1f, size * 0.18f, glyph)
-                renderer.drawRect(power.x - size * 0.2f, power.y - size * 0.02f, size * 0.4f, size * 0.22f, glyph)
-                renderer.drawRect(power.x - size * 0.12f, power.y - size * 0.2f, size * 0.24f, size * 0.18f, glyph)
-                renderer.drawRect(power.x - size * 0.04f, power.y - size * 0.12f, size * 0.08f, size * 0.18f, glyphSoft)
-            }
-            PowerUpType.WIDE_PADDLE -> {
-                renderer.drawRect(power.x - size * 0.32f, power.y - size * 0.06f, size * 0.64f, size * 0.12f, glyph)
-                renderer.drawRect(power.x - size * 0.48f, power.y - size * 0.12f, size * 0.06f, size * 0.24f, glyphSoft)
-                renderer.drawRect(power.x + size * 0.42f, power.y - size * 0.12f, size * 0.06f, size * 0.24f, glyphSoft)
-                renderer.drawRect(power.x - size * 0.42f, power.y - size * 0.02f, size * 0.1f, size * 0.04f, glyphSoft)
-                renderer.drawRect(power.x + size * 0.32f, power.y - size * 0.02f, size * 0.1f, size * 0.04f, glyphSoft)
-            }
-            PowerUpType.SHRINK -> {
-                renderer.drawRect(power.x - size * 0.18f, power.y - size * 0.08f, size * 0.12f, size * 0.16f, glyph)
-                renderer.drawRect(power.x + size * 0.06f, power.y - size * 0.08f, size * 0.12f, size * 0.16f, glyph)
-                renderer.drawRect(power.x - size * 0.05f, power.y - size * 0.06f, size * 0.1f, size * 0.12f, glyphSoft)
-            }
-            PowerUpType.SLOW -> {
-                renderer.drawCircle(power.x, power.y, size * 0.19f, glyph)
-                renderer.drawRect(power.x - size * 0.02f, power.y, size * 0.04f, size * 0.16f, glyphSoft)
-                renderer.drawRect(power.x - size * 0.02f, power.y - size * 0.08f, size * 0.14f, size * 0.04f, glyphSoft)
-                renderer.drawCircle(power.x, power.y, size * 0.04f, glyph)
-            }
-            PowerUpType.OVERDRIVE -> {
-                renderer.drawRect(power.x - size * 0.08f, power.y + size * 0.08f, size * 0.16f, size * 0.18f, glyph)
-                renderer.drawRect(power.x - size * 0.14f, power.y - size * 0.02f, size * 0.28f, size * 0.12f, glyphSoft)
-                renderer.drawRect(power.x - size * 0.08f, power.y - size * 0.2f, size * 0.16f, size * 0.18f, glyph)
-            }
-            PowerUpType.FIREBALL -> {
-                renderer.drawCircle(power.x, power.y + size * 0.04f, size * 0.18f, glyph)
-                renderer.drawCircle(power.x + size * 0.05f, power.y + size * 0.18f, size * 0.09f, glyphSoft)
-                renderer.drawRect(power.x - size * 0.06f, power.y - size * 0.22f, size * 0.12f, size * 0.18f, glyph)
-                renderer.drawRect(power.x + size * 0.02f, power.y - size * 0.22f, size * 0.08f, size * 0.14f, glyphSoft)
-            }
-            PowerUpType.LIFE -> {
-                renderer.drawCircle(power.x - size * 0.1f, power.y + size * 0.08f, size * 0.1f, glyph)
-                renderer.drawCircle(power.x + size * 0.1f, power.y + size * 0.08f, size * 0.1f, glyph)
-                renderer.drawRect(power.x - size * 0.2f, power.y - size * 0.04f, size * 0.4f, size * 0.18f, glyph)
-                renderer.drawRect(power.x - size * 0.1f, power.y - size * 0.22f, size * 0.2f, size * 0.18f, glyph)
-            }
-            PowerUpType.MAGNET -> {
-                renderer.drawRect(power.x - size * 0.22f, power.y - size * 0.18f, size * 0.1f, size * 0.32f, glyph)
-                renderer.drawRect(power.x + size * 0.12f, power.y - size * 0.18f, size * 0.1f, size * 0.32f, glyph)
-                renderer.drawRect(power.x - size * 0.22f, power.y - size * 0.22f, size * 0.44f, size * 0.08f, glyph)
-                renderer.drawRect(power.x - size * 0.22f, power.y + size * 0.12f, size * 0.44f, size * 0.08f, glyphSoft)
-            }
-            PowerUpType.GRAVITY_WELL -> {
-                val centerX = power.x
-                val centerY = power.y
-                val step = size * 0.08f
-                for (i in 0..4) {
-                    val angle = i * 1.1f + pulse
-                    val radius = step * (i + 1)
-                    val x = centerX + kotlin.math.cos(angle) * radius
-                    val y = centerY + kotlin.math.sin(angle) * radius
-                    renderer.drawCircle(x, y, size * 0.06f, glyph)
-                }
-                renderer.drawCircle(centerX, centerY, size * 0.08f, glyphSoft)
-            }
-            PowerUpType.BALL_SPLITTER -> {
-                renderer.drawCircle(power.x, power.y + size * 0.12f, size * 0.1f, glyph)
-                renderer.drawCircle(power.x - size * 0.12f, power.y - size * 0.06f, size * 0.1f, glyph)
-                renderer.drawCircle(power.x + size * 0.12f, power.y - size * 0.06f, size * 0.1f, glyph)
-                renderer.drawRect(power.x - size * 0.02f, power.y - size * 0.2f, size * 0.04f, size * 0.4f, glyphSoft)
-            }
-            PowerUpType.FREEZE -> {
-                renderer.drawRect(power.x - size * 0.02f, power.y - size * 0.2f, size * 0.04f, size * 0.4f, glyph)
-                renderer.drawRect(power.x - size * 0.2f, power.y - size * 0.02f, size * 0.4f, size * 0.04f, glyph)
-                renderer.drawRect(power.x - size * 0.14f, power.y - size * 0.14f, size * 0.08f, size * 0.08f, glyphSoft)
-                renderer.drawRect(power.x + size * 0.06f, power.y - size * 0.14f, size * 0.08f, size * 0.08f, glyphSoft)
-                renderer.drawRect(power.x - size * 0.14f, power.y + size * 0.06f, size * 0.08f, size * 0.08f, glyphSoft)
-                renderer.drawRect(power.x + size * 0.06f, power.y + size * 0.06f, size * 0.08f, size * 0.08f, glyphSoft)
-            }
-            PowerUpType.PIERCE -> {
-                renderer.drawRect(power.x - size * 0.02f, power.y - size * 0.22f, size * 0.04f, size * 0.44f, glyph)
-                renderer.drawRect(power.x - size * 0.12f, power.y + size * 0.12f, size * 0.24f, size * 0.06f, glyph)
-                renderer.drawRect(power.x - size * 0.08f, power.y + size * 0.18f, size * 0.16f, size * 0.06f, glyphSoft)
-                renderer.drawRect(power.x - size * 0.22f, power.y - size * 0.08f, size * 0.44f, size * 0.16f, glyphSoft)
-            }
-            PowerUpType.RICOCHET -> {
-                // Bouncing arrows
-                renderer.drawRect(power.x - size * 0.18f, power.y - size * 0.02f, size * 0.12f, size * 0.04f, glyph)
-                renderer.drawRect(power.x - size * 0.06f, power.y - size * 0.14f, size * 0.04f, size * 0.12f, glyph)
-                renderer.drawRect(power.x + size * 0.02f, power.y + size * 0.02f, size * 0.12f, size * 0.04f, glyphSoft)
-                renderer.drawRect(power.x + size * 0.1f, power.y + size * 0.06f, size * 0.04f, size * 0.12f, glyphSoft)
-            }
-            PowerUpType.TIME_WARP -> {
-                // Clock/spiral
-                renderer.drawCircle(power.x, power.y, size * 0.18f, glyph)
-                renderer.drawRect(power.x - size * 0.02f, power.y - size * 0.18f, size * 0.04f, size * 0.12f, glyphSoft)
-                renderer.drawRect(power.x - size * 0.18f, power.y - size * 0.02f, size * 0.12f, size * 0.04f, glyphSoft)
-                renderer.drawRect(power.x + size * 0.06f, power.y + size * 0.06f, size * 0.08f, size * 0.08f, glyph)
-            }
-            PowerUpType.DOUBLE_SCORE -> {
-                // Star/X shape
-                renderer.drawRect(power.x - size * 0.02f, power.y - size * 0.18f, size * 0.04f, size * 0.36f, glyph)
-                renderer.drawRect(power.x - size * 0.18f, power.y - size * 0.02f, size * 0.36f, size * 0.04f, glyph)
-                renderer.drawRect(power.x - size * 0.12f, power.y - size * 0.12f, size * 0.08f, size * 0.08f, glyphSoft)
-                renderer.drawRect(power.x + size * 0.04f, power.y - size * 0.12f, size * 0.08f, size * 0.08f, glyphSoft)
-                renderer.drawRect(power.x - size * 0.12f, power.y + size * 0.04f, size * 0.08f, size * 0.08f, glyphSoft)
-                renderer.drawRect(power.x + size * 0.04f, power.y + size * 0.04f, size * 0.08f, size * 0.08f, glyphSoft)
-            }
-        }
-    }
-
-    private fun renderAimGuide(renderer: Renderer2D) {
-        val ball = balls.firstOrNull() ?: return
-        val angle = aimAngle.coerceIn(aimMinAngle, Math.PI.toFloat() - aimMinAngle)
-        var dx = kotlin.math.cos(angle)
-        var dy = kotlin.math.sin(angle)
-        val startX = ball.x
-        val startY = ball.y
-        val radius = ball.radius
-        val arrowLength = (worldHeight * 0.16f).coerceIn(12f, 22f)
-        val arrowSteps = 7
-        for (i in 1..arrowSteps) {
-            val t = i.toFloat() / arrowSteps.toFloat()
-            val size = 0.42f + t * 0.34f
-            val alpha = (0.5f + t * 0.5f).coerceIn(0f, 1f) // Increased base alpha from 0.35f to 0.5f
-            renderer.drawCircle(
-                startX + dx * arrowLength * t,
-                startY + dy * arrowLength * t,
-                size,
-                fillColor(tempColor, theme.accent[0], theme.accent[1], theme.accent[2], alpha)
-            )
-        }
-
-        var segStartX = startX
-        var segStartY = startY
-        val maxSegments = 5
-
-        repeat(maxSegments) { segment ->
-            val hit = findAimCollision(segStartX, segStartY, dx, dy, radius)
-            if (!hit.t.isFinite() || hit.t <= 0f) return
-            val segmentLength = hit.t
-            val steps = (segmentLength / (worldHeight * 0.06f))
-                .toInt()
-                .coerceIn(6, 16)
-            val segmentAlpha = (0.38f - segment * 0.08f).coerceAtLeast(0.14f)
-            val isFirstBounce = segment == 0
-            val segmentColor = if (isFirstBounce) {
-                // First bounce in contrasting color (dimmer version of accent)
-                fillColor(tempColor, theme.accent[0] * 0.6f, theme.accent[1] * 0.6f, theme.accent[2] * 0.6f, 1f)
-            } else {
-                fillColor(tempColor, theme.accent[0], theme.accent[1], theme.accent[2], 1f)
-            }
-            for (i in 1..steps) {
-                val t = i.toFloat() / steps.toFloat()
-                val alpha = (segmentAlpha * (1f - t)).coerceIn(0f, segmentAlpha)
-                val size = 0.32f + (1f - t) * 0.18f
-                val finalColor = fillColor(tempColor, segmentColor[0], segmentColor[1], segmentColor[2], alpha)
-                renderer.drawCircle(
-                    segStartX + dx * segmentLength * t,
-                    segStartY + dy * segmentLength * t,
-                    size,
-                    finalColor
-                )
-            }
-            val impactX = segStartX + dx * segmentLength
-            val impactY = segStartY + dy * segmentLength
-            if (hit.hitsBrick) {
-                renderer.drawCircle(
-                    impactX,
-                    impactY,
-                    0.7f,
-                    fillColor(tempColor, theme.accent[0], theme.accent[1], theme.accent[2], 0.88f)
-                )
-                return
-            }
-            if (hit.nx == 0f && hit.ny == 0f) {
-                // Fallback: continue in current direction instead of stopping abruptly
-                // This prevents the aim guide from cutting off unexpectedly
-                segStartX = impactX + dx * 0.02f
-                segStartY = impactY + dy * 0.02f
-                // Don't return, continue to next segment
-            } else {
-                if (hit.nx != 0f) dx = -dx
-                if (hit.ny != 0f) dy = -dy
-                segStartX = impactX + dx * 0.02f
-                segStartY = impactY + dy * 0.02f
-            }
-        }
-    }
-
-    private data class AimHit(val t: Float, val nx: Float, val ny: Float, val hitsBrick: Boolean = false)
-
-    private fun findAimCollision(
-        startX: Float,
-        startY: Float,
-        dirX: Float,
-        dirY: Float,
-        radius: Float
-    ): AimHit {
-        val wallHit = findAimWallCollision(startX, startY, dirX, dirY, radius)
-        val brickHit = findAimBrickCollision(startX, startY, dirX, dirY, radius, wallHit.t)
-        return if (brickHit != null && brickHit.t < wallHit.t) brickHit else wallHit
-    }
-
-    private fun findAimWallCollision(
-        startX: Float,
-        startY: Float,
-        dirX: Float,
-        dirY: Float,
-        radius: Float
-    ): AimHit {
-        var bestT = Float.POSITIVE_INFINITY
-        var normalX = 0f
-        var normalY = 0f
-
-        if (dirY > 0f) {
-            val tTop = (worldHeight - radius - startY) / dirY
-            if (tTop > 0f && tTop < bestT) {
-                bestT = tTop
-                normalX = 0f
-                normalY = -1f
-            }
-        }
-        if (dirX > 0f) {
-            val tRight = (worldWidth - radius - startX) / dirX
-            if (tRight > 0f && tRight < bestT) {
-                bestT = tRight
-                normalX = -1f
-                normalY = 0f
-            }
-        } else if (dirX < 0f) {
-            val tLeft = (radius - startX) / dirX
-            if (tLeft > 0f && tLeft < bestT) {
-                bestT = tLeft
-                normalX = 1f
-                normalY = 0f
-            }
-        }
-
-        return AimHit(bestT, normalX, normalY, hitsBrick = false)
-    }
-
-    private fun findAimBrickCollision(
-        startX: Float,
-        startY: Float,
-        dirX: Float,
-        dirY: Float,
-        radius: Float,
-        maxDistance: Float
-    ): AimHit? {
-        val epsilon = 1e-5f
-        var bestT = maxDistance
-        var bestNx = 0f
-        var bestNy = 0f
-        var found = false
-
-        bricks.forEach { brick ->
-            if (!brick.alive) return@forEach
-            val left = brick.x - radius
-            val right = brick.x + brick.width + radius
-            val bottom = brick.y - radius
-            val top = brick.y + brick.height + radius
-
-            val tNearX: Float
-            val tFarX: Float
-            if (abs(dirX) < epsilon) {
-                if (startX <= left || startX >= right) return@forEach
-                tNearX = Float.NEGATIVE_INFINITY
-                tFarX = Float.POSITIVE_INFINITY
-            } else {
-                val tx1 = (left - startX) / dirX
-                val tx2 = (right - startX) / dirX
-                tNearX = min(tx1, tx2)
-                tFarX = max(tx1, tx2)
-            }
-
-            val tNearY: Float
-            val tFarY: Float
-            if (abs(dirY) < epsilon) {
-                if (startY <= bottom || startY >= top) return@forEach
-                tNearY = Float.NEGATIVE_INFINITY
-                tFarY = Float.POSITIVE_INFINITY
-            } else {
-                val ty1 = (bottom - startY) / dirY
-                val ty2 = (top - startY) / dirY
-                tNearY = min(ty1, ty2)
-                tFarY = max(ty1, ty2)
-            }
-
-            val tEnter = max(tNearX, tNearY)
-            val tExit = min(tFarX, tFarY)
-            if (tExit <= 0f || tEnter <= 0f || tEnter >= tExit || tEnter >= bestT) return@forEach
-
-            val normalX: Float
-            val normalY: Float
-            if (kotlin.math.abs(tNearX - tNearY) < 0.0001f) {
-                if (kotlin.math.abs(dirX) >= kotlin.math.abs(dirY)) {
-                    normalX = if (dirX > 0f) -1f else 1f
-                    normalY = 0f
-                } else {
-                    normalX = 0f
-                    normalY = if (dirY > 0f) -1f else 1f
-                }
-            } else if (tNearX > tNearY) {
-                normalX = if (dirX > 0f) -1f else 1f
-                normalY = 0f
-            } else {
-                normalX = 0f
-                normalY = if (dirY > 0f) -1f else 1f
-            }
-
-            bestT = tEnter
-            bestNx = normalX
-            bestNy = normalY
-            found = true
-        }
-
-        return if (found) AimHit(bestT, bestNx, bestNy, hitsBrick = true) else null
-    }
-
-    private fun drawStripe(renderer: Renderer2D, brick: Brick, color: FloatArray, count: Int) {
-        if (count <= 0) return
-        val stripeHeight = brick.height * 0.12f
-        val gap = brick.height * 0.14f
-        repeat(count) { index ->
-            val y = brick.y + brick.height * 0.2f + index * gap
-            renderer.drawRect(brick.x + brick.width * 0.08f, y, brick.width * 0.84f, stripeHeight, color)
-        }
-    }
-
-    private fun drawInvaderShip(renderer: Renderer2D, brick: Brick, baseColor: FloatArray) {
-        val time = renderTimeSeconds
-        val hitPulse = brick.hitFlash.coerceIn(0f, 1f)
-        val scale = 1f + hitPulse * 0.08f
-        val wobble = if (hitPulse > 0f) {
-            kotlin.math.sin(time * 18f + brick.gridX) * hitPulse * brick.width * 0.04f
-        } else {
-            0f
-        }
-
-        val baseW = brick.width
-        val baseH = brick.height
-        val w = baseW * scale
-        val h = baseH * scale
-        val x = brick.x + wobble - (w - baseW) * 0.5f
-        val y = brick.y - (h - baseH) * 0.5f
-        val variant = ((brick.gridX * 3 + brick.gridY * 5) % 4 + 4) % 4
-        val tint = when (variant) {
-            0 -> 1.0f
-            1 -> 0.88f
-            2 -> 1.12f
-            else -> 0.96f
-        }
-        val pulseBoost = 1f + hitPulse * 0.25f
-
-        val shadow = adjustColor(scratchColor0, baseColor, 0.35f, 0.35f)
-        renderer.drawRect(x + w * 0.04f, y + h * 0.04f, w * 0.92f, h * 0.92f, shadow)
-
-        val bodyHeight = when (variant) {
-            0 -> 0.48f
-            1 -> 0.42f
-            2 -> 0.52f
-            else -> 0.46f
-        } * h
-        val bodyY = when (variant) {
-            0 -> 0.26f
-            1 -> 0.3f
-            2 -> 0.22f
-            else -> 0.28f
-        } * h
-        val body = adjustColor(scratchColor1, baseColor, 0.95f * tint * pulseBoost, 1f)
-        renderer.drawRect(x, y + bodyY, w, bodyHeight, body)
-
-        val wingColor = adjustColor(scratchColor2, baseColor, 1.15f * tint * pulseBoost, 1f)
-        val wingHeight = h * if (variant == 2) 0.32f else 0.28f
-        renderer.drawRect(x + w * 0.06f, y + h * 0.12f, w * 0.2f, wingHeight, wingColor)
-        renderer.drawRect(x + w * 0.74f, y + h * 0.12f, w * 0.2f, wingHeight, wingColor)
-
-        val cockpit = adjustColor(scratchColor3, baseColor, 1.35f * pulseBoost, 1f)
-        val cockpitRadius = h * when (variant) {
-            1 -> 0.15f
-            2 -> 0.2f
-            else -> 0.18f
-        }
-        renderer.drawCircle(x + w * 0.5f, y + h * 0.58f, cockpitRadius, cockpit)
-
-        if (variant == 2) {
-            val light = adjustColor(scratchColor4, baseColor, 1.6f, 0.9f)
-            renderer.drawCircle(x + w * 0.38f, y + h * 0.56f, h * 0.08f, light)
-            renderer.drawCircle(x + w * 0.62f, y + h * 0.56f, h * 0.08f, light)
-        }
-
-        val engine = adjustColor(scratchColor5, baseColor, 1.5f * tint * pulseBoost, 0.9f)
-        renderer.drawRect(x + w * 0.22f, y + h * 0.08f, w * 0.12f, h * 0.12f, engine)
-        renderer.drawRect(x + w * 0.66f, y + h * 0.08f, w * 0.12f, h * 0.12f, engine)
-
-        val rim = adjustColor(scratchColor6, baseColor, 0.7f * tint, 1f)
-        renderer.drawRect(x + w * 0.08f, y + h * 0.7f, w * 0.84f, h * 0.06f, rim)
-
-        if (variant == 1) {
-            val fin = adjustColor(scratchColor7, baseColor, 1.25f, 0.9f)
-            renderer.drawRect(x + w * 0.14f, y + h * 0.68f, w * 0.12f, h * 0.08f, fin)
-            renderer.drawRect(x + w * 0.74f, y + h * 0.68f, w * 0.12f, h * 0.08f, fin)
-        }
-        if (variant == 3) {
-            val ridge = adjustColor(scratchColor8, baseColor, 1.1f, 0.85f)
-            renderer.drawRect(x + w * 0.46f, y + h * 0.34f, w * 0.08f, h * 0.28f, ridge)
-        }
-
-        if (brick.fireFlash > 0f) {
-            val flashAlpha = (brick.fireFlash * 0.8f).coerceIn(0f, 0.8f)
-            val flashColor = adjustColor(scratchColor9, baseColor, 1.5f, flashAlpha)
-            val flashRadius = h * (0.16f + brick.fireFlash * 0.18f)
-            renderer.drawCircle(x + w * 0.5f, y - h * 0.02f, flashRadius, flashColor)
-            renderer.drawRect(
-                x + w * 0.46f,
-                y - h * 0.16f,
-                w * 0.08f,
-                h * 0.14f,
-                adjustColor(scratchColor10, baseColor, 1.8f, flashAlpha)
-            )
-        }
-    }
-
-    private fun invaderKey(brick: Brick): Long {
+    internal fun invaderKey(brick: Brick): Long {
         return (brick.gridX.toLong() shl 32) or (brick.gridY.toLong() and 0xffffffffL)
     }
 
-    private fun adjustColor(color: FloatArray, factor: Float, alpha: Float): FloatArray {
-        return floatArrayOf(
-            (color[0] * factor).coerceIn(0f, 1f),
-            (color[1] * factor).coerceIn(0f, 1f),
-            (color[2] * factor).coerceIn(0f, 1f),
-            alpha
-        )
-    }
+    
 
-    private fun adjustColor(out: FloatArray, color: FloatArray, factor: Float, alpha: Float): FloatArray {
-        out[0] = (color[0] * factor).coerceIn(0f, 1f)
-        out[1] = (color[1] * factor).coerceIn(0f, 1f)
-        out[2] = (color[2] * factor).coerceIn(0f, 1f)
-        out[3] = alpha
-        return out
-    }
+    
 
-    private fun fillColor(out: FloatArray, r: Float, g: Float, b: Float, a: Float): FloatArray {
-        out[0] = r
-        out[1] = g
-        out[2] = b
-        out[3] = a
-        return out
-    }
+    
 
-    private fun lerp(start: Float, end: Float, t: Float): Float {
+    internal fun lerp(start: Float, end: Float, t: Float): Float {
         return start + (end - start) * t.coerceIn(0f, 1f)
     }
 
@@ -1768,15 +630,15 @@ class GameEngine(
 
     fun isGameRunning(): Boolean = state == GameState.RUNNING
 
-    private fun normalizedAspectRatio(aspectRatio: Float = currentAspectRatio): Float {
+    internal fun normalizedAspectRatio(aspectRatio: Float = currentAspectRatio): Float {
         return DeviceLayoutPolicy.normalizedAspectRatio(aspectRatio)
     }
 
-    private fun isSlateAspect(aspectRatio: Float = currentAspectRatio): Boolean {
+    internal fun isSlateAspect(aspectRatio: Float = currentAspectRatio): Boolean {
         return DeviceLayoutPolicy.isSlateAspect(aspectRatio)
     }
 
-    private fun currentVolleyMetrics(
+    internal fun currentVolleyMetrics(
         laneWindowRatio: Float = 0.2f
     ): ModeBoardMetrics.VolleyBoardMetrics {
         return ModeBoardMetrics.volleyMetrics(
@@ -1788,20 +650,20 @@ class GameEngine(
         )
     }
 
-    private fun applyLayoutTuning(aspectRatio: Float, preserveRowBoost: Boolean) {
+    internal fun applyLayoutTuning(aspectRatio: Float, preserveRowBoost: Boolean) {
         val normalizedAspect = normalizedAspectRatio(aspectRatio)
         val tallness = ((normalizedAspect - 1.25f) / 0.85f).coerceIn(0f, 1f)
         val isSlate = isSlateAspect(normalizedAspect)
 
         // Shared baseline, with specific adjustments for slate/tablet devices to prevent cramping.
         brickAreaTopRatio = if (isSlate) 0.96f else lerp(0.992f, 0.978f, tallness)
-        brickAreaBottomRatio = if (isSlate) 0.54f else lerp(0.69f, 0.62f, tallness)
-        brickSpacing = if (isSlate) 0.24f else lerp(0.31f, 0.37f, tallness)
+        brickAreaBottomRatio = if (isSlate) 0.48f else lerp(0.69f, 0.62f, tallness)
+        brickSpacing = if (isSlate) 0.22f else lerp(0.31f, 0.37f, tallness)
 
         if (!preserveRowBoost) {
             // Adjust row boost to ensure density on taller screens, but relax it for slates.
             val densityBoost = (levelIndex / 6).coerceAtMost(2)
-            val baseRowBoost = if (isSlate) 9 else if (normalizedAspect > 2.05f) 4 else if (normalizedAspect > 1.85f) 2 else 0
+            val baseRowBoost = if (isSlate) 18 else if (normalizedAspect > 2.05f) 4 else if (normalizedAspect > 1.85f) 2 else 0
             val baseColBoost = if (isSlate) 4 else 0
 
             when (config.mode) {
@@ -1860,78 +722,11 @@ class GameEngine(
         }
     }
 
-    private fun updateAimFromPaddle() {
-        val center = worldWidth * 0.5f
-        val sourceX = if (isDragging) paddle.targetX else paddle.x
-        val delta = (sourceX - center) / center
-        aimNormalizedTarget = delta.coerceIn(-1f, 1f)
-    }
-
-    private fun updateAimFromTouch() {
-        val ball = balls.firstOrNull() ?: return updateAimFromPaddle()
-
-        // Use direct finger-to-ball aiming when ball is stuck to paddle in READY state
-        if (state == GameState.READY && ball.stuckToPaddle) {
-            val dx = touchWorldX - ball.x
-            val dy = touchWorldY - ball.y
-            val distance = sqrt(dx * dx + dy * dy)
-            if (distance > 0.1f) {
-                val angle = atan2(dy, dx)
-                // Convert angle to normalized aim value
-                val centerAngle = Math.PI.toFloat() * 0.5f
-                val maxDeflection = (centerAngle - aimMinAngle).coerceAtLeast(0.2f)
-                val deflection = (centerAngle - angle).coerceIn(-maxDeflection, maxDeflection)
-                aimNormalizedTarget = (deflection / maxDeflection).coerceIn(-1f, 1f)
-                return
-            }
-        }
-
-        // Fall back to paddle-relative aiming
-        updateAimFromPaddle()
-    }
-
-    private fun applyAimFromNormalized(normalized: Float) {
-        val clamped = normalized.coerceIn(-1f, 1f)
-        val stabilized = if (abs(clamped) < aimCenterDeadZone) 0f else clamped
-        aimHasInput = isDragging || abs(stabilized) > 0.001f
-        val eased = stabilized * (0.8f + abs(stabilized) * 0.2f)
-        val centerAngle = Math.PI.toFloat() * 0.5f
-        val maxDeflection = (centerAngle - aimMinAngle).coerceAtLeast(0.2f)
-        val signedDeflection = eased * maxDeflection
-        aimAngle = (centerAngle - signedDeflection).coerceIn(aimMinAngle, Math.PI.toFloat() - aimMinAngle)
-    }
-
-    private fun syncAimForLaunch() {
-        val stuckReadyBall = state == GameState.READY && hasStuckBall()
-        if (isDragging && stuckReadyBall) {
-            // Preserve finger-directed intent so launch trajectory matches the aim guide.
-            updateAimFromTouch()
-        } else {
-            updateAimFromPaddle()
-        }
-        aimNormalized = aimNormalizedTarget
-        applyAimFromNormalized(aimNormalized)
-    }
-
-    private fun updateAim(dt: Float) {
-        if (isDragging) {
-            aimNormalized = aimNormalizedTarget
-        } else {
-            val lerpFactor = if (dt > 0f) {
-                1f - exp(-aimSmoothingRate * dt)
-            } else {
-                1f
-            }
-            aimNormalized += (aimNormalizedTarget - aimNormalized) * lerpFactor
-        }
-        applyAimFromNormalized(aimNormalized)
-    }
-
-    private fun clampPaddleX(worldX: Float): Float {
+    internal fun clampPaddleX(worldX: Float): Float {
         return worldX.coerceIn(paddle.width / 2f, worldWidth - paddle.width / 2f)
     }
 
-    private fun syncStuckBallsToPaddle() {
+    internal fun syncStuckBallsToPaddle() {
         balls.forEach { ball ->
             if (!ball.stuckToPaddle) return@forEach
             val minX = paddle.x - paddle.width / 2f + ball.radius
@@ -1943,7 +738,7 @@ class GameEngine(
         }
     }
 
-    private fun updatePaddleFromTouch(worldX: Float, snapImmediately: Boolean) {
+    internal fun updatePaddleFromTouch(worldX: Float, snapImmediately: Boolean) {
         val clamped = clampPaddleX(worldX)
         paddle.targetX = clamped
         if (!snapImmediately) return
@@ -1954,11 +749,11 @@ class GameEngine(
         syncStuckBallsToPaddle()
     }
 
-    private fun shouldSnapTouchToPaddle(): Boolean {
+    internal fun shouldSnapTouchToPaddle(): Boolean {
         return state == GameState.READY || hasStuckBall()
     }
 
-    private fun shouldLogTouch(actionMasked: Int, x: Float, y: Float, eventTimeMs: Long): Boolean {
+    internal fun shouldLogTouch(actionMasked: Int, x: Float, y: Float, eventTimeMs: Long): Boolean {
         if (actionMasked != MotionEvent.ACTION_MOVE) {
             lastTouchLogTimeMs = eventTimeMs
             lastTouchLogX = x
@@ -2181,7 +976,7 @@ class GameEngine(
         resetLevel(first = false)
     }
 
-    private fun resetLevel(first: Boolean) {
+    internal fun resetLevel(first: Boolean) {
         state = GameState.READY
         stateBeforePause = GameState.READY
         awaitingNextLevel = false
@@ -2360,26 +1155,7 @@ class GameEngine(
         logger?.logLevelStart(levelIndex + 1, theme.name)
     }
 
-    private fun buildSpatialHash() {
-        spatialHash.clear()
-        for (brick in bricks) {
-            if (!brick.alive) continue
-            val minX = (brick.x / spatialHashCellSize).toInt()
-            val maxX = ((brick.x + brick.width) / spatialHashCellSize).toInt()
-            val minY = (brick.y / spatialHashCellSize).toInt()
-            val maxY = ((brick.y + brick.height) / spatialHashCellSize).toInt()
-
-            for (cellX in minX..maxX) {
-                for (cellY in minY..maxY) {
-                    val cellKey = spatialKey(cellX, cellY)
-                    spatialHash.getOrPut(cellKey) { mutableListOf() }.add(brick)
-                }
-            }
-        }
-        spatialHashDirty = false
-    }
-
-    private fun getNearbyBricks(ball: Ball): List<Brick> {
+    internal fun getNearbyBricks(ball: Ball): List<Brick> {
         nearbyBrickBuffer.clear()
         nearbyBrickSeen.clear()
         val ballMinX = ((ball.x - ball.radius) / spatialHashCellSize).toInt()
@@ -2405,7 +1181,7 @@ class GameEngine(
         return nearbyBrickBuffer
     }
 
-    private fun buildBricks(layout: LevelFactory.LevelLayout) {
+    internal fun buildBricks(layout: LevelFactory.LevelLayout) {
         bricks.clear()
         val rows = layout.rows + layoutRowBoost
         val requestedCols = if (config.mode == GameMode.VOLLEY) layout.cols else layout.cols + layoutColBoost
@@ -2587,7 +1363,7 @@ class GameEngine(
         buildSpatialHash()
     }
 
-    private fun resolveBrickSpecForMode(type: BrickType, hitPoints: Int): Pair<BrickType, Int> {
+    internal fun resolveBrickSpecForMode(type: BrickType, hitPoints: Int): Pair<BrickType, Int> {
         if (config.mode != GameMode.VOLLEY || type != BrickType.UNBREAKABLE) {
             return type to hitPoints
         }
@@ -2598,7 +1374,7 @@ class GameEngine(
         return fallbackType to scaledHp
     }
 
-    private fun effectiveVolleyColumns(requestedCols: Int): Int {
+    internal fun effectiveVolleyColumns(requestedCols: Int): Int {
         val clampedRequested = requestedCols.coerceAtLeast(6)
         val target = when {
             currentAspectRatio <= 1.34f -> 12
@@ -2609,7 +1385,7 @@ class GameEngine(
         return min(clampedRequested, target)
     }
 
-    private fun applyRowBoostTopPadding(baseBrickHeight: Float) {
+    internal fun applyRowBoostTopPadding(baseBrickHeight: Float) {
         if (layoutRowBoost <= 0 || config.mode.invaders || config.mode == GameMode.VOLLEY) return
         val topPad = baseBrickHeight * 0.15f
         bricks.forEach { brick ->
@@ -2618,13 +1394,13 @@ class GameEngine(
         }
     }
 
-    private fun remapVolleyColumn(col: Int, originalCols: Int, targetCols: Int): Int {
+    internal fun remapVolleyColumn(col: Int, originalCols: Int, targetCols: Int): Int {
         if (targetCols >= originalCols) return col.coerceIn(0, targetCols - 1)
         val ratio = (col.toFloat() + 0.5f) / originalCols.toFloat().coerceAtLeast(1f)
         return (ratio * targetCols).toInt().coerceIn(0, targetCols - 1)
     }
 
-    private fun relayoutBricks() {
+    internal fun relayoutBricks() {
         val layout = currentLayout ?: return
         if (bricks.isEmpty()) return
         val rows = layout.rows + layoutRowBoost
@@ -2658,7 +1434,7 @@ class GameEngine(
         buildSpatialHash()
     }
 
-    private fun baseHitPoints(type: BrickType): Int {
+    internal fun baseHitPoints(type: BrickType): Int {
         return when (type) {
             BrickType.NORMAL -> 1
             BrickType.REINFORCED -> 2
@@ -2673,7 +1449,7 @@ class GameEngine(
         }
     }
 
-    private fun updateTimers(dt: Float): Boolean {
+    internal fun updateTimers(dt: Float): Boolean {
         if (state != GameState.RUNNING) return false
         elapsedSeconds += dt
 
@@ -2728,12 +1504,12 @@ class GameEngine(
         )
     }
 
-    private fun applyCosmeticTier() {
+    internal fun applyCosmeticTier() {
         maxTrailPoints = 8 + cosmeticTier * 2
         trailLife = 0.28f + cosmeticTier * 0.04f
     }
 
-    private fun updateDailyChallenges(type: ChallengeType, value: Int = 1) {
+    internal fun updateDailyChallenges(type: ChallengeType, value: Int = 1) {
         val challenges = dailyChallenges ?: return
         val newlyCompleted = DailyChallengeManager.updateChallengeProgress(challenges, type, value)
         if (newlyCompleted.isNotEmpty()) {
@@ -2741,7 +1517,7 @@ class GameEngine(
         }
     }
 
-    private fun handleChallengeRewards(completed: List<DailyChallenge>) {
+    internal fun handleChallengeRewards(completed: List<DailyChallenge>) {
         completed.forEach { challenge ->
             when (challenge.rewardType) {
                 RewardType.SCORE_MULTIPLIER -> {
@@ -2783,7 +1559,7 @@ class GameEngine(
         }
     }
 
-    private fun updatePaddle(dt: Float) {
+    internal fun updatePaddle(dt: Float) {
         val previousX = paddle.x
         val target = paddle.targetX
         val snapToFinger = isDragging && (state == GameState.READY || hasStuckBall())
@@ -2808,7 +1584,7 @@ class GameEngine(
         updateAimFromPaddle()
     }
 
-    private fun updateVolleyDanger() {
+    internal fun updateVolleyDanger() {
         if (config.mode != GameMode.VOLLEY) {
             renderer?.setVolleyDanger(0f)
             return
@@ -2822,7 +1598,7 @@ class GameEngine(
         renderer?.setVolleyDanger(currentVolleyMetrics().pressure)
     }
 
-    private fun updateBricks(dt: Float) {
+    internal fun updateBricks(dt: Float) {
         var movedBricks = false
         if (config.mode.invaders) {
             updateInvaderFormation(dt)
@@ -2874,7 +1650,7 @@ class GameEngine(
         }
     }
 
-    private fun collectAliveInvaders(): List<Brick> {
+    internal fun collectAliveInvaders(): List<Brick> {
         aliveInvaderBuffer.clear()
         invaderBricks.forEach { invader ->
             if (invader.alive) {
@@ -2884,7 +1660,7 @@ class GameEngine(
         return aliveInvaderBuffer
     }
 
-    private fun updateInvaderFormation(dt: Float) {
+    internal fun updateInvaderFormation(dt: Float) {
         val invaders = collectAliveInvaders()
         if (invaders.isEmpty()) return
         invaderRowPhase += dt * (0.55f + levelIndex * 0.015f)
@@ -2937,20 +1713,20 @@ class GameEngine(
         }
     }
 
-    private fun playInvaderTurnSound() {
+    internal fun playInvaderTurnSound() {
         if (invaderTurnSoundCooldown > 0f) return
         audio.play(GameSound.BRICK_MOVING, 0.12f, 0.92f)
         invaderTurnSoundCooldown = invaderTurnSoundMinInterval
     }
 
-    private fun compressInvaderX(rawX: Float, brickWidth: Float): Float {
+    internal fun compressInvaderX(rawX: Float, brickWidth: Float): Float {
         val center = worldWidth * 0.5f
         val brickCenter = rawX + brickWidth * 0.5f
         val compressedCenter = center + (brickCenter - center) * invaderFormationCompression
         return compressedCenter - brickWidth * 0.5f
     }
 
-    private fun attachBallToPaddle() {
+    internal fun attachBallToPaddle() {
         balls.firstOrNull()?.let { ball ->
             ball.x = paddle.x
             ball.y = paddle.y + paddle.height / 2f + ball.radius + 0.5f
@@ -2961,7 +1737,7 @@ class GameEngine(
         }
     }
 
-    private fun launchBall() {
+    internal fun launchBall() {
         syncAimForLaunch()
         attachBallToPaddle()
         if (config.mode == GameMode.VOLLEY) {
@@ -2981,23 +1757,7 @@ class GameEngine(
         }
     }
 
-    private fun launchBallWithAim(ball: Ball, angleOffset: Float = 0f) {
-        val levelBoost = (1f + levelIndex * speedBoostSlope()).coerceAtMost(speedBoostCap())
-        val speed = config.mode.launchSpeed * levelBoost
-        val angle = (aimAngle + angleOffset).coerceIn(aimMinAngle, Math.PI.toFloat() - aimMinAngle)
-        ball.vx = speed * kotlin.math.cos(angle)
-        ball.vy = (speed * kotlin.math.sin(angle)).coerceAtLeast(speed * 0.18f)
-        ball.stuckToPaddle = false
-
-        // Track tunnel shots fired
-        if (config.mode == GameMode.TUNNEL) {
-            tunnelShotsFired += 1
-            tunnelGateFlash = 1f
-            maybeSpawnTunnelSupplyDrop()
-        }
-    }
-
-    private fun releaseStuckBalls() {
+    internal fun releaseStuckBalls() {
         val stuck = balls.filter { it.stuckToPaddle }
         if (stuck.isEmpty()) return
         syncAimForLaunch()
@@ -3013,7 +1773,7 @@ class GameEngine(
         audio.startMusic()
     }
 
-    private fun launchVolleyTurn() {
+    internal fun launchVolleyTurn() {
         if (volleyTurnActive) return
         val firstBall = balls.firstOrNull() ?: run {
             spawnBall()
@@ -3038,7 +1798,7 @@ class GameEngine(
         audio.startMusic()
     }
 
-    private fun updateVolleyLaunchQueue(dt: Float) {
+    internal fun updateVolleyLaunchQueue(dt: Float) {
         if (!volleyTurnActive || volleyQueuedBalls <= 0) return
         volleyLaunchTimer -= dt
         while (volleyQueuedBalls > 0 && volleyLaunchTimer <= 0f) {
@@ -3050,7 +1810,7 @@ class GameEngine(
         }
     }
 
-    private fun spawnBall(spawnX: Float = paddle.x) {
+    internal fun spawnBall(spawnX: Float = paddle.x) {
         val ball = Ball(spawnX, paddle.y + 5f, 0.92f, 0f, 0f)
         if (fireballActive) {
             ball.isFireball = true
@@ -3061,7 +1821,7 @@ class GameEngine(
         balls.add(ball)
     }
 
-    private fun updateBalls(dt: Float) {
+    internal fun updateBalls(dt: Float) {
         var lifeLossPending = false
         val iterator = balls.iterator()
         while (iterator.hasNext()) {
@@ -3170,7 +1930,7 @@ class GameEngine(
         }
     }
 
-    private fun resolveVolleyTurnIfReady() {
+    internal fun resolveVolleyTurnIfReady() {
         if (!volleyTurnActive) return
 
         val states = countVolleyBallStates()
@@ -3241,7 +2001,7 @@ class GameEngine(
         updatePowerupStatus()
     }
 
-    private fun shouldAwardVolleyBall(turnCount: Int, currentBalls: Int, pressure: Float): Boolean {
+    internal fun shouldAwardVolleyBall(turnCount: Int, currentBalls: Int, pressure: Float): Boolean {
         val nearBreach = pressure >= 0.52f
         if (nearBreach && currentBalls <= 9 && turnCount % 2 == 0) return true
         if (currentBalls <= 6 && turnCount % 3 == 0) return true
@@ -3253,7 +2013,7 @@ class GameEngine(
         }
     }
 
-    private fun spawnVolleyTopRow() {
+    internal fun spawnVolleyTopRow() {
         val layout = currentLayout ?: return
         val cols = effectiveVolleyColumns(layout.cols)
         val spawnRow = -volleyAdvanceRows
@@ -3424,12 +2184,12 @@ class GameEngine(
         }
     }
 
-    private fun volleyLanePressure(): Float {
+    internal fun volleyLanePressure(): Float {
         if (config.mode != GameMode.VOLLEY) return 0f
         return currentVolleyMetrics().pressure
     }
 
-    private fun maybeSpawnVolleySupplyDrop(pressure: Float) {
+    internal fun maybeSpawnVolleySupplyDrop(pressure: Float) {
         if (config.mode != GameMode.VOLLEY) return
         val turnsSinceDrop = volleyTurnCount - lastVolleySupplyTurn
         if (turnsSinceDrop <= 0) return
@@ -3469,7 +2229,7 @@ class GameEngine(
         lastVolleySupplyTurn = volleyTurnCount
     }
 
-    private fun hasVolleyBreach(): Boolean {
+    internal fun hasVolleyBreach(): Boolean {
         if (config.mode != GameMode.VOLLEY) return false
         val breachY = ModeBoardMetrics.volleyBreachY(
             paddleY = paddle.y,
@@ -3478,7 +2238,7 @@ class GameEngine(
         return ModeBoardMetrics.hasVolleyBreach(bricks = bricks, breachY = breachY)
     }
 
-    private fun triggerVolleyBreachIfNeeded(): Boolean {
+    internal fun triggerVolleyBreachIfNeeded(): Boolean {
         if (!hasVolleyBreach()) return false
         logger?.logGameOver(score, levelIndex + 1, "volley_breach")
         listener.onTip("Breach! Bricks reached the launch line.")
@@ -3486,7 +2246,7 @@ class GameEngine(
         return true
     }
 
-    private fun updateBallTrails(dt: Float) {
+    internal fun updateBallTrails(dt: Float) {
         balls.forEach { ball ->
             val speed = sqrt(ball.vx * ball.vx + ball.vy * ball.vy)
             if (speed < 5f) {
@@ -3524,7 +2284,7 @@ class GameEngine(
         }
     }
 
-    private fun applyGravityWell(ball: Ball, dt: Float) {
+    internal fun applyGravityWell(ball: Ball, dt: Float) {
         val centerX = worldWidth * 0.5f
         val centerY = worldHeight * 0.62f
         val dx = centerX - ball.x
@@ -3536,184 +2296,7 @@ class GameEngine(
         ball.vy += dy * pull * dt
     }
 
-    private fun handlePaddleCollision(ball: Ball) {
-        if (ball.vy > 0f) return
-        if (ball.y - ball.radius > paddle.y + paddle.height / 2f) return
-        if (ball.y + ball.radius < paddle.y - paddle.height / 2f) return
-        if (ball.x + ball.radius < paddle.x - paddle.width / 2f) return
-        if (ball.x - ball.radius > paddle.x + paddle.width / 2f) return
-
-        if (magnetActive) {
-            val maxOffset = paddle.width * 0.4f
-            ball.stuckToPaddle = true
-            ball.stickOffset = (ball.x - paddle.x).coerceIn(-maxOffset, maxOffset)
-            ball.x = paddle.x + ball.stickOffset
-            ball.y = paddle.y + paddle.height / 2f + ball.radius + 0.5f
-            ball.vx = 0f
-            ball.vy = 0f
-            audio.play(GameSound.POWERUP, 0.5f)
-            if (!magnetCatchTipShown) {
-                listener.onTip("Release to launch stuck balls.")
-                magnetCatchTipShown = true
-            }
-            return
-        }
-
-        val hitPos = (ball.x - paddle.x) / (paddle.width / 2f)
-        val spin = (paddleVelocity / 180f).coerceIn(-0.35f, 0.35f)
-        val angle = (hitPos * 1.1f + spin).coerceIn(-1.15f, 1.15f)
-        val speed = sqrt(ball.vx * ball.vx + ball.vy * ball.vy).coerceAtLeast(28f)
-        ball.vx = speed * angle
-        ball.vy = abs(speed * (1.22f - abs(angle)))
-        val minVy = speed * 0.35f
-        if (ball.vy < minVy) {
-            ball.vy = minVy
-        }
-        ball.y = paddle.y + paddle.height / 2f + ball.radius
-        audio.play(GameSound.BOUNCE, 0.8f)
-        spawnImpactSparks(ball.x, ball.y + ball.radius, theme.accent, 6, 16f)
-    }
-
-    private fun handleBrickCollision(ball: Ball) {
-        val nearbyBricks = getNearbyBricks(ball)
-        for (brick in nearbyBricks) {
-            if (!brick.alive) continue
-            if (!GameCollisionSystem.circleIntersectsRect(ball, brick)) continue
-
-            // Resolve bounce before applying hit to ensure consistent collision response
-            if (!fireballActive && !pierceActive) {
-                GameCollisionSystem.bounceBallFromBrick(ball, brick)
-            }
-            val destroyed = brick.applyHit(fireballActive || pierceActive)
-
-            if (destroyed) {
-                handleBrickDestroyedByBall(ball, brick)
-            } else {
-                combo = 0
-                comboTimer = 0f
-                audio.play(GameSound.BOUNCE, 0.5f)
-            }
-            markTunnelGateIntegrityDirtyIfGateBrick(brick)
-
-            spawnImpactSparks(ball.x, ball.y, brick.currentColor(theme), 4, 12f)
-            reportScore()
-            break
-        }
-    }
-
-    private fun handleBrickDestroyedByBall(ball: Ball, brick: Brick) {
-        updateDailyChallenges(ChallengeType.BRICKS_DESTROYED)
-        runBricksBroken += 1
-        onBrickDestroyed(brick)
-        spawnBrickDestructionFx(brick, ball.x, ball.y, intensity = 1f)
-
-        if (brick.type == BrickType.BOSS) {
-            emitVisualFeedback(VisualFeedbackEvent.BOSS_BREAK)
-            if (waves.size < maxWaves) {
-                waves.add(
-                    ExplosionWave(
-                        x = brick.centerX,
-                        y = brick.centerY,
-                        radius = 1.5f,
-                        color = brick.currentColor(theme).copyOf(),
-                        life = 1.6f,
-                        maxLife = 1.6f,
-                        speed = 26f
-                    )
-                )
-            }
-            spawnPowerup(brick.centerX, brick.centerY, randomPowerupType())
-            listener.onTip("Boss down! Powerup dropped.")
-        }
-
-        comboTimer = 2f
-        val oldCombo = combo
-        combo += 1
-
-        if (combo >= 5 && combo % 2 == 0 && combo > oldCombo) {
-            spawnComboStreakParticles(brick.centerX, brick.centerY, combo)
-        }
-
-        updateDailyChallenges(ChallengeType.COMBO_MULTIPLIER, combo)
-
-        val multiplier = BrickCollisionFeedback.comboMultiplier(combo)
-        if (BrickCollisionFeedback.shouldTriggerComboFlash(multiplier)) {
-            emitVisualFeedback(VisualFeedbackEvent.COMBO_STREAK)
-        }
-
-        val baseScore = (brick.scoreValue * multiplier).roundToInt()
-        addScore(baseScore)
-
-        if (combo >= 3) {
-            logger?.logComboAchieved(combo, multiplier, (brick.scoreValue * multiplier).toInt())
-            listener.onTip("Combo x${combo}!")
-        }
-
-        logger?.logBrickDestroyed(brick.type, Pair(brick.centerX, brick.centerY), combo)
-
-        val brickSound = brickSoundFor(brick.type)
-        val baseRate = brickSoundRate(brick.type)
-        val dynamicRate = BrickCollisionFeedback.dynamicBrickSoundRate(
-            baseRate = baseRate,
-            combo = combo,
-            randomUnit = random.nextFloat()
-        )
-
-        audio.play(brickSound, 0.7f, dynamicRate)
-        audio.haptic(GameHaptic.LIGHT)
-        maybeSpawnPowerup(brick)
-        if (brick.type == BrickType.EXPLOSIVE) {
-            triggerExplosion(brick)
-        }
-        if (brick.type == BrickType.SPAWNING) {
-            spawnChildBricks(brick)
-        }
-    }
-
-    private fun handleBrickCollisionFromBeam(beam: Beam, brick: Brick) {
-        val destroyed = brick.applyHit(true)
-        markTunnelGateIntegrityDirtyIfGateBrick(brick)
-        if (destroyed) {
-            addScore(brick.scoreValue)
-            updateDailyChallenges(ChallengeType.BRICKS_DESTROYED)
-            runBricksBroken += 1
-            onBrickDestroyed(brick)
-
-            // Visual effects
-            emitVisualFeedback(VisualFeedbackEvent.BEAM_BRICK_BREAK)
-            spawnBrickDestructionFx(brick, beam.x, beam.y, intensity = 0.84f)
-            val brickSound = brickSoundFor(brick.type)
-            audio.play(brickSound, 0.4f, brickSoundRate(brick.type)) // Softer for beam hits
-            maybeSpawnPowerup(brick)
-            if (brick.type == BrickType.EXPLOSIVE) {
-                triggerExplosion(brick)
-            }
-            if (brick.type == BrickType.SPAWNING) {
-                spawnChildBricks(brick)
-            }
-        }
-        reportScore()
-    }
-
-    private fun handleBeamCollision() {
-        val iterator = beams.iterator()
-        while (iterator.hasNext()) {
-            val beam = iterator.next()
-            var hitBrick: Brick? = null
-            for (brick in bricks) {
-                if (!brick.alive) continue
-                if (!GameCollisionSystem.beamIntersectsBrick(beam, brick)) continue
-                hitBrick = brick
-                break
-            }
-            if (hitBrick != null) {
-                handleBrickCollisionFromBeam(beam, hitBrick)
-                iterator.remove()
-            }
-        }
-    }
-
-    private fun updateBeams(dt: Float) {
+    internal fun updateBeams(dt: Float) {
         laserCooldown = max(0f, laserCooldown - dt)
         beams.forEach { beam ->
             beam.y += beam.speed * dt
@@ -3722,71 +2305,7 @@ class GameEngine(
         handleBeamCollision()
     }
 
-    private fun updatePowerups(dt: Float) {
-        val iterator = powerups.iterator()
-        while (iterator.hasNext()) {
-            val power = iterator.next()
-
-            // Apply magnet attraction if active
-            if (magnetActive) {
-                val dx = paddle.x - power.x
-                val dy = paddle.y - power.y
-                val distance = kotlin.math.sqrt(dx * dx + dy * dy)
-                if (distance > 1f) {
-                    val attractSpeed = 80f / (distance + 1f) // Stronger when closer
-                    val attractX = dx / distance * attractSpeed * dt
-                    val attractY = dy / distance * attractSpeed * dt
-                    power.x += attractX
-                    power.y += attractY
-                }
-                power.y -= power.speed * dt * 0.6f
-            } else {
-                power.y -= power.speed * dt
-            }
-
-            if (power.y < -4f) {
-                iterator.remove()
-                continue
-            }
-            if (powerIntersectsPaddle(power)) {
-                logger?.logPowerupCollected(power.type, Pair(power.x, power.y))
-                applyPowerup(power.type)
-                updateDailyChallenges(ChallengeType.POWERUPS_COLLECTED)
-                audio.play(GameSound.POWERUP, 0.8f)
-                spawnPowerupBurst(power)
-                powerupCollectionPulse = 1f
-                iterator.remove()
-            }
-        }
-    }
-
-    private fun maybeShowPowerupTip(type: PowerUpType) {
-        if (!settings.tipsEnabled) return
-        if (!powerupTipShown.add(type)) return
-        val message = when (type) {
-            PowerUpType.MULTI_BALL -> "Multi-ball: extra balls in play."
-            PowerUpType.LASER -> "Laser: tap FIRE or two-finger tap."
-            PowerUpType.GUARDRAIL -> "Guardrail: bottom safety net."
-            PowerUpType.LIFE -> "1UP: gain an extra life."
-            PowerUpType.SHIELD -> "Shield: blocks invader shots."
-            PowerUpType.WIDE_PADDLE -> "Wide paddle: bigger hit area."
-            PowerUpType.SHRINK -> "Shrink: paddle size reduced."
-            PowerUpType.SLOW -> "Slow: ball speed reduced."
-            PowerUpType.OVERDRIVE -> "Overdrive: everything speeds up."
-            PowerUpType.FIREBALL -> "Fireball: smash through bricks."
-            PowerUpType.MAGNET -> "Magnet: balls stick to the paddle."
-            PowerUpType.GRAVITY_WELL -> "Gravity well: bends ball paths."
-            PowerUpType.BALL_SPLITTER -> "Splitter: duplicates balls."
-            PowerUpType.FREEZE -> "Freeze: slows everything."
-            PowerUpType.PIERCE -> "Pierce: balls ignore armor."
-            PowerUpType.RICOCHET -> "Ricochet: balls bounce twice off walls."
-            PowerUpType.TIME_WARP -> "Time Warp: slows time but keeps ball speed."
-            PowerUpType.DOUBLE_SCORE -> "2x Score: double points for limited time."
-        }
-        listener.onTip(message)
-    }
-
-    private fun updateInvaderShots(dt: Float) {
+    internal fun updateInvaderShots(dt: Float) {
         if (!config.mode.invaders) return
         invaderShotTimer -= dt
         val invaders = collectAliveInvaders()
@@ -3877,7 +2396,7 @@ class GameEngine(
         }
     }
 
-    private fun spawnInvaderShot(origin: Brick) {
+    internal fun spawnInvaderShot(origin: Brick) {
         origin.fireFlash = 0.55f
         val baseSpeed = (28f + levelIndex * 1.2f).coerceAtMost(42f)
         val spread = 6f
@@ -3936,37 +2455,7 @@ class GameEngine(
         audio.play(GameSound.LASER, 0.35f)
     }
 
-    private fun handleInvaderShotHit(shot: EnemyShot): Boolean {
-        spawnImpactSparks(shot.x, shot.y, shot.color, 6, 12f)
-        if (invaderShield > 0f) {
-            val damage = (12f + levelIndex * 1.2f).coerceAtMost(22f)
-            invaderShield = max(0f, invaderShield - damage)
-            listener.onShieldUpdated(invaderShield.toInt(), invaderShieldMax.toInt())
-            shieldHitPulse = 1f
-            shieldHitX = shot.x
-            shieldHitColor = adjustColor(shot.color, 1.2f, 1f)
-            audio.play(GameSound.BOUNCE, 0.65f)
-            audio.haptic(GameHaptic.LIGHT)
-            emitVisualFeedback(VisualFeedbackEvent.INVADER_SHIELD_HIT)
-            if (!invaderShieldCritical && invaderShieldMax > 0f && invaderShield <= invaderShieldMax * 0.25f) {
-                invaderShieldCritical = true
-                listener.onTip("Shield critical! Avoid direct hits.")
-                audio.play(GameSound.EXPLOSION, 0.35f)
-            }
-            if (invaderShield <= 0f && !invaderShieldAlerted) {
-                invaderShieldAlerted = true
-                shieldBreakPulse = 1f
-                audio.play(GameSound.EXPLOSION, 0.55f)
-                emitVisualFeedback(VisualFeedbackEvent.INVADER_SHIELD_BREAK)
-                listener.onTip("Shield down! Dodge the incoming fire.")
-            }
-            return false
-        } else {
-            return true
-        }
-    }
-
-    private fun shotIntersectsPaddle(shot: EnemyShot): Boolean {
+    internal fun shotIntersectsPaddle(shot: EnemyShot): Boolean {
         val paddleLeft = paddle.x - paddle.width / 2f
         val paddleRight = paddle.x + paddle.width / 2f
         val paddleBottom = paddle.y - paddle.height / 2f
@@ -3978,7 +2467,7 @@ class GameEngine(
         return dx * dx + dy * dy <= shot.radius * shot.radius
     }
 
-    private fun updateParticles(dt: Float) {
+    internal fun updateParticles(dt: Float) {
         val iterator = particles.iterator()
         while (iterator.hasNext()) {
             val particle = iterator.next()
@@ -3992,7 +2481,7 @@ class GameEngine(
         }
     }
 
-    private fun updateWaves(dt: Float) {
+    internal fun updateWaves(dt: Float) {
         val iterator = waves.iterator()
         while (iterator.hasNext()) {
             val wave = iterator.next()
@@ -4007,7 +2496,7 @@ class GameEngine(
         }
     }
 
-    private fun updateEffects(dt: Float) {
+    internal fun updateEffects(dt: Float) {
         val iterator = activeEffects.entries.iterator()
         var ballStyleDirty = false
         var paddleWidthDirty = false
@@ -4069,7 +2558,7 @@ class GameEngine(
         }
     }
 
-    private fun syncPaddleWidthFromEffects() {
+    internal fun syncPaddleWidthFromEffects() {
         val wideActive = activeEffects.containsKey(PowerUpType.WIDE_PADDLE)
         val shrinkActive = activeEffects.containsKey(PowerUpType.SHRINK)
         paddle.width = when {
@@ -4080,7 +2569,7 @@ class GameEngine(
         }
     }
 
-    private fun clampBallSpeed(ball: Ball) {
+    internal fun clampBallSpeed(ball: Ball) {
         val speed = sqrt(ball.vx * ball.vx + ball.vy * ball.vy)
         if (speed <= 0f) return
         val minSpeed = config.mode.launchSpeed * minSpeedFactor()
@@ -4107,146 +2596,20 @@ class GameEngine(
         }
     }
 
-    private fun speedBoostSlope(): Float = ModeBalance.pacingFor(config.mode).speedBoostSlope
+    internal fun speedBoostSlope(): Float = ModeBalance.pacingFor(config.mode).speedBoostSlope
 
-    private fun speedBoostCap(): Float = ModeBalance.pacingFor(config.mode).speedBoostCap
+    internal fun speedBoostCap(): Float = ModeBalance.pacingFor(config.mode).speedBoostCap
 
-    private fun minSpeedFactor(): Float = ModeBalance.pacingFor(config.mode).minSpeedFactor
+    internal fun minSpeedFactor(): Float = ModeBalance.pacingFor(config.mode).minSpeedFactor
 
-    private fun maxSpeedFactor(): Float = ModeBalance.pacingFor(config.mode).maxSpeedFactor
+    internal fun maxSpeedFactor(): Float = ModeBalance.pacingFor(config.mode).maxSpeedFactor
 
-    private fun difficultyForMode(): Float {
+    internal fun difficultyForMode(): Float {
         val pacing = ModeBalance.pacingFor(config.mode)
         return (pacing.difficultyBase + levelIndex * pacing.difficultySlope).coerceAtMost(3.0f)
     }
 
-    private fun applyPowerup(type: PowerUpType) {
-        when (type) {
-            PowerUpType.MULTI_BALL -> {
-                val newBalls = balls.map {
-                    val extra = Ball(it.x, it.y, it.radius, -it.vx * 0.8f, it.vy * 0.9f)
-                    if (fireballActive) {
-                        extra.isFireball = true
-                        extra.color = PowerUpType.FIREBALL.color
-                    } else if (pierceActive) {
-                        extra.color = PowerUpType.PIERCE.color
-                    }
-                    extra
-                }
-                // Limit total balls to 12 to prevent performance issues
-                val ballsToAdd = minOf(2, maxOf(0, 12 - balls.size))
-                balls.addAll(newBalls.take(ballsToAdd))
-                updateDailyChallenges(ChallengeType.MULTI_BALL_ACTIVE)
-            }
-            PowerUpType.LASER -> {
-                activeEffects[type] = 12f
-                if (!laserTipShown) {
-                    listener.onTip("Laser active: two-finger tap to fire.")
-                    laserTipShown = true
-                }
-            }
-            PowerUpType.GUARDRAIL -> {
-                guardrailActive = true
-                activeEffects[type] = 10f
-            }
-            PowerUpType.LIFE -> {
-                if (config.mode == GameMode.VOLLEY) {
-                    volleyBallCount = (volleyBallCount + 1).coerceAtMost(20)
-                    listener.onVolleyBallsUpdated(volleyBallCount)
-                } else if (!config.mode.godMode) {
-                    lives += 1
-                    listener.onLivesUpdated(lives)
-                }
-            }
-            PowerUpType.SHIELD -> {
-                shieldCharges = min(2, shieldCharges + 1)
-                activeEffects[type] = 12f
-            }
-            PowerUpType.WIDE_PADDLE -> {
-                activeEffects[type] = 12f
-                syncPaddleWidthFromEffects()
-            }
-            PowerUpType.SHRINK -> {
-                activeEffects[type] = 10f
-                syncPaddleWidthFromEffects()
-            }
-            PowerUpType.SLOW -> {
-                speedMultiplier = 0.8f
-                activeEffects[type] = 8f
-            }
-            PowerUpType.OVERDRIVE -> {
-                speedMultiplier = 1.2f
-                activeEffects[type] = 8f
-            }
-            PowerUpType.FIREBALL -> {
-                fireballActive = true
-                activeEffects[type] = 10f
-                syncBallStyles()
-            }
-            PowerUpType.MAGNET -> {
-                magnetActive = true
-                activeEffects[type] = 15f
-                if (!magnetTipShown) {
-                    listener.onTip("Magnet active: balls stick to the paddle. Release to shoot.")
-                    magnetTipShown = true
-                }
-            }
-            PowerUpType.GRAVITY_WELL -> {
-                gravityWellActive = true
-                activeEffects[type] = 8f
-            }
-            PowerUpType.BALL_SPLITTER -> {
-                val newBalls = balls.flatMap { ball ->
-                    listOf(
-                        Ball(ball.x, ball.y, ball.radius, ball.vx * 0.7f, ball.vy * 0.7f),
-                        Ball(ball.x, ball.y, ball.radius, -ball.vx * 0.7f, ball.vy * 0.7f)
-                    ).map { newBall ->
-                        if (fireballActive) {
-                            newBall.isFireball = true
-                            newBall.color = PowerUpType.FIREBALL.color
-                        }
-                        if (pierceActive) {
-                            newBall.color = PowerUpType.PIERCE.color
-                        }
-                        newBall
-                    }
-                }
-                // Limit total balls to 12 to prevent performance issues
-                val ballsToAdd = minOf(4, maxOf(0, 12 - balls.size))
-                balls.addAll(newBalls.take(ballsToAdd))
-                updateDailyChallenges(ChallengeType.MULTI_BALL_ACTIVE)
-            }
-            PowerUpType.FREEZE -> {
-                freezeActive = true
-                speedMultiplier = 0.1f // Almost frozen
-                activeEffects[type] = 5f
-            }
-            PowerUpType.PIERCE -> {
-                pierceActive = true
-                activeEffects[type] = 12f
-                syncBallStyles()
-            }
-            PowerUpType.RICOCHET -> {
-                // Give balls extra wall bounces before losing effect
-                balls.forEach { ball ->
-                    ball.ricochetBounces = (ball.ricochetBounces ?: 0) + 2
-                }
-                activeEffects[type] = 15f
-            }
-            PowerUpType.TIME_WARP -> {
-                // Slow down bricks/enemies but keep ball speed normal
-                activeEffects[type] = 10f
-            }
-            PowerUpType.DOUBLE_SCORE -> {
-                // 2x score multiplier
-                activeEffects[type] = 8f
-            }
-        }
-        audio.haptic(GameHaptic.MEDIUM)
-        updatePowerupStatus()
-    }
-
-    private fun syncBallStyles() {
+    internal fun syncBallStyles() {
         val useFire = fireballActive
         val usePierce = pierceActive
         balls.forEach { ball ->
@@ -4259,144 +2622,9 @@ class GameEngine(
         }
     }
 
-    private fun updatePowerupStatus(force: Boolean = false) {
-        if (force) {
-            powerupStatusTick = 0f
-        }
-        if (config.mode == GameMode.VOLLEY) {
-            val volleyMetrics = currentVolleyMetrics()
-            val status = ModeStatusText.volley(
-                volleyBallCount = volleyBallCount,
-                turnNumber = volleyTurnCount + 1,
-                depthRows = volleyAdvanceRows,
-                aliveBreakables = volleyMetrics.aliveBreakables,
-                laneClearance = volleyMetrics.laneClearance,
-                locale = Locale.getDefault()
-            )
-            if (force || status != lastPowerupStatus) {
-                lastPowerupStatus = status
-                listener.onPowerupStatus(status)
-            }
-            emitPowerupSnapshot(buildPowerupSnapshot())
-            return
-        }
-        if (config.mode == GameMode.TUNNEL) {
-            val tunnelMetrics = ModeBoardMetrics.tunnelBoardMetrics(
-                bricks = bricks,
-                gateZone = tunnelGateZone()
-            )
-            cachedTunnelGateIntegrityPercent = tunnelMetrics.gateIntegrityPercent
-            tunnelGateIntegrityDirty = false
-            val safeTotalBreakables = tunnelMetrics.totalBreakables.coerceAtLeast(1)
-            val breachPercent = (((safeTotalBreakables - tunnelMetrics.aliveBreakables).toFloat() / safeTotalBreakables.toFloat()) * 100f)
-                .roundToInt()
-                .coerceIn(0, 100)
-            val gatePressure = ModeBoardMetrics.tunnelBreakthroughPressure(
-                gateIntegrityPercent = tunnelMetrics.gateIntegrityPercent,
-                tunnelShotsFired = tunnelShotsFired
-            )
-            val hasBreakthroughActive = hasBreakthroughActiveEffect()
-            val hasBreakthroughDropQueued = hasQueuedBreakthroughDrop()
-            val supplyGate = TunnelModeSystem.supplyDropGate(
-                gatePressure = gatePressure,
-                gateIntegrityPercent = tunnelMetrics.gateIntegrityPercent,
-                hasBreakthroughActive = hasBreakthroughActive,
-                hasBreakthroughDropQueued = hasBreakthroughDropQueued
-            )
-            val shotsSinceDrop = (tunnelShotsFired - lastTunnelSupplyShot).coerceAtLeast(0)
-            tunnelSupplyReadinessPercent = TunnelModeSystem.supplyReadinessPercent(
-                shotsSinceDrop = shotsSinceDrop,
-                requiredShots = supplyGate.requiredShots
-            )
-            val status = ModeStatusText.tunnel(
-                shotsFired = tunnelShotsFired,
-                gateIntegrityPercent = tunnelMetrics.gateIntegrityPercent,
-                breachPercent = breachPercent,
-                combo = combo,
-                supplyReadinessPercent = tunnelSupplyReadinessPercent
-            )
-            if (force || status != lastPowerupStatus) {
-                lastPowerupStatus = status
-                listener.onPowerupStatus(status)
-            }
-            emitPowerupSnapshot(buildPowerupSnapshot())
-            return
-        }
-        if (config.mode == GameMode.SURVIVAL) {
-            val status = ModeStatusText.survival(speedMultiplier = speedMultiplier, combo = combo)
-            if (force || status != lastPowerupStatus) {
-                lastPowerupStatus = status
-                listener.onPowerupStatus(status)
-            }
-            emitPowerupSnapshot(buildPowerupSnapshot())
-            return
-        }
-        if (config.mode == GameMode.ZEN) {
-            // Zen mode: minimal HUD, no scores or lives
-            val status = "Zen Mode"
-            if (force || status != lastPowerupStatus) {
-                lastPowerupStatus = status
-                listener.onPowerupStatus(status)
-            }
-            // Don't show powerup chips in zen mode.
-            emitPowerupSnapshot(emptyList())
-            return
-        }
-        val segments = mutableListOf<String>()
-        val effectText = ModeStatusText.powerups(
-            sortedActiveEffects().map { (type, time) ->
-                ModeStatusText.EffectStatus(
-                    type = type,
-                    remainingSeconds = displaySeconds(time),
-                    charges = if (type == PowerUpType.SHIELD) shieldCharges else 0
-                )
-            }
-        )
-        segments.add(effectText)
-        if (combo >= 2) {
-            segments.add("Combo x$combo")
-        }
-        val status = segments.joinToString(" • ")
-        if (force || status != lastPowerupStatus) {
-            lastPowerupStatus = status
-            listener.onPowerupStatus(status)
-        }
-        emitPowerupSnapshot(buildPowerupSnapshot())
-    }
+    internal fun displaySeconds(time: Float): Int = ceil(time).toInt().coerceAtLeast(1)
 
-    private fun sortedActiveEffects(): List<Map.Entry<PowerUpType, Float>> {
-        return activeEffects.entries.sortedWith(
-            compareBy<Map.Entry<PowerUpType, Float>> { powerupPriority(it.key) }
-                .thenByDescending { it.value }
-        )
-    }
-
-    private fun powerupPriority(type: PowerUpType): Int {
-        return when (type) {
-            PowerUpType.SHIELD,
-            PowerUpType.GUARDRAIL -> 0
-            PowerUpType.LASER,
-            PowerUpType.FIREBALL,
-            PowerUpType.PIERCE,
-            PowerUpType.DOUBLE_SCORE -> 1
-            PowerUpType.WIDE_PADDLE,
-            PowerUpType.SHRINK,
-            PowerUpType.MAGNET -> 2
-            PowerUpType.SLOW,
-            PowerUpType.FREEZE,
-            PowerUpType.TIME_WARP,
-            PowerUpType.OVERDRIVE -> 3
-            PowerUpType.MULTI_BALL,
-            PowerUpType.BALL_SPLITTER,
-            PowerUpType.GRAVITY_WELL,
-            PowerUpType.LIFE,
-            PowerUpType.RICOCHET -> 4
-        }
-    }
-
-    private fun displaySeconds(time: Float): Int = ceil(time).toInt().coerceAtLeast(1)
-
-    private fun resolveVolleyLaneColumn(cols: Int): Int {
+    internal fun resolveVolleyLaneColumn(cols: Int): Int {
         val safeCols = cols.coerceAtLeast(1)
         val rawAnchorX = when {
             volleyReturnAnchorX.isFinite() -> volleyReturnAnchorX
@@ -4414,17 +2642,17 @@ class GameEngine(
         return candidate
     }
 
-    private fun volleyColumnDistance(a: Int, b: Int, cols: Int): Int {
+    internal fun volleyColumnDistance(a: Int, b: Int, cols: Int): Int {
         val direct = kotlin.math.abs(a - b)
         return min(direct, cols - direct)
     }
 
-    private fun wrapVolleyColumn(index: Int, cols: Int): Int {
+    internal fun wrapVolleyColumn(index: Int, cols: Int): Int {
         if (cols <= 0) return 0
         return ((index % cols) + cols) % cols
     }
 
-    private fun tunnelGateZone(): ModeBoardMetrics.TunnelGateZone? {
+    internal fun tunnelGateZone(): ModeBoardMetrics.TunnelGateZone? {
         if (config.mode != GameMode.TUNNEL) return null
         val layout = currentLayout ?: return null
         return ModeBoardMetrics.tunnelGateZone(
@@ -4435,7 +2663,7 @@ class GameEngine(
         )
     }
 
-    private fun tunnelGateIntegrityPercent(): Int {
+    internal fun tunnelGateIntegrityPercent(): Int {
         if (!tunnelGateIntegrityDirty) {
             return cachedTunnelGateIntegrityPercent
         }
@@ -4448,25 +2676,25 @@ class GameEngine(
         return cachedTunnelGateIntegrityPercent
     }
 
-    private fun isTunnelGateBrick(brick: Brick): Boolean {
+    internal fun isTunnelGateBrick(brick: Brick): Boolean {
         val gateZone = tunnelGateZone() ?: return false
         return brick.gridX in gateZone.minCol..gateZone.maxCol &&
             brick.gridY in gateZone.rows
     }
 
-    private fun markTunnelGateIntegrityDirty() {
+    internal fun markTunnelGateIntegrityDirty() {
         if (config.mode == GameMode.TUNNEL) {
             tunnelGateIntegrityDirty = true
         }
     }
 
-    private fun markTunnelGateIntegrityDirtyIfGateBrick(brick: Brick) {
+    internal fun markTunnelGateIntegrityDirtyIfGateBrick(brick: Brick) {
         if (config.mode == GameMode.TUNNEL && isTunnelGateBrick(brick)) {
             tunnelGateIntegrityDirty = true
         }
     }
 
-    private fun onBrickDestroyed(brick: Brick) {
+    internal fun onBrickDestroyed(brick: Brick) {
         if (isBreakable(brick.type) && aliveBreakableBrickCount > 0) {
             aliveBreakableBrickCount -= 1
         }
@@ -4474,11 +2702,16 @@ class GameEngine(
             aliveExplosiveBrickCount -= 1
         }
         if (config.mode == GameMode.TUNNEL && isTunnelGateBrick(brick)) {
+            val oldIntegrity = tunnelGateIntegrityPercent()
             tunnelGateIntegrityDirty = true
+            val newIntegrity = tunnelGateIntegrityPercent()
+            if (oldIntegrity > 0 && newIntegrity == 0) {
+                emitVisualFeedback(VisualFeedbackEvent.TUNNEL_GATE_BREACH)
+            }
         }
     }
 
-    private fun tunnelBreakthroughPressure(): Float {
+    internal fun tunnelBreakthroughPressure(): Float {
         if (config.mode != GameMode.TUNNEL) return 0f
         return ModeBoardMetrics.tunnelBreakthroughPressure(
             gateIntegrityPercent = tunnelGateIntegrityPercent(),
@@ -4486,7 +2719,7 @@ class GameEngine(
         )
     }
 
-    private fun maybeSpawnTunnelSupplyDrop() {
+    internal fun maybeSpawnTunnelSupplyDrop() {
         if (config.mode != GameMode.TUNNEL || state == GameState.PAUSED || state == GameState.GAME_OVER || awaitingNextLevel) return
         val shotsSinceDrop = tunnelShotsFired - lastTunnelSupplyShot
         if (shotsSinceDrop <= 0) return
@@ -4530,6 +2763,10 @@ class GameEngine(
             xJitterUnit = random.nextFloat()
         )
         spawnPowerup(spawn.x, spawn.y, randomPowerupType(PowerupSelectionHint.TUNNEL_BREAKTHROUGH))
+        if (gatePressure >= 0.72f) {
+            spawnPowerup(spawn.x - lane.spread * 0.4f, spawn.y, randomPowerupType(PowerupSelectionHint.TUNNEL_BREAKTHROUGH))
+            spawnPowerup(spawn.x + lane.spread * 0.4f, spawn.y, randomPowerupType(PowerupSelectionHint.TUNNEL_BREAKTHROUGH))
+        }
         lastTunnelSupplyShot = tunnelShotsFired
         tunnelSupplyReadinessPercent = 0
         if (gatePressure >= 0.72f) {
@@ -4540,26 +2777,7 @@ class GameEngine(
         }
     }
 
-    private fun buildPowerupSnapshot(): List<PowerupStatus> {
-        return sortedActiveEffects()
-            .map { (type, time) ->
-                PowerupStatus(
-                    type = type,
-                    remainingSeconds = displaySeconds(time),
-                    charges = if (type == PowerUpType.SHIELD) shieldCharges else 0
-                )
-            }
-    }
-
-    private fun emitPowerupSnapshot(snapshot: List<PowerupStatus>) {
-        if (snapshot != lastPowerupSnapshot || combo != lastComboReported) {
-            lastPowerupSnapshot = snapshot
-            lastComboReported = combo
-            listener.onPowerupsUpdated(snapshot, combo)
-        }
-    }
-
-    private fun addScore(points: Int) {
+    internal fun addScore(points: Int) {
         if (config.mode == GameMode.ZEN) return
         val boost = (1f + rewardScoreMultiplier).coerceAtLeast(1f)
         val doubleScoreMultiplier = if (activeEffects.containsKey(PowerUpType.DOUBLE_SCORE)) 2f else 1f
@@ -4575,7 +2793,7 @@ class GameEngine(
         }
     }
 
-    private fun compactDeadVolleyBricksIfNeeded() {
+    internal fun compactDeadVolleyBricksIfNeeded() {
         if (config.mode != GameMode.VOLLEY) return
         val totalBricks = bricks.size
         // Lower threshold to keep the board cleaner and more dynamic.
@@ -4588,12 +2806,12 @@ class GameEngine(
         buildSpatialHash()
     }
 
-    private fun reportScore() {
+    internal fun reportScore() {
         updateScoreChallenges()
         listener.onScoreUpdated(score)
     }
 
-    private fun updateScoreChallenges() {
+    internal fun updateScoreChallenges() {
         val challenges = dailyChallenges ?: return
         val completed = mutableListOf<DailyChallenge>()
         challenges.forEach { challenge ->
@@ -4612,7 +2830,7 @@ class GameEngine(
         }
     }
 
-    private fun checkLevelCompletion() {
+    internal fun checkLevelCompletion() {
         if (state != GameState.RUNNING || awaitingNextLevel) return
         val hasRemainingBreakables = aliveBreakableBrickCount > 0
         if (!hasRemainingBreakables) {
@@ -4650,7 +2868,7 @@ class GameEngine(
         }
     }
 
-    private fun loseLife() {
+    internal fun loseLife() {
         // Reset combo on life loss
         combo = 0
         comboTimer = 0f
@@ -4685,7 +2903,7 @@ class GameEngine(
         }
     }
 
-    private fun triggerGameOver() {
+    internal fun triggerGameOver() {
         if (state == GameState.GAME_OVER) return
         val summary = GameSummary(
             score = score,
@@ -4702,7 +2920,7 @@ class GameEngine(
         listener.onGameOver(summary)
     }
 
-    private fun shootLaser() {
+    internal fun shootLaser() {
         if (laserCooldown > 0f) return
         laserCooldown = laserCooldownDuration
         val beamOffset = paddle.width / 3f
@@ -4713,47 +2931,6 @@ class GameEngine(
         listener.onLaserFired(laserCooldownDuration)
     }
 
-    private fun maybeSpawnPowerup(brick: Brick) {
-        if (config.mode == GameMode.VOLLEY) return
-        val baseChance = PowerupDropModel.baseChance(brick.type)
-        val modeBoost = ModeBalance.pacingFor(config.mode).dropChanceModeBoost
-        var selectionHint = PowerupSelectionHint.DEFAULT
-        var dynamicBoost = 0f
-        if (config.mode == GameMode.TUNNEL) {
-            val gatePressure = tunnelBreakthroughPressure()
-            val gateBrick = isTunnelGateBrick(brick)
-            val pacing = TunnelModeSystem.breakthroughPacing(
-                gatePressure = gatePressure,
-                tunnelShotsFired = tunnelShotsFired,
-                gateBrickHit = gateBrick
-            )
-            dynamicBoost += pacing.dynamicBoost
-            if (pacing.preferBreakthroughHint) {
-                selectionHint = PowerupSelectionHint.TUNNEL_BREAKTHROUGH
-            }
-        }
-        val dropChance = PowerupDropModel.dropChance(
-            baseChance = baseChance,
-            levelIndex = levelIndex,
-            modeBoost = modeBoost,
-            dynamicBoost = dynamicBoost
-        )
-        if (random.nextFloat() < dropChance) {
-            spawnPowerup(brick.centerX, brick.centerY, randomPowerupType(selectionHint))
-        }
-    }
-
-    private fun spawnPowerup(x: Float, y: Float, type: PowerUpType) {
-        powerups.add(PowerUp(x, y, type, 18f))
-        recordPowerup(type)
-        maybeShowPowerupTip(type)
-        if (type == PowerUpType.LASER) {
-            powerupDropsSinceLaser = 0
-        } else {
-            powerupDropsSinceLaser += 1
-        }
-    }
-
     fun debugSpawnPowerup(type: PowerUpType) {
         powerups.clear()
         val spawnX = worldWidth * 0.5f
@@ -4761,7 +2938,7 @@ class GameEngine(
         spawnPowerup(spawnX, spawnY, type)
     }
 
-    private fun triggerExplosion(brick: Brick) {
+    internal fun triggerExplosion(brick: Brick) {
         audio.play(GameSound.EXPLOSION, 0.8f)
         audio.haptic(GameHaptic.HEAVY)
         emitVisualFeedback(VisualFeedbackEvent.EXPLOSION_BREAK)
@@ -4782,7 +2959,7 @@ class GameEngine(
         reportScore()
     }
 
-    private fun spawnImpactSparks(x: Float, y: Float, baseColor: FloatArray, count: Int, speed: Float) {
+    internal fun spawnImpactSparks(x: Float, y: Float, baseColor: FloatArray, count: Int, speed: Float) {
         val available = maxParticles - particles.size
         val actualCount = min(count, max(0, available))
         if (actualCount <= 0) return
@@ -4804,7 +2981,7 @@ class GameEngine(
         }
     }
 
-    private fun spawnBrickDestructionFx(brick: Brick, impactX: Float, impactY: Float, intensity: Float) {
+    internal fun spawnBrickDestructionFx(brick: Brick, impactX: Float, impactY: Float, intensity: Float) {
         if (brick.type == BrickType.INVADER) {
             spawnInvaderBurst(brick, intensity)
             return
@@ -4941,7 +3118,7 @@ class GameEngine(
         }
     }
 
-    private fun spawnInvaderBurst(brick: Brick, intensity: Float = 1f) {
+    internal fun spawnInvaderBurst(brick: Brick, intensity: Float = 1f) {
         val fxScale = intensity.coerceIn(0.65f, 1.35f)
         val base = brick.currentColor(theme)
         spawnImpactSparks(brick.centerX, brick.centerY, base, (10 * fxScale).roundToInt().coerceAtLeast(4), 20f * fxScale)
@@ -4977,7 +3154,7 @@ class GameEngine(
         emitVisualFeedback(VisualFeedbackEvent.INVADER_BURST, fxScale)
     }
 
-    private fun brickSoundFor(type: BrickType): GameSound {
+    internal fun brickSoundFor(type: BrickType): GameSound {
         return when (type) {
             BrickType.NORMAL -> GameSound.BRICK_NORMAL
             BrickType.REINFORCED -> GameSound.BRICK_REINFORCED
@@ -4992,7 +3169,7 @@ class GameEngine(
         }
     }
 
-    private fun brickSoundRate(type: BrickType): Float {
+    internal fun brickSoundRate(type: BrickType): Float {
         return when (type) {
             BrickType.NORMAL -> 1.0f
             BrickType.REINFORCED -> 0.96f
@@ -5007,274 +3184,16 @@ class GameEngine(
         }
     }
 
-    private enum class PowerupSelectionHint {
+    internal enum class PowerupSelectionHint {
         DEFAULT,
         VOLLEY_SUPPLY,
         VOLLEY_SUPPLY_CRITICAL,
         TUNNEL_BREAKTHROUGH
     }
 
-    private fun randomPowerupType(hint: PowerupSelectionHint = PowerupSelectionHint.DEFAULT): PowerUpType {
-        val laserGuaranteeThreshold = when (hint) {
-            PowerupSelectionHint.VOLLEY_SUPPLY,
-            PowerupSelectionHint.VOLLEY_SUPPLY_CRITICAL,
-            PowerupSelectionHint.TUNNEL_BREAKTHROUGH -> 4
-            PowerupSelectionHint.DEFAULT -> 5
-        }
-        if (powerupDropsSinceLaser >= laserGuaranteeThreshold && !activeEffects.containsKey(PowerUpType.LASER)) {
-            return PowerUpType.LASER
-        }
-        val weights = mutableMapOf(
-            PowerUpType.MULTI_BALL to 1.0f,
-            PowerUpType.LASER to 1.0f,
-            PowerUpType.GUARDRAIL to 0.9f,
-            PowerUpType.SHIELD to 0.95f,
-            PowerUpType.WIDE_PADDLE to 1.0f,
-            PowerUpType.SHRINK to 0.35f,
-            PowerUpType.SLOW to 0.85f,
-            PowerUpType.OVERDRIVE to 0.35f,
-            PowerUpType.MAGNET to 0.9f,
-            PowerUpType.LIFE to 0.55f,
-            PowerUpType.FIREBALL to 0.95f,
-            PowerUpType.GRAVITY_WELL to 0.8f,
-            PowerUpType.BALL_SPLITTER to 0.85f,
-            PowerUpType.FREEZE to 0.75f,
-            PowerUpType.PIERCE to 0.9f,
-            PowerUpType.RICOCHET to 0.8f,
-            PowerUpType.TIME_WARP to 0.7f,
-            PowerUpType.DOUBLE_SCORE to 0.6f
-        )
-        when (config.mode) {
-            GameMode.TIMED -> {
-                weights[PowerUpType.MULTI_BALL] = (weights[PowerUpType.MULTI_BALL] ?: 0f) + 0.25f
-                weights[PowerUpType.LASER] = (weights[PowerUpType.LASER] ?: 0f) + 0.2f
-                weights[PowerUpType.SLOW] = (weights[PowerUpType.SLOW] ?: 0f) + 0.15f
-                weights[PowerUpType.OVERDRIVE]?.let { weights[PowerUpType.OVERDRIVE] = it * 0.8f }
-            }
-            GameMode.RUSH -> {
-                weights[PowerUpType.GUARDRAIL] = (weights[PowerUpType.GUARDRAIL] ?: 0f) + 0.35f
-                weights[PowerUpType.SHIELD] = (weights[PowerUpType.SHIELD] ?: 0f) + 0.25f
-                weights[PowerUpType.SLOW] = (weights[PowerUpType.SLOW] ?: 0f) + 0.2f
-                weights[PowerUpType.LIFE] = (weights[PowerUpType.LIFE] ?: 0f) + 0.1f
-            }
-            GameMode.ENDLESS -> {
-                weights[PowerUpType.FIREBALL] = (weights[PowerUpType.FIREBALL] ?: 0f) + 0.28f
-                weights[PowerUpType.PIERCE] = (weights[PowerUpType.PIERCE] ?: 0f) + 0.22f
-                weights[PowerUpType.GRAVITY_WELL] = (weights[PowerUpType.GRAVITY_WELL] ?: 0f) + 0.18f
-                weights[PowerUpType.BALL_SPLITTER] = (weights[PowerUpType.BALL_SPLITTER] ?: 0f) + 0.18f
-            }
-            GameMode.SURVIVAL -> {
-                weights[PowerUpType.SHIELD] = (weights[PowerUpType.SHIELD] ?: 0f) + 0.2f
-                weights[PowerUpType.GUARDRAIL] = (weights[PowerUpType.GUARDRAIL] ?: 0f) + 0.2f
-                weights[PowerUpType.LIFE] = (weights[PowerUpType.LIFE] ?: 0f) + 0.05f
-                weights[PowerUpType.SHRINK]?.let { weights[PowerUpType.SHRINK] = it * 0.7f }
-                weights[PowerUpType.OVERDRIVE]?.let { weights[PowerUpType.OVERDRIVE] = it * 0.7f }
-            }
-            GameMode.GOD -> {
-                weights[PowerUpType.LIFE] = 0.15f
-                weights[PowerUpType.SHRINK] = 0.1f
-                weights[PowerUpType.OVERDRIVE] = 0.1f
-            }
-            GameMode.TUNNEL -> {
-                weights[PowerUpType.PIERCE] = (weights[PowerUpType.PIERCE] ?: 0f) + 0.34f
-                weights[PowerUpType.FIREBALL] = (weights[PowerUpType.FIREBALL] ?: 0f) + 0.22f
-                weights[PowerUpType.LASER] = (weights[PowerUpType.LASER] ?: 0f) + 0.12f
-                weights[PowerUpType.GUARDRAIL] = (weights[PowerUpType.GUARDRAIL] ?: 0f) + 0.14f
-                weights[PowerUpType.SHRINK]?.let { weights[PowerUpType.SHRINK] = it * 0.7f }
-                weights[PowerUpType.OVERDRIVE]?.let { weights[PowerUpType.OVERDRIVE] = it * 0.72f }
-            }
-            GameMode.INVADERS -> {
-                weights[PowerUpType.SHIELD] = (weights[PowerUpType.SHIELD] ?: 0f) + 0.3f
-                weights[PowerUpType.GUARDRAIL] = (weights[PowerUpType.GUARDRAIL] ?: 0f) + 0.2f
-                weights[PowerUpType.LASER] = (weights[PowerUpType.LASER] ?: 0f) + 0.35f
-                weights[PowerUpType.SLOW] = (weights[PowerUpType.SLOW] ?: 0f) + 0.1f
-            }
-            else -> Unit
-        }
-        when (hint) {
-            PowerupSelectionHint.VOLLEY_SUPPLY -> {
-                weights[PowerUpType.GUARDRAIL] = 0.02f
-                weights[PowerUpType.SHIELD] = 0.04f
-                weights[PowerUpType.LIFE] = (weights[PowerUpType.LIFE] ?: 0f) + 0.35f
-                weights[PowerUpType.WIDE_PADDLE] = (weights[PowerUpType.WIDE_PADDLE] ?: 0f) + 0.22f
-                weights[PowerUpType.MAGNET] = (weights[PowerUpType.MAGNET] ?: 0f) + 0.18f
-                weights[PowerUpType.LASER] = (weights[PowerUpType.LASER] ?: 0f) + 0.3f
-                weights[PowerUpType.MULTI_BALL] = (weights[PowerUpType.MULTI_BALL] ?: 0f) + 0.24f
-                weights[PowerUpType.BALL_SPLITTER] = (weights[PowerUpType.BALL_SPLITTER] ?: 0f) + 0.22f
-                weights[PowerUpType.PIERCE] = (weights[PowerUpType.PIERCE] ?: 0f) + 0.18f
-                weights[PowerUpType.FIREBALL] = (weights[PowerUpType.FIREBALL] ?: 0f) + 0.15f
-                weights[PowerUpType.SHRINK]?.let { weights[PowerUpType.SHRINK] = it * 0.35f }
-                weights[PowerUpType.OVERDRIVE]?.let { weights[PowerUpType.OVERDRIVE] = it * 0.45f }
-            }
-            PowerupSelectionHint.VOLLEY_SUPPLY_CRITICAL -> {
-                weights[PowerUpType.GUARDRAIL] = 0.01f
-                weights[PowerUpType.SHIELD] = 0.02f
-                weights[PowerUpType.LIFE] = (weights[PowerUpType.LIFE] ?: 0f) + 0.45f
-                weights[PowerUpType.WIDE_PADDLE] = (weights[PowerUpType.WIDE_PADDLE] ?: 0f) + 0.3f
-                weights[PowerUpType.SLOW] = (weights[PowerUpType.SLOW] ?: 0f) + 0.24f
-                weights[PowerUpType.FREEZE] = (weights[PowerUpType.FREEZE] ?: 0f) + 0.24f
-                weights[PowerUpType.TIME_WARP] = (weights[PowerUpType.TIME_WARP] ?: 0f) + 0.18f
-                weights[PowerUpType.MAGNET] = (weights[PowerUpType.MAGNET] ?: 0f) + 0.2f
-                weights[PowerUpType.LASER] = (weights[PowerUpType.LASER] ?: 0f) + 0.24f
-                weights[PowerUpType.MULTI_BALL] = (weights[PowerUpType.MULTI_BALL] ?: 0f) + 0.18f
-                weights[PowerUpType.SHRINK]?.let { weights[PowerUpType.SHRINK] = it * 0.3f }
-                weights[PowerUpType.OVERDRIVE]?.let { weights[PowerUpType.OVERDRIVE] = it * 0.4f }
-            }
-            PowerupSelectionHint.TUNNEL_BREAKTHROUGH -> {
-                weights[PowerUpType.PIERCE] = (weights[PowerUpType.PIERCE] ?: 0f) + 0.42f
-                weights[PowerUpType.FIREBALL] = (weights[PowerUpType.FIREBALL] ?: 0f) + 0.34f
-                weights[PowerUpType.LASER] = (weights[PowerUpType.LASER] ?: 0f) + 0.24f
-                weights[PowerUpType.MULTI_BALL] = (weights[PowerUpType.MULTI_BALL] ?: 0f) + 0.18f
-                weights[PowerUpType.BALL_SPLITTER] = (weights[PowerUpType.BALL_SPLITTER] ?: 0f) + 0.16f
-                weights[PowerUpType.GRAVITY_WELL] = (weights[PowerUpType.GRAVITY_WELL] ?: 0f) + 0.16f
-                weights[PowerUpType.SLOW] = (weights[PowerUpType.SLOW] ?: 0f) + 0.12f
-                weights[PowerUpType.WIDE_PADDLE] = (weights[PowerUpType.WIDE_PADDLE] ?: 0f) + 0.08f
-                weights[PowerUpType.SHRINK]?.let { weights[PowerUpType.SHRINK] = it * 0.6f }
-                weights[PowerUpType.OVERDRIVE]?.let { weights[PowerUpType.OVERDRIVE] = it * 0.7f }
-            }
-            PowerupSelectionHint.DEFAULT -> Unit
-        }
-        if (levelIndex <= 2) {
-            weights[PowerUpType.SHRINK]?.let { weights[PowerUpType.SHRINK] = it * 0.45f }
-            weights[PowerUpType.OVERDRIVE]?.let { weights[PowerUpType.OVERDRIVE] = it * 0.55f }
-        }
-        if (powerupsSinceDefense >= 3) {
-            weights[PowerUpType.GUARDRAIL] = (weights[PowerUpType.GUARDRAIL] ?: 0f) + 0.4f
-            weights[PowerUpType.SHIELD] = (weights[PowerUpType.SHIELD] ?: 0f) + 0.45f
-            weights[PowerUpType.WIDE_PADDLE] = (weights[PowerUpType.WIDE_PADDLE] ?: 0f) + 0.25f
-        }
-        if (powerupsSinceOffense >= 3) {
-            weights[PowerUpType.LASER] = (weights[PowerUpType.LASER] ?: 0f) + 0.3f
-            weights[PowerUpType.FIREBALL] = (weights[PowerUpType.FIREBALL] ?: 0f) + 0.28f
-            weights[PowerUpType.PIERCE] = (weights[PowerUpType.PIERCE] ?: 0f) + 0.24f
-            weights[PowerUpType.BALL_SPLITTER] = (weights[PowerUpType.BALL_SPLITTER] ?: 0f) + 0.2f
-        }
-        if (powerupsSinceControl >= 4) {
-            weights[PowerUpType.MAGNET] = (weights[PowerUpType.MAGNET] ?: 0f) + 0.3f
-            weights[PowerUpType.SLOW] = (weights[PowerUpType.SLOW] ?: 0f) + 0.2f
-            weights[PowerUpType.FREEZE] = (weights[PowerUpType.FREEZE] ?: 0f) + 0.2f
-            weights[PowerUpType.GRAVITY_WELL] = (weights[PowerUpType.GRAVITY_WELL] ?: 0f) + 0.18f
-        }
-        if (activeEffects.isNotEmpty()) {
-            activeEffects.keys.forEach { type ->
-                weights[type]?.let { weights[type] = it * 0.55f }
-            }
-        }
-        if (recentPowerups.isNotEmpty()) {
-            val recentCounts = recentPowerups.groupingBy { it }.eachCount()
-            recentCounts.forEach { (type, count) ->
-                val penalty = when (count) {
-                    1 -> 0.65f
-                    2 -> 0.4f
-                    else -> 0.25f
-                }
-                weights[type]?.let { weights[type] = it * penalty }
-            }
-            val recent = recentPowerups.toList()
-            val last = recent.lastOrNull()
-            if (last != null) {
-                weights[last]?.let { weights[last] = it * 0.35f }
-            }
-            if (recent.size >= 2 && recent[recent.lastIndex] == recent[recent.lastIndex - 1]) {
-                val repeatedBucket = powerupBucket(recent[recent.lastIndex])
-                weights.keys.toList().forEach { type ->
-                    val current = weights[type] ?: return@forEach
-                    weights[type] = if (powerupBucket(type) == repeatedBucket) {
-                        current * 0.42f
-                    } else {
-                        current * 1.16f
-                    }
-                }
-            }
-        }
-        val total = weights.values.sum().coerceAtLeast(0.01f)
-        val roll = random.nextFloat() * total
-        var acc = 0f
-        for ((type, weight) in weights) {
-            acc += weight
-            if (roll <= acc) return type
-        }
-        return PowerUpType.MULTI_BALL
-    }
+    internal enum class PowerupBucket { OFFENSE, DEFENSE, CONTROL, RISK }
 
-    private enum class PowerupBucket { OFFENSE, DEFENSE, CONTROL, RISK }
-
-    private fun powerupBucket(type: PowerUpType): PowerupBucket {
-        return when (type) {
-            PowerUpType.MULTI_BALL,
-            PowerUpType.LASER,
-            PowerUpType.FIREBALL,
-            PowerUpType.BALL_SPLITTER,
-            PowerUpType.PIERCE -> PowerupBucket.OFFENSE
-            PowerUpType.GUARDRAIL,
-            PowerUpType.SHIELD,
-            PowerUpType.LIFE,
-            PowerUpType.WIDE_PADDLE -> PowerupBucket.DEFENSE
-            PowerUpType.SLOW,
-            PowerUpType.FREEZE,
-            PowerUpType.MAGNET,
-            PowerUpType.GRAVITY_WELL -> PowerupBucket.CONTROL
-            PowerUpType.SHRINK,
-            PowerUpType.OVERDRIVE,
-            PowerUpType.RICOCHET,
-            PowerUpType.TIME_WARP,
-            PowerUpType.DOUBLE_SCORE -> PowerupBucket.RISK
-        }
-    }
-
-    private fun recordPowerup(type: PowerUpType) {
-        recentPowerups.addLast(type)
-        while (recentPowerups.size > recentPowerupLimit) {
-            recentPowerups.removeFirst()
-        }
-        when (powerupBucket(type)) {
-            PowerupBucket.OFFENSE -> {
-                powerupsSinceOffense = 0
-                powerupsSinceDefense += 1
-                powerupsSinceControl += 1
-            }
-            PowerupBucket.DEFENSE -> {
-                powerupsSinceDefense = 0
-                powerupsSinceOffense += 1
-                powerupsSinceControl += 1
-            }
-            PowerupBucket.CONTROL -> {
-                powerupsSinceControl = 0
-                powerupsSinceOffense += 1
-                powerupsSinceDefense += 1
-            }
-            PowerupBucket.RISK -> {
-                powerupsSinceOffense += 1
-                powerupsSinceDefense += 1
-                powerupsSinceControl += 1
-            }
-        }
-        powerupsSinceOffense = powerupsSinceOffense.coerceAtMost(12)
-        powerupsSinceDefense = powerupsSinceDefense.coerceAtMost(12)
-        powerupsSinceControl = powerupsSinceControl.coerceAtMost(12)
-    }
-
-    private fun spawnPowerupBurst(power: PowerUp) {
-        val available = maxParticles - particles.size
-        val count = min(8, max(0, available))
-        repeat(count) { index ->
-            val angle = (index / 6f) * (Math.PI.toFloat() * 2f)
-            val speed = 14f + random.nextFloat() * 10f
-            particles.add(
-                Particle(
-                    x = power.x,
-                    y = power.y,
-                    vx = kotlin.math.cos(angle) * speed,
-                    vy = kotlin.math.sin(angle) * speed,
-                    radius = 0.5f,
-                    life = 0.45f,
-                    color = power.type.color
-                )
-            )
-        }
-    }
-
-    private fun spawnComboStreakParticles(x: Float, y: Float, combo: Int) {
+    internal fun spawnComboStreakParticles(x: Float, y: Float, combo: Int) {
         val available = maxParticles - particles.size
         val count = min(12, max(0, available))
         if (count <= 0) return
@@ -5303,7 +3222,7 @@ class GameEngine(
         }
     }
 
-    private fun spawnLevelCompleteConfetti() {
+    internal fun spawnLevelCompleteConfetti() {
         val available = maxParticles - particles.size
         val count = min(25, max(0, available)) // More particles for celebration
         if (count <= 0) return
@@ -5341,7 +3260,7 @@ class GameEngine(
         }
     }
 
-    private fun spawnChildBricks(parentBrick: Brick) {
+    internal fun spawnChildBricks(parentBrick: Brick) {
         // Spawn 2-3 smaller bricks around the destroyed spawning brick
         val spawnCount = 2 + kotlin.random.Random(parentBrick.gridX * 13 + parentBrick.gridY * 19).nextInt(2)
         val childSize = parentBrick.width * 0.6f
@@ -5420,19 +3339,6 @@ class GameEngine(
         markTunnelGateIntegrityDirty()
     }
 
-    private fun powerIntersectsPaddle(power: PowerUp): Boolean {
-        val halfSize = power.size * 0.5f
-        val powerLeft = power.x - halfSize
-        val powerRight = power.x + halfSize
-        val powerBottom = power.y - halfSize
-        val powerTop = power.y + halfSize
-        val paddleLeft = paddle.x - paddle.width / 2f
-        val paddleRight = paddle.x + paddle.width / 2f
-        val paddleBottom = paddle.y - paddle.height / 2f
-        val paddleTop = paddle.y + paddle.height / 2f
-        return powerRight > paddleLeft && powerLeft < paddleRight && powerTop > paddleBottom && powerBottom < paddleTop
-    }
-
 }
 
 enum class GameState {
@@ -5479,20 +3385,20 @@ data class Brick(
     var alive: Boolean = true
 ) {
     companion object {
-        private val ROW_BANDS = arrayOf(
+        internal val ROW_BANDS = arrayOf(
             floatArrayOf(0.08f, -0.02f, -0.05f),
             floatArrayOf(-0.03f, 0.06f, 0.02f),
             floatArrayOf(0.02f, 0.04f, -0.06f),
             floatArrayOf(-0.05f, -0.01f, 0.07f),
             floatArrayOf(0.06f, -0.04f, 0.03f)
         )
-        private val COL_BANDS = arrayOf(
+        internal val COL_BANDS = arrayOf(
             floatArrayOf(0.04f, 0.01f, -0.03f),
             floatArrayOf(-0.02f, 0.05f, 0.02f),
             floatArrayOf(0.03f, -0.04f, 0.04f),
             floatArrayOf(-0.04f, -0.02f, 0.05f)
         )
-        private val COOL_VARIANTS = arrayOf(
+        internal val COOL_VARIANTS = arrayOf(
             floatArrayOf(0.32f, 0.84f, 0.98f),
             floatArrayOf(0.45f, 0.75f, 0.99f),
             floatArrayOf(0.46f, 0.88f, 0.76f),
@@ -5502,7 +3408,7 @@ data class Brick(
             floatArrayOf(0.56f, 0.94f, 0.5f),
             floatArrayOf(0.94f, 0.58f, 0.78f)
         )
-        private val WARM_VARIANTS = arrayOf(
+        internal val WARM_VARIANTS = arrayOf(
             floatArrayOf(0.98f, 0.56f, 0.34f),
             floatArrayOf(0.95f, 0.72f, 0.4f),
             floatArrayOf(0.98f, 0.45f, 0.5f),
@@ -5512,7 +3418,7 @@ data class Brick(
             floatArrayOf(0.7f, 0.58f, 0.9f),
             floatArrayOf(0.89f, 0.46f, 0.36f)
         )
-        private val BALANCED_VARIANTS = arrayOf(
+        internal val BALANCED_VARIANTS = arrayOf(
             floatArrayOf(0.54f, 0.84f, 0.97f),
             floatArrayOf(0.91f, 0.64f, 0.42f),
             floatArrayOf(0.45f, 0.9f, 0.65f),
@@ -5522,16 +3428,16 @@ data class Brick(
             floatArrayOf(0.94f, 0.5f, 0.56f),
             floatArrayOf(0.7f, 0.88f, 0.5f)
         )
-        private val BIAS_NORMAL = floatArrayOf(0f, 0f, 0f)
-        private val BIAS_REINFORCED = floatArrayOf(0.04f, -0.02f, 0.03f)
-        private val BIAS_ARMORED = floatArrayOf(-0.02f, 0.04f, -0.01f)
-        private val BIAS_EXPLOSIVE = floatArrayOf(0.12f, -0.08f, -0.07f)
-        private val BIAS_UNBREAKABLE = floatArrayOf(-0.04f, -0.03f, 0.06f)
-        private val BIAS_MOVING = floatArrayOf(-0.01f, 0.08f, 0.03f)
-        private val BIAS_SPAWNING = floatArrayOf(0.03f, 0.01f, 0.08f)
-        private val BIAS_PHASE = floatArrayOf(0.08f, 0.06f, -0.04f)
-        private val BIAS_BOSS = floatArrayOf(0.12f, -0.07f, -0.05f)
-        private val BIAS_INVADER = floatArrayOf(0.03f, 0.08f, 0.1f)
+        internal val BIAS_NORMAL = floatArrayOf(0f, 0f, 0f)
+        internal val BIAS_REINFORCED = floatArrayOf(0.04f, -0.02f, 0.03f)
+        internal val BIAS_ARMORED = floatArrayOf(-0.02f, 0.04f, -0.01f)
+        internal val BIAS_EXPLOSIVE = floatArrayOf(0.12f, -0.08f, -0.07f)
+        internal val BIAS_UNBREAKABLE = floatArrayOf(-0.04f, -0.03f, 0.06f)
+        internal val BIAS_MOVING = floatArrayOf(-0.01f, 0.08f, 0.03f)
+        internal val BIAS_SPAWNING = floatArrayOf(0.03f, 0.01f, 0.08f)
+        internal val BIAS_PHASE = floatArrayOf(0.08f, 0.06f, -0.04f)
+        internal val BIAS_BOSS = floatArrayOf(0.12f, -0.07f, -0.05f)
+        internal val BIAS_INVADER = floatArrayOf(0.03f, 0.08f, 0.1f)
     }
 
     var hitFlash = 0f
@@ -5543,9 +3449,9 @@ data class Brick(
     var spawnCount: Int = 0  // Number of spawns left for spawning bricks
     var lastHitTime: Float = 0f  // Timestamp of last hit for special effects
     var fireFlash: Float = 0f  // Invader firing glow
-    private var cachedThemeName: String? = null
-    private var cachedHitPoints: Int = -1
-    private var cachedColor: FloatArray? = null
+    internal var cachedThemeName: String? = null
+    internal var cachedHitPoints: Int = -1
+    internal var cachedColor: FloatArray? = null
     val scoreValue: Int = when (type) {
         BrickType.NORMAL -> 50
         BrickType.REINFORCED -> 80
@@ -5678,7 +3584,7 @@ data class Brick(
         )
     }
 
-    private fun variantsForTheme(themeName: String): Array<FloatArray> {
+    internal fun variantsForTheme(themeName: String): Array<FloatArray> {
         return when (themeName) {
             "Sunset", "Lava", "Ember" -> WARM_VARIANTS
             "Neon", "Cobalt", "Circuit", "Invaders", "Vapor" -> COOL_VARIANTS
@@ -5688,7 +3594,7 @@ data class Brick(
 
 
 
-    private fun biasForType(): FloatArray {
+    internal fun biasForType(): FloatArray {
         return when (type) {
             BrickType.NORMAL -> BIAS_NORMAL
             BrickType.REINFORCED -> BIAS_REINFORCED
@@ -5703,7 +3609,7 @@ data class Brick(
         }
     }
 
-    private fun tintMixForType(): Float {
+    internal fun tintMixForType(): Float {
         return when (type) {
             BrickType.NORMAL -> 0.34f
             BrickType.REINFORCED -> 0.24f
@@ -5718,7 +3624,7 @@ data class Brick(
         }
     }
 
-    private fun diversityForType(): Float {
+    internal fun diversityForType(): Float {
         return when (type) {
             BrickType.NORMAL -> 1f
             BrickType.MOVING, BrickType.PHASE, BrickType.SPAWNING, BrickType.INVADER -> 0.9f
@@ -5728,11 +3634,11 @@ data class Brick(
         }
     }
 
-    private fun mix(start: Float, end: Float, t: Float): Float {
+    internal fun mix(start: Float, end: Float, t: Float): Float {
         return start + (end - start) * t
     }
 
-    private fun positiveMod(value: Int, size: Int): Int {
+    internal fun positiveMod(value: Int, size: Int): Int {
         val mod = value % size
         return if (mod < 0) mod + size else mod
     }
