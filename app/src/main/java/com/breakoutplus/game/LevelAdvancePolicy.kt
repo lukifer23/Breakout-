@@ -13,23 +13,24 @@ internal object LevelAdvancePolicy {
         clearedBoard: Boolean,
         godModeEnabled: Boolean
     ): LevelAdvanceDecision {
-        val clearedBoardWhilePaused = state == GameState.PAUSED && godModeEnabled && clearedBoard
-        val godModeForce =
-            godModeEnabled &&
+        val relaxedMode = godModeEnabled
+        val clearedBoardWhilePaused = state == GameState.PAUSED && relaxedMode && clearedBoard
+        val relaxedForce =
+            relaxedMode &&
                 (state == GameState.PAUSED || state == GameState.READY || state == GameState.RUNNING) &&
                 !awaitingNextLevel &&
                 lives > 0
-        val godModeRecoveryForce =
-            godModeEnabled &&
+        val relaxedRecoveryForce =
+            relaxedMode &&
                 !awaitingNextLevel &&
                 lives > 0 &&
                 clearedBoard
 
-        val canAdvance = awaitingNextLevel || clearedBoardWhilePaused || godModeForce || godModeRecoveryForce || (godModeEnabled && clearedBoard)
+        val canAdvance = awaitingNextLevel || clearedBoardWhilePaused || relaxedForce || relaxedRecoveryForce || (relaxedMode && clearedBoard)
         val reason = if (canAdvance) {
             "accepted"
         } else {
-            "awaiting=$awaitingNextLevel,state=$state,lives=$lives,clearedBoard=$clearedBoard,godMode=$godModeEnabled"
+            "awaiting=$awaitingNextLevel,state=$state,lives=$lives,clearedBoard=$clearedBoard,relaxedMode=$relaxedMode"
         }
         return LevelAdvanceDecision(canAdvance = canAdvance, reason = reason)
     }

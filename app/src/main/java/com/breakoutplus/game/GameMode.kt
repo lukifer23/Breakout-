@@ -11,6 +11,7 @@ enum class GameMode(
     val timeLimitSeconds: Int,
     val endless: Boolean,
     val godMode: Boolean,
+    val zenMode: Boolean = false,
     val rush: Boolean,
     val invaders: Boolean,
     val launchSpeed: Float
@@ -29,8 +30,8 @@ enum class GameMode(
     ),
     TIMED(
         displayName = "Timed Challenge",
-        description = "Race the clock. Clear as many bricks as possible.",
-        meta = "Lives 2 • 2:30 timer • Fast",
+        description = "Race the clock. Clear as many bricks as possible in one 2:30 session.",
+        meta = "Lives 2 • 2:30 session timer • Fast",
         baseLives = 2,
         timeLimitSeconds = 150,
         endless = false,
@@ -65,7 +66,7 @@ enum class GameMode(
     ),
     RUSH(
         displayName = "Level Rush",
-        description = "Beat each stage before the timer expires.",
+        description = "Beat each stage before the per-level timer expires.",
         meta = "Lives 1 • 0:55 per level • Hardcore",
         baseLives = 1,
         timeLimitSeconds = 55,
@@ -125,14 +126,18 @@ enum class GameMode(
     ),
     ZEN(
         displayName = "Zen Mode",
-        description = "Relaxing brick-breaking without pressure. No scores or lives to worry about.",
-        meta = "No scores • No lives • Relaxed",
+        description = "Relaxing brick-breaking without pressure. No scores, XP, or lives to worry about.",
+        meta = "No scores • Endless flow • Relaxed",
         baseLives = 99,
         timeLimitSeconds = 0,
-        endless = false,
-        godMode = true,
+        endless = true,
+        godMode = false,
+        zenMode = true,
         rush = false,
         invaders = false,
-        launchSpeed = 72.25f  // Same as GOD mode
+        launchSpeed = 72.25f
     );
+
+    val relaxedMode: Boolean
+        get() = godMode || zenMode
 }

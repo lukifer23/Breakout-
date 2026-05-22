@@ -1,9 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginTop="10dp"
     android:background="@drawable/card_background"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="?attr/selectableItemBackground"
     android:padding="12dp">
 
     <TextView
@@ -21,7 +25,7 @@
         android:id="@+id/challengeStatus"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textColor="@color/bp_green"
+        android:textColor="@color/bp_cyan"
         android:textSize="@dimen/bp_caption_text_size"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
@@ -33,9 +37,20 @@
         android:layout_marginTop="6dp"
         android:textColor="@color/bp_gray"
         android:textSize="@dimen/bp_caption_text_size"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/challengeTitle"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintTop_toBottomOf="@id/challengeTitle" />
+
+    <TextView
+        android:id="@+id/challengeReward"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:textColor="@color/bp_gold"
+        android:textSize="@dimen/bp_caption_text_size"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/challengeDescription" />
 
     <ProgressBar
         android:id="@+id/challengeProgressBar"
@@ -43,11 +58,11 @@
         android:layout_width="0dp"
         android:layout_height="8dp"
         android:layout_marginTop="10dp"
+        android:progressBackgroundTint="@color/bp_glass_fill_deep"
         android:progressTint="@color/bp_cyan"
-        android:progressBackgroundTint="@color/bp_navy"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/challengeDescription"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintTop_toBottomOf="@id/challengeReward" />
 
     <TextView
         android:id="@+id/challengeProgress"
@@ -57,6 +72,16 @@
         android:textColor="@color/bp_gray"
         android:textSize="@dimen/bp_caption_text_size"
         app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/challengeProgressBar" />
+
+    <TextView
+        android:id="@+id/challengePlayHint"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:textColor="@color/bp_azure"
+        android:textSize="@dimen/bp_caption_text_size"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@id/challengeProgressBar" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

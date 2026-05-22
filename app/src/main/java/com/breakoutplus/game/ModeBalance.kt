@@ -105,7 +105,7 @@ object ModeBalance {
             speedBoostSlope = 0.029f,
             speedBoostCap = 1.64f,
             minSpeedFactor = 0.76f,
-            maxSpeedFactor = 1.92f,
+            maxSpeedFactor = 1.88f,
             difficultyBase = 1.2f,
             difficultySlope = 0.125f,
             dropChanceModeBoost = 0.055f

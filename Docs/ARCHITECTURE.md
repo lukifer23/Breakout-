@@ -13,7 +13,7 @@
 - HUD orchestration: `GameHudController.kt`
 - Render surface: `GameGLSurfaceView.kt`
 - Render/sim loop: `GameRenderer.kt`
-- Core gameplay: `GameEngine.kt`
+- Core gameplay: `GameEngine.kt` (+ `GameEngineScoring.kt`, `GameEngineLevelFlow.kt`, `GameEngineCollision.kt`, `GameEnginePowerup.kt`)
 - Layout generation: `LevelFactory.kt`
 - Mode tuning: `GameMode.kt`, `ModeBalance.kt`
 - Mode layout policy: `ModeLayoutPolicy.kt`
@@ -26,8 +26,8 @@
 - Invaders formation/pacing: `InvadersModeSystem.kt`
 - Mode UI accent colors: `ModeAccent.kt`
 - Powerup drop-rate model: `PowerupDropModel.kt`
-- Drawing primitives: `Renderer2D.kt`
-- Audio playback/feedback: `GameAudioManager.kt`
+- Drawing primitives: `Renderer2D.kt` (rect/circle batching)
+- Audio playback/feedback: `GameAudioManager.kt` (audio focus, cached haptics)
 
 ## Current Hotspots (Complexity)
 - `GameEngine.kt` is the primary complexity concentration (gameplay, mode logic, collisions, FX, and status output mixed together).
@@ -43,7 +43,8 @@ Current decomposition strategy is incremental extraction with behavior parity:
 - Render mode: `RENDERMODE_WHEN_DIRTY` (not continuous).
 - Frame requests: Choreographer callback pacing in `FramePacer`.
 - Simulation: fixed-step only (`setTargetFrameRate` controls step size; clamped to 45-240 FPS bounds).
-- Accumulator limit prevents runaway update bursts on frame drops.
+- Accumulator limit prevents runaway update bursts on frame drops; max steps scale down when rolling frame time exceeds 18ms.
+- `renderFrameStress` reduces background FX density under load.
 - Gameplay mutation stays on fixed ticks; renderer-time effects (shake/flash/pulse) continue to use frame delta for visual smoothing only.
 
 ## State & Events

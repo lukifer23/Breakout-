@@ -22,12 +22,22 @@ fun GameEngine.render(renderer: Renderer2D) {
         }
 
         // Draw gradient background (top to bottom)
-        val gradientSteps = 20
+        val backgroundFxDensity = when {
+            renderFrameStress -> 0.72f
+            !settings.highRefreshRate -> 0.74f
+            worldHeight > 195f -> 0.86f
+            else -> 1f
+        } * (0.86f + cosmeticTier * 0.05f)
+        fun effectCount(base: Int, minCount: Int, maxCount: Int): Int {
+            return (base * backgroundFxDensity).roundToInt().coerceIn(minCount, maxCount)
+        }
+        val detailedBrickRendering = backgroundFxDensity >= 0.88f
+        val gradientSteps = effectCount(base = 20, minCount = 8, maxCount = 20)
         val stepHeight = worldHeight / gradientSteps
         for (i in 0 until gradientSteps) {
             val y = i * stepHeight
             val ratio = i.toFloat() / gradientSteps.toFloat()
-            renderer.drawRect(
+            renderer.drawRectBatch(
                 0f,
                 y,
                 worldWidth,
@@ -41,17 +51,10 @@ fun GameEngine.render(renderer: Renderer2D) {
                 )
             )
         }
+        renderer.flushRectBatch()
 
         // Add theme-specific background effects
         val time = renderTimeSeconds
-        val backgroundFxDensity = when {
-            !settings.highRefreshRate -> 0.74f
-            worldHeight > 195f -> 0.86f
-            else -> 1f
-        } * (0.86f + cosmeticTier * 0.05f)
-        fun effectCount(base: Int, minCount: Int, maxCount: Int): Int {
-            return (base * backgroundFxDensity).roundToInt().coerceIn(minCount, maxCount)
-        }
         when (theme.name) {
             "Neon" -> {
                 // Animated grid pattern
@@ -285,6 +288,17 @@ fun GameEngine.render(renderer: Renderer2D) {
             }
             continue
         }
+
+            if (!detailedBrickRendering) {
+                renderer.drawRect(brick.x, brick.y, brick.width, brick.height, color)
+                when (brick.type) {
+                    BrickType.REINFORCED -> drawStripe(renderer, brick, adjustColor(scratchColor8, color, 0.85f, 1f), 1)
+                    BrickType.ARMORED -> drawStripe(renderer, brick, adjustColor(scratchColor9, color, 0.78f, 1f), 2)
+                    BrickType.UNBREAKABLE -> drawStripe(renderer, brick, adjustColor(scratchColor10, color, 0.66f, 1f), 3)
+                    else -> Unit
+                }
+                continue
+            }
 
             // 3D depth effect: base shadow
             val shadowOffset = brick.width * 0.02f

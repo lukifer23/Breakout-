@@ -90,6 +90,14 @@
     <string name="label_challenge_progress">%1$d/%2$d</string>
     <string name="label_challenge_completed">Completed</string>
     <string name="label_challenge_in_progress">In progress</string>
+    <string name="label_challenge_reward_applied">Reward applied</string>
+    <string name="label_challenge_reward">Reward: %1$s</string>
+    <string name="label_challenge_tap_to_play">Tap to play in %1$s</string>
+    <string name="label_scoreboard_global_hint">All modes shows the top 10 scores across every mode combined.</string>
+    <string name="label_section_unlocks">Unlocked Themes</string>
+    <string name="label_unlock_status_unlocked">Unlocked</string>
+    <string name="label_unlock_status_locked">Locked</string>
+    <string name="label_cosmetic_tier_format">Cosmetic tier: %1$d / 3</string>
     <string name="label_theme_unlocked">Theme unlocked: %1$s</string>
     <string name="label_cosmetic_unlocked">Cosmetic upgrade unlocked!</string>
     <string name="label_prev_symbol">◀</string>

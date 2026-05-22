@@ -1,0 +1,21 @@
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="135"
+                android:startColor="@color/bp_hud_glass_fill_strong"
+                android:centerColor="@color/bp_hud_glass_fill"
+                android:endColor="@color/bp_hud_glass_fill_deep" />
+            <corners android:radius="@dimen/bp_radius_glass" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <stroke
+                android:width="1dp"
+                android:color="@color/bp_hud_glass_stroke" />
+            <corners android:radius="@dimen/bp_radius_glass" />
+            <solid android:color="@color/bp_transparent" />
+        </shape>
+    </item>
+</layer-list>

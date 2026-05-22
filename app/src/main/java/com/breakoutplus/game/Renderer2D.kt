@@ -82,6 +82,50 @@ class Renderer2D {
         circleMesh.draw(shader)
     }
 
+    // Batched rect drawing to reduce draw-call overhead for solid-color quads.
+    private val rectBatch = ArrayList<RectDraw>(512)
+    private var rectBatchCount = 0
+
+    private class RectDraw {
+        var x: Float = 0f
+        var y: Float = 0f
+        var width: Float = 0f
+        var height: Float = 0f
+        val color: FloatArray = FloatArray(4)
+    }
+
+    fun drawRectBatch(x: Float, y: Float, width: Float, height: Float, color: FloatArray) {
+        if (rectBatchCount >= rectBatch.size) {
+            rectBatch.add(RectDraw())
+        }
+        val rect = rectBatch[rectBatchCount]
+        rect.x = x
+        rect.y = y
+        rect.width = width
+        rect.height = height
+        rect.color[0] = color.getOrElse(0) { 1f }
+        rect.color[1] = color.getOrElse(1) { 1f }
+        rect.color[2] = color.getOrElse(2) { 1f }
+        rect.color[3] = color.getOrElse(3) { 1f }
+        rectBatchCount += 1
+    }
+
+    fun flushRectBatch() {
+        if (rectBatchCount == 0) return
+        ensureShader()
+        for (i in 0 until rectBatchCount) {
+            val rect = rectBatch[i]
+            Matrix.setIdentityM(modelMatrix, 0)
+            Matrix.translateM(modelMatrix, 0, rect.x + offsetX, rect.y + offsetY, 0f)
+            Matrix.scaleM(modelMatrix, 0, rect.width, rect.height, 1f)
+            Matrix.multiplyMM(mvpMatrix, 0, projectionMatrix, 0, modelMatrix, 0)
+            shader.setUniformMatrix("u_MVPMatrix", mvpMatrix)
+            shader.setUniformColor("u_Color", rect.color)
+            rectMesh.draw(shader)
+        }
+        rectBatchCount = 0
+    }
+
     // Batched circle drawing to reduce shader switches and matrix calculations.
     // Reuses slots to avoid per-frame object churn from transient particle effects.
     private val circleBatch = ArrayList<CircleDraw>(300)

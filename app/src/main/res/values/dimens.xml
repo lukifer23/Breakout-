@@ -13,4 +13,10 @@
     <dimen name="bp_hud_mode_size">12sp</dimen>
     <dimen name="bp_hud_banner_size">20sp</dimen>
     <dimen name="bp_hud_reserved_height">150dp</dimen>
+
+    <dimen name="bp_radius_glass">22dp</dimen>
+    <dimen name="bp_radius_glass_compact">16dp</dimen>
+    <dimen name="bp_radius_button">20dp</dimen>
+    <dimen name="bp_radius_chip">12dp</dimen>
+    <dimen name="bp_glass_panel_padding">22dp</dimen>
 </resources>

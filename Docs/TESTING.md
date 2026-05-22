@@ -8,13 +8,18 @@
 GitHub Actions (`.github/workflows/android.yml`) runs on every push/PR:
 ```bash
 ./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
+CI=true ./gradlew :app:assembleRelease
 ```
 
 ## JVM Unit Tests
 ```bash
 ./gradlew :app:testDebugUnitTest
 ```
-Current suite: **105 tests** covering mode systems, layout policy, collision math, progression policy, and UI tokens.
+Current suite: **108+ tests** covering mode systems, layout policy, collision math, progression policy, Zen behavior, and UI tokens.
+
+Key test files added/expanded in 1.0.12:
+- `ZenModeBehaviorTest` — Zen vs God flags, challenge mode mapping
+- `LayoutParityTest` — overlay glass panels, shield track parity across buckets
 
 Key test files added/expanded in 1.0.11:
 - `VolleyModeSystemTest` — turn decision flow, starting ball count (5)

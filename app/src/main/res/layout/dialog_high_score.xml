@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_margin="24dp"
-    android:background="@drawable/dialog_panel"
+    android:background="@drawable/glass_panel_elevated"
     android:orientation="vertical"
     android:padding="20dp">
 
@@ -34,12 +34,12 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
         app:boxBackgroundMode="filled"
-        app:boxBackgroundColor="@color/bp_surface_raised"
-        app:boxCornerRadiusTopStart="12dp"
-        app:boxCornerRadiusTopEnd="12dp"
-        app:boxCornerRadiusBottomStart="12dp"
-        app:boxCornerRadiusBottomEnd="12dp"
-        app:boxStrokeColor="@color/bp_cyan"
+        app:boxBackgroundColor="@color/bp_glass_fill"
+        app:boxCornerRadiusTopStart="@dimen/bp_radius_chip"
+        app:boxCornerRadiusTopEnd="@dimen/bp_radius_chip"
+        app:boxCornerRadiusBottomStart="@dimen/bp_radius_chip"
+        app:boxCornerRadiusBottomEnd="@dimen/bp_radius_chip"
+        app:boxStrokeColor="@color/bp_glass_stroke_bright"
         app:hintTextColor="@color/bp_gray">
 
         <com.google.android.material.textfield.TextInputEditText
@@ -64,12 +64,10 @@
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/highScoreSkip"
-            style="@style/Widget.BreakoutPlus.Button"
+            style="@style/Widget.BreakoutPlus.Button.Secondary"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/label_skip"
-            android:backgroundTint="@color/bp_gray"
-            android:textColor="@color/bp_white" />
+            android:text="@string/label_skip" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/highScoreSave"

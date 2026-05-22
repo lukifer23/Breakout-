@@ -39,10 +39,6 @@ enum class RewardType {
 
 object DailyChallengeManager {
 
-    private const val PREFS_CHALLENGES = "daily_challenges"
-    private const val KEY_LAST_UPDATE = "last_update"
-    private const val KEY_CHALLENGES = "challenges"
-
     private val challengeTemplates = listOf(
         // Destruction challenges
         { DailyChallenge("bricks_25", "Brick Buster", "Destroy 25 bricks", ChallengeType.BRICKS_DESTROYED, 25, RewardType.SCORE_MULTIPLIER, 10) },
@@ -104,6 +100,19 @@ object DailyChallengeManager {
             RewardType.THEME_UNLOCK -> "Unlocks a visual theme"
             RewardType.STREAK_BONUS -> "Bonus points for next ${challenge.rewardValue} bricks"
             RewardType.SCORE_MULTIPLIER -> "+${challenge.rewardValue}% score bonus"
+        }
+    }
+
+    fun suggestedModeForChallenge(type: ChallengeType): GameMode {
+        return when (type) {
+            ChallengeType.TIME_UNDER_LIMIT -> GameMode.RUSH
+            ChallengeType.LASER_FIRED -> GameMode.INVADERS
+            ChallengeType.SCORE_ACHIEVED -> GameMode.ENDLESS
+            ChallengeType.COMBO_MULTIPLIER -> GameMode.CLASSIC
+            ChallengeType.POWERUPS_COLLECTED -> GameMode.CLASSIC
+            ChallengeType.PERFECT_LEVEL -> GameMode.CLASSIC
+            ChallengeType.MULTI_BALL_ACTIVE -> GameMode.CLASSIC
+            ChallengeType.BRICKS_DESTROYED -> GameMode.CLASSIC
         }
     }
 }

@@ -31,3 +31,8 @@ jobs:
 
       - name: Assemble debug APK
         run: ./gradlew :app:assembleDebug --no-daemon
+
+      - name: Assemble release APK (CI debug signing)
+        run: ./gradlew :app:assembleRelease --no-daemon
+        env:
+          CI: true

@@ -65,39 +65,35 @@
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/buttonChallenges"
-            style="@style/Widget.BreakoutPlus.Button"
+            style="@style/Widget.BreakoutPlus.Button.Secondary"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/bp_button_gap"
-            android:text="@string/title_daily_challenges"
-            android:backgroundTint="@color/bp_gold" />
+            android:text="@string/title_daily_challenges" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/buttonScoreboard"
-            style="@style/Widget.BreakoutPlus.Button"
+            style="@style/Widget.BreakoutPlus.Button.Secondary"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/bp_button_gap"
-            android:text="@string/title_scoreboard"
-            android:backgroundTint="@color/bp_green" />
+            android:text="@string/title_scoreboard" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/buttonSettings"
-            style="@style/Widget.BreakoutPlus.Button"
+            style="@style/Widget.BreakoutPlus.Button.Secondary"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/bp_button_gap"
-            android:text="@string/title_settings"
-            android:backgroundTint="@color/bp_magenta" />
+            android:text="@string/title_settings" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/buttonHowTo"
-            style="@style/Widget.BreakoutPlus.Button"
+            style="@style/Widget.BreakoutPlus.Button.Secondary"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/bp_button_gap"
-            android:text="@string/title_howto"
-            android:backgroundTint="@color/bp_cyan" />
+            android:text="@string/title_howto" />
 
     </LinearLayout>
 

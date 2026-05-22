@@ -2,8 +2,11 @@ package com.breakoutplus.game
 
 import android.content.Context
 import android.media.AudioAttributes
+import android.media.AudioFocusRequest
+import android.media.AudioManager
 import android.media.MediaPlayer
 import android.media.SoundPool
+import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
 import com.breakoutplus.R
@@ -14,6 +17,47 @@ class GameAudioManager(private val context: Context, private var settings: Setti
     private val soundMap = mutableMapOf<GameSound, Int>()
     private var mediaPlayer: MediaPlayer? = null
     private val vibrator: Vibrator? = context.getSystemService(Vibrator::class.java)
+    private val audioManager: AudioManager? = context.getSystemService(AudioManager::class.java)
+    private var musicPausedByFocusLoss = false
+    private val hapticEffects = mapOf(
+        GameHaptic.LIGHT to VibrationEffect.createOneShot(18, 80),
+        GameHaptic.MEDIUM to VibrationEffect.createOneShot(28, 120),
+        GameHaptic.HEAVY to VibrationEffect.createOneShot(45, 180)
+    )
+    private val audioFocusListener = AudioManager.OnAudioFocusChangeListener { focusChange ->
+        when (focusChange) {
+            AudioManager.AUDIOFOCUS_LOSS,
+            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
+                if (isMusicPlaying()) {
+                    musicPausedByFocusLoss = true
+                    stopMusic()
+                }
+            }
+            AudioManager.AUDIOFOCUS_GAIN -> {
+                if (musicPausedByFocusLoss && settings.musicEnabled) {
+                    musicPausedByFocusLoss = false
+                    startMusic()
+                }
+            }
+            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
+                val musicVol = (settings.musicVolume * settings.masterVolume * 0.35f)
+                mediaPlayer?.setVolume(musicVol, musicVol)
+            }
+        }
+    }
+    private val audioFocusRequest = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+            .setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_GAME)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                    .build()
+            )
+            .setOnAudioFocusChangeListener(audioFocusListener)
+            .build()
+    } else {
+        null
+    }
 
     init {
         val attrs = AudioAttributes.Builder()
@@ -24,16 +68,15 @@ class GameAudioManager(private val context: Context, private var settings: Setti
             .setAudioAttributes(attrs)
             .setMaxStreams(6)
             .build()
-        // Load all sound effects (using existing files as fallbacks for new ones)
         soundMap[GameSound.BOUNCE] = soundPool.load(context, R.raw.sfx_bounce, 1)
         soundMap[GameSound.BRICK_NORMAL] = soundPool.load(context, R.raw.sfx_brick, 1)
-        soundMap[GameSound.BRICK_REINFORCED] = soundPool.load(context, R.raw.sfx_brick, 1) // Uses standard brick impact
-        soundMap[GameSound.BRICK_ARMORED] = soundPool.load(context, R.raw.sfx_brick, 1) // Uses standard brick impact
+        soundMap[GameSound.BRICK_REINFORCED] = soundPool.load(context, R.raw.sfx_brick, 1)
+        soundMap[GameSound.BRICK_ARMORED] = soundPool.load(context, R.raw.sfx_brick, 1)
         soundMap[GameSound.BRICK_EXPLOSIVE] = soundPool.load(context, R.raw.sfx_explosion, 1)
-        soundMap[GameSound.BRICK_UNBREAKABLE] = soundPool.load(context, R.raw.sfx_bounce, 1) // Metallic bounce
-        soundMap[GameSound.BRICK_MOVING] = soundPool.load(context, R.raw.sfx_brick, 1) // Uses standard brick impact
+        soundMap[GameSound.BRICK_UNBREAKABLE] = soundPool.load(context, R.raw.sfx_bounce, 1)
+        soundMap[GameSound.BRICK_MOVING] = soundPool.load(context, R.raw.sfx_brick, 1)
         soundMap[GameSound.BRICK_SPAWNING] = soundPool.load(context, R.raw.sfx_powerup, 1)
-        soundMap[GameSound.BRICK_PHASE] = soundPool.load(context, R.raw.sfx_brick, 1) // Uses standard brick impact
+        soundMap[GameSound.BRICK_PHASE] = soundPool.load(context, R.raw.sfx_brick, 1)
         soundMap[GameSound.BRICK_BOSS] = soundPool.load(context, R.raw.sfx_explosion, 1)
         soundMap[GameSound.POWERUP] = soundPool.load(context, R.raw.sfx_powerup, 1)
         soundMap[GameSound.LIFE] = soundPool.load(context, R.raw.sfx_life, 1)
@@ -45,23 +88,14 @@ class GameAudioManager(private val context: Context, private var settings: Setti
     fun play(sound: GameSound, volume: Float = 1f, rate: Float = 1f) {
         if (!settings.soundEnabled) return
         val id = soundMap[sound] ?: return
-
-        // Apply volume settings based on sound type
-        val finalVolume = when {
-            sound == GameSound.BOUNCE -> volume * settings.effectsVolume * settings.masterVolume
-            sound.name.startsWith("BRICK_") -> volume * settings.effectsVolume * settings.masterVolume
-            sound == GameSound.POWERUP || sound == GameSound.LIFE ||
-            sound == GameSound.EXPLOSION || sound == GameSound.LASER -> volume * settings.effectsVolume * settings.masterVolume
-            sound == GameSound.GAME_OVER -> volume * settings.effectsVolume * settings.masterVolume
-            else -> volume * settings.effectsVolume * settings.masterVolume
-        }
-
+        val finalVolume = volume * settings.effectsVolume * settings.masterVolume
         val finalRate = rate.coerceIn(0.7f, 1.3f)
         soundPool.play(id, finalVolume, finalVolume, 1, 0, finalRate)
     }
 
     fun startMusic() {
         if (!settings.musicEnabled) return
+        requestAudioFocus()
         val player = mediaPlayer ?: MediaPlayer.create(context, R.raw.music_loop)?.also {
             it.isLooping = true
             mediaPlayer = it
@@ -75,11 +109,7 @@ class GameAudioManager(private val context: Context, private var settings: Setti
 
     fun haptic(type: GameHaptic) {
         if (!settings.vibrationEnabled) return
-        val effect = when (type) {
-            GameHaptic.LIGHT -> VibrationEffect.createOneShot(18, 80)
-            GameHaptic.MEDIUM -> VibrationEffect.createOneShot(28, 120)
-            GameHaptic.HEAVY -> VibrationEffect.createOneShot(45, 180)
-        }
+        val effect = hapticEffects[type] ?: return
         vibrator?.vibrate(effect)
     }
 
@@ -92,6 +122,7 @@ class GameAudioManager(private val context: Context, private var settings: Setti
     }
 
     fun release() {
+        abandonAudioFocus()
         mediaPlayer?.release()
         mediaPlayer = null
         soundPool.release()
@@ -104,6 +135,30 @@ class GameAudioManager(private val context: Context, private var settings: Setti
         } else if (mediaPlayer != null) {
             val musicVol = settings.musicVolume * settings.masterVolume
             mediaPlayer?.setVolume(musicVol, musicVol)
+        }
+    }
+
+    private fun requestAudioFocus() {
+        val manager = audioManager ?: return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            audioFocusRequest?.let { manager.requestAudioFocus(it) }
+        } else {
+            @Suppress("DEPRECATION")
+            manager.requestAudioFocus(
+                audioFocusListener,
+                AudioManager.STREAM_MUSIC,
+                AudioManager.AUDIOFOCUS_GAIN
+            )
+        }
+    }
+
+    private fun abandonAudioFocus() {
+        val manager = audioManager ?: return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            audioFocusRequest?.let { manager.abandonAudioFocusRequest(it) }
+        } else {
+            @Suppress("DEPRECATION")
+            manager.abandonAudioFocus(audioFocusListener)
         }
     }
 }

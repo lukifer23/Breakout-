@@ -16,6 +16,8 @@ class PrivacyActivity : FoldAwareActivity() {
             finish()
             playCloseTransition(R.anim.slide_in_left, R.anim.slide_out_right)
         }
+        registerSlideCloseOnBackPressed()
+        UiMotion.attachPressScale(binding.buttonPrivacyBack)
         binding.privacyText.text = loadPrivacyText()
         animateEntry()
     }
@@ -27,17 +29,8 @@ class PrivacyActivity : FoldAwareActivity() {
     }
 
     private fun animateEntry() {
-        val views = listOf(binding.privacyTitle, binding.privacyScroll, binding.privacyFooter)
-        views.forEachIndexed { index, view ->
-            view.alpha = 0f
-            view.translationY = 18f
-            view.animate()
-                .alpha(1f)
-                .translationY(0f)
-                .setStartDelay(UiMotion.stagger(index, step = 80L))
-                .setDuration(UiMotion.ENTRY_DURATION)
-                .setInterpolator(UiMotion.EMPHASIS_OUT)
-                .start()
-        }
+        UiMotion.animateScreenSections(
+            listOf(binding.privacyTitle, binding.privacyScroll, binding.privacyFooter)
+        )
     }
 }

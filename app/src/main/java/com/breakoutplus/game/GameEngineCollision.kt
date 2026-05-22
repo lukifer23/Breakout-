@@ -178,11 +178,15 @@ internal fun GameEngine.handleBrickCollisionFromBeam(beam: Beam, brick: Brick) {
 
 
 internal fun GameEngine.handleBeamCollision() {
+    if (spatialHashDirty || spatialHash.isEmpty()) {
+        buildSpatialHash()
+    }
     val iterator = beams.iterator()
     while (iterator.hasNext()) {
         val beam = iterator.next()
         var hitBrick: Brick? = null
-        for (brick in bricks) {
+        val nearby = getNearbyBricksAt(beam.x, beam.y, max(beam.width, beam.height) * 0.6f)
+        for (brick in nearby) {
             if (!brick.alive) continue
             if (!GameCollisionSystem.beamIntersectsBrick(beam, brick)) continue
             hitBrick = brick
@@ -230,7 +234,9 @@ internal fun GameEngine.handleInvaderShotHit(shot: EnemyShot): Boolean {
 
 
 internal fun GameEngine.buildSpatialHash() {
-    spatialHash.clear()
+    for (bucket in spatialHash.values) {
+        bucket.clear()
+    }
     for (brick in bricks) {
         if (!brick.alive) continue
         val minX = (brick.x / spatialHashCellSize).toInt()

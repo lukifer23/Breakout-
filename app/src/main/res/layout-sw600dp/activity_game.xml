@@ -35,7 +35,7 @@
                 android:fontFamily="sans-serif-medium"
                 android:maxLines="1"
                 android:text="@string/label_score_default"
-                android:textColor="@color/bp_white"
+                android:textColor="@color/bp_hud_text"
                 android:textSize="@dimen/bp_hud_score_size"
                 android:textStyle="bold"
                 app:layout_constraintBottom_toBottomOf="parent"
@@ -79,7 +79,7 @@
                     android:fontFamily="sans-serif-medium"
                     android:maxLines="1"
                     android:text="@string/label_lives_default"
-                    android:textColor="@color/bp_white"
+                    android:textColor="@color/bp_hud_text"
                     android:textSize="@dimen/bp_hud_stat_size" />
 
                 <TextView
@@ -91,7 +91,7 @@
                     android:fontFamily="sans-serif-medium"
                     android:maxLines="1"
                     android:text="@string/label_time_default"
-                    android:textColor="@color/bp_white"
+                    android:textColor="@color/bp_hud_text"
                     android:textSize="@dimen/bp_hud_stat_size" />
 
                 <TextView
@@ -103,7 +103,7 @@
                     android:fontFamily="sans-serif-medium"
                     android:maxLines="1"
                     android:text="@string/label_level_default"
-                    android:textColor="@color/bp_white"
+                    android:textColor="@color/bp_hud_text"
                     android:textSize="@dimen/bp_hud_stat_size" />
             </LinearLayout>
         </androidx.constraintlayout.widget.ConstraintLayout>
@@ -120,7 +120,7 @@
             android:paddingTop="8dp"
             android:paddingBottom="8dp"
             android:text="@string/label_level_default"
-            android:textColor="@color/bp_white"
+            android:textColor="@color/bp_hud_text"
             android:textSize="@dimen/bp_hud_banner_size"
             android:textStyle="bold"
             android:visibility="gone" />
@@ -142,7 +142,7 @@
                 android:fontFamily="sans-serif-medium"
                 android:maxLines="1"
                 android:text="@string/label_hud_meta_default"
-                android:textColor="@color/bp_gray"
+                android:textColor="@color/bp_hud_text_muted"
                 android:textSize="@dimen/bp_hud_mode_size" />
 
             <LinearLayout
@@ -160,7 +160,7 @@
                     android:layout_height="wrap_content"
                     android:fontFamily="sans-serif-medium"
                     android:text="@string/label_shield_default"
-                    android:textColor="@color/bp_white"
+                    android:textColor="@color/bp_hud_text"
                     android:textSize="@dimen/bp_hud_mode_size" />
 
                 <com.google.android.material.progressindicator.LinearProgressIndicator
@@ -171,7 +171,7 @@
                     android:max="100"
                     android:progress="100"
                     app:indicatorColor="@color/bp_cyan"
-                    app:trackColor="@color/bp_shadow"
+                    app:trackColor="@color/bp_hud_glass_fill_deep"
                     app:trackThickness="6dp" />
             </LinearLayout>
         </LinearLayout>
@@ -258,11 +258,19 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
 
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/hud_glass_panel_elevated"
+                android:gravity="center_horizontal"
+                android:orientation="vertical"
+                android:padding="@dimen/bp_glass_panel_padding">
+
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/label_paused"
-                android:textColor="@color/bp_white"
+                android:textColor="@color/bp_hud_text"
                 android:textSize="28sp"
                 android:textStyle="bold" />
 
@@ -276,31 +284,29 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/buttonSkipLevel"
-                style="@style/Widget.BreakoutPlus.Button"
+                style="@style/Widget.BreakoutPlus.Button.Azure"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:text="@string/label_next_level"
-                android:backgroundTint="@color/bp_violet"
                 android:visibility="gone" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/buttonRestart"
-                style="@style/Widget.BreakoutPlus.Button"
+                style="@style/Widget.BreakoutPlus.Button.Secondary"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="@string/label_restart"
-                android:backgroundTint="@color/bp_gold" />
+                android:text="@string/label_restart" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/buttonExit"
-                style="@style/Widget.BreakoutPlus.Button"
+                style="@style/Widget.BreakoutPlus.Button.Secondary"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="@string/label_main_menu"
-                android:backgroundTint="@color/bp_gray" />
+                android:text="@string/label_main_menu" />
+            </LinearLayout>
         </LinearLayout>
 
         <LinearLayout
@@ -316,12 +322,20 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
 
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/hud_glass_panel_elevated"
+                android:gravity="center_horizontal"
+                android:orientation="vertical"
+                android:padding="@dimen/bp_glass_panel_padding">
+
             <TextView
                 android:id="@+id/endTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/label_game_over"
-                android:textColor="@color/bp_white"
+                android:textColor="@color/bp_hud_text"
                 android:textSize="30sp"
                 android:textStyle="bold" />
 
@@ -332,7 +346,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
                 android:text="@string/label_score_level_default"
-                android:textColor="@color/bp_gray" />
+                android:textColor="@color/bp_hud_text_muted" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/buttonEndPrimary"
@@ -344,12 +358,12 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/buttonEndSecondary"
-                style="@style/Widget.BreakoutPlus.Button"
+                style="@style/Widget.BreakoutPlus.Button.Secondary"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
-                android:text="@string/label_main_menu"
-                android:backgroundTint="@color/bp_gray" />
+                android:text="@string/label_main_menu" />
+            </LinearLayout>
         </LinearLayout>
 
         <LinearLayout
@@ -365,11 +379,19 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
 
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/hud_glass_panel_elevated"
+                android:gravity="center_horizontal"
+                android:orientation="vertical"
+                android:padding="@dimen/bp_glass_panel_padding">
+
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/label_welcome_title"
-                android:textColor="@color/bp_white"
+                android:textColor="@color/bp_hud_text"
                 android:textSize="26sp"
                 android:textStyle="bold" />
 
@@ -378,7 +400,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:text="@string/label_welcome_body"
-                android:textColor="@color/bp_gray"
+                android:textColor="@color/bp_hud_text_muted"
                 android:textSize="@dimen/bp_body_text_size" />
 
             <com.google.android.material.button.MaterialButton
@@ -388,6 +410,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
                 android:text="@string/label_got_it" />
+            </LinearLayout>
         </LinearLayout>
 
     </androidx.constraintlayout.widget.ConstraintLayout>

@@ -45,5 +45,14 @@ Use `ModeAccent.colorRes(mode)` in Android UI code. Cross-platform parity matrix
 
 ## Foldable / Large Screen
 - `sw600dp` and `sw720dp` layout variants for larger displays.
+- Game overlays use `hud_glass_panel_elevated` on all form factors.
+- Mode select uses a 2-column card grid on tablet/slate.
+- Daily Challenges and Privacy use max-width tablet layouts at `sw600dp`.
 - `FoldAwareActivity` applies hinge/inset-safe padding.
 - Handedness toggle keeps high-priority controls reachable.
+
+## Glass Drawable Catalog
+- Shell panels: `glass_panel`, `glass_panel_elevated`, `card_background` (compact radius).
+- HUD overlays: `hud_glass_panel_elevated`, `hud_glass_button_icon`, `hud_chip`, `hud_banner`.
+- Buttons: `glass_button_primary|secondary|gold|green|teal|azure|danger|icon`.
+- Tokens: `bp_glass_fill*`, `bp_glass_stroke*`, `bp_hud_glass_*` in `colors_hud.xml`.

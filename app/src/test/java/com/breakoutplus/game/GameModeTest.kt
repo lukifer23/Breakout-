@@ -1,5 +1,6 @@
 package com.breakoutplus.game
 
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -28,6 +29,14 @@ class GameModeTest {
         assertTrue(GameMode.GOD.godMode)
         assertTrue(GameMode.GOD.endless)
         assertTrue(GameMode.GOD.baseLives >= 99)
+    }
+
+    @Test
+    fun zenMode_isRelaxedEndlessWithoutGodFlag() {
+        assertTrue(GameMode.ZEN.zenMode)
+        assertFalse(GameMode.ZEN.godMode)
+        assertTrue(GameMode.ZEN.endless)
+        assertTrue(GameMode.ZEN.relaxedMode)
     }
 
     @Test

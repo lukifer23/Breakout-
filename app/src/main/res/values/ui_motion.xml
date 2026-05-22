@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <integer name="ui_motion_activity_slide">300</integer>
+    <integer name="ui_motion_activity_fade_in">340</integer>
+    <integer name="ui_motion_activity_fade_out">180</integer>
+</resources>

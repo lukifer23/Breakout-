@@ -1,0 +1,87 @@
+<resources>
+    <!-- Dark canvas -->
+    <color name="bp_navy">#0C1220</color>
+    <color name="bp_ink">#111827</color>
+    <color name="bp_shadow">#080D16</color>
+
+    <color name="bp_surface">#151D2E</color>
+    <color name="bp_surface_raised">#1A2438</color>
+    <color name="bp_surface_tint">#212D42</color>
+    <color name="bp_line">#334155</color>
+
+    <!-- Frosted glass -->
+    <color name="bp_glass_fill">#22FFFFFF</color>
+    <color name="bp_glass_fill_strong">#36FFFFFF</color>
+    <color name="bp_glass_fill_deep">#12FFFFFF</color>
+    <color name="bp_glass_stroke">#55FFFFFF</color>
+    <color name="bp_glass_stroke_soft">#33FFFFFF</color>
+    <color name="bp_glass_stroke_bright">#7038BDF8</color>
+    <color name="bp_glass_highlight">#22FFFFFF</color>
+    <color name="bp_glass_ripple">#3338BDF8</color>
+    <color name="bp_glass_scrim">#B00C1220</color>
+    <color name="bp_glass_scrim_deep">#D0080D16</color>
+    <color name="bp_glass_elevated_top">#3AFFFFFF</color>
+    <color name="bp_glass_elevated_shine">#28FFFFFF</color>
+
+    <color name="bp_teal">#38BDF8</color>
+    <color name="bp_teal_soft">#5538BDF8</color>
+    <color name="bp_teal_glow">#3838BDF8</color>
+
+    <color name="bp_glass_btn_primary_start">#7038BDF8</color>
+    <color name="bp_glass_btn_primary_mid">#502B9FE8</color>
+    <color name="bp_glass_btn_primary_end">#28257AE8</color>
+    <color name="bp_glass_btn_secondary_start">#30FFFFFF</color>
+    <color name="bp_glass_btn_secondary_mid">#18FFFFFF</color>
+    <color name="bp_glass_btn_secondary_end">#0CFFFFFF</color>
+    <color name="bp_glass_btn_gold_start">#66FBBF24</color>
+    <color name="bp_glass_btn_gold_end">#26FBBF24</color>
+    <color name="bp_glass_btn_green_start">#6638BDF8</color>
+    <color name="bp_glass_btn_green_end">#2638BDF8</color>
+    <color name="bp_glass_btn_teal_start">#6638BDF8</color>
+    <color name="bp_glass_btn_teal_end">#2638BDF8</color>
+    <color name="bp_glass_btn_azure_start">#6660A5FA</color>
+    <color name="bp_glass_btn_azure_end">#2660A5FA</color>
+    <color name="bp_glass_btn_danger_start">#66F87171</color>
+    <color name="bp_glass_btn_danger_end">#26F87171</color>
+
+    <color name="bp_stroke_gold">#88FBBF24</color>
+    <color name="bp_stroke_green">#8838BDF8</color>
+    <color name="bp_stroke_teal">#8838BDF8</color>
+    <color name="bp_stroke_azure">#8860A5FA</color>
+    <color name="bp_stroke_danger">#88F87171</color>
+
+    <!-- Mode accents — neon arcade -->
+    <color name="bp_cyan">#67E8F9</color>
+    <color name="bp_magenta">#F472B6</color>
+    <color name="bp_gold">#FBBF24</color>
+    <color name="bp_green">#4ADE80</color>
+    <color name="bp_red">#F87171</color>
+    <color name="bp_orange">#FB923C</color>
+    <color name="bp_flame">#FB923C</color>
+    <color name="bp_violet">#A78BFA</color>
+    <color name="bp_azure">#60A5FA</color>
+
+    <!-- Shell typography -->
+    <color name="bp_white">#F1F5F9</color>
+    <color name="bp_gray">#94A3B8</color>
+    <color name="bp_muted">#64748B</color>
+    <color name="bp_on_accent">#FFFFFF</color>
+    <color name="bp_title_shadow">@color/bp_teal_soft</color>
+
+    <!-- Cool blue-violet atmosphere -->
+    <color name="bp_glow_top">#3038BDF8</color>
+    <color name="bp_glow_mid">#2060A5FA</color>
+    <color name="bp_glow_warm">#10A78BFA</color>
+    <color name="bp_scrim_mid">#100C1220</color>
+    <color name="bp_scrim_bottom">#30080D16</color>
+
+    <color name="bp_banner_top">#5038BDF8</color>
+    <color name="bp_banner_bottom">#2860A5FA</color>
+    <color name="bp_banner_stroke">#7038BDF8</color>
+
+    <color name="bp_overlay_soft">@color/bp_glass_scrim</color>
+    <color name="bp_overlay_strong">@color/bp_glass_scrim_deep</color>
+    <color name="bp_overlay_dim">#E0080D16</color>
+
+    <color name="bp_transparent">#00000000</color>
+</resources>

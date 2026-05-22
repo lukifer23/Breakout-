@@ -75,7 +75,14 @@ internal fun GameEngine.findAimBrickCollision(
     var bestNy = 0f
     var found = false
 
-    bricks.forEach { brick ->
+    val endX = startX + dirX * maxDistance
+    val endY = startY + dirY * maxDistance
+    val minX = min(startX, endX) - radius
+    val maxX = max(startX, endX) + radius
+    val minY = min(startY, endY) - radius
+    val maxY = max(startY, endY) + radius
+
+    getNearbyBricksInAabb(minX, minY, maxX, maxY).forEach { brick ->
         if (!brick.alive) return@forEach
         val left = brick.x - radius
         val right = brick.x + brick.width + radius

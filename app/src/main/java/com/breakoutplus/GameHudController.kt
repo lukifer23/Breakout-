@@ -268,32 +268,9 @@ class GameHudController(
     }
 
     fun pulseHudMeta() {
-        val meta = binding.hudMeta
         hudMetaPulseToken += 1
         val token = hudMetaPulseToken
-        meta.animate().cancel()
-        meta.scaleX = 1f
-        meta.scaleY = 1f
-        meta.animate()
-            .scaleX(UiMotion.HUD_PULSE_SCALE)
-            .scaleY(UiMotion.HUD_PULSE_SCALE)
-            .setDuration(UiMotion.PULSE_IN_DURATION)
-            .setInterpolator(UiMotion.EMPHASIS_OUT)
-            .withEndAction {
-                if (token != hudMetaPulseToken) return@withEndAction
-                meta.animate()
-                    .scaleX(1f)
-                    .scaleY(1f)
-                    .setDuration(UiMotion.PULSE_OUT_DURATION)
-                    .setInterpolator(UiMotion.EMPHASIS_OUT)
-                    .withEndAction {
-                        if (token != hudMetaPulseToken) return@withEndAction
-                        meta.scaleX = 1f
-                        meta.scaleY = 1f
-                    }
-                    .start()
-            }
-            .start()
+        UiMotion.pulseView(binding.hudMeta, UiMotion.HUD_PULSE_SCALE, token) { it == hudMetaPulseToken }
     }
 
     fun queueScoreUpdate(score: Int) {
@@ -368,36 +345,16 @@ class GameHudController(
         if (current < lastShieldValue) {
             shieldPulseToken += 1
             val pulseToken = shieldPulseToken
-            binding.hudShieldBar.animate().cancel()
-            binding.hudShieldBar.scaleX = 1f
-            binding.hudShieldBar.scaleY = 1f
-            binding.hudShieldBar.animate()
-                .scaleX(UiMotion.SHIELD_PULSE_SCALE)
-                .scaleY(UiMotion.SHIELD_PULSE_SCALE)
-                .setDuration(UiMotion.PULSE_IN_DURATION)
-                .setInterpolator(UiMotion.EMPHASIS_OUT)
-                .withEndAction {
-                    if (pulseToken != shieldPulseToken) return@withEndAction
-                    binding.hudShieldBar.animate()
-                        .scaleX(1f)
-                        .scaleY(1f)
-                        .setDuration(UiMotion.PULSE_OUT_DURATION)
-                        .setInterpolator(UiMotion.EMPHASIS_OUT)
-                        .withEndAction {
-                            if (pulseToken != shieldPulseToken) return@withEndAction
-                            binding.hudShieldBar.scaleX = 1f
-                            binding.hudShieldBar.scaleY = 1f
-                        }
-                        .start()
-                }
-                .start()
+            UiMotion.pulseView(binding.hudShieldBar, UiMotion.SHIELD_PULSE_SCALE, pulseToken) {
+                it == shieldPulseToken
+            }
             binding.hudShieldLabel.setTextColor(ContextCompat.getColor(activity, R.color.bp_red))
             shieldLabelFlashToken += 1
             val labelFlashToken = shieldLabelFlashToken
             binding.hudShieldLabel.postDelayed({
                 if (labelFlashToken != shieldLabelFlashToken) return@postDelayed
-                binding.hudShieldLabel.setTextColor(ContextCompat.getColor(activity, R.color.bp_white))
-            }, 260L)
+                binding.hudShieldLabel.setTextColor(ContextCompat.getColor(activity, R.color.bp_hud_text))
+            }, UiMotion.LABEL_FLASH_DURATION)
         }
         lastShieldValue = current
     }
@@ -406,7 +363,7 @@ class GameHudController(
         val durationMs = (seconds * 1000f).toLong().coerceAtLeast(100L)
         laserCooldownEndMs = System.currentTimeMillis() + durationMs
         binding.buttonLaser.isEnabled = false
-        binding.buttonLaser.alpha = 0.6f
+        binding.buttonLaser.alpha = UiMotion.HUD_DISABLED_ALPHA
         laserCooldownRunnable?.let { binding.buttonLaser.removeCallbacks(it) }
         val runner = Runnable { updateLaserCooldown() }
         laserCooldownRunnable = runner
@@ -425,7 +382,7 @@ class GameHudController(
         binding.buttonLaser.text = activity.getString(R.string.label_laser_cooldown, remaining)
         val runner = laserCooldownRunnable
         if (runner != null) {
-            binding.buttonLaser.postDelayed(runner, 60L)
+            binding.buttonLaser.postDelayed(runner, UiMotion.HUD_TICK_INTERVAL)
         }
     }
 
@@ -474,6 +431,9 @@ class GameHudController(
         val overlay = binding.gameFadeOverlay
         fadeAnimationToken += 1
         val token = fadeAnimationToken
+        binding.hudContainer.animate().cancel()
+        binding.hudContainer.alpha = 0f
+        binding.hudContainer.translationY = UiMotion.HEADER_ENTRY_OFFSET_Y
         overlay.animate().cancel()
         overlay.alpha = 1f
         overlay.visibility = View.VISIBLE
@@ -484,7 +444,21 @@ class GameHudController(
             .withEndAction {
                 if (token != fadeAnimationToken) return@withEndAction
                 overlay.visibility = View.GONE
+                animateHudEntry()
             }
+            .start()
+    }
+
+    private fun animateHudEntry() {
+        val hud = binding.hudContainer
+        hud.animate().cancel()
+        hud.alpha = 0f
+        hud.translationY = UiMotion.HEADER_ENTRY_OFFSET_Y
+        hud.animate()
+            .alpha(1f)
+            .translationY(0f)
+            .setDuration(UiMotion.ENTRY_DURATION)
+            .setInterpolator(UiMotion.EMPHASIS_OUT)
             .start()
     }
 
@@ -602,7 +576,7 @@ class GameHudController(
             android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
         )
         chip.text = spannable
-        chip.setTextColor(ContextCompat.getColor(activity, R.color.bp_white))
+        chip.setTextColor(ContextCompat.getColor(activity, R.color.bp_hud_text))
 
         val backgroundColor = ColorUtils.setAlphaComponent(color, 46)
         val strokeColor = ColorUtils.setAlphaComponent(color, 120)
@@ -629,7 +603,7 @@ class GameHudController(
         chip.setTypeface(android.graphics.Typeface.DEFAULT_BOLD)
         chip.setSingleLine(true)
         chip.text = activity.getString(R.string.label_powerup_overflow_format, overflowCount)
-        chip.setTextColor(ContextCompat.getColor(activity, R.color.bp_white))
+        chip.setTextColor(ContextCompat.getColor(activity, R.color.bp_hud_text))
         chip.setPadding(
             dp(10f * chipScale),
             dp(6f * chipScale),
@@ -638,7 +612,7 @@ class GameHudController(
         )
         chip.letterSpacing = 0.02f
 
-        val stroke = ContextCompat.getColor(activity, R.color.bp_line)
+        val stroke = ContextCompat.getColor(activity, R.color.bp_hud_glass_stroke)
         val drawable = android.graphics.drawable.GradientDrawable()
         drawable.cornerRadius = dp(14f * chipScale).toFloat()
         drawable.setColor(ColorUtils.setAlphaComponent(stroke, 38))

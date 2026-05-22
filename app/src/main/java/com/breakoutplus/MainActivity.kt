@@ -49,6 +49,7 @@ class MainActivity : FoldAwareActivity() {
         }
 
         animateIntro()
+        binding.mainButtonColumn.children.forEach { UiMotion.attachPressScale(it) }
     }
 
     override fun onResume() {
@@ -57,36 +58,31 @@ class MainActivity : FoldAwareActivity() {
     }
 
     private fun animateIntro() {
-        binding.titleText.alpha = 0f
-        binding.titleSubtitle.alpha = 0f
-        binding.titleText.translationY = -20f
-        binding.titleSubtitle.translationY = -20f
-
-        binding.titleText.animate()
-            .alpha(1f)
-            .translationY(0f)
-            .setDuration(UiMotion.TITLE_DURATION)
-            .setInterpolator(UiMotion.EMPHASIS_IN_OUT)
-            .start()
-
-        binding.titleSubtitle.animate()
-            .alpha(1f)
-            .translationY(0f)
-            .setStartDelay(UiMotion.stagger(1, base = 90L, step = 90L))
-            .setDuration(UiMotion.SUBTITLE_DURATION)
-            .setInterpolator(UiMotion.EMPHASIS_IN_OUT)
-            .start()
+        binding.titleText.translationY = UiMotion.TITLE_ENTRY_OFFSET_Y
+        binding.titleSubtitle.translationY = UiMotion.TITLE_ENTRY_OFFSET_Y
+        UiMotion.animateFadeUp(
+            binding.titleText,
+            duration = UiMotion.TITLE_DURATION,
+            interpolator = UiMotion.EMPHASIS_IN_OUT
+        )
+        UiMotion.animateFadeUp(
+            binding.titleSubtitle,
+            index = 1,
+            offsetY = UiMotion.TITLE_ENTRY_OFFSET_Y,
+            base = UiMotion.MAIN_TITLE_STAGGER_BASE,
+            step = UiMotion.MAIN_TITLE_STAGGER_BASE,
+            duration = UiMotion.SUBTITLE_DURATION,
+            interpolator = UiMotion.EMPHASIS_IN_OUT
+        )
 
         binding.mainButtonColumn.children.forEachIndexed { index, view ->
-            view.alpha = 0f
-            view.translationY = 20f
-            view.animate()
-                .alpha(1f)
-                .translationY(0f)
-                .setStartDelay(UiMotion.stagger(index, base = 180L, step = 78L))
-                .setDuration(UiMotion.ENTRY_DURATION)
-                .setInterpolator(UiMotion.EMPHASIS_OUT)
-                .start()
+            UiMotion.animateFadeUp(
+                view,
+                index = index,
+                offsetY = UiMotion.BUTTON_ENTRY_OFFSET_Y,
+                base = UiMotion.MAIN_BUTTON_STAGGER_BASE,
+                step = UiMotion.MAIN_BUTTON_STAGGER_STEP
+            )
         }
     }
 }

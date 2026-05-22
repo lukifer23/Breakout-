@@ -67,7 +67,7 @@ internal fun GameEngine.applyPowerup(type: PowerUpType) {
             if (config.mode == GameMode.VOLLEY) {
                 volleyBallCount = (volleyBallCount + 1).coerceAtMost(VolleyModeSystem.MAX_BALL_COUNT)
                 listener.onVolleyBallsUpdated(volleyBallCount)
-            } else if (!config.mode.godMode) {
+            } else if (!config.mode.relaxedMode) {
                 lives += 1
                 listener.onLivesUpdated(lives)
             }
@@ -157,6 +157,7 @@ internal fun GameEngine.applyPowerup(type: PowerUpType) {
         }
     }
     audio.haptic(GameHaptic.MEDIUM)
+    markActiveEffectsDirty()
     updatePowerupStatus()
 }
 
@@ -267,17 +268,6 @@ internal fun GameEngine.updatePowerupStatus(force: Boolean = false) {
     emitPowerupSnapshot(buildPowerupSnapshot())
 }
 
-
-
-internal fun GameEngine.sortedActiveEffects(): List<Map.Entry<PowerUpType, Float>> {
-    return activeEffects.entries.sortedWith(
-        compareBy<Map.Entry<PowerUpType, Float>> { powerupPriority(it.key) }
-            .thenByDescending { it.value }
-    )
-}
-
-
-
 internal fun GameEngine.powerupPriority(type: PowerUpType): Int {
     return when (type) {
         PowerUpType.SHIELD,
@@ -304,24 +294,52 @@ internal fun GameEngine.powerupPriority(type: PowerUpType): Int {
 
 
 internal fun GameEngine.buildPowerupSnapshot(): List<PowerupStatus> {
-    return sortedActiveEffects()
-        .map { (type, time) ->
+    val effects = sortedActiveEffects()
+    powerupSnapshotBuffer.clear()
+    for ((type, time) in effects) {
+        powerupSnapshotBuffer.add(
             PowerupStatus(
                 type = type,
                 remainingSeconds = displaySeconds(time),
                 charges = if (type == PowerUpType.SHIELD) shieldCharges else 0
             )
-        }
+        )
+    }
+    return powerupSnapshotBuffer
 }
 
-
+internal fun GameEngine.powerupSnapshotsEqual(
+    current: List<PowerupStatus>,
+    previous: List<PowerupStatus>
+): Boolean {
+    if (current.size != previous.size) return false
+    for (i in current.indices) {
+        if (current[i] != previous[i]) return false
+    }
+    return true
+}
 
 internal fun GameEngine.emitPowerupSnapshot(snapshot: List<PowerupStatus>) {
-    if (snapshot != lastPowerupSnapshot || combo != lastComboReported) {
-        lastPowerupSnapshot = snapshot
+    if (!powerupSnapshotsEqual(snapshot, lastPowerupSnapshot) || combo != lastComboReported) {
+        lastPowerupSnapshot = snapshot.toList()
         lastComboReported = combo
-        listener.onPowerupsUpdated(snapshot, combo)
+        listener.onPowerupsUpdated(lastPowerupSnapshot, combo)
     }
+}
+
+internal fun GameEngine.markActiveEffectsDirty() {
+    sortedEffectsDirty = true
+}
+
+internal fun GameEngine.sortedActiveEffects(): List<Map.Entry<PowerUpType, Float>> {
+    if (sortedEffectsDirty) {
+        sortedEffectsCache = activeEffects.entries.sortedWith(
+            compareBy<Map.Entry<PowerUpType, Float>> { powerupPriority(it.key) }
+                .thenByDescending { it.value }
+        )
+        sortedEffectsDirty = false
+    }
+    return sortedEffectsCache
 }
 
 

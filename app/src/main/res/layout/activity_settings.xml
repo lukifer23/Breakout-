@@ -193,21 +193,19 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/buttonPrivacyPolicy"
-                style="@style/Widget.BreakoutPlus.Button"
+                style="@style/Widget.BreakoutPlus.Button.Secondary"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="14dp"
-                android:text="@string/label_privacy_policy"
-                android:backgroundTint="@color/bp_gray" />
+                android:text="@string/label_privacy_policy" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/buttonResetScores"
-                style="@style/Widget.BreakoutPlus.Button"
+                style="@style/Widget.BreakoutPlus.Button.Danger"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
-                android:text="@string/label_confirm_reset"
-                android:backgroundTint="@color/bp_red" />
+                android:text="@string/label_confirm_reset" />
         </LinearLayout>
     </ScrollView>
 
@@ -222,11 +220,10 @@
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/buttonSettingsBack"
-            style="@style/Widget.BreakoutPlus.Button"
+            style="@style/Widget.BreakoutPlus.Button.Secondary"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/label_back"
-            android:backgroundTint="@color/bp_gray" />
+            android:text="@string/label_back" />
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -278,7 +278,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             showOverlay(binding.pauseOverlay)
             binding.gameSurface.pauseGame()
             binding.buttonLaser.visibility = View.GONE
-            if (config.mode == GameMode.GOD) {
+            if (config.mode == GameMode.GOD || config.mode == GameMode.ZEN) {
                 binding.buttonSkipLevel?.visibility = View.VISIBLE
             } else {
                 binding.buttonSkipLevel?.visibility = View.GONE
@@ -313,6 +313,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         recordRunSnapshotIfNeeded {
             levelAdvanceInProgress = false
             cancelLevelAdvanceRecovery()
+            playCloseTransition(R.anim.fade_in, R.anim.fade_out)
             startActivity(
                 Intent(this, MainActivity::class.java).apply {
                     addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
@@ -491,7 +492,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             if (isCountdown && secondsRemaining <= 10 && config.mode != GameMode.SURVIVAL) {
                 binding.hudTime.setTextColor(androidx.core.content.ContextCompat.getColor(this, R.color.bp_red))
             } else {
-                binding.hudTime.setTextColor(androidx.core.content.ContextCompat.getColor(this, R.color.bp_white))
+                binding.hudTime.setTextColor(androidx.core.content.ContextCompat.getColor(this, R.color.bp_hud_text))
             }
         }
     }
@@ -767,8 +768,10 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
                 )
             }
             ProgressionManager.updateBestLevel(this, summary.level)
-            hud.currentXpTotal = ProgressionManager.addXp(this, ProgressionManager.xpForLevel(summary.level))
-            hud.updateHudMeta()
+            if (config.mode != GameMode.ZEN) {
+                hud.currentXpTotal = ProgressionManager.addXp(this, ProgressionManager.xpForLevel(summary.level))
+                hud.updateHudMeta()
+            }
             if (debugProgressionProbeSession || config.mode == GameMode.ZEN) {
                 endOverlayState = EndOverlayState.NONE
                 hideOverlay(binding.endOverlay)
@@ -895,48 +898,25 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
 
     private fun showOverlay(view: View) {
         val token = nextOverlayAnimationToken(view)
-        view.animate().cancel()
-        view.visibility = View.VISIBLE
-        view.alpha = 0f
-        view.scaleX = UiMotion.OVERLAY_ENTER_SCALE
-        view.scaleY = UiMotion.OVERLAY_ENTER_SCALE
-        view.animate()
-            .alpha(1f)
-            .scaleX(1f)
-            .scaleY(1f)
-            .setDuration(UiMotion.OVERLAY_IN_DURATION)
-            .setInterpolator(UiMotion.EMPHASIS_OUT)
-            .withEndAction {
-                if (!isOverlayAnimationTokenCurrent(view, token)) return@withEndAction
-                view.alpha = 1f
-                view.scaleX = 1f
-                view.scaleY = 1f
+        UiMotion.animateOverlayIn(
+            view = view,
+            token = token,
+            isCurrent = { isOverlayAnimationTokenCurrent(view, it) },
+            onEnd = {
+                if (view is android.view.ViewGroup && view.childCount > 1) {
+                    UiMotion.staggerOverlayChildren(view, skipFirst = 1)
+                }
             }
-            .start()
+        )
     }
 
-
-
-
-
     private fun hideOverlay(view: View) {
-        if (view.visibility != View.VISIBLE) return
         val token = nextOverlayAnimationToken(view)
-        view.animate().cancel()
-        view.animate()
-            .alpha(0f)
-            .scaleX(UiMotion.OVERLAY_EXIT_SCALE)
-            .scaleY(UiMotion.OVERLAY_EXIT_SCALE)
-            .setDuration(UiMotion.OVERLAY_OUT_DURATION)
-            .setInterpolator(UiMotion.EMPHASIS_OUT)
-            .withEndAction {
-                if (!isOverlayAnimationTokenCurrent(view, token)) return@withEndAction
-                view.visibility = View.GONE
-                view.alpha = 1f
-                view.scaleX = 1f
-                view.scaleY = 1f
-            }
-            .start()
+        UiMotion.animateOverlayOut(
+            view = view,
+            token = token,
+            isCurrent = { isOverlayAnimationTokenCurrent(view, it) }
+        )
     }
 
 

@@ -33,6 +33,10 @@ class ScoreboardActivity : FoldAwareActivity() {
             finish()
             playCloseTransition(R.anim.slide_in_left, R.anim.slide_out_right)
         }
+        registerSlideCloseOnBackPressed()
+        UiMotion.attachPressScale(binding.buttonScoreBack)
+        UiMotion.attachPressScale(binding.buttonScorePrev)
+        UiMotion.attachPressScale(binding.buttonScoreNext)
         findViewById<com.google.android.material.button.MaterialButton>(R.id.buttonScorePrev)?.setOnClickListener { switchMode(-1) }
         findViewById<com.google.android.material.button.MaterialButton>(R.id.buttonScoreNext)?.setOnClickListener { switchMode(1) }
 
@@ -76,11 +80,19 @@ class ScoreboardActivity : FoldAwareActivity() {
             scores.size
         )
         binding.scoreTitle.text = getString(R.string.title_scoreboard)
-        binding.scoreSubtitle.text = getString(
-            R.string.label_scoreboard_mode_runs_format,
-            modeTitle,
-            runCountText
-        )
+        binding.scoreSubtitle.text = if (currentMode.mode == null) {
+            getString(
+                R.string.label_scoreboard_mode_runs_format,
+                modeTitle,
+                runCountText
+            ) + "\n" + getString(R.string.label_scoreboard_global_hint)
+        } else {
+            getString(
+                R.string.label_scoreboard_mode_runs_format,
+                modeTitle,
+                runCountText
+            )
+        }
         val accent = modeAccentColor(currentMode.mode)
         binding.scoreSubtitle.setTextColor(accent)
         val summaryStroke = ColorUtils.setAlphaComponent(accent, 170)
@@ -119,7 +131,7 @@ class ScoreboardActivity : FoldAwareActivity() {
             val rankColor = when (index) {
                 0 -> R.color.bp_gold
                 1 -> R.color.bp_cyan
-                2 -> R.color.bp_magenta
+                2 -> R.color.bp_azure
                 else -> R.color.bp_gray
             }
             val rankAccent = ContextCompat.getColor(this, rankColor)
@@ -141,21 +153,14 @@ class ScoreboardActivity : FoldAwareActivity() {
                 if (index < 3) rankAccent else ContextCompat.getColor(this, R.color.bp_white)
             )
 
-            // Add entrance animation
             val rowView = row.root
-            rowView.alpha = 0f
-            rowView.translationY = 14f
-            rowView.scaleX = 0.985f
-            rowView.scaleY = 0.985f
-            rowView.animate()
-                .alpha(1f)
-                .translationY(0f)
-                .scaleX(1f)
-                .scaleY(1f)
-                .setDuration(UiMotion.LIST_ITEM_DURATION)
-                .setStartDelay(UiMotion.stagger(index, step = 42L))
-                .setInterpolator(UiMotion.EMPHASIS_OUT)
-                .start()
+            UiMotion.animateListItem(
+                rowView,
+                index,
+                offsetY = UiMotion.LIST_ITEM_OFFSET_Y,
+                enterScale = UiMotion.ROW_ENTER_SCALE,
+                step = UiMotion.STAGGER_STEP_SCORE_ROW
+            )
 
             binding.scoreList.addView(rowView)
         }
@@ -239,23 +244,14 @@ class ScoreboardActivity : FoldAwareActivity() {
     }
 
     private fun animateEntry() {
-        val views = listOf(
-            binding.scoreTitle,
-            binding.scoreSubtitle,
-            binding.scoreSummaryCard,
-            binding.scoreScroll,
-            binding.scoreFooter
+        UiMotion.animateScreenSections(
+            listOf(
+                binding.scoreTitle,
+                binding.scoreSubtitle,
+                binding.scoreSummaryCard,
+                binding.scoreScroll,
+                binding.scoreFooter
+            )
         )
-        views.forEachIndexed { index, view ->
-            view.alpha = 0f
-            view.translationY = 18f
-            view.animate()
-                .alpha(1f)
-                .translationY(0f)
-                .setStartDelay(UiMotion.stagger(index, step = 80L))
-                .setDuration(UiMotion.ENTRY_DURATION)
-                .setInterpolator(UiMotion.EMPHASIS_OUT)
-                .start()
-        }
     }
 }

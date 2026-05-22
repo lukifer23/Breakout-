@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ripple xmlns:android="http://schemas.android.com/apk/res/android"
+    android:color="@color/bp_glass_ripple">
+    <item android:id="@android:id/mask">
+        <shape android:shape="rectangle">
+            <corners android:radius="@dimen/bp_radius_button" />
+            <solid android:color="@android:color/white" />
+        </shape>
+    </item>
+    <item>
+        <layer-list>
+            <item>
+                <shape android:shape="rectangle">
+                    <gradient
+                        android:angle="135"
+                        android:startColor="@color/bp_glass_btn_primary_start"
+                        android:centerColor="@color/bp_glass_btn_primary_mid"
+                        android:endColor="@color/bp_glass_btn_primary_end" />
+                    <corners android:radius="@dimen/bp_radius_button" />
+                </shape>
+            </item>
+            <item>
+                <shape android:shape="rectangle">
+                    <gradient
+                        android:angle="90"
+                        android:startColor="@color/bp_glass_highlight"
+                        android:endColor="@color/bp_transparent"
+                        android:centerY="0.18" />
+                    <corners android:radius="@dimen/bp_radius_button" />
+                </shape>
+            </item>
+            <item>
+                <shape android:shape="rectangle">
+                    <stroke
+                        android:width="1dp"
+                        android:color="@color/bp_glass_stroke_bright" />
+                    <corners android:radius="@dimen/bp_radius_button" />
+                    <solid android:color="@color/bp_transparent" />
+                </shape>
+            </item>
+        </layer-list>
+    </item>
+</ripple>

@@ -17,7 +17,8 @@ class HowToActivity : FoldAwareActivity() {
             finish()
             playCloseTransition(R.anim.slide_in_left, R.anim.slide_out_right)
         }
-
+        registerSlideCloseOnBackPressed()
+        UiMotion.attachPressScale(binding.buttonHowToBack)
         // Set up expandable sections
         setupExpandableSection(binding.powerupsHeader, binding.powerupsContent)
         setupExpandableSection(binding.bricksHeader, binding.bricksContent)
@@ -33,54 +34,23 @@ class HowToActivity : FoldAwareActivity() {
 
     private fun setupExpandableSection(header: View, content: View) {
         header.setOnClickListener {
+            val headerLabel = header as android.widget.TextView
             if (content.visibility == View.VISIBLE) {
-                content.animate().alpha(0f).translationY(-6f).setDuration(UiMotion.OVERLAY_OUT_DURATION).setInterpolator(UiMotion.EMPHASIS_OUT).withEndAction {
-                    content.visibility = View.GONE
-                    content.alpha = 1f
-                    content.translationY = 0f
-                }.start()
-                (header as android.widget.TextView).text = (header.text as String).replace("▼", "▶")
+                headerLabel.text = headerLabel.text.toString().replace("▼", "▶")
+                UiMotion.animateExpandableSection(content, expand = false)
             } else {
-                content.visibility = View.VISIBLE
-                content.alpha = 0f
-                content.translationY = -6f
-                content.animate().alpha(1f).translationY(0f).setDuration(UiMotion.OVERLAY_IN_DURATION).setInterpolator(UiMotion.EMPHASIS_OUT).start()
-                (header as android.widget.TextView).text = (header.text as String).replace("▶", "▼")
+                headerLabel.text = headerLabel.text.toString().replace("▶", "▼")
+                UiMotion.animateExpandableSection(content, expand = true)
             }
         }
     }
 
     private fun animateEntry() {
-        val views = listOf(binding.howtoTitle, binding.howtoScroll, binding.howtoFooter)
-        views.forEachIndexed { index, view ->
-            view.alpha = 0f
-            view.translationY = 18f
-            view.animate()
-                .alpha(1f)
-                .translationY(0f)
-                .setStartDelay(UiMotion.stagger(index, step = 80L))
-                .setDuration(UiMotion.ENTRY_DURATION)
-                .setInterpolator(UiMotion.EMPHASIS_OUT)
-                .start()
-        }
-
+        UiMotion.animateScreenSections(
+            listOf(binding.howtoTitle, binding.howtoScroll, binding.howtoFooter)
+        )
         binding.howtoList.post {
-            animateStagger(binding.howtoList)
-        }
-    }
-
-    private fun animateStagger(container: android.view.ViewGroup) {
-        for (i in 0 until container.childCount) {
-            val child = container.getChildAt(i)
-            child.alpha = 0f
-            child.translationY = 14f
-            child.animate()
-                .alpha(1f)
-                .translationY(0f)
-                .setStartDelay(UiMotion.stagger(i, step = 54L))
-                .setDuration(UiMotion.LIST_ITEM_DURATION)
-                .setInterpolator(UiMotion.EMPHASIS_OUT)
-                .start()
+            UiMotion.animateStaggerChildren(binding.howtoList)
         }
     }
 }

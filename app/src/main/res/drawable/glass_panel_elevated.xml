@@ -1,0 +1,31 @@
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="135"
+                android:startColor="@color/bp_glass_elevated_top"
+                android:centerColor="@color/bp_glass_fill_strong"
+                android:endColor="@color/bp_glass_fill" />
+            <corners android:radius="@dimen/bp_radius_glass" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="90"
+                android:startColor="@color/bp_glass_elevated_shine"
+                android:endColor="@color/bp_transparent"
+                android:centerY="0.12" />
+            <corners android:radius="@dimen/bp_radius_glass" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <stroke
+                android:width="1dp"
+                android:color="@color/bp_glass_stroke_bright" />
+            <corners android:radius="@dimen/bp_radius_glass" />
+            <solid android:color="@color/bp_transparent" />
+        </shape>
+    </item>
+</layer-list>

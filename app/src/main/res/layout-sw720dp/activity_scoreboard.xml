@@ -29,14 +29,14 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
-        app:cardBackgroundColor="@color/bp_surface"
-        app:cardCornerRadius="18dp"
-        app:cardElevation="4dp"
+        app:cardBackgroundColor="@color/bp_glass_fill"
+        app:cardCornerRadius="@dimen/bp_radius_glass"
+        app:cardElevation="0dp"
         app:layout_constraintWidth_max="1160dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/scoreSubtitle"
-        app:strokeColor="@color/bp_line"
+        app:strokeColor="@color/bp_glass_stroke_soft"
         app:strokeWidth="1dp">
 
         <LinearLayout
@@ -195,17 +195,15 @@
             android:layout_height="wrap_content"
             android:layout_marginEnd="10dp"
             android:layout_weight="1"
-            android:backgroundTint="@color/bp_cyan"
             android:text="@string/label_prev_symbol" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/buttonScoreBack"
-            style="@style/Widget.BreakoutPlus.Button"
+            style="@style/Widget.BreakoutPlus.Button.Secondary"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginEnd="10dp"
             android:layout_weight="1"
-            android:backgroundTint="@color/bp_gray"
             android:text="@string/label_back" />
 
         <com.google.android.material.button.MaterialButton
@@ -214,7 +212,6 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:backgroundTint="@color/bp_cyan"
             android:text="@string/label_next_symbol" />
     </LinearLayout>
 

@@ -43,11 +43,10 @@
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/buttonPrivacyBack"
-            style="@style/Widget.BreakoutPlus.Button"
+            style="@style/Widget.BreakoutPlus.Button.Secondary"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/label_back"
-            android:backgroundTint="@color/bp_gray" />
+            android:text="@string/label_back" />
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

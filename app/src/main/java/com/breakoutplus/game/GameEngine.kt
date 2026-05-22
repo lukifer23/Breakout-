@@ -4,7 +4,6 @@ import android.view.MotionEvent
 import com.breakoutplus.DeviceLayoutPolicy
 import com.breakoutplus.SettingsManager
 import com.breakoutplus.UnlockManager
-import com.breakoutplus.game.LevelFactory.buildLevel
 import java.util.ArrayDeque
 import java.util.Locale
 import kotlin.math.abs
@@ -76,6 +75,9 @@ class GameEngine(
     internal var explosiveTipShown = false
     internal var lastPowerupStatus = ""
     internal var lastPowerupSnapshot: List<PowerupStatus> = emptyList()
+    internal val powerupSnapshotBuffer = ArrayList<PowerupStatus>(8)
+    internal var sortedEffectsCache: List<Map.Entry<PowerUpType, Float>> = emptyList()
+    internal var sortedEffectsDirty = true
     internal var lastComboReported = 0
     internal var powerupStatusTick = 0f
     internal var lostLifeThisLevel = false
@@ -83,6 +85,8 @@ class GameEngine(
     internal var magnetTipShown = false
     internal var magnetCatchTipShown = false
     internal var godModeTipShown = false
+    internal var zenModeTipShown = false
+    internal var renderFrameStress = false
     internal val powerupTipShown = mutableSetOf<PowerUpType>()
     internal var invaderDirection = 1f
     internal var invaderSpeed = 6f
@@ -181,6 +185,7 @@ class GameEngine(
     internal val spatialHash = mutableMapOf<Long, MutableList<Brick>>()
     internal val nearbyBrickBuffer = ArrayList<Brick>(96)
     internal val nearbyBrickSeen = HashSet<Brick>(96)
+    internal var spatialHashInvaderBucket = Int.MIN_VALUE
     internal var spatialHashDirty = true
     internal var dynamicBrickLayout = false
     internal var pendingInitialLayoutRetune = true
@@ -945,220 +950,6 @@ class GameEngine(
         }
     }
 
-    fun nextLevel() {
-        val clearedBoard = bricks.none { it.alive && it.type != BrickType.UNBREAKABLE }
-        val decision = LevelAdvancePolicy.evaluate(
-            awaitingNextLevel = awaitingNextLevel,
-            state = state,
-            lives = lives,
-            clearedBoard = clearedBoard,
-            godModeEnabled = config.mode.godMode
-        )
-
-        if (!decision.canAdvance) {
-            logger?.logError(
-                "nextLevel rejected (${decision.reason}, mode=${config.mode.name})"
-            )
-            return
-        }
-        if (state == GameState.GAME_OVER) {
-            logger?.logError("nextLevel called in GAME_OVER state")
-            return
-        }
-        if (lives <= 0) {
-            logger?.logError("nextLevel called with 0 lives")
-            return
-        }
-
-        logger?.logLevelAdvance(levelIndex + 1)
-        levelIndex += 1
-        awaitingNextLevel = false
-        resetLevel(first = false)
-    }
-
-    internal fun resetLevel(first: Boolean) {
-        state = GameState.READY
-        stateBeforePause = GameState.READY
-        awaitingNextLevel = false
-        combo = 0
-        lostLifeThisLevel = false
-        if (first) {
-            powerupDropsSinceLaser = 0
-            powerupTipShown.clear()
-            recentPowerups.clear()
-            runBricksBroken = 0
-            runLivesLost = 0
-            pendingInitialLayoutRetune = true
-        }
-        powerupsSinceOffense = 0
-        powerupsSinceDefense = 0
-        powerupsSinceControl = 0
-        guardrailActive = config.mode.godMode
-        shieldHitPulse = 0f
-        shieldBreakPulse = 0f
-        shieldCharges = 0
-        fireballActive = false
-        magnetActive = false
-        gravityWellActive = false
-        freezeActive = false
-        pierceActive = false
-        explosiveTipShown = false
-        aimHasInput = false
-        aimNormalized = 0f
-        aimNormalizedTarget = 0f
-        aimAngle = Math.PI.toFloat() * 0.5f
-        isDragging = false
-        activePointerId = MotionEvent.INVALID_POINTER_ID
-        lastTouchLogTimeMs = 0L
-        lastTouchLogX = Float.NaN
-        lastTouchLogY = Float.NaN
-        volleyTurnActive = false
-        volleyQueuedBalls = 0
-        volleyLaunchTimer = 0f
-        volleyTurnCount = 0
-        volleyAdvanceRows = 0
-        volleyLaunchX = paddle.x
-        volleyReturnAnchorX = Float.NaN
-        volleyReturnSumX = 0f
-        volleyReturnCount = 0
-        volleyPreferredLaneCol = -1
-        lastVolleySupplyTurn = -99
-        volleyCompactionCheckTimer = 0f
-        tunnelShotsFired = 0
-        tunnelGateFlash = 0f
-        lastTunnelSupplyShot = 0
-        tunnelSupplyReadinessPercent = 0
-        cachedTunnelGateIntegrityPercent = 100
-        tunnelGateIntegrityDirty = true
-        speedMultiplier = 1f
-        levelClearFlash = 0f
-        activeEffects.clear()
-        aliveBreakableBrickCount = 0
-        aliveExplosiveBrickCount = 0
-        balls.clear()
-        beams.clear()
-        powerups.clear()
-        enemyShots.clear()
-        particles.clear()
-        waves.clear()
-        lastPowerupSnapshot = emptyList()
-        lastComboReported = 0
-        powerupStatusTick = 0f
-
-        if (config.mode.godMode && !godModeTipShown) {
-            listener.onTip("God mode: bottom shield is always active.")
-            godModeTipShown = true
-        }
-        if (config.mode == GameMode.VOLLEY) {
-            volleyBallCount = if (first) {
-                VolleyModeSystem.STARTING_BALL_COUNT
-            } else {
-                volleyBallCount.coerceIn(VolleyModeSystem.MIN_ACTIVE_BALL_COUNT, VolleyModeSystem.MAX_BALL_COUNT)
-            }
-            listener.onVolleyBallsUpdated(volleyBallCount)
-        }
-
-        applyLayoutTuning(currentAspectRatio, preserveRowBoost = false)
-
-        val difficulty = difficultyForMode()
-        val level = if (config.mode.invaders) {
-            val invaderPacing = ModeBalance.invaderPacing()
-            invaderDirection = if (levelIndex % 2 == 0) 1f else -1f
-            invaderBaseSpeed = (invaderPacing.baseSpeed + levelIndex * invaderPacing.speedPerLevel)
-                .coerceAtMost(invaderPacing.speedCap)
-            invaderSpeed = invaderBaseSpeed
-            invaderBaseShotCooldown = (invaderPacing.baseShotCooldown - levelIndex * invaderPacing.shotCooldownPerLevel)
-                .coerceIn(invaderPacing.shotCooldownMin, invaderPacing.baseShotCooldown)
-            invaderShotCooldown = invaderBaseShotCooldown
-            invaderFormationOffset = 0f
-            invaderRowPhase = random.nextFloat() * 6.28f
-            invaderWaveStyle = levelIndex % 3
-            invaderVolleyTimer = invaderBaseShotCooldown * (0.8f + random.nextFloat() * 0.6f)
-            invaderPauseTimer = if (invaderWaveStyle == 2) invaderBaseShotCooldown * 1.2f else 0f
-            invaderBurstCount = 0
-            invaderShotTimer = invaderShotCooldown * (0.6f + random.nextFloat() * 0.8f)
-            invaderTurnSoundCooldown = 0f
-            invaderShieldMax = (invaderPacing.shieldBase + levelIndex * invaderPacing.shieldPerLevel)
-                .coerceAtMost(invaderPacing.shieldCap)
-            invaderShield = invaderShieldMax
-            invaderShieldAlerted = false
-            invaderShieldCritical = false
-            invaderTelegraphKey = null
-            listener.onShieldUpdated(invaderShield.toInt(), invaderShieldMax.toInt())
-            LevelFactory.buildInvaderLevel(levelIndex, difficulty)
-        } else {
-            invaderShield = 0f
-            invaderShieldMax = 0f
-            invaderShieldAlerted = false
-            invaderTurnSoundCooldown = 0f
-            listener.onShieldUpdated(0, 0)
-            val forcedTheme = ModeTheme.themeFor(
-                mode = config.mode,
-                levelIndex = levelIndex,
-                availableThemeNames = themePool.asSequence().map { it.name }.toSet()
-            )
-            if (config.mode == GameMode.TUNNEL) {
-                LevelFactory.buildTunnelLevel(
-                    index = levelIndex,
-                    difficulty = difficulty,
-                    theme = forcedTheme
-                )
-            } else {
-                buildLevel(
-                    index = levelIndex,
-                    difficulty = difficulty,
-                    endless = config.mode.endless,
-                    themePool = themePool,
-                    forcedTheme = forcedTheme
-                )
-            }
-        }
-        currentLayout = level
-        theme = level.theme
-        buildBricks(level)
-        buildSpatialHash()
-        invaderTotal = if (config.mode.invaders) {
-            max(1, invaderBricks.size)
-        } else {
-            0
-        }
-
-        if (config.mode.rush) {
-            timeRemaining = config.mode.timeLimitSeconds.toFloat()
-            lastReportedSecond = -1
-            listener.onTimeUpdated(timeRemaining.toInt())
-        }
-        if (config.mode.timeLimitSeconds > 0 && first) {
-            timeRemaining = config.mode.timeLimitSeconds.toFloat()
-            lastReportedSecond = -1
-            listener.onTimeUpdated(timeRemaining.toInt())
-        }
-
-        levelStartTime = elapsedSeconds
-        spawnBall()
-        paddle.targetX = paddle.x
-        syncAimForLaunch()
-        listener.onLevelUpdated(levelIndex + 1)
-        when (config.mode) {
-            GameMode.VOLLEY -> {
-                updatePowerupStatus()
-                listener.onTip("Volley mode: launch a chain, then survive the descending row.")
-            }
-            GameMode.TUNNEL,
-            GameMode.SURVIVAL,
-            GameMode.ZEN -> {
-                updatePowerupStatus()
-                listener.onTip(level.tip)
-            }
-            else -> {
-                listener.onPowerupStatus("Powerups: none")
-                lastPowerupStatus = "Powerups: none"
-                listener.onTip(level.tip)
-            }
-        }
-        logger?.logLevelStart(levelIndex + 1, theme.name)
-    }
-
     internal fun getNearbyBricks(ball: Ball): List<Brick> {
         nearbyBrickBuffer.clear()
         nearbyBrickSeen.clear()
@@ -1178,9 +969,65 @@ class GameEngine(
             }
         }
         if (nearbyBrickBuffer.isEmpty() && bricks.isNotEmpty() && (spatialHashDirty || spatialHash.isEmpty())) {
-            // Safety fallback: avoid collision loss if hash is temporarily stale.
-            // Return a snapshot so collision handlers can mutate `bricks` safely.
-            return ArrayList(bricks)
+            buildSpatialHash()
+            nearbyBrickBuffer.clear()
+            nearbyBrickSeen.clear()
+            for (cellX in ballMinX..ballMaxX) {
+                for (cellY in ballMinY..ballMaxY) {
+                    val cellKey = spatialKey(cellX, cellY)
+                    spatialHash[cellKey]?.forEach { brick ->
+                        if (nearbyBrickSeen.add(brick)) {
+                            nearbyBrickBuffer.add(brick)
+                        }
+                    }
+                }
+            }
+        }
+        return nearbyBrickBuffer
+    }
+
+    internal fun getNearbyBricksAt(centerX: Float, centerY: Float, radius: Float): List<Brick> {
+        nearbyBrickBuffer.clear()
+        nearbyBrickSeen.clear()
+        if (spatialHashDirty || spatialHash.isEmpty()) {
+            buildSpatialHash()
+        }
+        val minX = ((centerX - radius) / spatialHashCellSize).toInt()
+        val maxX = ((centerX + radius) / spatialHashCellSize).toInt()
+        val minY = ((centerY - radius) / spatialHashCellSize).toInt()
+        val maxY = ((centerY + radius) / spatialHashCellSize).toInt()
+        for (cellX in minX..maxX) {
+            for (cellY in minY..maxY) {
+                val cellKey = spatialKey(cellX, cellY)
+                spatialHash[cellKey]?.forEach { brick ->
+                    if (nearbyBrickSeen.add(brick)) {
+                        nearbyBrickBuffer.add(brick)
+                    }
+                }
+            }
+        }
+        return nearbyBrickBuffer
+    }
+
+    internal fun getNearbyBricksInAabb(minX: Float, minY: Float, maxX: Float, maxY: Float): List<Brick> {
+        nearbyBrickBuffer.clear()
+        nearbyBrickSeen.clear()
+        if (spatialHashDirty || spatialHash.isEmpty()) {
+            buildSpatialHash()
+        }
+        val cellMinX = (minX / spatialHashCellSize).toInt()
+        val cellMaxX = (maxX / spatialHashCellSize).toInt()
+        val cellMinY = (minY / spatialHashCellSize).toInt()
+        val cellMaxY = (maxY / spatialHashCellSize).toInt()
+        for (cellX in cellMinX..cellMaxX) {
+            for (cellY in cellMinY..cellMaxY) {
+                val cellKey = spatialKey(cellX, cellY)
+                spatialHash[cellKey]?.forEach { brick ->
+                    if (nearbyBrickSeen.add(brick)) {
+                        nearbyBrickBuffer.add(brick)
+                    }
+                }
+            }
         }
         return nearbyBrickBuffer
     }
@@ -1606,7 +1453,11 @@ class GameEngine(
         var movedBricks = false
         if (config.mode.invaders) {
             updateInvaderFormation(dt)
-            movedBricks = true
+            val bucket = (invaderRowPhase * 20f).toInt()
+            if (bucket != spatialHashInvaderBucket) {
+                spatialHashInvaderBucket = bucket
+                movedBricks = true
+            }
         }
         bricks.forEach { brick ->
             when (brick.type) {
@@ -1838,7 +1689,7 @@ class GameEngine(
             }
             val speed = sqrt(ball.vx * ball.vx + ball.vy * ball.vy)
             val maxStep = ball.radius * 0.75f
-            val steps = max(1, ceil((speed * dt) / maxStep).toInt())
+            val steps = max(1, ceil((speed * dt) / maxStep).toInt()).coerceAtMost(4)
             val stepDt = dt / steps
             var removed = false
 
@@ -1887,7 +1738,7 @@ class GameEngine(
                         iterator.remove()
                         removed = true
                         return@repeat
-                    } else if (config.mode.godMode) {
+                    } else if (config.mode.relaxedMode) {
                         ball.y = ball.radius + 2f
                         ball.vy = abs(ball.vy)
                         audio.play(GameSound.BOUNCE, 0.6f)
@@ -2168,6 +2019,7 @@ class GameEngine(
         }
         if (spawned > 0) {
             spatialHashDirty = true
+            spatialHashInvaderBucket = Int.MIN_VALUE
             val spawnPitch = (0.94f + spawned.coerceAtMost(8) * 0.02f).coerceAtMost(1.1f)
             audio.play(GameSound.BRICK_SPAWNING, 0.34f, spawnPitch)
         }
@@ -2500,7 +2352,7 @@ class GameEngine(
                     PowerUpType.WIDE_PADDLE,
                     PowerUpType.SHRINK -> paddleWidthDirty = true
                     PowerUpType.SLOW -> Unit
-                    PowerUpType.GUARDRAIL -> guardrailActive = config.mode.godMode
+                    PowerUpType.GUARDRAIL -> guardrailActive = config.mode.relaxedMode
                     PowerUpType.LASER -> Unit
                     PowerUpType.SHIELD -> shieldCharges = 0
                     PowerUpType.FIREBALL -> {
@@ -2540,6 +2392,9 @@ class GameEngine(
         }
         if (paddleWidthDirty) {
             syncPaddleWidthFromEffects()
+        }
+        if (ballStyleDirty || paddleWidthDirty) {
+            sortedEffectsDirty = true
         }
         // Update screen flash
         levelClearFlash = max(0f, levelClearFlash - dt * 1.5f)
@@ -2769,22 +2624,6 @@ class GameEngine(
         }
     }
 
-    internal fun addScore(points: Int) {
-        if (config.mode == GameMode.ZEN) return
-        val boost = (1f + rewardScoreMultiplier).coerceAtLeast(1f)
-        val doubleScoreMultiplier = if (activeEffects.containsKey(PowerUpType.DOUBLE_SCORE)) 2f else 1f
-        val boosted = (points * boost * doubleScoreMultiplier).roundToInt()
-        score += boosted
-        if (streakBonusRemaining > 0) {
-            score += streakBonusPerBrick
-            streakBonusRemaining -= 1
-            if (streakBonusRemaining <= 0 && streakBonusActive) {
-                streakBonusActive = false
-                listener.onTip("Streak bonus complete")
-            }
-        }
-    }
-
     internal fun compactDeadVolleyBricksIfNeeded() {
         if (config.mode != GameMode.VOLLEY) return
         val totalBricks = bricks.size
@@ -2795,104 +2634,8 @@ class GameEngine(
         if (deadBricks < 40 || deadBricks * 3 < totalBricks) return
         bricks.removeAll { !it.alive }
         spatialHashDirty = true
+        spatialHashInvaderBucket = Int.MIN_VALUE
         buildSpatialHash()
-    }
-
-    internal fun reportScore() {
-        updateScoreChallenges()
-        listener.onScoreUpdated(score)
-    }
-
-    internal fun updateScoreChallenges() {
-        val challenges = dailyChallenges ?: return
-        val completed = mutableListOf<DailyChallenge>()
-        challenges.forEach { challenge ->
-            if (challenge.type != ChallengeType.SCORE_ACHIEVED || challenge.completed) return@forEach
-            if (score > challenge.progress) {
-                challenge.progress = score
-            }
-            if (challenge.progress >= challenge.targetValue) {
-                challenge.completed = true
-                challenge.rewardGranted = true
-                completed.add(challenge)
-            }
-        }
-        if (completed.isNotEmpty()) {
-            handleChallengeRewards(completed)
-        }
-    }
-
-    internal fun checkLevelCompletion() {
-        if (state != GameState.RUNNING || awaitingNextLevel) return
-        val hasRemainingBreakables = aliveBreakableBrickCount > 0
-        if (!hasRemainingBreakables) {
-            val levelDuration = elapsedSeconds - levelStartTime
-            dailyChallenges?.let { challenges ->
-                if (!lostLifeThisLevel) {
-                    updateDailyChallenges(ChallengeType.PERFECT_LEVEL)
-                }
-                challenges.forEach { challenge ->
-                    if (challenge.type == ChallengeType.TIME_UNDER_LIMIT && !challenge.completed) {
-                        if (levelDuration <= challenge.targetValue) {
-                            DailyChallengeManager.completeChallenge(challenge)
-                            handleChallengeRewards(listOf(challenge))
-                        }
-                    }
-                }
-            }
-            logger?.logLevelComplete(levelIndex + 1, score, elapsedSeconds, 0)
-            levelClearFlash = 1.0f
-            emitVisualFeedback(VisualFeedbackEvent.LEVEL_CLEAR)
-            spawnLevelCompleteConfetti()
-            val summary = GameSummary(
-                score = score,
-                level = levelIndex + 1,
-                durationSeconds = elapsedSeconds.toInt(),
-                bricksBroken = runBricksBroken,
-                livesLost = runLivesLost
-            )
-
-            // Keep one completion flow for all modes; GameActivity handles auto-advance behavior.
-            awaitingNextLevel = true
-            state = GameState.PAUSED
-            stateBeforePause = GameState.PAUSED
-            listener.onLevelComplete(summary)
-        }
-    }
-
-    internal fun loseLife() {
-        // Reset combo on life loss
-        combo = 0
-        comboTimer = 0f
-        lostLifeThisLevel = true
-
-        if (config.mode.godMode) {
-            spawnBall()
-            state = GameState.READY
-            syncAimForLaunch()
-            return
-        }
-        lives -= 1
-        runLivesLost += 1
-        listener.onLivesUpdated(lives)
-        audio.play(GameSound.LIFE, 0.9f)
-        audio.haptic(GameHaptic.HEAVY)
-        if (lives <= 0) {
-            logger?.logGameOver(score, levelIndex + 1, "lives_depleted")
-            triggerGameOver()
-        } else {
-            if (config.mode.invaders && invaderShieldMax > 0f) {
-                invaderShield = invaderShieldMax
-                invaderShieldAlerted = false
-                listener.onShieldUpdated(invaderShield.toInt(), invaderShieldMax.toInt())
-            }
-            if (config.mode.invaders) {
-                enemyShots.clear()
-            }
-            spawnBall()
-            state = GameState.READY
-            syncAimForLaunch()
-        }
     }
 
     internal fun triggerGameOver() {
@@ -2934,9 +2677,9 @@ class GameEngine(
         audio.play(GameSound.EXPLOSION, 0.8f)
         audio.haptic(GameHaptic.HEAVY)
         emitVisualFeedback(VisualFeedbackEvent.EXPLOSION_BREAK)
-        val radius = 1
-        for (neighbor in bricks) {
-            if (!neighbor.alive || neighbor.gridX < 0 || neighbor.gridY < 0 || !neighbor.isNeighbor(brick, radius)) continue
+        val searchRadius = max(brick.width, brick.height) * 1.25f + spatialHashCellSize
+        for (neighbor in getNearbyBricksAt(brick.centerX, brick.centerY, searchRadius)) {
+            if (!neighbor.alive || neighbor.gridX < 0 || neighbor.gridY < 0 || !neighbor.isNeighbor(brick, 1)) continue
             if (neighbor == brick) continue
             val destroyed = neighbor.applyHit(true)
             if (destroyed) {
@@ -2955,7 +2698,7 @@ class GameEngine(
         val available = maxParticles - particles.size
         val actualCount = min(count, max(0, available))
         if (actualCount <= 0) return
-        val sparkColor = adjustColor(baseColor, 1.2f, 1f)
+        adjustColor(scratchColor0, baseColor, 1.2f, 1f)
         repeat(actualCount) {
             val angle = random.nextFloat() * Math.PI.toFloat() * 2f
             val speedScale = speed * (0.5f + random.nextFloat() * 0.7f)
@@ -2967,7 +2710,7 @@ class GameEngine(
                     vy = kotlin.math.sin(angle) * speedScale,
                     radius = 0.35f + random.nextFloat() * 0.25f,
                     life = 0.25f + random.nextFloat() * 0.15f,
-                    color = sparkColor
+                    color = scratchColor0.copyOf()
                 )
             )
         }
@@ -3328,6 +3071,7 @@ class GameEngine(
             aliveBreakableBrickCount += 1
         }
         spatialHashDirty = true
+        spatialHashInvaderBucket = Int.MIN_VALUE
         markTunnelGateIntegrityDirty()
     }
 

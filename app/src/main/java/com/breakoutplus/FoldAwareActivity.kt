@@ -5,6 +5,7 @@ import android.graphics.Rect
 import android.os.Build
 import android.os.Bundle
 import android.view.View
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.lifecycle.lifecycleScope
@@ -50,6 +51,15 @@ abstract class FoldAwareActivity : AppCompatActivity() {
             @Suppress("DEPRECATION")
             overridePendingTransition(enterAnim, exitAnim)
         }
+    }
+
+    protected fun registerSlideCloseOnBackPressed() {
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                finish()
+                playCloseTransition(R.anim.slide_in_left, R.anim.slide_out_right)
+            }
+        })
     }
 
     override fun onStart() {

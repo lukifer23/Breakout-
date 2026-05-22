@@ -2,9 +2,12 @@ package com.breakoutplus
 
 import android.os.Bundle
 import android.widget.SeekBar
+import android.widget.TextView
+import android.util.TypedValue
 import androidx.appcompat.app.AppCompatDelegate
 import android.content.Intent
 import com.breakoutplus.databinding.ActivitySettingsBinding
+import com.breakoutplus.game.LevelThemes
 
 class SettingsActivity : FoldAwareActivity() {
     private lateinit var binding: ActivitySettingsBinding
@@ -19,7 +22,7 @@ class SettingsActivity : FoldAwareActivity() {
             finish()
             playCloseTransition(R.anim.slide_in_left, R.anim.slide_out_right)
         }
-
+        registerSlideCloseOnBackPressed()
         val settings = SettingsManager.load(this)
         binding.switchSound.isChecked = settings.soundEnabled
         binding.switchMusic.isChecked = settings.musicEnabled
@@ -67,6 +70,7 @@ class SettingsActivity : FoldAwareActivity() {
             AppCompatDelegate.setDefaultNightMode(
                 if (enabled) AppCompatDelegate.MODE_NIGHT_YES else AppCompatDelegate.MODE_NIGHT_NO
             )
+            recreate()
         }
         binding.switchFpsCounter.setOnCheckedChangeListener { _, _ -> saveSettings() }
         binding.switchHighRefresh.setOnCheckedChangeListener { _, _ -> saveSettings() }
@@ -122,40 +126,51 @@ class SettingsActivity : FoldAwareActivity() {
             playOpenTransition(R.anim.slide_in_right, R.anim.slide_out_left)
         }
 
+        UiMotion.attachPressScale(binding.buttonSettingsBack)
+        UiMotion.attachPressScale(binding.buttonResetScores)
+        UiMotion.attachPressScale(binding.buttonPrivacyPolicy)
+
+        renderUnlockGallery()
         animateEntry()
     }
 
-    private fun animateEntry() {
-        val views = listOf(binding.settingsTitle, binding.settingsScroll, binding.settingsFooter)
-        views.forEachIndexed { index, view ->
-            view.alpha = 0f
-            view.translationY = 18f
-            view.animate()
-                .alpha(1f)
-                .translationY(0f)
-                .setStartDelay(UiMotion.stagger(index, step = 80L))
-                .setDuration(UiMotion.ENTRY_DURATION)
-                .setInterpolator(UiMotion.EMPHASIS_OUT)
-                .start()
+    private fun renderUnlockGallery() {
+        val unlockState = UnlockManager.load(this)
+        val section = TextView(this).apply {
+            setTextAppearance(R.style.Text_BreakoutPlus_Caption)
+            text = getString(R.string.label_section_unlocks)
+            setPadding(0, dp(18), 0, dp(6))
         }
-
-        binding.settingsList.post {
-            animateStagger(binding.settingsList)
+        binding.settingsList.addView(section)
+        LevelThemes.bonusThemes().forEach { theme ->
+            val unlocked = theme.name in unlockState.unlockedThemes
+            val row = TextView(this).apply {
+                text = "${theme.name} — " + getString(
+                    if (unlocked) R.string.label_unlock_status_unlocked else R.string.label_unlock_status_locked
+                )
+                setTextColor(getColor(if (unlocked) R.color.bp_green else R.color.bp_gray))
+                setTextSize(TypedValue.COMPLEX_UNIT_PX, resources.getDimension(R.dimen.bp_body_text_size))
+                setPadding(0, dp(4), 0, dp(4))
+            }
+            binding.settingsList.addView(row)
         }
+        val cosmetic = TextView(this).apply {
+            text = getString(R.string.label_cosmetic_tier_format, unlockState.cosmeticTier)
+            setTextColor(getColor(R.color.bp_white))
+            setTextSize(TypedValue.COMPLEX_UNIT_PX, resources.getDimension(R.dimen.bp_body_text_size))
+            setPadding(0, dp(8), 0, dp(4))
+        }
+        binding.settingsList.addView(cosmetic)
     }
 
-    private fun animateStagger(container: android.view.ViewGroup) {
-        for (i in 0 until container.childCount) {
-            val child = container.getChildAt(i)
-            child.alpha = 0f
-            child.translationY = 14f
-            child.animate()
-                .alpha(1f)
-                .translationY(0f)
-                .setStartDelay(UiMotion.stagger(i, step = 54L))
-                .setDuration(UiMotion.LIST_ITEM_DURATION)
-                .setInterpolator(UiMotion.EMPHASIS_OUT)
-                .start()
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
+
+    private fun animateEntry() {
+        UiMotion.animateScreenSections(
+            listOf(binding.settingsTitle, binding.settingsScroll, binding.settingsFooter)
+        )
+        binding.settingsList.post {
+            UiMotion.animateStaggerChildren(binding.settingsList)
         }
     }
 }

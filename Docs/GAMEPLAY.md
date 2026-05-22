@@ -8,15 +8,15 @@
 
 ## Mode Rules
 - `Classic`: 3 lives, no timer, balanced progression.
-- `Timed Challenge`: 2 lives, 150-second run timer.
+- `Timed Challenge`: 2 lives, one continuous 150-second session timer across levels.
 - `Endless`: infinite progression with scaling layouts.
-- `God Mode`: endless practice, no life loss.
-- `Level Rush`: 1 life, 55-second level timer.
+- `God Mode`: endless practice, no life loss, skip-level in pause menu.
+- `Level Rush`: 1 life, fresh 55-second timer each level.
 - `Volley`: turn-based chain launch; rows descend each turn, starts with 5 balls and can grow to 20.
 - `Tunnel Siege`: fortified unbreakable ring, narrow gate lane into dense interior core, adaptive supply cadence with readiness telemetry.
 - `Survival`: 1 life with aggressive speed scaling.
 - `Invaders`: moving invader fleet fires back; shield and telegraph systems are active.
-- `Zen`: relaxed flow mode (no score/life pressure, continuous restarts/advances).
+- `Zen`: relaxed endless flow — guardrail active, no scores, no XP, no scoreboard; silent auto-advance; skip-level in pause menu.
 
 ## Brick Types
 - `NORMAL`: 1 HP.

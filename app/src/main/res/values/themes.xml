@@ -1,19 +1,23 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <style name="Theme.BreakoutPlus" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <item name="colorPrimary">@color/bp_cyan</item>
-        <item name="colorPrimaryVariant">@color/bp_surface_tint</item>
-        <item name="colorOnPrimary">@color/bp_navy</item>
-        <item name="colorSecondary">@color/bp_magenta</item>
-        <item name="colorSecondaryVariant">@color/bp_violet</item>
-        <item name="colorOnSecondary">@color/bp_navy</item>
-        <item name="colorSurface">@color/bp_surface</item>
+        <item name="colorPrimaryVariant">@color/bp_azure</item>
+        <item name="colorOnPrimary">@color/bp_on_accent</item>
+        <item name="colorSecondary">@color/bp_cyan</item>
+        <item name="colorSecondaryVariant">@color/bp_teal</item>
+        <item name="colorOnSecondary">@color/bp_on_accent</item>
+        <item name="colorSurface">@color/bp_surface_raised</item>
         <item name="colorOnSurface">@color/bp_white</item>
         <item name="colorError">@color/bp_red</item>
+        <item name="colorControlActivated">@color/bp_cyan</item>
+        <item name="colorControlHighlight">@color/bp_glass_ripple</item>
+        <item name="android:colorBackground">@color/bp_navy</item>
         <item name="android:statusBarColor">@color/bp_shadow</item>
-        <item name="android:navigationBarColor">@color/bp_shadow</item>
+        <item name="android:navigationBarColor">@color/bp_navy</item>
         <item name="android:windowBackground">@color/bp_navy</item>
         <item name="android:forceDarkAllowed" tools:targetApi="q">false</item>
-        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="o_mr1">true</item>
     </style>
 
     <style name="Theme.BreakoutPlus.Splash" parent="Theme.BreakoutPlus">
@@ -28,15 +32,41 @@
         <item name="android:paddingTop">13dp</item>
         <item name="android:paddingBottom">13dp</item>
         <item name="android:textAllCaps">false</item>
-        <item name="android:textColor">@color/bp_navy</item>
+        <item name="android:textColor">@color/bp_on_accent</item>
         <item name="android:textSize">@dimen/bp_body_text_size</item>
         <item name="android:fontFamily">sans-serif-medium</item>
-        <item name="android:letterSpacing">0.04</item>
-        <item name="backgroundTint">@color/bp_cyan</item>
-        <item name="strokeColor">@color/bp_line</item>
-        <item name="strokeWidth">1dp</item>
-        <item name="cornerRadius">18dp</item>
-        <item name="rippleColor">@color/bp_white</item>
+        <item name="android:letterSpacing">0.02</item>
+        <item name="backgroundTint">@null</item>
+        <item name="android:background">@drawable/glass_button_primary</item>
+        <item name="rippleColor">@color/bp_glass_ripple</item>
+        <item name="cornerRadius">@dimen/bp_radius_button</item>
+        <item name="elevation">0dp</item>
+        <item name="android:stateListAnimator">@null</item>
+    </style>
+
+    <style name="Widget.BreakoutPlus.Button.Secondary" parent="Widget.BreakoutPlus.Button">
+        <item name="android:background">@drawable/glass_button_secondary</item>
+        <item name="android:textColor">@color/bp_gray</item>
+    </style>
+
+    <style name="Widget.BreakoutPlus.Button.Gold" parent="Widget.BreakoutPlus.Button">
+        <item name="android:background">@drawable/glass_button_gold</item>
+    </style>
+
+    <style name="Widget.BreakoutPlus.Button.Green" parent="Widget.BreakoutPlus.Button">
+        <item name="android:background">@drawable/glass_button_green</item>
+    </style>
+
+    <style name="Widget.BreakoutPlus.Button.Teal" parent="Widget.BreakoutPlus.Button">
+        <item name="android:background">@drawable/glass_button_teal</item>
+    </style>
+
+    <style name="Widget.BreakoutPlus.Button.Azure" parent="Widget.BreakoutPlus.Button">
+        <item name="android:background">@drawable/glass_button_azure</item>
+    </style>
+
+    <style name="Widget.BreakoutPlus.Button.Danger" parent="Widget.BreakoutPlus.Button">
+        <item name="android:background">@drawable/glass_button_danger</item>
     </style>
 
     <style name="Widget.BreakoutPlus.PauseButton" parent="Widget.MaterialComponents.Button">
@@ -49,16 +79,14 @@
         <item name="android:paddingTop">8dp</item>
         <item name="android:paddingBottom">8dp</item>
         <item name="android:textAllCaps">false</item>
-        <item name="android:textColor">@color/bp_navy</item>
-        <item name="android:textSize">12sp</item>
-        <item name="android:fontFamily">sans-serif-medium</item>
-        <item name="android:letterSpacing">0.04</item>
-        <item name="backgroundTint">@color/bp_magenta</item>
-        <item name="strokeColor">@color/bp_line</item>
-        <item name="strokeWidth">1dp</item>
+        <item name="backgroundTint">@null</item>
+        <item name="android:background">@drawable/hud_glass_button_icon</item>
+        <item name="rippleColor">@color/bp_glass_ripple</item>
         <item name="cornerRadius">14dp</item>
         <item name="iconPadding">0dp</item>
-        <item name="iconTint">@color/bp_navy</item>
+        <item name="iconTint">@color/bp_cyan</item>
+        <item name="elevation">0dp</item>
+        <item name="android:stateListAnimator">@null</item>
     </style>
 
     <style name="Widget.BreakoutPlus.LaserButton" parent="Widget.MaterialComponents.Button">
@@ -71,14 +99,16 @@
         <item name="android:paddingTop">10dp</item>
         <item name="android:paddingBottom">10dp</item>
         <item name="android:textAllCaps">true</item>
-        <item name="android:textColor">@color/bp_navy</item>
+        <item name="android:textColor">@color/bp_on_accent</item>
         <item name="android:textSize">12sp</item>
         <item name="android:fontFamily">sans-serif-medium</item>
-        <item name="android:letterSpacing">0.08</item>
-        <item name="backgroundTint">@color/bp_red</item>
-        <item name="strokeColor">@color/bp_line</item>
-        <item name="strokeWidth">1dp</item>
-        <item name="cornerRadius">18dp</item>
+        <item name="android:letterSpacing">0.06</item>
+        <item name="backgroundTint">@null</item>
+        <item name="android:background">@drawable/glass_button_danger</item>
+        <item name="rippleColor">@color/bp_glass_ripple</item>
+        <item name="cornerRadius">@dimen/bp_radius_button</item>
+        <item name="elevation">0dp</item>
+        <item name="android:stateListAnimator">@null</item>
     </style>
 
     <style name="Text.BreakoutPlus.Title" parent="Widget.MaterialComponents.TextView">
@@ -86,7 +116,11 @@
         <item name="android:textSize">@dimen/bp_title_size</item>
         <item name="android:fontFamily">sans-serif-black</item>
         <item name="android:textStyle">bold</item>
-        <item name="android:letterSpacing">0.04</item>
+        <item name="android:letterSpacing">0.03</item>
+        <item name="android:shadowColor">@color/bp_title_shadow</item>
+        <item name="android:shadowDx">0</item>
+        <item name="android:shadowDy">0</item>
+        <item name="android:shadowRadius">12</item>
     </style>
 
     <style name="Text.BreakoutPlus.ScreenTitle" parent="Widget.MaterialComponents.TextView">
@@ -94,14 +128,18 @@
         <item name="android:textSize">@dimen/bp_screen_title_size</item>
         <item name="android:fontFamily">sans-serif-black</item>
         <item name="android:textStyle">bold</item>
-        <item name="android:letterSpacing">0.03</item>
+        <item name="android:letterSpacing">0.02</item>
+        <item name="android:shadowColor">@color/bp_title_shadow</item>
+        <item name="android:shadowDx">0</item>
+        <item name="android:shadowDy">0</item>
+        <item name="android:shadowRadius">8</item>
     </style>
 
     <style name="Text.BreakoutPlus.Subtitle" parent="Widget.MaterialComponents.TextView">
         <item name="android:textColor">@color/bp_gray</item>
         <item name="android:textSize">@dimen/bp_subtitle_size</item>
         <item name="android:fontFamily">sans-serif-medium</item>
-        <item name="android:letterSpacing">0.02</item>
+        <item name="android:letterSpacing">0.01</item>
     </style>
 
     <style name="Text.BreakoutPlus.Body" parent="Widget.MaterialComponents.TextView">
@@ -114,6 +152,6 @@
         <item name="android:textColor">@color/bp_gray</item>
         <item name="android:textSize">@dimen/bp_caption_text_size</item>
         <item name="android:fontFamily">sans-serif-medium</item>
-        <item name="android:letterSpacing">0.02</item>
+        <item name="android:letterSpacing">0.01</item>
     </style>
 </resources>

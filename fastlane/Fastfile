@@ -52,7 +52,7 @@ platform :android do
     supply(
       track: "internal",
       release_status: "completed",
-      version_code: (ENV["BP_VERSION_CODE"] || "8").to_i,
+      version_code: (ENV["BP_VERSION_CODE"] || "12").to_i,
       skip_upload_apk: true,
       skip_upload_aab: true,
       skip_upload_metadata: false,
@@ -68,7 +68,7 @@ platform :android do
       release_status: "draft",
       track_promote_release_status: "draft",
       changes_not_sent_for_review: true,
-      version_code: (ENV["BP_VERSION_CODE"] || "3").to_i,
+      version_code: (ENV["BP_VERSION_CODE"] || "12").to_i,
       skip_upload_apk: true,
       skip_upload_aab: true,
       skip_upload_metadata: false,

@@ -5,9 +5,9 @@ The repository also includes an iOS port (`ios/`), but Android is the active rel
 
 ## Current Project State (As Of 2026-05-22)
 
-- Android **1.0.11** hardening complete — see [`Docs/HARDENING_SIGNOFF.md`](Docs/HARDENING_SIGNOFF.md)
-- **CI**: GitHub Actions runs unit tests, lint, and debug assembly on every push/PR
-- **105 JVM unit tests** passing; lint + assembleDebug green (JDK 17 required locally)
+- Android **1.0.12** excellence pass — glass UI unified, Zen differentiated, performance hardened
+- **CI**: GitHub Actions runs unit tests, lint, debug assembly, and release assembly (CI debug signing)
+- **108+ JVM unit tests** passing; lint + assembleDebug + assembleRelease green (JDK 17 required locally)
 - Android feature-complete: 10 modes, 10 brick types, 18 powerups, progression, unlocks, scoreboards, daily challenges, lifetime stats
 - Extracted systems: `VolleyModeSystem`, `TunnelModeSystem`, `InvadersModeSystem`, `LevelAdvancePolicy`, `ModeAccent`, `GameHudController`
 - iOS parity backlog documented in [`Docs/PARITY.md`](Docs/PARITY.md) — execute after Android Play release sign-off
@@ -28,6 +28,7 @@ Latest automated validation:
 ```bash
 export JAVA_HOME=/path/to/jdk-17
 ./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
+CI=true ./gradlew :app:assembleRelease
 ```
 
 ## Active Engineering Goals

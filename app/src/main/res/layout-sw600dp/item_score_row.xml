@@ -3,10 +3,10 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="10dp"
-    app:cardBackgroundColor="@color/bp_surface"
-    app:cardCornerRadius="16dp"
-    app:cardElevation="4dp"
-    app:strokeColor="@color/bp_line"
+    app:cardBackgroundColor="@color/bp_glass_fill"
+    app:cardCornerRadius="@dimen/bp_radius_glass_compact"
+    app:cardElevation="0dp"
+    app:strokeColor="@color/bp_glass_stroke_soft"
     app:strokeWidth="1dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout

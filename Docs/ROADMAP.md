@@ -46,6 +46,14 @@ Deliver a stable, consistent, performant Android release with no feature removal
 - Extract mode-state subsystem (`VOLLEY`, `TUNNEL`, `INVADERS` specialty flows).
 - Reduce `GameEngine.kt` responsibility surface while preserving APIs.
 
+Completed in 1.0.12 excellence pass:
+- `GameEngineScoring.kt` — score, combo, level completion, life loss.
+- `GameEngineLevelFlow.kt` — `nextLevel`, `resetLevel`.
+- Powerup snapshot buffer reuse and sorted-effects cache.
+- `Renderer2D` rect batching; adaptive FX LOD via frame stress.
+- Release CI (`assembleRelease` with CI debug signing), ProGuard keeps, `shrinkResources`.
+- Zen mode differentiated (`zenMode` flag); daily challenge UI completed.
+
 Completed in 1.0.11 hardening tranche:
 - `InvadersModeSystem` extracted (formation offset, pacing, shot caps).
 - `VolleyModeSystem` expanded (starting ball constants, `shouldAwardBall`).

@@ -42,6 +42,7 @@ class GameRenderer(
     private var musicWasPlaying = false
     private var fixedStepSeconds = 1f / 120f
     private var simulationAccumulator = 0f
+    private var rollingFrameMs = 16f
     private var debugAutoPlayEnabled = false
     private var debugProgressionProbeEnabled = false
     private var recoveryAttempts = 0
@@ -135,9 +136,16 @@ class GameRenderer(
 
             if (!paused) {
                 val step = fixedStepSeconds.coerceIn(1f / 240f, 1f / 45f)
-                simulationAccumulator = (simulationAccumulator + delta).coerceAtMost(step * 6f)
+                rollingFrameMs = rollingFrameMs * 0.9f + delta * 1000f * 0.1f
+                engine.renderFrameStress = rollingFrameMs > 18f
+                val maxSteps = when {
+                    rollingFrameMs > 22f -> 4
+                    rollingFrameMs > 18f -> 5
+                    else -> 6
+                }
+                simulationAccumulator = (simulationAccumulator + delta).coerceAtMost(step * maxSteps)
                 var updates = 0
-                while (simulationAccumulator >= step && updates < 6) {
+                while (simulationAccumulator >= step && updates < maxSteps) {
                     engine.update(step)
                     simulationAccumulator -= step
                     updates += 1
@@ -184,7 +192,7 @@ class GameRenderer(
                 val pulseFast = ((sin(visualTimeSeconds * 12f) + 1.0) * 0.5).toFloat()
                 val alpha = (volleyDanger * (0.4f + 0.2f * pulse + 0.1f * pulseFast)).coerceIn(0f, 0.85f)
                 val dangerHeight = worldHeight * 0.40f
-                val steps = 12
+                val steps = 4
                 val stepHeight = dangerHeight / steps
                 for (i in 0 until steps) {
                     val stepAlpha = alpha * (1f - (i.toFloat() / steps))

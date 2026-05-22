@@ -11,9 +11,11 @@
                 <corners android:radius="30dp" />
                 <gradient
                     android:angle="130"
-                    android:startColor="@color/bp_surface_raised"
-                    android:endColor="@color/bp_surface" />
-                <stroke android:width="1dp" android:color="@color/bp_line" />
+                    android:startColor="@color/bp_glass_fill_strong"
+                    android:endColor="@color/bp_glass_fill" />
+                <stroke
+                    android:width="1.5dp"
+                    android:color="@color/bp_glass_stroke_bright" />
             </shape>
         </inset>
     </item>

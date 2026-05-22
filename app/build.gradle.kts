@@ -11,9 +11,10 @@ val releaseSigningAvailable = !releaseStoreFile.isNullOrBlank() &&
     !releaseStorePassword.isNullOrBlank() &&
     !releaseKeyAlias.isNullOrBlank() &&
     !releaseKeyPassword.isNullOrBlank()
+val ciBuild = System.getenv("CI") == "true"
 val requestedTasks = gradle.startParameter.taskNames.joinToString(" ").lowercase()
 val releaseTaskRequested = requestedTasks.contains("release") || requestedTasks.contains("bundle")
-if (releaseTaskRequested && !releaseSigningAvailable) {
+if (releaseTaskRequested && !releaseSigningAvailable && !ciBuild) {
     throw GradleException(
         "Release signing vars are required for release tasks. " +
             "Set BP_RELEASE_STORE_FILE, BP_RELEASE_STORE_PASSWORD, BP_RELEASE_KEY_ALIAS, BP_RELEASE_KEY_PASSWORD."
@@ -28,8 +29,8 @@ android {
         applicationId = "com.breakoutplus"
         minSdk = 26
         targetSdk = 35
-        versionCode = 11
-        versionName = "1.0.11"
+        versionCode = 12
+        versionName = "1.0.12"
         vectorDrawables {
             useSupportLibrary = true
         }
@@ -51,11 +52,16 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.findByName("release")
+            signingConfig = when {
+                signingConfigs.findByName("release") != null -> signingConfigs.getByName("release")
+                ciBuild -> signingConfigs.getByName("debug")
+                else -> signingConfigs.findByName("release")
+            }
         }
         debug {
             applicationIdSuffix = ".debug"
