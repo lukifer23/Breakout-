@@ -34,11 +34,11 @@ class TunnelModeSystemTest {
     fun supplyDropGateRespectsThresholdBands() {
         val high = TunnelModeSystem.supplyDropGate(0.8f, 75, hasBreakthroughActive = false, hasBreakthroughDropQueued = false)
         val mid = TunnelModeSystem.supplyDropGate(0.6f, 75, hasBreakthroughActive = false, hasBreakthroughDropQueued = false)
-        val low = TunnelModeSystem.supplyDropGate(0.59f, 75, hasBreakthroughActive = false, hasBreakthroughDropQueued = false)
+        val low = TunnelModeSystem.supplyDropGate(0.49f, 75, hasBreakthroughActive = false, hasBreakthroughDropQueued = false)
 
-        assertEquals(5, high.requiredShots)
-        assertEquals(7, mid.requiredShots)
-        assertEquals(9, low.requiredShots)
+        assertEquals(3, high.requiredShots)
+        assertEquals(4, mid.requiredShots)
+        assertEquals(6, low.requiredShots)
     }
 
     @Test
@@ -62,9 +62,9 @@ class TunnelModeSystemTest {
             hasBreakthroughDropQueued = true
         )
 
-        assertEquals(0.635f, open.chance, 0.0001f)
-        assertEquals(0.375f, penalized.chance, 0.0001f)
-        assertEquals(0.16f, clampedMin.chance, 0.0001f)
+        assertEquals(0.8075f, open.chance, 0.0001f)
+        assertEquals(0.5475f, penalized.chance, 0.0001f)
+        assertEquals(0.20f, clampedMin.chance, 0.0001f)
     }
 
     @Test

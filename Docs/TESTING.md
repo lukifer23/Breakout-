@@ -1,9 +1,27 @@
 # Testing
 
+## Prerequisites
+- **JDK 17** — set `JAVA_HOME` before running Gradle (see [`BUILD.md`](BUILD.md))
+- Android SDK platform 35 for assemble/lint tasks
+
+## CI (Automated)
+GitHub Actions (`.github/workflows/android.yml`) runs on every push/PR:
+```bash
+./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
+```
+
 ## JVM Unit Tests
 ```bash
 ./gradlew :app:testDebugUnitTest
 ```
+Current suite: **105 tests** covering mode systems, layout policy, collision math, progression policy, and UI tokens.
+
+Key test files added/expanded in 1.0.11:
+- `VolleyModeSystemTest` — turn decision flow, starting ball count (5)
+- `TunnelModeSystemTest` — supply gates, pity drops, readiness
+- `InvadersModeSystemTest` — formation offset, pacing, shot caps
+- `ModeAccentTest` — distinct Tunnel vs Survival accents
+- `LayoutParityTest` — slate row-density parity, GOD skip control across layout buckets
 
 ## Build/Lint Verification
 ```bash
@@ -68,7 +86,9 @@ Optional env vars:
 - Verify level flow:
   - Level-complete overlay advances correctly in normal modes.
   - `GOD` and `ZEN` auto-advance/continue without blocking progression; transient handoff misses should retry once before manual fallback UI appears.
+  - `ZEN` must **not** show level-complete overlay (silent auto-advance only).
 - Verify Volley behavior:
+  - Starts with **5 balls**; can grow to 20.
   - Turn launch queue, row descent, return anchor reposition, breach game-over.
   - No turn desync from stalled non-moving balls after queue drains (balls should be nudged back in-flight, then resolve normally).
   - Slate/tablet layouts maintain denser vertical rows than fold/phone profiles without clipping HUD elements.
@@ -79,6 +99,8 @@ Optional env vars:
   - Pity-drop path prevents prolonged supply starvation in extended pressure phases.
 - Verify Invaders behavior:
   - Enemy shot telegraph/firing, shield hit/break feedback, paddle survival flow.
+- Verify mode accent colors on Mode Select and Scoreboard:
+  - Tunnel (`bp_orange`) and Survival (`bp_flame`) are visually distinct.
 - Verify HUD behavior:
   - Responsive scaling across phone/tablet/foldable sizes.
   - No overlaps between score/meta/powerup chips/FPS/laser button.
@@ -94,5 +116,8 @@ Optional env vars:
 - Verify pause/resume/restart and game-over flows.
 
 ## Performance Targets
-- Stable 60+ FPS class behavior on target hardware.
+- Stable 60+ FPS class behavior on target hardware (120 Hz on supported foldables when high refresh enabled).
 - No major frame spikes during multi-ball, heavy FX, or large enemy volleys.
+
+## Sign-Off Reference
+Android 1.0.11 hardening automated gates: [`HARDENING_SIGNOFF.md`](HARDENING_SIGNOFF.md)

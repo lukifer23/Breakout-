@@ -9,6 +9,7 @@ import com.google.android.material.card.MaterialCardView
 import com.breakoutplus.databinding.ActivityScoreboardBinding
 import com.breakoutplus.databinding.ItemScoreRowBinding
 import com.breakoutplus.game.GameMode
+import com.breakoutplus.game.ModeAccent
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -233,19 +234,7 @@ class ScoreboardActivity : FoldAwareActivity() {
     }
 
     private fun modeAccentColor(mode: GameMode?): Int {
-        val res = when (mode) {
-            null -> R.color.bp_cyan
-            GameMode.CLASSIC -> R.color.bp_cyan
-            GameMode.TIMED -> R.color.bp_gold
-            GameMode.ENDLESS -> R.color.bp_green
-            GameMode.GOD -> R.color.bp_magenta
-            GameMode.RUSH -> R.color.bp_red
-            GameMode.VOLLEY -> R.color.bp_azure
-            GameMode.TUNNEL -> R.color.bp_orange
-            GameMode.SURVIVAL -> R.color.bp_orange
-            GameMode.INVADERS -> R.color.bp_violet
-            GameMode.ZEN -> R.color.bp_gray
-        }
+        val res = mode?.let { ModeAccent.colorRes(it) } ?: R.color.bp_cyan
         return ContextCompat.getColor(this, res)
     }
 

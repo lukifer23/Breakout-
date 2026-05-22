@@ -4,9 +4,8 @@
 > Release/bundle tasks now fail fast when `BP_RELEASE_*` vars are missing.
 
 ## Build Status
-- New release candidate built: `app/build/outputs/bundle/release/app-release.aab`
-- Current app version: `versionCode 10`, `versionName 1.0.9`
-- SHA-256: `9af783291fd26260539a49a36cfba2abffd29d6a75ed6662cc7295f792cd7464`
+- Target release version: `versionCode 11`, `versionName 1.0.11`
+- Previous release candidate (historical): `versionCode 10`, `versionName 1.0.9`
 - Fastlane upload attempt to internal track failed due signing key mismatch.
   - Found (bundle): `63:58:54:90:7B:E5:31:53:4D:C4:E5:01:F0:7E:E4:4A:40:B0:CA:CE`
   - Expected (Play): `23:82:B9:A4:95:32:2E:5D:44:9C:BC:88:06:77:88:D2:D6:35:D8:B4`
@@ -17,7 +16,7 @@
    - `BP_RELEASE_STORE_PASSWORD`
    - `BP_RELEASE_KEY_ALIAS`
    - `BP_RELEASE_KEY_PASSWORD`
-2. Current `bundleRelease` falls back to debug signing when release signing vars are missing, which is rejected by Play for this app.
+2. ~~Current `bundleRelease` falls back to debug signing when release signing vars are missing~~ — **fixed**: release tasks now fail fast without `BP_RELEASE_*` vars.
 3. Bundler lock mismatch blocks `bundle exec fastlane ...`:
    - Missing Bundler `2.5.11` per `Gemfile.lock`.
 

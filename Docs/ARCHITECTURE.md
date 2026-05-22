@@ -22,6 +22,9 @@
 - Brick collision feedback math: `BrickCollisionFeedback.kt`
 - Gameplay VFX feedback profiles: centralized in `GameEngine` (event-profile mapping)
 - Tunnel mode pacing/supply logic: `TunnelModeSystem.kt`
+- Volley turn flow: `VolleyModeSystem.kt`
+- Invaders formation/pacing: `InvadersModeSystem.kt`
+- Mode UI accent colors: `ModeAccent.kt`
 - Powerup drop-rate model: `PowerupDropModel.kt`
 - Drawing primitives: `Renderer2D.kt`
 - Audio playback/feedback: `GameAudioManager.kt`
@@ -62,6 +65,12 @@ Current decomposition strategy is incremental extraction with behavior parity:
 - HUD reservation is compacted on slate/fold profiles to preserve gameplay field height while maintaining control readability.
 - `GameEngine` board layout tuning uses the same shared `DeviceLayoutPolicy` classification to keep HUD and brick density aligned.
 
+## Platform Scope
+
+- **Android** (`app/`): primary shipping target; all architecture decisions here are authoritative.
+- **iOS** (`ios/BreakoutPlus/`): active parity port — see [`PARITY.md`](PARITY.md) for subsystem gaps.
+- **macOS** (`ios/BreakoutPlusMac/`): **frozen dev-only** target; 5-mode stale fork, not maintained during hardening.
+
 ## Engineering Rules For Refactor Work
 - No feature removals.
 - No placeholder systems or mock behavior paths.
@@ -77,3 +86,8 @@ Current decomposition strategy is incremental extraction with behavior parity:
 - `GameEngine` also maintains an alive-explosive counter so READY-state tip gating avoids per-frame explosive-brick scans.
 - Stuck-ball state checks are centralized via a helper in `GameEngine` to avoid repeated lambda-based scans in input/render/autoplay branches.
 - Tunnel breakthrough-state checks (active effects + queued drops) are centralized in `GameEngine` helpers and reused by status + supply logic.
+
+## CI & Quality Gates
+- GitHub Actions: `.github/workflows/android.yml` runs unit tests, lint, and debug assembly on push/PR (JDK 17).
+- Local validation must use JDK 17 — see [`BUILD.md`](BUILD.md).
+- Device probes: `tools/mode_smoke_test.sh`, `tools/god_zen_progression_probe.sh`, `tools/all_modes_progression_probe.sh`.

@@ -3,31 +3,32 @@
 Android-first brick breaker for phones, foldables, and slates.  
 The repository also includes an iOS port (`ios/`), but Android is the active release track.
 
-## Current Project State (As Of 2026-03-02)
-- Android foundation is strong and feature-complete:
-  - 10 game modes
-  - 10 brick types
-  - 18 powerups
-  - progression, unlocks, scoreboards, daily challenges, lifetime stats
-- Android still needs focused polish and structural cleanup for release confidence:
-  - mode stability and balance (especially `VOLLEY` and `TUNNEL`)
-  - consistent HUD/animation behavior across foldables and large slates
-  - long-session performance hardening
-  - complexity reduction in core runtime files without removing features
-- Recent patch focus:
-  - hardened GOD/ZEN progression and skip-level flow
-  - restored tablet/slate GOD skip control parity
-  - tightened slate/fold board-density consistency
-  - unified Volley danger FX behavior across viewport classes
-  - reduced Volley turn-stall edge cases from near-zero velocity jitter
-  - added Tunnel supply readiness telemetry and anti-starvation pity-drop behavior
-  - added persistent Tunnel gate-lane telegraph and stronger forced-supply visual feedback
-  - unified gameplay event flash/shake/combo/clear feedback through centralized visual profiles
-  - hardened PHASE brick transition logic and added regression test coverage
+## Current Project State (As Of 2026-05-22)
 
-Latest validation snapshot:
-- `./gradlew :app:testDebugUnitTest` passing
-- Device smoke passing for `VOLLEY`, `TUNNEL`, `GOD`, `ZEN`, `INVADERS` on connected hardware
+- Android **1.0.11** hardening complete — see [`Docs/HARDENING_SIGNOFF.md`](Docs/HARDENING_SIGNOFF.md)
+- **CI**: GitHub Actions runs unit tests, lint, and debug assembly on every push/PR
+- **105 JVM unit tests** passing; lint + assembleDebug green (JDK 17 required locally)
+- Android feature-complete: 10 modes, 10 brick types, 18 powerups, progression, unlocks, scoreboards, daily challenges, lifetime stats
+- Extracted systems: `VolleyModeSystem`, `TunnelModeSystem`, `InvadersModeSystem`, `LevelAdvancePolicy`, `ModeAccent`, `GameHudController`
+- iOS parity backlog documented in [`Docs/PARITY.md`](Docs/PARITY.md) — execute after Android Play release sign-off
+- `BreakoutPlusMac` frozen (dev-only, unmaintained)
+
+### Remaining Before Play Store Ship
+- Device QA matrix (phone, fold, slate) — see [`Docs/TESTING.md`](Docs/TESTING.md)
+- Play Console setup, release signing, tablet screenshots — see [`Docs/RELEASE_CHECKLIST.md`](Docs/RELEASE_CHECKLIST.md)
+- Long-session device validation for Volley/Tunnel under heavy FX
+
+### Recent 1.0.11 Highlights
+- Locked Volley starting ball count at 5 (`VolleyModeSystem.STARTING_BALL_COUNT`)
+- Unified mode accent colors; Survival uses distinct `bp_flame` vs Tunnel orange
+- Extracted `InvadersModeSystem`; expanded Volley/Tunnel regression tests
+- Added cross-platform parity matrix and Android hardening sign-off docs
+
+Latest automated validation:
+```bash
+export JAVA_HOME=/path/to/jdk-17
+./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
+```
 
 ## Active Engineering Goals
 1. Preserve all existing features and mode identities.
@@ -46,7 +47,7 @@ Latest validation snapshot:
 - Choreographer frame pacing (`RENDERMODE_WHEN_DIRTY`)
 - Fixed-step-only simulation in `GameRenderer`
 - Core gameplay state machine in `GameEngine`
-- Extracted mode systems (`VolleyModeSystem`, `TunnelModeSystem`, `ModeLayoutPolicy`, `ModeBoardMetrics`, `LevelAdvancePolicy`) to reduce monolith risk
+- Extracted mode systems (`VolleyModeSystem`, `TunnelModeSystem`, `InvadersModeSystem`, `ModeLayoutPolicy`, `ModeBoardMetrics`, `LevelAdvancePolicy`, `ModeAccent`) to reduce monolith risk
 - Fold-aware and large-screen responsive HUD strategy managed by `GameHudController`
 
 ## Game Content
@@ -77,11 +78,10 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 adb shell am start -n com.breakoutplus.debug/com.breakoutplus.MainActivity
 ```
 
-### Validation
+### Validation (local)
 ```bash
-./gradlew :app:testDebugUnitTest
-./gradlew :app:lintDebug
-./gradlew :app:assembleDebug
+export JAVA_HOME=/path/to/jdk-17   # required; JDK 26 breaks Gradle in this project
+./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
 ```
 
 ### Mode Smoke Test
@@ -108,13 +108,18 @@ tools/      Dev utilities (mode smoke tests + progression probes)
 ```
 
 ## Documentation
-- `Docs/REQUIREMENTS.md`
-- `Docs/ARCHITECTURE.md`
-- `Docs/GAMEPLAY.md`
-- `Docs/TESTING.md`
-- `Docs/ROADMAP.md`
-- `Docs/BUILD.md`
-- `Docs/PLAY_RELEASE_GAPS_2026-02-14.md`
+- [`Docs/REQUIREMENTS.md`](Docs/REQUIREMENTS.md) — product and quality requirements
+- [`Docs/ARCHITECTURE.md`](Docs/ARCHITECTURE.md) — Android runtime architecture
+- [`Docs/GAMEPLAY.md`](Docs/GAMEPLAY.md) — mode rules, bricks, powerups
+- [`Docs/DESIGN.md`](Docs/DESIGN.md) — visual/HUD UX principles and mode accent tokens
+- [`Docs/BUILD.md`](Docs/BUILD.md) — build, install, release, Fastlane
+- [`Docs/TESTING.md`](Docs/TESTING.md) — unit tests, device probes, manual QA matrix
+- [`Docs/ROADMAP.md`](Docs/ROADMAP.md) — active engineering workstreams
+- [`Docs/PARITY.md`](Docs/PARITY.md) — Android vs iOS vs Mac parity matrix
+- [`Docs/HARDENING_SIGNOFF.md`](Docs/HARDENING_SIGNOFF.md) — Android 1.0.11 hardening exit criteria
+- [`Docs/RELEASE_CHECKLIST.md`](Docs/RELEASE_CHECKLIST.md) — Play Store release checklist
+- [`Docs/RELEASE_NOTES.md`](Docs/RELEASE_NOTES.md) — version history
+- [`ios/README.md`](ios/README.md) — iOS port status and build/run guide
 
 ## License
 MIT (`LICENSE`)

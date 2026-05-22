@@ -44,11 +44,13 @@
 ### Quality Constraints
 - No feature removals for existing Android modes
 - No intentional regressions in mode rules or progression flow
-- Build/test/lint must remain green in CI-style CLI runs
+- Build/test/lint must remain green in CI-style CLI runs (GitHub Actions + local Gradle)
 - No placeholder/stub/mock gameplay paths in production code
+- Cross-platform parity tracked in [`PARITY.md`](PARITY.md); Android is authoritative
 
 ## Success Criteria
-- `:app:assembleDebug`, `:app:testDebugUnitTest`, and `:app:lintDebug` succeed.
+- `:app:assembleDebug`, `:app:testDebugUnitTest`, and `:app:lintDebug` succeed (locally and in CI).
 - Latest debug APK installs and launches on connected Android device.
 - All 10 modes are playable end-to-end with expected mode identity.
 - Folded/unfolded/slate form-factor matrix shows stable HUD scaling and readable gameplay surfaces.
+- Android 1.0.11 hardening criteria met — see [`HARDENING_SIGNOFF.md`](HARDENING_SIGNOFF.md).

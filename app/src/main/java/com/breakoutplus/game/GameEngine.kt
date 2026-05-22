@@ -155,7 +155,7 @@ class GameEngine(
     internal var debugAutoPlayWave = 0f
     internal var debugProgressionProbeEnabled = false
     internal var debugProgressionProbeTimer = 0f
-    internal var volleyBallCount = 3
+    internal var volleyBallCount = VolleyModeSystem.STARTING_BALL_COUNT
     internal var volleyQueuedBalls = 0
     internal var volleyLaunchTimer = 0f
     internal var volleyTurnActive = false
@@ -1050,7 +1050,11 @@ class GameEngine(
             godModeTipShown = true
         }
         if (config.mode == GameMode.VOLLEY) {
-            volleyBallCount = if (first) 5 else volleyBallCount.coerceIn(5, 20)
+            volleyBallCount = if (first) {
+                VolleyModeSystem.STARTING_BALL_COUNT
+            } else {
+                volleyBallCount.coerceIn(VolleyModeSystem.MIN_ACTIVE_BALL_COUNT, VolleyModeSystem.MAX_BALL_COUNT)
+            }
             listener.onVolleyBallsUpdated(volleyBallCount)
         }
 
@@ -1669,7 +1673,12 @@ class GameEngine(
         val rightBound = worldWidth - 0.6f
 
         fun rowDrift(row: Int): Float {
-            return kotlin.math.sin(invaderRowPhase + row * invaderRowPhaseOffset) * invaderRowDrift
+            return InvadersModeSystem.rowDrift(
+                row = row,
+                phase = invaderRowPhase,
+                rowPhaseOffset = invaderRowPhaseOffset,
+                rowDriftAmount = invaderRowDrift
+            )
         }
 
         var minBaseX = Float.POSITIVE_INFINITY
@@ -1680,33 +1689,25 @@ class GameEngine(
             maxBaseX = max(maxBaseX, x + invader.width)
         }
 
-        val minOffsetAllowed = leftBound - minBaseX
-        val maxOffsetAllowed = rightBound - maxBaseX
-
-        val nextOffset = if (minOffsetAllowed > maxOffsetAllowed) {
-            (minOffsetAllowed + maxOffsetAllowed) * 0.5f
-        } else {
-            var proposed = invaderFormationOffset + invaderSpeed * invaderDirection * dt
-            if (proposed < minOffsetAllowed) {
-                val overshoot = minOffsetAllowed - proposed
-                proposed = minOffsetAllowed + overshoot
-                if (invaderDirection < 0f) {
-                    invaderDirection = 1f
-                    playInvaderTurnSound()
-                }
-            }
-            if (proposed > maxOffsetAllowed) {
-                val overshoot = proposed - maxOffsetAllowed
-                proposed = maxOffsetAllowed - overshoot
-                if (invaderDirection > 0f) {
-                    invaderDirection = -1f
-                    playInvaderTurnSound()
-                }
-            }
-            proposed.coerceIn(minOffsetAllowed, maxOffsetAllowed)
+        val (minOffsetAllowed, maxOffsetAllowed) = InvadersModeSystem.formationOffsetLimits(
+            minBaseX = minBaseX,
+            maxBaseX = maxBaseX,
+            leftBound = leftBound,
+            rightBound = rightBound
+        )
+        val offsetStep = InvadersModeSystem.nextFormationOffset(
+            currentOffset = invaderFormationOffset,
+            direction = invaderDirection,
+            speed = invaderSpeed,
+            dt = dt,
+            minOffsetAllowed = minOffsetAllowed,
+            maxOffsetAllowed = maxOffsetAllowed
+        )
+        if (offsetStep.playTurnSound) {
+            playInvaderTurnSound()
         }
-
-        invaderFormationOffset = nextOffset
+        invaderDirection = offsetStep.direction
+        invaderFormationOffset = offsetStep.offset
         invaders.forEach { invader ->
             val drift = rowDrift(invader.gridY)
             invader.x = invader.baseX + invaderFormationOffset + drift
@@ -1957,7 +1958,7 @@ class GameEngine(
         val pressureBeforeSpawn = volleyLanePressure()
         audio.play(GameSound.BRICK_MOVING, 0.36f, 0.88f)
         emitVisualFeedback(VisualFeedbackEvent.VOLLEY_ROW_DROP)
-        if (shouldAwardVolleyBall(volleyTurnCount, volleyBallCount, pressureBeforeSpawn) && volleyBallCount < 20) {
+        if (VolleyModeSystem.shouldAwardBall(volleyTurnCount, volleyBallCount, pressureBeforeSpawn) && volleyBallCount < VolleyModeSystem.MAX_BALL_COUNT) {
             volleyBallCount += 1
             listener.onVolleyBallsUpdated(volleyBallCount)
             listener.onTip("Volley +1 ball (${volleyBallCount} total).")
@@ -1999,18 +2000,6 @@ class GameEngine(
         syncAimForLaunch()
         state = GameState.READY
         updatePowerupStatus()
-    }
-
-    internal fun shouldAwardVolleyBall(turnCount: Int, currentBalls: Int, pressure: Float): Boolean {
-        val nearBreach = pressure >= 0.52f
-        if (nearBreach && currentBalls <= 9 && turnCount % 2 == 0) return true
-        if (currentBalls <= 6 && turnCount % 3 == 0) return true
-        return when {
-            turnCount <= 4 -> true
-            turnCount <= 12 -> turnCount % 2 == 0
-            turnCount <= 22 -> turnCount % 3 == 0 || turnCount % 5 == 0
-            else -> turnCount % 4 == 0 || (currentBalls <= 7 && turnCount % 3 == 0)
-        }
     }
 
     internal fun spawnVolleyTopRow() {
@@ -2310,10 +2299,14 @@ class GameEngine(
         invaderShotTimer -= dt
         val invaders = collectAliveInvaders()
         if (invaders.isEmpty()) return
-        val ratio = invaders.size.toFloat() / invaderTotal.toFloat().coerceAtLeast(1f)
-        val paceBoost = (1f - ratio).coerceIn(0f, 1f)
-        invaderSpeed = invaderBaseSpeed * (1f + paceBoost * 0.5f)
-        invaderShotCooldown = (invaderBaseShotCooldown * (1f - paceBoost * 0.4f)).coerceIn(0.4f, invaderBaseShotCooldown)
+        val pace = InvadersModeSystem.paceAdjustments(
+            aliveCount = invaders.size,
+            totalCount = invaderTotal,
+            baseSpeed = invaderBaseSpeed,
+            baseShotCooldown = invaderBaseShotCooldown
+        )
+        invaderSpeed = pace.speed
+        invaderShotCooldown = pace.shotCooldown
         var allowFire = true
         var volleyTriggered = false
 
@@ -2330,7 +2323,7 @@ class GameEngine(
         if (invaderWaveStyle == 1) {
             invaderVolleyTimer -= dt
             if (invaderVolleyTimer <= 0f) {
-                val volleyShots = (2 + levelIndex / 3).coerceAtMost(4)
+                val volleyShots = InvadersModeSystem.volleyShotCount(levelIndex)
                 val minRow = invaders.minOf { it.gridY }
                 val candidates = invaders.filter { it.gridY <= minRow + 1 }.shuffled(random)
                 val selected = if (candidates.size >= volleyShots) {
@@ -2354,8 +2347,7 @@ class GameEngine(
             target.fireFlash = max(target.fireFlash, invaderTelegraphLead)
         }
         if (allowFire && !volleyTriggered && invaderShotTimer <= 0f) {
-            val maxShots = 6 + (levelIndex / 2).coerceAtMost(6)
-            if (enemyShots.size < maxShots) {
+            if (InvadersModeSystem.canSpawnShot(levelIndex, enemyShots.size)) {
                 val target = invaderTelegraphKey?.let { key -> invaders.firstOrNull { invaderKey(it) == key } }
                 spawnInvaderShot(target ?: invaders[random.nextInt(invaders.size)])
                 if (invaderWaveStyle == 2 && invaderBurstCount > 0) {

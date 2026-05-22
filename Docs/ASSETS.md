@@ -28,6 +28,8 @@ ffmpeg -y -i icon2.png -vf "crop=1024:1024:0:256,scale=920:920,pad=1024:1024:52:
 
 ## Visuals
 - All UI colors defined in `app/src/main/res/values/colors.xml`.
+- Mode accent mapping (canonical): `ModeAccent.kt` — see [`DESIGN.md`](DESIGN.md) and [`PARITY.md`](PARITY.md).
+- Survival mode accent: `bp_flame` (#FF8A3D); Tunnel: `bp_orange` (#FFA453).
 - Themes and style tokens in `app/src/main/res/values/themes.xml`.
 
 ## Play Store Assets

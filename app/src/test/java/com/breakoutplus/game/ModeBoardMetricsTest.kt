@@ -147,6 +147,25 @@ class ModeBoardMetricsTest {
     }
 
     @Test
+    fun tunnelGateMetrics_reflectsPartialGateClearance() {
+        val gateZone = ModeBoardMetrics.TunnelGateZone(
+            minCol = 5,
+            maxCol = 6,
+            rows = 4..6
+        )
+        val bricks = listOf(
+            gateBrick(gridX = 5, gridY = 5, type = BrickType.REINFORCED, alive = true),
+            gateBrick(gridX = 6, gridY = 5, type = BrickType.REINFORCED, alive = false)
+        )
+
+        val metrics = ModeBoardMetrics.tunnelGateMetrics(bricks, gateZone)
+
+        assertEquals(2, metrics.totalBreakables)
+        assertEquals(1, metrics.aliveBreakables)
+        assertEquals(50, metrics.integrityPercent)
+    }
+
+    @Test
     fun tunnelBoardMetricsCombinesBreachAndGateIntegrityInSinglePass() {
         val gateZone = ModeBoardMetrics.TunnelGateZone(
             minCol = 5,

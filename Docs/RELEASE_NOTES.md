@@ -1,6 +1,14 @@
 # Release Notes
 
-## 1.0.11 (Unreleased)
+## 1.0.11 (2026-05-22)
+- Locked Volley starting ball count at 5 via `VolleyModeSystem.STARTING_BALL_COUNT`; synced `Docs/GAMEPLAY.md`.
+- Added `ModeAccent` for canonical mode accent colors; Survival now uses distinct `bp_flame` (#FF8A3D) vs Tunnel `bp_orange`.
+- Extracted `InvadersModeSystem` (formation offset, pacing, volley shot caps) from `GameEngine`.
+- Moved Volley ball-award logic into `VolleyModeSystem.shouldAwardBall`.
+- Added `Docs/PARITY.md` cross-platform matrix and `Docs/HARDENING_SIGNOFF.md` Android sign-off checklist.
+- Synced stale `.github/README.md`; added GitHub Actions Android CI workflow.
+- Documented BreakoutPlusMac as frozen dev-only target.
+- Expanded regression tests: Volley turn flow, Tunnel gate partial clearance, Invaders pacing, ModeAccent.
 - Made gameplay simulation deterministic in `GameRenderer` by removing variable-step fallback updates when no fixed tick is due.
 - Hardened next-level transition handling in `GameActivity` with a shared request/recovery path for both manual and auto advance flows.
 - Added a bounded auto-advance retry in `GameActivity` before fallback overlay restoration to reduce transient GOD/ZEN next-level handoff misses.

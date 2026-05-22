@@ -1,0 +1,8 @@
+Breakout+ 1.0.11
+- Android hardening release: mode stability, UX consistency, and test coverage improvements.
+- Volley mode locked to 5 starting balls (up to 20) with improved turn-stall handling.
+- Tunnel and Survival modes now have distinct accent colors on mode select and scoreboard.
+- Invaders formation and pacing logic extracted for reliability.
+- 105 automated unit tests; CI runs on every push.
+- GOD/ZEN silent auto-advance and progression recovery hardened.
+- Foldable/slate HUD scaling and board density tuning retained from prior releases.

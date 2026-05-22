@@ -7,6 +7,10 @@ import kotlin.math.abs
  * Pure logic here keeps turn progression reliable while reducing engine branching.
  */
 object VolleyModeSystem {
+    const val STARTING_BALL_COUNT = 5
+    const val MAX_BALL_COUNT = 20
+    const val MIN_ACTIVE_BALL_COUNT = STARTING_BALL_COUNT
+
     data class TurnDecision(
         val shouldAutoReleaseStuck: Boolean,
         val shouldNudgeStalledBalls: Boolean,
@@ -65,5 +69,17 @@ object VolleyModeSystem {
             shouldNudgeStalledBalls = false,
             shouldResolveTurn = true
         )
+    }
+
+    fun shouldAwardBall(turnCount: Int, currentBalls: Int, pressure: Float): Boolean {
+        val nearBreach = pressure >= 0.52f
+        if (nearBreach && currentBalls <= 9 && turnCount % 2 == 0) return true
+        if (currentBalls <= 6 && turnCount % 3 == 0) return true
+        return when {
+            turnCount <= 4 -> true
+            turnCount <= 12 -> turnCount % 2 == 0
+            turnCount <= 22 -> turnCount % 3 == 0 || turnCount % 5 == 0
+            else -> turnCount % 4 == 0 || (currentBalls <= 7 && turnCount % 3 == 0)
+        }
     }
 }

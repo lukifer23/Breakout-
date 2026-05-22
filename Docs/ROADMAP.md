@@ -46,6 +46,11 @@ Deliver a stable, consistent, performant Android release with no feature removal
 - Extract mode-state subsystem (`VOLLEY`, `TUNNEL`, `INVADERS` specialty flows).
 - Reduce `GameEngine.kt` responsibility surface while preserving APIs.
 
+Completed in 1.0.11 hardening tranche:
+- `InvadersModeSystem` extracted (formation offset, pacing, shot caps).
+- `VolleyModeSystem` expanded (starting ball constants, `shouldAwardBall`).
+- `ModeAccent` centralized for UI color consistency.
+
 Current Phase B priorities:
 - Continue hot-loop scan/allocation reductions in `GameEngine.update` paths.
 - Keep single-pass counters/caches for per-tick mode checks where behavior can be preserved exactly.
@@ -57,6 +62,8 @@ Current Phase B priorities:
 - Align render-facing effect state with explicit update contracts.
 
 ## Validation Gates (Per Change Set)
+- GitHub Actions CI (automatic on push/PR): `./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug`
+- Local (JDK 17 required):
 - `./gradlew :app:testDebugUnitTest`
 - `./gradlew :app:lintDebug`
 - `./gradlew :app:assembleDebug`

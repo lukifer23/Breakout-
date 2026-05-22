@@ -21,6 +21,17 @@ class LayoutParityTest {
         }
     }
 
+    @Test
+    fun modeLayoutPolicy_slateRowBoosts_exceedPhoneDensity() {
+        val slateVolley = ModeLayoutPolicy.volleyRowBoost(aspectRatio = 1.55f, isSlate = true, levelIndex = 0)
+        val phoneVolley = ModeLayoutPolicy.volleyRowBoost(aspectRatio = 1.55f, isSlate = false, levelIndex = 0)
+        val slateTunnel = ModeLayoutPolicy.tunnelRowBoost(aspectRatio = 1.55f, isSlate = true, levelIndex = 0)
+        val phoneTunnel = ModeLayoutPolicy.tunnelRowBoost(aspectRatio = 1.95f, isSlate = false, levelIndex = 0)
+
+        assertTrue(slateVolley > phoneVolley)
+        assertTrue(slateTunnel > phoneTunnel)
+    }
+
     private fun readLayout(relativePath: String): String {
         val candidates = listOf(
             File(relativePath),

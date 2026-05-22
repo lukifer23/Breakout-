@@ -206,6 +206,19 @@ BreakoutPlus/
 - **Market Competition**: Differentiate with unique features
 - **User Acquisition**: Leverage Android user base for cross-promotion
 
+## Parity Status (2026-05-22)
+
+Android **1.0.11** is the authoritative implementation. iOS has UI and level-generation parity for all 10 modes but thinner engine logic.
+
+Authoritative gap matrix: [`Docs/PARITY.md`](../Docs/PARITY.md)
+
+Key Android subsystems not yet ported to iOS:
+- `TunnelModeSystem`, `VolleyModeSystem`, `InvadersModeSystem`
+- `LevelAdvancePolicy`, `GameCollisionSystem` (spatial hash + sub-stepping)
+- `ModeStatusText`, magnet ball catch, daily challenge reward wiring
+
+`BreakoutPlusMac` is frozen (dev-only); do not use as a reference target.
+
 ## Success Metrics
 
 ### Technical KPIs

@@ -8,7 +8,11 @@ Verified in this repo:
 - `xcodebuild ... build` succeeds for simulator.
 - `./ios/run_ios_sim.sh --simulator "iPhone 17 Pro"` builds, installs, and launches.
 
-Android remains the gameplay reference. iOS parity has improved but final balance/polish verification is still in progress.
+Android remains the gameplay reference. iOS parity has improved but final balance/polish verification is still in progress. See [`Docs/PARITY.md`](../Docs/PARITY.md) for the full Android vs iOS vs Mac matrix.
+
+## BreakoutPlusMac (Frozen)
+
+`ios/BreakoutPlusMac/` is a **dev-only, unmaintained** 5-mode CLI target. It is **not** a release target and will not receive parity updates during Android hardening. Do not treat Mac behavior as authoritative.
 
 ## Current Feature Coverage
 
@@ -42,10 +46,13 @@ Android remains the gameplay reference. iOS parity has improved but final balanc
 
 ## Known Gaps / Next Polish Targets
 
+See [`Docs/PARITY.md`](../Docs/PARITY.md) for the authoritative Android vs iOS gap matrix.
+
+- Engine parity: Tunnel supply/pity, Volley stall system, spatial-hash collision, LevelAdvancePolicy, daily challenge rewards.
 - Continue visual polish pass on collision FX and brick destruction detail in all modes.
-- Continue per-mode balance tuning (ball speed, density, pacing), especially Volley and Tunnel progression pacing on physical devices.
-- Validate scrolling/gesture behavior on both simulator and real device; simulator input can differ from touch hardware.
-- Maintain Android/iOS behavior alignment when changing mode logic.
+- Continue per-mode balance tuning (ball speed, density, pacing), especially Volley and Tunnel on physical devices.
+- Validate scrolling/gesture behavior on both simulator and real device.
+- Unify design tokens with Android `ModeAccent` colors.
 
 ## Build and Run (CLI Only)
 

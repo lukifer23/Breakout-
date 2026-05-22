@@ -1,10 +1,15 @@
 # Build & Run
 
 ## Requirements
-- JDK 17
+- **JDK 17** (required — JDK 21+ may work; JDK 26 is known to break Gradle in this project)
 - Android SDK platform 35
 - `adb` on PATH
 - Ruby + Bundler (for Fastlane Play uploads)
+
+Set JDK explicitly when multiple versions are installed:
+```bash
+export JAVA_HOME=/Library/Java/JavaVirtualMachines/temurin-17.jdk/Contents/Home
+```
 
 ## Android Debug Build
 ```bash
@@ -12,6 +17,8 @@
 ```
 Output:
 - `app/build/outputs/apk/debug/app-debug.apk`
+
+Current version: **1.0.11** (versionCode 11) — see `app/build.gradle.kts`.
 
 ## Install on Device
 ```bash
@@ -46,7 +53,14 @@ Output:
 
 Important:
 - `BP_RELEASE_*` signing env vars are required for release tasks.
-- Release/bundle tasks now fail fast if signing vars are missing to avoid producing invalid artifacts.
+- Release/bundle tasks fail fast if signing vars are missing to avoid producing invalid artifacts.
+
+## CI (GitHub Actions)
+On every push/PR to `main`, `.github/workflows/android.yml` runs:
+```bash
+./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
+```
+Uses JDK 17 on `ubuntu-latest`.
 
 ## Fastlane Play Uploads
 Install gems:
@@ -75,6 +89,8 @@ bundle exec fastlane android upload_internal
 ./gradlew :app:assembleDebug
 ```
 
+See also: [`TESTING.md`](TESTING.md), [`HARDENING_SIGNOFF.md`](HARDENING_SIGNOFF.md).
+
 ## Device Mode Smoke Test
 ```bash
 tools/mode_smoke_test.sh
@@ -90,3 +106,6 @@ python3 tools/generate_sfx.py
 cd ios/BreakoutPlus
 xcodebuild -scheme BreakoutPlus -sdk iphonesimulator -configuration Debug build
 ```
+Or from repo root: `./ios/run_ios_sim.sh --simulator "iPhone 17 Pro"`
+
+iOS parity status: [`PARITY.md`](PARITY.md). Mac target (`BreakoutPlusMac`) is frozen dev-only.

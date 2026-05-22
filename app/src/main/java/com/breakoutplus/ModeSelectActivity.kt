@@ -9,6 +9,7 @@ import com.google.android.material.card.MaterialCardView
 import com.breakoutplus.databinding.ActivityModeSelectBinding
 import com.breakoutplus.databinding.ItemModeCardBinding
 import com.breakoutplus.game.GameMode
+import com.breakoutplus.game.ModeAccent
 
 class ModeSelectActivity : FoldAwareActivity() {
     private lateinit var binding: ActivityModeSelectBinding
@@ -65,18 +66,7 @@ class ModeSelectActivity : FoldAwareActivity() {
             cardBinding.modeCardTitle.text = mode.displayName
             cardBinding.modeCardDescription.text = mode.description
             cardBinding.modeCardMeta.text = mode.meta
-            val accentRes = when (mode) {
-                GameMode.CLASSIC -> R.color.bp_cyan
-                GameMode.TIMED -> R.color.bp_gold
-                GameMode.ENDLESS -> R.color.bp_green
-                GameMode.GOD -> R.color.bp_magenta
-                GameMode.RUSH -> R.color.bp_red
-                GameMode.VOLLEY -> R.color.bp_azure
-                GameMode.TUNNEL -> R.color.bp_orange
-                GameMode.SURVIVAL -> R.color.bp_orange
-                GameMode.INVADERS -> R.color.bp_violet
-                GameMode.ZEN -> R.color.bp_gray
-            }
+            val accentRes = ModeAccent.colorRes(mode)
             val accentColor = ContextCompat.getColor(this, accentRes)
             (cardBinding.root as? MaterialCardView)?.strokeColor = accentColor
             cardBinding.modeCardTitle.setTextColor(accentColor)

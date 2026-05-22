@@ -65,7 +65,7 @@ internal fun GameEngine.applyPowerup(type: PowerUpType) {
         }
         PowerUpType.LIFE -> {
             if (config.mode == GameMode.VOLLEY) {
-                volleyBallCount = (volleyBallCount + 1).coerceAtMost(20)
+                volleyBallCount = (volleyBallCount + 1).coerceAtMost(VolleyModeSystem.MAX_BALL_COUNT)
                 listener.onVolleyBallsUpdated(volleyBallCount)
             } else if (!config.mode.godMode) {
                 lives += 1

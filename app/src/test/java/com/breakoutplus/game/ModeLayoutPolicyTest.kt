@@ -19,7 +19,7 @@ class ModeLayoutPolicyTest {
         )
 
         assertTrue(slateRows > phoneRows)
-        assertEquals(10, slateRows)
+        assertEquals(13, slateRows)
         assertEquals(6, phoneRows)
     }
 
@@ -36,8 +36,8 @@ class ModeLayoutPolicyTest {
             levelIndex = 18
         )
 
-        assertEquals(10, early)
-        assertEquals(13, late)
+        assertEquals(13, early)
+        assertEquals(16, late)
     }
 
     @Test
@@ -76,7 +76,7 @@ class ModeLayoutPolicyTest {
             levelIndex = 0
         )
 
-        assertEquals(12, slateRows)
+        assertEquals(15, slateRows)
         assertEquals(5, phoneRows)
         assertTrue(slateRows > phoneRows)
     }
