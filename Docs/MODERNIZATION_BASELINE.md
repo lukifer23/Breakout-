@@ -71,8 +71,7 @@ A physical Fold is attached; it has not been modified or tested yet.
 ## Command evidence
 
 Clone, fetch all/tags/prune, git status and log -20 completed; clean main.
-./gradlew clean succeeded in 39s. Other baseline commands are running serially;
-results will be recorded before architectural changes. Raw local logs live in
+./gradlew clean succeeded in 39s. All baseline commands completed before architectural changes; see results below. Raw local logs live in
 /tmp/breakout-modernization-evidence (not source artifacts).
 
 ## Hygiene result
@@ -92,3 +91,14 @@ Baseline completed: 111 tests, zero failures; lint 51 warnings/no errors.
 - assembleRelease: exit 0, 37.11 seconds.
 - bundleRelease: exit 0, 2.12 seconds.
 Release tasks used the preexisting CI=true debug-signing fallback, not production signing.
+
+## Core extraction qualification
+
+Commit 0eac495 was exported from the Git index into an independent temporary
+source tree and passed testDebugUnitTest, lintDebug and assembleDebug. Its 115
+unit tests passed. GameEngine now consumes immutable settings/unlocks, neutral
+input commands, a feedback queue and a diagnostic interface. Entities and input
+control live in separate files. Simulation ticks use 120 Hz regardless of display
+refresh. Gameplay and visual RNG streams are separate and seeded/versioned.
+Current GameEngine length is 2,885 lines, versus 3,467 at baseline; responsibility
+reduction is incremental and mode coordination remains in the engine.

@@ -22,6 +22,7 @@ class GameRenderer(
     private val logger = GameLogger(context, config.settings.loggingEnabled)
     private val feedback = GameFeedbackQueue()
     private var engine = GameEngine(config, listener, feedback, logger, config.dailyChallenges, this)
+    private var checkpointTimer = 0f
     private var lastTimeNs: Long = 0L
     private var paused = false
     private var worldWidth = 100f
@@ -159,6 +160,11 @@ class GameRenderer(
                 renderer2D.setOffset(0f, 0f)
             }
 
+            checkpointTimer += delta
+            if (config.persistRun && checkpointTimer >= 1f) {
+                checkpointTimer = 0f
+                saveCheckpoint()
+            }
             engine.render(renderer2D)
 
             if (comboFlash.remainingTime > 0f) {
@@ -227,6 +233,10 @@ class GameRenderer(
         engine.handleInput(input)
     }
 
+    fun acknowledgeChallengeRewards(ids: Set<String>) {
+        engine.acknowledgeChallengeRewards(ids)
+    }
+
     fun fireLaser() {
         engine.triggerLaserFromUi()
     }
@@ -249,9 +259,19 @@ class GameRenderer(
         return !paused && engine.isGameRunning()
     }
 
+    fun snapshotRun(): RunSnapshot = engine.captureRun()
+
+    private fun saveCheckpoint() {
+        if (!config.persistRun) return
+        val snapshot = engine.captureRun()
+        val appContext = context.applicationContext
+        com.breakoutplus.LocalDataWriter.submitLatest("run/${snapshot.runId}") { com.breakoutplus.ActiveRunRepository.save(appContext, snapshot) }
+    }
+
     fun pause() {
         paused = true
         engine.pause()
+        saveCheckpoint()
         musicWasPlaying = audioManager.isMusicPlaying()
         audioManager.stopMusic()
     }
@@ -259,7 +279,7 @@ class GameRenderer(
     fun resume() {
         paused = false
         engine.resume()
-        if (musicWasPlaying) {
+        if (musicWasPlaying || config.restorePaused) {
             audioManager.startMusic()
         }
         lastTimeNs = 0L

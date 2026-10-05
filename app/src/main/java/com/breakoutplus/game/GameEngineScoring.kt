@@ -25,21 +25,9 @@ internal fun GameEngine.reportScore() {
 
 internal fun GameEngine.updateScoreChallenges() {
     val challenges = dailyChallenges ?: return
-    val completed = mutableListOf<DailyChallenge>()
-    challenges.forEach { challenge ->
-        if (challenge.type != ChallengeType.SCORE_ACHIEVED || challenge.completed) return@forEach
-        if (score > challenge.progress) {
-            challenge.progress = score
-        }
-        if (challenge.progress >= challenge.targetValue) {
-            challenge.completed = true
-            challenge.rewardGranted = true
-            completed.add(challenge)
-        }
-    }
-    if (completed.isNotEmpty()) {
-        handleChallengeRewards(completed)
-    }
+    val completed = DailyChallengeManager.applyEvent(challenges,
+        ChallengeEvent.Metric(ChallengeType.SCORE_ACHIEVED, score))
+    publishChallengeProgress(completed)
 }
 
 internal fun GameEngine.checkLevelCompletion() {
@@ -48,17 +36,9 @@ internal fun GameEngine.checkLevelCompletion() {
     if (!hasRemainingBreakables) {
         val levelDuration = elapsedSeconds - levelStartTime
         dailyChallenges?.let { challenges ->
-            if (!lostLifeThisLevel) {
-                updateDailyChallenges(ChallengeType.PERFECT_LEVEL)
-            }
-            challenges.forEach { challenge ->
-                if (challenge.type == ChallengeType.TIME_UNDER_LIMIT && !challenge.completed) {
-                    if (levelDuration <= challenge.targetValue) {
-                        DailyChallengeManager.completeChallenge(challenge)
-                        handleChallengeRewards(listOf(challenge))
-                    }
-                }
-            }
+            val completed = DailyChallengeManager.applyEvent(challenges,
+                ChallengeEvent.LevelCompleted(levelDuration, lostLifeThisLevel))
+            publishChallengeProgress(completed)
         }
         logger?.logLevelComplete(levelIndex + 1, score, elapsedSeconds, 0)
         levelClearFlash = 1.0f

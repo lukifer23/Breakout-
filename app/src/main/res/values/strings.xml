@@ -137,4 +137,5 @@
     <string name="label_howto_modes_header">▼ Game Modes</string>
     <string name="label_howto_modes_list">Classic: Standard breakout progression.\nTimed Challenge: Score high in 2:30.\nEndless: Infinite levels with scaling difficulty.\nGod Mode: Practice without losing lives.\nLevel Rush: Beat each stage before time expires.\nVolley: Launch a chain, then survive descending rows.\nTunnel Siege: Break through a fortress ring via a narrow entry lane.\nSurvival: One life with faster speed ramps.\nInvaders: Bounce shots to clear ships while dodging fire.\nZen Mode: Relaxed flow with no score/lives pressure.</string>
     <string name="label_choose_mode">Choose Mode</string>
+    <string name="label_challenge_reward_saved">Reward saved · bonuses apply to your next scored run</string>
 </resources>

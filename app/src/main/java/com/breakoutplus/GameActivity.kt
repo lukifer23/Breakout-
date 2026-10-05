@@ -81,7 +81,21 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         val settings = SettingsManager.load(this)
         val dailyChallenges = DailyChallengeStore.load(this)
         val unlocks = UnlockManager.load(this)
-        config = GameConfig(mode, settings, dailyChallenges, unlocks)
+        val debugAutomation = (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0 &&
+            (intent.getBooleanExtra(EXTRA_DEBUG_AUTOPLAY, false) || intent.getBooleanExtra(EXTRA_DEBUG_PROGRESSION_PROBE, false))
+        LocalDataWriter.awaitPreviousWrites()
+        val identity = if (debugAutomation) null else ActiveRunRepository.identity(this)?.takeIf { it.mode == mode }
+        val snapshot = identity?.let { ActiveRunRepository.load(this, it) }
+        config = GameConfig(mode, settings, if (debugAutomation) null else dailyChallenges, unlocks,
+            runId = identity?.runId ?: java.util.UUID.randomUUID().toString(),
+            seed = identity?.seed ?: java.security.SecureRandom().nextLong(),
+            challengeDate = identity?.date ?: java.time.LocalDate.now(),
+            initialState = snapshot, restorePaused = snapshot != null, persistRun = !debugAutomation)
+        // Persist run identity before assigning consumables so crash/re-entry finds the reservation.
+        if (!debugAutomation) {
+            ActiveRunRepository.begin(this, config)
+            if (mode != GameMode.ZEN) config = config.copy(rewardBonuses = UnlockManager.reserveRunRewards(this, config.runId))
+        }
         hud.currentMode = mode
         hud.currentXpTotal = ProgressionManager.loadXp(this)
         hud.updateJourneyLabel(1)
@@ -160,7 +174,40 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             showTooltip()
         }
 
+        if (snapshot != null) {
+            hideTooltip()
+            showPause(true)
+            hud.showBanner("Saved run restored. Resume when ready.")
+            if (snapshot.awaitingNextLevel) {
+                endOverlayState = EndOverlayState.LEVEL_COMPLETE
+                binding.buttonEndPrimary.text = getString(R.string.label_next_level)
+                binding.endTitle.text = getString(R.string.label_level_complete)
+                showOverlay(binding.endOverlay)
+            }
+        }
         hud.playGameFade()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        outState.putString("run_id", config.runId)
+        super.onSaveInstanceState(outState)
+    }
+
+    override fun onDailyChallengesUpdated(challenges: List<com.breakoutplus.game.DailyChallenge>) {
+        val appContext = applicationContext
+        val dateKey = config.challengeDate.format(java.time.format.DateTimeFormatter.BASIC_ISO_DATE)
+        LocalDataWriter.submitLatest("daily/$dateKey/${config.runId}") {
+            DailyChallengeStore.persistProgressAndRewards(appContext, challenges, dateKey)
+            val unlocks = UnlockManager.load(appContext)
+            val acknowledged = challenges.filter { it.rewardGranted }.map { it.id }.toSet()
+            runOnUiThread {
+                if (!isFinishing && !isDestroyed) {
+                    config = config.copy(unlocks = unlocks)
+                    binding.gameSurface.applyUnlocks(unlocks)
+                    binding.gameSurface.acknowledgeChallengeRewards(acknowledged)
+                }
+            }
+        }
     }
 
     override fun onResume() {
@@ -180,7 +227,6 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         binding.gameSurface.onPause()
         levelAdvanceInProgress = false
         cancelLevelAdvanceRecovery()
-        config.dailyChallenges?.let { DailyChallengeStore.save(this, it) }
         hud.clearLaserCooldown()
         debugAutoPlayStopRunnable?.let { binding.gameSurface.removeCallbacks(it) }
         debugAutoPlayStopRunnable = null
@@ -217,7 +263,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
         val settings = SettingsManager.load(this)
         val challenges = config.dailyChallenges ?: DailyChallengeStore.load(this)
         val unlocks = UnlockManager.load(this)
-        config = GameConfig(config.mode, settings, challenges, unlocks)
+        config = config.copy(settings = settings, dailyChallenges = challenges, unlocks = unlocks)
         binding.gameSurface.applySettings(settings)
         binding.gameSurface.applyUnlocks(unlocks)
         applyHandedness(settings.leftHanded)
@@ -303,14 +349,21 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             binding.buttonEndPrimary.isEnabled = true
             binding.buttonEndSecondary.isEnabled = true
             binding.gameSurface.resumeGame()
-            binding.gameSurface.restartGame()
+            config = config.copy(runId = java.util.UUID.randomUUID().toString(), seed = java.security.SecureRandom().nextLong(),
+                initialState = null, restorePaused = false)
+            if (config.persistRun) ActiveRunRepository.begin(this, config)
+            config = config.copy(rewardBonuses = if (config.mode == GameMode.ZEN) com.breakoutplus.game.RewardBonuses()
+                else if (config.persistRun) UnlockManager.reserveRunRewards(this, config.runId) else com.breakoutplus.game.RewardBonuses())
+            binding.gameSurface.start(config, this)
             runStatsRecorded = false
             hud.playGameFade()
         }
     }
 
     private fun exitToMenu() {
+        val exitingRun = config.runId
         recordRunSnapshotIfNeeded {
+            LocalDataWriter.submit { ActiveRunRepository.clear(applicationContext, exitingRun) }
             levelAdvanceInProgress = false
             cancelLevelAdvanceRecovery()
             playCloseTransition(R.anim.fade_in, R.anim.fade_out)
@@ -650,7 +703,9 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             binding.buttonEndSecondary.isEnabled = true
             binding.buttonLaser.visibility = View.GONE
             endOverlayState = EndOverlayState.GAME_OVER
-            LifetimeStatsManager.recordRun(this, summary)
+            if (!debugAutoPlaySession && !debugProgressionProbeSession) LifetimeStatsManager.recordRun(this, summary)
+            val finishedRun = config.runId
+            LocalDataWriter.submit { ActiveRunRepository.clear(applicationContext, finishedRun) }
             runStatsRecorded = true
             if (debugAutoPlaySession) {
                 Log.i(
@@ -660,7 +715,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             }
             val highScoreTimestamp = System.currentTimeMillis()
             // Check if this is a high score for the mode
-            if (ScoreboardManager.isHighScoreForMode(
+            if (!debugAutoPlaySession && !debugProgressionProbeSession && ScoreboardManager.isHighScoreForMode(
                     this,
                     config.mode.displayName,
                     summary.score,
@@ -677,8 +732,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
                 binding.buttonEndPrimary.text = getString(R.string.label_restart)
                 showOverlay(binding.endOverlay)
             }
-            config.dailyChallenges?.let { DailyChallengeStore.save(this, it) }
-        }
+            }
     }
 
     private fun showNameInputDialog(summary: GameSummary, highScoreTimestamp: Long) {
@@ -767,8 +821,8 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
                     "event=level_complete mode=${config.mode.name} score=${summary.score} level=${summary.level} duration=${summary.durationSeconds} bricks=${summary.bricksBroken} lives_lost=${summary.livesLost}"
                 )
             }
-            ProgressionManager.updateBestLevel(this, summary.level)
-            if (config.mode != GameMode.ZEN) {
+            if (!debugAutoPlaySession && !debugProgressionProbeSession) ProgressionManager.updateBestLevel(this, summary.level)
+            if (config.mode != GameMode.ZEN && !debugAutoPlaySession && !debugProgressionProbeSession) {
                 hud.currentXpTotal = ProgressionManager.addXp(this, ProgressionManager.xpForLevel(summary.level))
                 hud.updateHudMeta()
             }
@@ -777,16 +831,14 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
                 hideOverlay(binding.endOverlay)
                 hud.showLevelBanner(summary.level + 1)
                 advanceLevelWithAutoRecovery(summary)
-                config.dailyChallenges?.let { DailyChallengeStore.save(this, it) }
-                return@runOnUiThread
+                        return@runOnUiThread
             }
             endOverlayState = EndOverlayState.LEVEL_COMPLETE
             binding.endTitle.text = getString(R.string.label_level_complete)
             hud.animateEndStats(summary, getString(R.string.label_level_complete))
             binding.buttonEndPrimary.text = getString(R.string.label_next_level)
             showOverlay(binding.endOverlay)
-            config.dailyChallenges?.let { DailyChallengeStore.save(this, it) }
-        }
+            }
     }
 
     private fun advanceLevelWithAutoRecovery(summary: GameSummary) {
@@ -945,7 +997,7 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             if (!runSnapshotCaptureInFlight) return@captureSummary
             binding.root.removeCallbacks(timeout)
             if (!runStatsRecorded && summary != null && shouldRecordRunSummary(summary)) {
-                LifetimeStatsManager.recordRun(this, summary)
+                if (!debugAutoPlaySession && !debugProgressionProbeSession) LifetimeStatsManager.recordRun(this, summary)
                 runStatsRecorded = true
             }
             runSnapshotCaptureInFlight = false

@@ -23,9 +23,10 @@ class GameEngine(
     internal val listener: GameEventListener,
     internal val audio: GameFeedbackQueue,
     internal val logger: GameDiagnostics? = null,
-    internal val dailyChallenges: MutableList<DailyChallenge>? = null,
+    dailyChallenges: MutableList<DailyChallenge>? = config.dailyChallenges,
     internal val renderer: GameVisualFeedback? = null
 ) {
+    internal val dailyChallenges = dailyChallenges?.map { it.copy() }?.toMutableList()
     internal val random = SessionRandom(config.seed)
     internal val visualRandom = SessionRandom(config.seed xor 0x46584CL)
     internal var settings: com.breakoutplus.game.GameSettings = config.settings
@@ -211,9 +212,9 @@ class GameEngine(
     internal var trailLife = 0.28f
     internal var maxTrailPoints = 8
     internal var cosmeticTier = config.unlocks.cosmeticTier
-    internal var rewardScoreMultiplier = 0f
-    internal var streakBonusRemaining = 0
-    internal var streakBonusActive = false
+    internal var rewardScoreMultiplier = config.rewardBonuses.scorePercent / 100f
+    internal var streakBonusRemaining = config.rewardBonuses.streakBricks
+    internal var streakBonusActive = config.rewardBonuses.streakBricks > 0
     internal val streakBonusPerBrick = 20
     internal val aimMinAngle = 0.30f
 
@@ -375,6 +376,8 @@ class GameEngine(
         logger?.logSessionStart(config.mode, config.seed)
         listener.onModeUpdated(config.mode)
         resetLevel(first = true)
+        config.initialState?.let { restoreRun(it) }
+        if (config.restorePaused && config.initialState != null) pause()
         listener.onLivesUpdated(lives)
         reportScore()
         listener.onLevelUpdated(levelIndex + 1)
@@ -1199,52 +1202,18 @@ class GameEngine(
 
     internal fun updateDailyChallenges(type: ChallengeType, value: Int = 1) {
         val challenges = dailyChallenges ?: return
-        val newlyCompleted = DailyChallengeManager.updateChallengeProgress(challenges, type, value)
-        if (newlyCompleted.isNotEmpty()) {
-            handleChallengeRewards(newlyCompleted)
-        }
+        val completed = DailyChallengeManager.updateChallengeProgress(challenges, type, value)
+        publishChallengeProgress(completed)
     }
 
-    internal fun handleChallengeRewards(completed: List<DailyChallenge>) {
-        completed.forEach { challenge ->
-            when (challenge.rewardType) {
-                RewardType.SCORE_MULTIPLIER -> {
-                    val bonus = (challenge.rewardValue / 100f).coerceAtLeast(0.01f)
-                    rewardScoreMultiplier += bonus
-                    listener.onTip("Challenge reward: +${(bonus * 100).toInt()}% score boost")
-                }
-                RewardType.STREAK_BONUS -> {
-                    streakBonusRemaining += challenge.rewardValue.coerceAtLeast(1)
-                    streakBonusActive = true
-                    listener.onTip("Challenge reward: streak bonus x${challenge.rewardValue}")
-                }
-                RewardType.COSMETIC_UNLOCK -> {
-                    if (cosmeticTier < 3) {
-                        cosmeticTier = (cosmeticTier + 1).coerceAtMost(3)
-                        applyCosmeticTier()
-                        listener.onCosmeticUnlocked(cosmeticTier)
-                        listener.onTip("Challenge reward: cosmetic upgrade")
-                    } else {
-                        rewardScoreMultiplier += 0.05f
-                        listener.onTip("All cosmetics unlocked: +5% score boost")
-                    }
-                }
-                RewardType.THEME_UNLOCK -> {
-                    val locked = LevelThemes.bonusThemes().filter { bonus ->
-                        themePool.none { it.name == bonus.name }
-                    }
-                    if (locked.isNotEmpty()) {
-                        val picked = locked[random.nextInt(locked.size)]
-                        themePool.add(picked)
-                        listener.onThemeUnlocked(picked.name)
-                        listener.onTip("Challenge reward: theme unlocked")
-                    } else {
-                        rewardScoreMultiplier += 0.05f
-                        listener.onTip("All themes unlocked: +5% score boost")
-                    }
-                }
-            }
-        }
+    internal fun publishChallengeProgress(completed: List<DailyChallenge> = emptyList()) {
+        val snapshot = dailyChallenges?.map { it.copy() } ?: return
+        listener.onDailyChallengesUpdated(snapshot)
+        completed.forEach { listener.onTip("${it.title} complete: reward saved for you") }
+    }
+
+    fun acknowledgeChallengeRewards(ids: Set<String>) {
+        dailyChallenges?.filter { it.id in ids && it.completed }?.forEach { it.rewardGranted = true }
     }
 
     internal fun updatePaddle(dt: Float) {

@@ -99,6 +99,10 @@ class GameGLSurfaceView @JvmOverloads constructor(
         queueRendererAction("applyUnlocks") { it.updateUnlocks(unlocks) }
     }
 
+    fun acknowledgeChallengeRewards(ids: Set<String>) {
+        queueRendererAction("acknowledgeRewards") { it.acknowledgeChallengeRewards(ids) }
+    }
+
     fun fireLaser() {
         queueRendererAction("fireLaser") { it.fireLaser() }
     }

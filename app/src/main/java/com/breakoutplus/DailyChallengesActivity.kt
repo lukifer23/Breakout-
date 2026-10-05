@@ -49,11 +49,7 @@ class DailyChallengesActivity : FoldAwareActivity() {
             )
             row.challengeProgressBar.max = challenge.targetValue
             row.challengeProgressBar.progress = challenge.progress.coerceAtMost(challenge.targetValue)
-            row.challengeProgress.text = getString(
-                R.string.label_challenge_progress,
-                challenge.progress,
-                challenge.targetValue
-            )
+            row.challengeProgress.text = DailyChallengeManager.getChallengeProgressText(challenge)
             val suggestedMode = DailyChallengeManager.suggestedModeForChallenge(challenge.type)
             row.challengePlayHint.text = getString(
                 R.string.label_challenge_tap_to_play,
@@ -61,7 +57,7 @@ class DailyChallengesActivity : FoldAwareActivity() {
             )
             row.challengeStatus.text = when {
                 challenge.completed && challenge.rewardGranted ->
-                    getString(R.string.label_challenge_reward_applied)
+                    getString(R.string.label_challenge_reward_saved)
                 challenge.completed -> getString(R.string.label_challenge_completed)
                 else -> getString(R.string.label_challenge_in_progress)
             }
