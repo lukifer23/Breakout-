@@ -638,7 +638,7 @@ internal fun GameEngine.spawnPowerupBurst(power: PowerUp) {
     val count = min(8, max(0, available))
     repeat(count) { index ->
         val angle = (index / 6f) * (Math.PI.toFloat() * 2f)
-        val speed = 14f + random.nextFloat() * 10f
+        val speed = 14f + visualRandom.nextFloat() * 10f
         particles.add(
             Particle(
                 x = power.x,

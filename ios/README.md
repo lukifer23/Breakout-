@@ -1,88 +1,28 @@
 # Breakout+ iOS
 
-## Status
+A substantial SwiftUI/SpriteKit port under BreakoutPlus. Android is the gameplay
+reference. Full Xcode was unavailable during the October 5, 2026 maintenance
+milestone, so no current iOS build, simulator or XCTest success is claimed.
+Earlier build claims are historical and need fresh verification.
 
-iOS parity work is active and playable with CLI-only simulator workflows.
+Generated Swift .build directories, the compiled test binary and obsolete Xcode
+project backup were removed from tracking. Authored Swift/assets remain. No
+XCTest target or iOS CI qualification has been added in this stopping-point pass.
 
-Verified in this repo:
-- `xcodebuild ... build` succeeds for simulator.
-- `./ios/run_ios_sim.sh --simulator "iPhone 17 Pro"` builds, installs, and launches.
+Use full Xcode and an installed simulator:
 
-Android remains the gameplay reference. iOS parity has improved but final balance/polish verification is still in progress. See [`Docs/PARITY.md`](../Docs/PARITY.md) for the full Android vs iOS vs Mac matrix.
-
-## BreakoutPlusMac (Frozen)
-
-`ios/BreakoutPlusMac/` is a **dev-only, unmaintained** 5-mode CLI target. It is **not** a release target and will not receive parity updates during Android hardening. Do not treat Mac behavior as authoritative.
-
-## Current Feature Coverage
-
-- **Game modes (10)**: Classic, Timed Challenge, Endless, God Mode, Level Rush, Volley, Tunnel Siege, Survival, Invaders, Zen Mode.
-- **Brick types (10)**: Normal, Reinforced, Armored, Explosive, Unbreakable, Moving, Spawning, Phase, Boss, Invader.
-- **Powerups (18)**: Multi-ball, Laser, Guardrail, Shield, Extra Life, Wide Paddle, Shrink, Slow Motion, Overdrive, Fireball, Magnet, Gravity Well, Ball Splitter, Freeze, Pierce, Ricochet, Time Warp, 2x Score.
-- **Themes**: Neon, Sunset, Cobalt, Aurora, Forest, Lava, Invaders (mode-routed rotation).
-- **Core systems**: progression, combo scoring, scoreboard (mode-aware + lifetime stats), settings, privacy policy, daily challenges scaffold.
-
-## Recent iOS Work
-
-- Added **Tunnel Siege** mode support in iOS mode model, menu, and how-to content.
-- Added **Zen Mode** parity path (mode model, HUD behavior, docs).
-- Added missing iOS powerups: **Ricochet**, **Time Warp**, **2x Score**.
-- Reworked iOS `LevelFactory` routing so generation is mode-aware:
-  - Dedicated Tunnel fortress layout (unbreakable ring + narrow gate + interior core).
-  - Dedicated Invaders path.
-  - Mode-themed level rotation.
-- Fixed Invaders formation update to move only invader bricks (prevents movement/audio spam side effects).
-- Hardened Volley flow:
-  - Turn resolution now runs before lose-life checks.
-  - Bottom-outs in Volley return to anchor instead of consuming lives.
-  - Volley starts at 5 balls and scales with turn progression.
-- Updated speed/difficulty curves to include Tunnel mode.
-- HUD interaction and layout improvements:
-  - HUD stays clear of paddle area and does not intercept gameplay touches.
-  - Zen HUD hides score/life pressure and powerup chips.
-  - Powerup drop visuals reduced to lower visual clutter.
-- Aiming and launch guide smoothing improvements are wired in engine + scene.
-- Scoreboard name now uses persisted player name from Settings (no hardcoded placeholder).
-
-## Known Gaps / Next Polish Targets
-
-See [`Docs/PARITY.md`](../Docs/PARITY.md) for the authoritative Android vs iOS gap matrix.
-
-- Engine parity: Tunnel supply/pity, Volley stall system, spatial-hash collision, LevelAdvancePolicy, daily challenge rewards.
-- Continue visual polish pass on collision FX and brick destruction detail in all modes.
-- Continue per-mode balance tuning (ball speed, density, pacing), especially Volley and Tunnel on physical devices.
-- Validate scrolling/gesture behavior on both simulator and real device.
-- Unify design tokens with Android `ModeAccent` colors.
-
-## Build and Run (CLI Only)
-
-From repo root:
-
-```bash
-./ios/run_ios_sim.sh --simulator "iPhone 17 Pro"
-```
-
-Manual build:
-
-```bash
+```sh
 xcodebuild -project ios/BreakoutPlus/BreakoutPlus.xcodeproj \
   -scheme BreakoutPlus -configuration Debug \
-  -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.2' build
+  -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
 ```
 
-Notes:
-- Use `xcrun simctl list devices` to choose an installed simulator.
-- Physical-device deployment still requires valid Apple signing/provisioning.
+See [build instructions](../Docs/BUILD.md), [parity gaps](../Docs/PARITY.md),
+[remaining work](../Docs/ROADMAP.md) and [privacy](../Docs/PRIVACY_POLICY.md).
+Daily reward application, high-speed collision, Volley/Tunnel recovery, Magnet,
+HUD/level advance and deterministic fixture parity require substantive work.
+UserDefaults may participate in Apple-managed backup; no app telemetry backend
+exists. TestFlight upload now invokes a real upload command, but was not run.
 
-## Recommended Manual Regression Pass
-
-Run this after major gameplay changes:
-
-1. Enter each mode and confirm mode identity (layout/rules are distinct).
-2. Tunnel Siege: verify fortress ring + narrow gate are present every start/restart.
-3. Invaders: verify formation moves smoothly and does not trigger continuous jitter SFX.
-4. Volley: verify turn cadence, return anchor behavior, and descending-row pressure.
-5. Aim guide: drag across full paddle span and verify smooth continuous guide angle.
-6. HUD: verify no UI element blocks paddle control.
-7. Powerups: verify drop size/readability and collection behavior.
-8. Level progression: verify `NEXT LEVEL` always advances level, never mode-select fallback.
+BreakoutPlusMac is archived/experimental, a stale five-mode fork with no current
+release support. Archive contains historical spikes/recaps, not current evidence.

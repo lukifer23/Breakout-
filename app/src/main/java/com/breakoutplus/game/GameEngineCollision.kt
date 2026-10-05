@@ -112,9 +112,8 @@ internal fun GameEngine.handleBrickDestroyedByBall(ball: Ball, brick: Brick) {
         spawnComboStreakParticles(brick.centerX, brick.centerY, combo)
     }
 
-    updateDailyChallenges(ChallengeType.COMBO_MULTIPLIER, combo)
-
     val multiplier = BrickCollisionFeedback.comboMultiplier(combo)
+    updateDailyChallenges(ChallengeType.COMBO_MULTIPLIER, multiplier.toInt())
     if (BrickCollisionFeedback.shouldTriggerComboFlash(multiplier)) {
         emitVisualFeedback(GameEngine.VisualFeedbackEvent.COMBO_STREAK)
     }
@@ -134,7 +133,7 @@ internal fun GameEngine.handleBrickDestroyedByBall(ball: Ball, brick: Brick) {
     val dynamicRate = BrickCollisionFeedback.dynamicBrickSoundRate(
         baseRate = baseRate,
         combo = combo,
-        randomUnit = random.nextFloat()
+        randomUnit = visualRandom.nextFloat()
     )
 
     audio.play(brickSound, 0.7f, dynamicRate)

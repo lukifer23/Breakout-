@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -11,26 +13,31 @@ val releaseSigningAvailable = !releaseStoreFile.isNullOrBlank() &&
     !releaseStorePassword.isNullOrBlank() &&
     !releaseKeyAlias.isNullOrBlank() &&
     !releaseKeyPassword.isNullOrBlank()
-val ciBuild = System.getenv("CI") == "true"
-val requestedTasks = gradle.startParameter.taskNames.joinToString(" ").lowercase()
-val releaseTaskRequested = requestedTasks.contains("release") || requestedTasks.contains("bundle")
-if (releaseTaskRequested && !releaseSigningAvailable && !ciBuild) {
-    throw GradleException(
-        "Release signing vars are required for release tasks. " +
-            "Set BP_RELEASE_STORE_FILE, BP_RELEASE_STORE_PASSWORD, BP_RELEASE_KEY_ALIAS, BP_RELEASE_KEY_PASSWORD."
-    )
+// Signing is required only when packaging a publishable release. Local compilation
+// and the explicitly separate releaseCheck variant do not require credentials.
+gradle.taskGraph.whenReady {
+    val packagesRelease = allTasks.any {
+        it.project.path == ":app" && it.name in setOf("packageRelease", "packageReleaseBundle")
+    }
+    if (packagesRelease && !releaseSigningAvailable) {
+        throw GradleException("Publishable release requires all BP_RELEASE_* signing variables. " +
+            "Use assembleReleaseCheck / bundleReleaseCheck for local or CI compile validation.")
+    }
+}
+val appVersion = Properties().apply {
+    rootProject.file("version.properties").inputStream().use { load(it) }
 }
 
 android {
     namespace = "com.breakoutplus"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.breakoutplus"
         minSdk = 26
-        targetSdk = 35
-        versionCode = 12
-        versionName = "1.0.12"
+        targetSdk = 36
+        versionCode = appVersion.getProperty("versionCode").toInt()
+        versionName = appVersion.getProperty("versionName")
         vectorDrawables {
             useSupportLibrary = true
         }
@@ -57,12 +64,16 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = when {
-                signingConfigs.findByName("release") != null -> signingConfigs.getByName("release")
-                ciBuild -> signingConfigs.getByName("debug")
-                else -> signingConfigs.findByName("release")
-            }
+            signingConfig = signingConfigs.findByName("release")
         }
+        create("releaseCheck") {
+            initWith(getByName("release"))
+            applicationIdSuffix = ".compilecheck"
+            versionNameSuffix = "-compilecheck"
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += listOf("release")
+        }
+
         debug {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
@@ -101,4 +112,5 @@ dependencies {
     implementation("androidx.core:core-splashscreen:1.0.1")
 
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.json:json:20250517")
 }

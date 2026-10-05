@@ -7,7 +7,6 @@ import kotlin.math.sin
 
 fun GameEngine.render(renderer: Renderer2D) {
         renderer.setWorldSize(worldWidth, worldHeight)
-        renderTimeSeconds = System.nanoTime() / 1_000_000_000f
         // Enhanced background with subtle gradient and flash effect
         val flashIntensity = levelClearFlash * 0.8f
         val bgTop = if (flashIntensity > 0f) {

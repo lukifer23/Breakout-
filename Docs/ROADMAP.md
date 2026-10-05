@@ -1,85 +1,47 @@
-# Roadmap
+# Remaining modernization work
 
-## Foundation (Completed)
-- Android gameplay runtime implemented and shipping:
-  - OpenGL ES renderer + fixed-step simulation
-  - 10 modes, 10 brick types, 18 powerups
-  - progression/unlocks/challenges/scoreboards/lifetime stats
-  - fold/large-screen adaptation paths
+The October 2026 maintenance milestone is paused after build/core/daily/recovery/
+batching/tooling cleanup. It is not the completion of the original full pass.
+Completed work/evidence: [README](../README.md), [baseline](MODERNIZATION_BASELINE.md),
+[persistence](PERSISTENCE.md), [performance](PERFORMANCE.md).
 
-## Current Release Objective (Android)
-Deliver a stable, consistent, performant Android release with no feature removals and no mode regressions.
+## Priority 0 — qualification and durable data
 
-## Active Workstreams
-### 1. Mode Stability + Identity
-- `VOLLEY`: continue late-run performance tuning after turn-reliability hardening.
-- `TUNNEL`: continue long-session pacing/perf tuning after gate-integrity/readiness consistency fixes.
-- `GOD`/`ZEN`: monitor progression stability after bounded auto-advance retry hardening.
+- Fix observed white HUD text on the light shell; verify phone/tablet/night
+  contrast, text scaling, insets and TalkBack.
+- Version, migrate, validate and recover all older preference stores. Use Long
+  for growing XP/lifetime counters. Finish reward-ledger double-corruption
+  recovery and bounded reservation/receipt retention.
+- Establish atomic/idempotent cross-store completion/stat/XP side effects.
+  Checkpoint rollback can currently replay already-persisted side effects.
+- Complete release compile/signature verification and real device resize/lifecycle
+  QA. Increment version/code before publishing; never reuse code 12 for an update.
+- Capture verified canonical phone and large-screen screenshots. Old duplicate/
+  mislabeled/timestamp captures were removed; the listing is not ready to upload.
 
-### 2. Visual + UX Consistency
-- Continue animation/effect balancing after renderer feedback normalization rollout.
-- Keep HUD scaling and control placement consistent on phone/fold/slate.
-- Preserve gameplay readability while increasing slate vertical density.
+## Priority 1 — gameplay, maintainability and performance
 
-### 3. Performance + Reliability
-- Reduce frame-time spikes in high-entity scenes.
-- Remove avoidable allocations and repeated collection scans in hot paths.
-- Validate long-session stability under heavy mode pressure.
+- Physics regression matrix and high-speed substep/sweep analysis; current
+  substep cap is four. Do not alter feel constants without evidence.
+- Continue extracting simulation/mode/effect coordination from GameEngine.
+- Extract LevelFactory authored/procedural/special/difficulty/theme/validation
+  responsibilities and define seed behavior without random balance changes.
+- Repeat renderer measurements on physical 60/high-refresh devices. Investigate
+  dense/particle p95 and slow-frame regressions; profile GPU/allocations/thermal
+  behavior instead of assuming fewer calls means universally smoother frames.
+- Audit SoundPool readiness/spam, audio focus/duck restoration and pause/restart.
+- Add reduced-motion/flashing and ball legibility controls, progressive mechanic
+  reference/onboarding and all-mode UI/instrumentation coverage.
 
-### 4. Complexity Reduction (No Feature Cuts)
-- Break large runtime files into dedicated systems.
-- Keep gameplay behavior unchanged during extraction phases.
-- Add test coverage with each extraction to protect behavior.
+## Priority 2 — content/platform consolidation
 
-## Architecture Decomposition Plan
-### Phase A (Completed)
-- Extract status/text formatting and mode HUD status composition.
-- Remove duplicated mode/brick lookup logic.
-- Continue collision and hot-loop micro-optimizations.
-- Unify device-class policy across HUD and board tuning (`DeviceLayoutPolicy`) to reduce slate/fold divergence.
-- Normalize renderer-side visual timing paths (Volley danger pulse/smoothing) to reduce frame-rate dependent drift.
-- Centralize next-level acceptance guards (`LevelAdvancePolicy`) and harden GOD/ZEN auto/manual progression paths.
-- Centralize gameplay VFX event profiles to reduce per-mode effect inconsistency.
+- Data-driven Challenge Journey, then a small curated teaching pack after the
+  correctness/device gates are green. No new normal game mode or monetization.
+- iOS XCTest/macOS CI and deterministic Android/iOS parity fixtures; fix daily
+  reward, collision, Volley, Tunnel, Magnet, HUD and level-advance gaps.
+- Evidence-based KMP assessment after neutral core/parity work, not before it.
+- Consolidate icon/store/shell/gameplay exports around the documented brand and
+  add a controlled screenshot-state workflow; no generated variant pile.
 
-### Phase B (In Progress)
-- Extract collision subsystem (ball/brick/beam/paddle interactions).
-- Extract mode-state subsystem (`VOLLEY`, `TUNNEL`, `INVADERS` specialty flows).
-- Reduce `GameEngine.kt` responsibility surface while preserving APIs.
-
-Completed in 1.0.12 excellence pass:
-- `GameEngineScoring.kt` — score, combo, level completion, life loss.
-- `GameEngineLevelFlow.kt` — `nextLevel`, `resetLevel`.
-- Powerup snapshot buffer reuse and sorted-effects cache.
-- `Renderer2D` rect batching; adaptive FX LOD via frame stress.
-- Release CI (`assembleRelease` with CI debug signing), ProGuard keeps, `shrinkResources`.
-- Zen mode differentiated (`zenMode` flag); daily challenge UI completed.
-
-Completed in 1.0.11 hardening tranche:
-- `InvadersModeSystem` extracted (formation offset, pacing, shot caps).
-- `VolleyModeSystem` expanded (starting ball constants, `shouldAwardBall`).
-- `ModeAccent` centralized for UI color consistency.
-
-Current Phase B priorities:
-- Continue hot-loop scan/allocation reductions in `GameEngine.update` paths.
-- Keep single-pass counters/caches for per-tick mode checks where behavior can be preserved exactly.
-- Add long-session stress validation for dense boards, multi-ball, and heavy FX states.
-- Keep docs/release notes synchronized at the end of every patch tranche.
-
-### Phase C (After)
-- Extract effects/powerup lifecycle subsystem.
-- Align render-facing effect state with explicit update contracts.
-
-## Validation Gates (Per Change Set)
-- GitHub Actions CI (automatic on push/PR): `./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug`
-- Local (JDK 17 required):
-- `./gradlew :app:testDebugUnitTest`
-- `./gradlew :app:lintDebug`
-- `./gradlew :app:assembleDebug`
-- Device smoke run across all modes (`tools/mode_smoke_test.sh`)
-- Deterministic GOD/ZEN progression probe (`tools/god_zen_progression_probe.sh`)
-- Deterministic all-modes progression probe (`tools/all_modes_progression_probe.sh`)
-
-## Non-Negotiables
-- No stubs, placeholders, fake behavior, or temporary feature bypasses.
-- No feature removals.
-- No intentional regressions.
+Historical investigations live under Docs/Archive and ios/Archive. They do not
+supersede current build instructions or establish current release evidence.

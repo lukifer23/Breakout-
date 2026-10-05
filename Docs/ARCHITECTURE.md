@@ -1,94 +1,58 @@
-# Breakout+ Architecture
+# Runtime architecture
 
-## Android Runtime Flow
-1. `GameActivity` creates `GameConfig` (mode + settings + unlocks + challenge state).
-2. `GameGLSurfaceView` initializes `GameRenderer`.
-3. `GameGLSurfaceView.FramePacer` drives `requestRender()` via `Choreographer`.
-4. `GameRenderer` performs fixed-step simulation and render.
-5. `GameEngine` updates gameplay state and emits HUD/events through `GameEventListener`.
-6. `DeviceLayoutPolicy` provides shared slate/foldable classification used by both HUD and board-layout tuning.
+Android is the reference implementation. UI uses native Activities/XML, and
+GLSurfaceView runs OpenGL ES 2.0 gameplay. This is an incremental extraction of
+the existing game, not a new engine or KMP conversion.
 
-## Main Components
-- UI layer: `app/src/main/java/com/breakoutplus/*.kt`
-- HUD orchestration: `GameHudController.kt`
-- Render surface: `GameGLSurfaceView.kt`
-- Render/sim loop: `GameRenderer.kt`
-- Core gameplay: `GameEngine.kt` (+ `GameEngineScoring.kt`, `GameEngineLevelFlow.kt`, `GameEngineCollision.kt`, `GameEnginePowerup.kt`)
-- Layout generation: `LevelFactory.kt`
-- Mode tuning: `GameMode.kt`, `ModeBalance.kt`
-- Mode layout policy: `ModeLayoutPolicy.kt`
-- Mode board metrics: `ModeBoardMetrics.kt`
-- Mode status formatting: `ModeStatusText.kt`
-- Brick collision feedback math: `BrickCollisionFeedback.kt`
-- Gameplay VFX feedback profiles: centralized in `GameEngine` (event-profile mapping)
-- Tunnel mode pacing/supply logic: `TunnelModeSystem.kt`
-- Volley turn flow: `VolleyModeSystem.kt`
-- Invaders formation/pacing: `InvadersModeSystem.kt`
-- Mode UI accent colors: `ModeAccent.kt`
-- Powerup drop-rate model: `PowerupDropModel.kt`
-- Drawing primitives: `Renderer2D.kt` (rect/circle batching)
-- Audio playback/feedback: `GameAudioManager.kt` (audio focus, cached haptics)
+## Ownership and flow
 
-## Current Hotspots (Complexity)
-- `GameEngine.kt` is the primary complexity concentration (gameplay, mode logic, collisions, FX, and status output mixed together).
-- `GameActivity.kt` handles lifecycle and orchestration. HUD logic has been successfully extracted to `GameHudController.kt`.
-- `LevelFactory.kt` is large and contains multiple generation strategies with high branching.
+1. GameActivity loads immutable GameSettings/GameUnlocks into GameConfig, resolves
+   the saved run identity and reward reservation, and owns native overlays/HUD.
+2. AndroidInputAdapter converts MotionEvent into normalized PointerInput commands
+   on the UI thread. GameGLSurfaceView queues those immutable values to GL.
+3. Choreographer requests frames. FixedStepClock advances at 120 Hz independently
+   of display FPS. Elapsed catch-up is bounded to 0.1 seconds / 12 updates.
+4. GameEngine owns mutable gameplay entities, mode state, RNG, scoring and effects.
+   GameEntities and GameInputSystem are extracted; collision, scoring, powerup and
+   level-flow extension systems remain. Mode systems retain existing policies.
+5. GameFeedbackQueue emits audio/haptics; GameVisualFeedback and GameDiagnostics
+   are interfaces. Native audio/render/logger adapters consume those outputs.
+6. EngineRenderer reads the same-thread simulation and submits ordered primitives.
+   Renderer2D uploads reused position/color triangle streams to a dynamic VBO,
+   flushes layers/capacity boundaries, and checks shader/program status.
+7. Engine events update HUD and copy daily state. LocalDataWriter serializes
+   background transactions and coalesces superseded progress/checkpoint writes.
 
-Current decomposition strategy is incremental extraction with behavior parity:
-1. Extract pure status/formatting logic first.
-2. Extract collision and mode-state systems next.
-3. Extract powerup/effects lifecycle systems after that.
+The pure input/config/model/RNG seams do not require Context, MotionEvent,
+SharedPreferences or View. GameEngine still coordinates many mode/physics/VFX
+responsibilities (2,885 lines at this milestone); this is not a fully isolated
+shared-core architecture. LevelFactory remains 1,498 lines and index-seeded;
+its extraction and an explicit generation seed contract are unfinished.
 
-## Loop Details
-- Render mode: `RENDERMODE_WHEN_DIRTY` (not continuous).
-- Frame requests: Choreographer callback pacing in `FramePacer`.
-- Simulation: fixed-step only (`setTargetFrameRate` controls step size; clamped to 45-240 FPS bounds).
-- Accumulator limit prevents runaway update bursts on frame drops; max steps scale down when rolling frame time exceeds 18ms.
-- `renderFrameStress` reduces background FX density under load.
-- Gameplay mutation stays on fixed ticks; renderer-time effects (shake/flash/pulse) continue to use frame delta for visual smoothing only.
+## Persistence and lifecycle
 
-## State & Events
-- Core states: `READY`, `RUNNING`, `PAUSED`, `GAME_OVER`.
-- `GameEngine` owns gameplay entities and progression.
-- `GameEventListener` updates HUD, overlays, score/lives/time, mode-specific indicators.
-- Next-level acceptance is centralized in `LevelAdvancePolicy` so GOD manual skip + recovery transitions are deterministic and testable.
+Six legacy preference stores remain: settings, scores, XP/best level, unlocks,
+lifetime stats and daily objectives. Daily schema 2 and reward ledger schema 1
+have explicit semantics/migration. Active-run schema 1 captures authoritative
+entities/timers/layout/mode/RNG/reward balances into atomic no-backup files.
+Resume after recreation is paused. Native input, particles, trails, flashes,
+audio position and GL handles are not restored. See [PERSISTENCE](PERSISTENCE.md)
+for transaction boundaries, corruption handling and remaining cross-store gaps.
 
-## Data Persistence
-- `SettingsManager`: user settings in SharedPreferences.
-- `ScoreboardManager`: high scores by mode plus all-modes view.
-- `DailyChallengeStore`: local challenge progress.
-- `ProgressionManager` / `UnlockManager` / `LifetimeStatsManager`: progression and run stats.
+GameActivity continues to consume orientation/size/layout/density configuration
+changes to preserve and relayout the live engine. FoldAwareActivity observes
+WindowManager hinge state, and DeviceLayoutPolicy is shared by HUD/board tuning.
+Removing manual configuration handling is deferred until the full resize and
+recreation matrix is verified. Common menu insets and HUD contrast remain open
+issues; their existence is not evidence of verified foldable behavior.
 
-## Foldable/Large-Screen Strategy
-- Resource qualifiers for larger devices (`sw600dp`, `sw720dp`).
-- Fold-aware Activity applies hinge/inset-aware layout padding.
-- `GameHudController` applies responsive HUD scaling and reserved HUD height for varied aspect ratios.
-- HUD reservation is compacted on slate/fold profiles to preserve gameplay field height while maintaining control readability.
-- `GameEngine` board layout tuning uses the same shared `DeviceLayoutPolicy` classification to keep HUD and brick density aligned.
+## Platform relationship and quality gates
 
-## Platform Scope
+The iOS SwiftUI/SpriteKit simulation is separate. It has known physics, mode,
+daily reward and lifecycle gaps and no current XCTest gate. The macOS fork is
+archived/experimental. No KMP migration is approved or implemented; assess it
+only after clean core boundaries and deterministic parity fixtures exist.
 
-- **Android** (`app/`): primary shipping target; all architecture decisions here are authoritative.
-- **iOS** (`ios/BreakoutPlus/`): active parity port — see [`PARITY.md`](PARITY.md) for subsystem gaps.
-- **macOS** (`ios/BreakoutPlusMac/`): **frozen dev-only** target; 5-mode stale fork, not maintained during hardening.
-
-## Engineering Rules For Refactor Work
-- No feature removals.
-- No placeholder systems or mock behavior paths.
-- Keep mode identity intact while reducing class size and coupling.
-- Every extraction must keep build/test/lint green.
-
-## Performance Notes
-- OpenGL ES 2.0 rendering path.
-- Spatial hash used for brick collision broad-phase.
-- Particle/wave caps limit FX overhead in high-action scenes.
-- Renderer visual overlays use frame-accumulated visual time for stable pulse timing across device refresh rates.
-- `GameEngine` now maintains an alive-breakable counter for level-completion checks, avoiding repeated full-board scans each tick.
-- `GameEngine` also maintains an alive-explosive counter so READY-state tip gating avoids per-frame explosive-brick scans.
-- Stuck-ball state checks are centralized via a helper in `GameEngine` to avoid repeated lambda-based scans in input/render/autoplay branches.
-- Tunnel breakthrough-state checks (active effects + queued drops) are centralized in `GameEngine` helpers and reused by status + supply logic.
-
-## CI & Quality Gates
-- GitHub Actions: `.github/workflows/android.yml` runs unit tests, lint, and debug assembly on push/PR (JDK 17).
-- Local validation must use JDK 17 — see [`BUILD.md`](BUILD.md).
-- Device probes: `tools/mode_smoke_test.sh`, `tools/god_zen_progression_probe.sh`, `tools/all_modes_progression_probe.sh`.
+[TESTING](TESTING.md), [PERFORMANCE](PERFORMANCE.md), [PARITY](PARITY.md) and
+[BUILD](BUILD.md) define actual evidence and remaining qualification. Android CI
+runs clean tests/lint/debug/minified APK/AAB checks; a Ruby job audits locked tools.

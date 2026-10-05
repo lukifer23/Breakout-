@@ -37,7 +37,7 @@ struct PrivacyView: View {
                             .font(.system(size: 24, weight: .bold))
                             .foregroundColor(.white)
 
-                        Text("Effective date: February 5, 2026")
+                        Text("Effective date: October 5, 2026")
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(.white.opacity(0.8))
 
@@ -54,15 +54,15 @@ struct PrivacyView: View {
                         VStack(alignment: .leading, spacing: 8) {
                             BulletPoint(text: "Settings (sound, music, vibration, sensitivity, left-handed mode)")
                             BulletPoint(text: "Scoreboard entries (score, mode, level, duration)")
-                            BulletPoint(text: "Optional gameplay logs (only if \"Enable Game Logging\" is turned on)")
+                            BulletPoint(text: "Progression, unlocks, lifetime statistics and daily challenge progress")
                         }
 
-                        Text("Logging")
+                        Text("Backup and deletion")
                             .font(.system(size: 18, weight: .semibold))
                             .foregroundColor(.white)
                             .padding(.top, 8)
 
-                        Text("If game logging is enabled, the app writes gameplay events to files stored locally on your device. These logs are not uploaded or shared.")
+                        Text("Local UserDefaults may participate in Apple-managed device backup and restore. The app itself does not upload or share data. Clearing app data removes local progress.")
                             .font(.system(size: 16, weight: .regular))
                             .foregroundColor(.white.opacity(0.9))
                             .lineSpacing(4)

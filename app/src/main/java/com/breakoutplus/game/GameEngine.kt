@@ -1,9 +1,6 @@
 package com.breakoutplus.game
 
-import android.view.MotionEvent
 import com.breakoutplus.DeviceLayoutPolicy
-import com.breakoutplus.SettingsManager
-import com.breakoutplus.UnlockManager
 import java.util.ArrayDeque
 import java.util.Locale
 import kotlin.math.abs
@@ -24,13 +21,15 @@ import kotlin.random.Random
 class GameEngine(
     internal val config: GameConfig,
     internal val listener: GameEventListener,
-    internal val audio: GameAudioManager,
-    internal val logger: GameLogger? = null,
-    internal val dailyChallenges: MutableList<DailyChallenge>? = null,
-    internal val renderer: GameRenderer? = null
+    internal val audio: GameFeedbackQueue,
+    internal val logger: GameDiagnostics? = null,
+    dailyChallenges: MutableList<DailyChallenge>? = config.dailyChallenges,
+    internal val renderer: GameVisualFeedback? = null
 ) {
-    internal val random = Random(System.nanoTime())
-    internal var settings: SettingsManager.Settings = config.settings
+    internal val dailyChallenges = dailyChallenges?.map { it.copy() }?.toMutableList()
+    internal val random = SessionRandom(config.seed)
+    internal val visualRandom = SessionRandom(config.seed xor 0x46584CL)
+    internal var settings: com.breakoutplus.game.GameSettings = config.settings
     internal val balls = mutableListOf<Ball>()
     internal val bricks = mutableListOf<Brick>()
     internal val powerups = mutableListOf<PowerUp>()
@@ -144,7 +143,7 @@ class GameEngine(
     internal var aimAngle = (Math.PI.toFloat() * 0.5f)
     internal var aimHasInput = false
     internal var isDragging = false
-    internal var activePointerId = MotionEvent.INVALID_POINTER_ID
+    internal var activePointerId = PointerInput.INVALID_POINTER_ID
     internal var touchWorldX = 0f
     internal var touchWorldY = 0f
     internal var lastTouchLogTimeMs = 0L
@@ -213,9 +212,9 @@ class GameEngine(
     internal var trailLife = 0.28f
     internal var maxTrailPoints = 8
     internal var cosmeticTier = config.unlocks.cosmeticTier
-    internal var rewardScoreMultiplier = 0f
-    internal var streakBonusRemaining = 0
-    internal var streakBonusActive = false
+    internal var rewardScoreMultiplier = config.rewardBonuses.scorePercent / 100f
+    internal var streakBonusRemaining = config.rewardBonuses.streakBricks
+    internal var streakBonusActive = config.rewardBonuses.streakBricks > 0
     internal val streakBonusPerBrick = 20
     internal val aimMinAngle = 0.30f
 
@@ -374,9 +373,11 @@ class GameEngine(
         themePool.addAll(LevelThemes.bonusThemes().filter { it.name in config.unlocks.unlockedThemes })
         cosmeticTier = config.unlocks.cosmeticTier
         applyCosmeticTier()
-        logger?.logSessionStart(config.mode)
+        logger?.logSessionStart(config.mode, config.seed)
         listener.onModeUpdated(config.mode)
         resetLevel(first = true)
+        config.initialState?.let { restoreRun(it) }
+        if (config.restorePaused && config.initialState != null) pause()
         listener.onLivesUpdated(lives)
         reportScore()
         listener.onLevelUpdated(levelIndex + 1)
@@ -394,7 +395,7 @@ class GameEngine(
     }
 
     fun onResize(width: Int, height: Int) {
-        if (width <= 0 || height <= 0) return
+        if (width <= 0 || height <= 0 || (width == lastResizeWidthPx && height == lastResizeHeightPx)) return
         val significantLayoutShift = if (lastResizeWidthPx > 0 && lastResizeHeightPx > 0) {
             val widthDelta = kotlin.math.abs(width - lastResizeWidthPx) / lastResizeWidthPx.toFloat()
             val heightDelta = kotlin.math.abs(height - lastResizeHeightPx) / lastResizeHeightPx.toFloat()
@@ -758,171 +759,10 @@ class GameEngine(
         return state == GameState.READY || hasStuckBall()
     }
 
-    internal fun shouldLogTouch(actionMasked: Int, x: Float, y: Float, eventTimeMs: Long): Boolean {
-        if (actionMasked != MotionEvent.ACTION_MOVE) {
-            lastTouchLogTimeMs = eventTimeMs
-            lastTouchLogX = x
-            lastTouchLogY = y
-            return true
-        }
-        val elapsedMs = eventTimeMs - lastTouchLogTimeMs
-        val movedDistance = if (lastTouchLogX.isFinite() && lastTouchLogY.isFinite()) {
-            kotlin.math.sqrt(
-                (x - lastTouchLogX) * (x - lastTouchLogX) +
-                    (y - lastTouchLogY) * (y - lastTouchLogY)
-            )
-        } else {
-            Float.POSITIVE_INFINITY
-        }
-        val shouldLog = elapsedMs >= touchMoveLogMinIntervalMs || movedDistance >= touchMoveLogMinDistance
-        if (shouldLog) {
-            lastTouchLogTimeMs = eventTimeMs
-            lastTouchLogX = x
-            lastTouchLogY = y
-        }
-        return shouldLog
-    }
-
-    fun handleTouch(event: MotionEvent, viewWidth: Float, viewHeight: Float) {
-        if (state == GameState.PAUSED || state == GameState.GAME_OVER) return
-
-        val clampWorldX = { screenX: Float ->
-            clampPaddleX(screenX / viewWidth * worldWidth)
-        }
-        val clampWorldY = { screenY: Float ->
-            worldHeight - (screenY / viewHeight * worldHeight)
-        }
-        val pointerIndexForId = { pointerId: Int ->
-            if (pointerId == MotionEvent.INVALID_POINTER_ID) -1 else event.findPointerIndex(pointerId)
-        }
-        val pointerWorldX = { pointerId: Int ->
-            val idx = pointerIndexForId(pointerId)
-            if (idx in 0 until event.pointerCount) clampWorldX(event.getX(idx)) else null
-        }
-        val pointerWorldY = { pointerId: Int ->
-            val idx = pointerIndexForId(pointerId)
-            if (idx in 0 until event.pointerCount) clampWorldY(event.getY(idx)) else null
-        }
-
-        if (viewWidth <= 0f || viewHeight <= 0f || event.pointerCount <= 0) return
-
-        val actionIndex = event.actionIndex.coerceIn(0, event.pointerCount - 1)
-        val actionPointerId = event.getPointerId(actionIndex)
-        val trackedPointerId = if (activePointerId != MotionEvent.INVALID_POINTER_ID) activePointerId else actionPointerId
-        val trackedX = pointerWorldX(trackedPointerId) ?: clampWorldX(event.getX(actionIndex))
-        val trackedY = pointerWorldY(trackedPointerId) ?: clampWorldY(event.getY(actionIndex))
-        val trackedPointerIndex = pointerIndexForId(trackedPointerId).coerceIn(0, event.pointerCount - 1)
-        val trackedPressure = event.getPressure(trackedPointerIndex)
-
-        // Log touch input
-        val actionString = when (event.actionMasked) {
-            MotionEvent.ACTION_DOWN -> "down"
-            MotionEvent.ACTION_MOVE -> "move"
-            MotionEvent.ACTION_POINTER_DOWN -> "pointer_down"
-            MotionEvent.ACTION_POINTER_UP -> "pointer_up"
-            MotionEvent.ACTION_UP -> "up"
-            MotionEvent.ACTION_CANCEL -> "cancel"
-            else -> "other"
-        }
-        if (logger != null && shouldLogTouch(event.actionMasked, trackedX, trackedY, event.eventTime)) {
-            logger.logTouchInput(actionString, trackedX, trackedY, trackedPressure)
-        }
-
-        when (event.actionMasked) {
-            MotionEvent.ACTION_DOWN -> {
-                activePointerId = actionPointerId
-                val downX = pointerWorldX(activePointerId) ?: trackedX
-                val downY = pointerWorldY(activePointerId) ?: trackedY
-                touchWorldX = downX
-                touchWorldY = downY
-                val snapToTouch = shouldSnapTouchToPaddle()
-                updatePaddleFromTouch(
-                    downX,
-                    snapImmediately = snapToTouch
-                )
-                isDragging = true
-                updateAimFromTouch()
-                aimNormalized = aimNormalizedTarget
-                applyAimFromNormalized(aimNormalized)
-            }
-            MotionEvent.ACTION_MOVE -> {
-                if (activePointerId == MotionEvent.INVALID_POINTER_ID) {
-                    activePointerId = actionPointerId
-                }
-                val moveX = pointerWorldX(activePointerId) ?: trackedX
-                val moveY = pointerWorldY(activePointerId) ?: trackedY
-                touchWorldX = moveX
-                touchWorldY = moveY
-                val snapToTouch = shouldSnapTouchToPaddle()
-                updatePaddleFromTouch(
-                    moveX,
-                    snapImmediately = snapToTouch
-                )
-                isDragging = true
-                updateAimFromTouch()
-                aimNormalized = aimNormalizedTarget
-                applyAimFromNormalized(aimNormalized)
-            }
-            MotionEvent.ACTION_POINTER_UP -> {
-                val liftedPointerId = actionPointerId
-                if (liftedPointerId == activePointerId) {
-                    var replacementIndex = -1
-                    for (i in 0 until event.pointerCount) {
-                        if (i == actionIndex) continue
-                        replacementIndex = i
-                        break
-                    }
-                    if (replacementIndex >= 0) {
-                        activePointerId = event.getPointerId(replacementIndex)
-                        touchWorldX = clampWorldX(event.getX(replacementIndex))
-                        touchWorldY = clampWorldY(event.getY(replacementIndex))
-                        val snapToTouch = shouldSnapTouchToPaddle()
-                        updatePaddleFromTouch(
-                            touchWorldX,
-                            snapImmediately = snapToTouch
-                        )
-                        isDragging = true
-                        updateAimFromTouch()
-                        aimNormalized = aimNormalizedTarget
-                        applyAimFromNormalized(aimNormalized)
-                    } else {
-                        activePointerId = MotionEvent.INVALID_POINTER_ID
-                        isDragging = false
-                        updateAimFromPaddle()
-                    }
-                }
-            }
-            MotionEvent.ACTION_UP -> {
-                val upX = pointerWorldX(actionPointerId) ?: trackedX
-                val upY = pointerWorldY(actionPointerId) ?: trackedY
-                touchWorldX = upX
-                touchWorldY = upY
-                updatePaddleFromTouch(upX, snapImmediately = true)
-                syncAimForLaunch()
-                if (state == GameState.READY) {
-                    // Launch on tap/release for intuitive starts.
-                    launchBall()
-                    if (config.mode == GameMode.VOLLEY) {
-                        listener.onTip("Volley launched. Bricks will descend when all balls return.")
-                    } else {
-                        listener.onTip("Tap with two fingers to fire when laser is active")
-                    }
-                } else if (magnetActive && hasStuckBall()) {
-                    releaseStuckBalls()
-                }
-                isDragging = false
-                activePointerId = MotionEvent.INVALID_POINTER_ID
-            }
-            MotionEvent.ACTION_CANCEL -> {
-                isDragging = false
-                activePointerId = MotionEvent.INVALID_POINTER_ID
-                updateAimFromPaddle()
-            }
-        }
-        if (event.actionMasked == MotionEvent.ACTION_POINTER_DOWN &&
-            activeEffects.containsKey(PowerUpType.LASER)
-        ) {
-            shootLaser()
+    fun handleInput(input: GameInput) {
+        when (input) {
+            is GameInput.Pointer -> handlePointerInput(input.event)
+            GameInput.FireLaser -> triggerLaserFromUi()
         }
     }
 
@@ -1334,11 +1174,11 @@ class GameEngine(
         return state == GameState.GAME_OVER
     }
 
-    fun updateSettings(newSettings: SettingsManager.Settings) {
+    fun updateSettings(newSettings: com.breakoutplus.game.GameSettings) {
         settings = newSettings
     }
 
-    fun updateUnlocks(unlocks: UnlockManager.UnlockState) {
+    fun updateUnlocks(unlocks: com.breakoutplus.game.GameUnlocks) {
         themePool = LevelThemes.baseThemes().toMutableList()
         themePool.addAll(LevelThemes.bonusThemes().filter { it.name in unlocks.unlockedThemes })
         cosmeticTier = unlocks.cosmeticTier
@@ -1362,52 +1202,18 @@ class GameEngine(
 
     internal fun updateDailyChallenges(type: ChallengeType, value: Int = 1) {
         val challenges = dailyChallenges ?: return
-        val newlyCompleted = DailyChallengeManager.updateChallengeProgress(challenges, type, value)
-        if (newlyCompleted.isNotEmpty()) {
-            handleChallengeRewards(newlyCompleted)
-        }
+        val completed = DailyChallengeManager.updateChallengeProgress(challenges, type, value)
+        publishChallengeProgress(completed)
     }
 
-    internal fun handleChallengeRewards(completed: List<DailyChallenge>) {
-        completed.forEach { challenge ->
-            when (challenge.rewardType) {
-                RewardType.SCORE_MULTIPLIER -> {
-                    val bonus = (challenge.rewardValue / 100f).coerceAtLeast(0.01f)
-                    rewardScoreMultiplier += bonus
-                    listener.onTip("Challenge reward: +${(bonus * 100).toInt()}% score boost")
-                }
-                RewardType.STREAK_BONUS -> {
-                    streakBonusRemaining += challenge.rewardValue.coerceAtLeast(1)
-                    streakBonusActive = true
-                    listener.onTip("Challenge reward: streak bonus x${challenge.rewardValue}")
-                }
-                RewardType.COSMETIC_UNLOCK -> {
-                    if (cosmeticTier < 3) {
-                        cosmeticTier = (cosmeticTier + 1).coerceAtMost(3)
-                        applyCosmeticTier()
-                        listener.onCosmeticUnlocked(cosmeticTier)
-                        listener.onTip("Challenge reward: cosmetic upgrade")
-                    } else {
-                        rewardScoreMultiplier += 0.05f
-                        listener.onTip("All cosmetics unlocked: +5% score boost")
-                    }
-                }
-                RewardType.THEME_UNLOCK -> {
-                    val locked = LevelThemes.bonusThemes().filter { bonus ->
-                        themePool.none { it.name == bonus.name }
-                    }
-                    if (locked.isNotEmpty()) {
-                        val picked = locked[random.nextInt(locked.size)]
-                        themePool.add(picked)
-                        listener.onThemeUnlocked(picked.name)
-                        listener.onTip("Challenge reward: theme unlocked")
-                    } else {
-                        rewardScoreMultiplier += 0.05f
-                        listener.onTip("All themes unlocked: +5% score boost")
-                    }
-                }
-            }
-        }
+    internal fun publishChallengeProgress(completed: List<DailyChallenge> = emptyList()) {
+        val snapshot = dailyChallenges?.map { it.copy() } ?: return
+        listener.onDailyChallengesUpdated(snapshot)
+        completed.forEach { listener.onTip("${it.title} complete: reward saved for you") }
+    }
+
+    fun acknowledgeChallengeRewards(ids: Set<String>) {
+        dailyChallenges?.filter { it.id in ids && it.completed }?.forEach { it.rewardGranted = true }
     }
 
     internal fun updatePaddle(dt: Float) {
@@ -2700,16 +2506,16 @@ class GameEngine(
         if (actualCount <= 0) return
         adjustColor(scratchColor0, baseColor, 1.2f, 1f)
         repeat(actualCount) {
-            val angle = random.nextFloat() * Math.PI.toFloat() * 2f
-            val speedScale = speed * (0.5f + random.nextFloat() * 0.7f)
+            val angle = visualRandom.nextFloat() * Math.PI.toFloat() * 2f
+            val speedScale = speed * (0.5f + visualRandom.nextFloat() * 0.7f)
             particles.add(
                 Particle(
                     x = x,
                     y = y,
                     vx = kotlin.math.cos(angle) * speedScale,
                     vy = kotlin.math.sin(angle) * speedScale,
-                    radius = 0.35f + random.nextFloat() * 0.25f,
-                    life = 0.25f + random.nextFloat() * 0.15f,
+                    radius = 0.35f + visualRandom.nextFloat() * 0.25f,
+                    life = 0.25f + visualRandom.nextFloat() * 0.15f,
                     color = scratchColor0.copyOf()
                 )
             )
@@ -2828,20 +2634,20 @@ class GameEngine(
         val available = maxParticles - particles.size
         val debrisCount = min(debrisTarget, max(0, available))
         repeat(debrisCount) {
-            val angle = random.nextFloat() * Math.PI.toFloat() * 2f
-            val speed = random.nextFloat() * (8f + fxScale * 5f) + 7f
-            val biasScale = directionalBias * (0.45f + random.nextFloat() * 0.9f)
+            val angle = visualRandom.nextFloat() * Math.PI.toFloat() * 2f
+            val speed = visualRandom.nextFloat() * (8f + fxScale * 5f) + 7f
+            val biasScale = directionalBias * (0.45f + visualRandom.nextFloat() * 0.9f)
             val vx = kotlin.math.cos(angle) * speed + biasX * biasScale
             val vy = kotlin.math.sin(angle) * speed + biasY * biasScale
-            val shade = 0.85f + random.nextFloat() * 0.42f
+            val shade = 0.85f + visualRandom.nextFloat() * 0.42f
             particles.add(
                 Particle(
                     x = brick.centerX,
                     y = brick.centerY,
                     vx = vx,
                     vy = vy,
-                    radius = 0.36f + random.nextFloat() * 0.34f,
-                    life = 0.36f + random.nextFloat() * 0.36f,
+                    radius = 0.36f + visualRandom.nextFloat() * 0.34f,
+                    life = 0.36f + visualRandom.nextFloat() * 0.36f,
                     color = adjustColor(base, shade, 0.92f)
                 )
             )
@@ -2872,16 +2678,16 @@ class GameEngine(
         }
         val debrisCount = min((10 * fxScale).roundToInt().coerceAtLeast(4), max(0, maxParticles - particles.size))
         repeat(debrisCount) {
-            val angle = random.nextFloat() * Math.PI.toFloat() * 2f
-            val speed = random.nextFloat() * (10f + fxScale * 5f) + 6f
+            val angle = visualRandom.nextFloat() * Math.PI.toFloat() * 2f
+            val speed = visualRandom.nextFloat() * (10f + fxScale * 5f) + 6f
             particles.add(
                 Particle(
                     x = brick.centerX,
                     y = brick.centerY,
                     vx = kotlin.math.cos(angle) * speed,
                     vy = kotlin.math.sin(angle) * speed,
-                    radius = 0.45f + random.nextFloat() * 0.35f,
-                    life = 0.5f + random.nextFloat() * 0.25f,
+                    radius = 0.45f + visualRandom.nextFloat() * 0.35f,
+                    life = 0.5f + visualRandom.nextFloat() * 0.25f,
                     color = adjustColor(base, 1.1f, 0.9f)
                 )
             )
@@ -2941,16 +2747,16 @@ class GameEngine(
 
         repeat(count) { index ->
             val angle = (index / count.toFloat()) * (Math.PI.toFloat() * 2f)
-            val speed = 8f + random.nextFloat() * 6f
-            val radius = 0.3f + random.nextFloat() * 0.3f
+            val speed = 8f + visualRandom.nextFloat() * 6f
+            val radius = 0.3f + visualRandom.nextFloat() * 0.3f
             particles.add(
                 Particle(
-                    x = x + random.nextFloat() * 4f - 2f,
-                    y = y + random.nextFloat() * 4f - 2f,
+                    x = x + visualRandom.nextFloat() * 4f - 2f,
+                    y = y + visualRandom.nextFloat() * 4f - 2f,
                     vx = kotlin.math.cos(angle) * speed,
-                    vy = kotlin.math.sin(angle) * speed + random.nextFloat() * 4f - 2f, // Some upward bias
+                    vy = kotlin.math.sin(angle) * speed + visualRandom.nextFloat() * 4f - 2f, // Some upward bias
                     radius = radius,
-                    life = 0.6f + random.nextFloat() * 0.4f,
+                    life = 0.6f + visualRandom.nextFloat() * 0.4f,
                     color = streakColor
                 )
             )
@@ -2975,20 +2781,20 @@ class GameEngine(
 
         repeat(count) { index ->
             val colorIndex = index % confettiColors.size
-            val startX = worldWidth * 0.2f + random.nextFloat() * (worldWidth * 0.6f)
-            val startY = worldHeight * 0.7f + random.nextFloat() * (worldHeight * 0.2f)
-            val angle = random.nextFloat() * Math.PI.toFloat() * 2f
-            val speed = 12f + random.nextFloat() * 8f
-            val radius = 0.4f + random.nextFloat() * 0.3f
+            val startX = worldWidth * 0.2f + visualRandom.nextFloat() * (worldWidth * 0.6f)
+            val startY = worldHeight * 0.7f + visualRandom.nextFloat() * (worldHeight * 0.2f)
+            val angle = visualRandom.nextFloat() * Math.PI.toFloat() * 2f
+            val speed = 12f + visualRandom.nextFloat() * 8f
+            val radius = 0.4f + visualRandom.nextFloat() * 0.3f
 
             particles.add(
                 Particle(
                     x = startX,
                     y = startY,
                     vx = kotlin.math.cos(angle) * speed,
-                    vy = kotlin.math.sin(angle) * speed - random.nextFloat() * 6f, // Upward bias with some variation
+                    vy = kotlin.math.sin(angle) * speed - visualRandom.nextFloat() * 6f, // Upward bias with some variation
                     radius = radius,
-                    life = 2.0f + random.nextFloat() * 1.5f, // Longer life for celebration
+                    life = 2.0f + visualRandom.nextFloat() * 1.5f, // Longer life for celebration
                     color = confettiColors[colorIndex]
                 )
             )
@@ -3077,391 +2883,3 @@ class GameEngine(
 
 }
 
-enum class GameState {
-    READY, RUNNING, PAUSED, GAME_OVER
-}
-
-data class Ball(
-    var x: Float,
-    var y: Float,
-    var radius: Float,
-    var vx: Float,
-    var vy: Float,
-    var isFireball: Boolean = false,
-    var color: FloatArray = floatArrayOf(0.97f, 0.97f, 1f, 1f),
-    var stuckToPaddle: Boolean = false,
-    var stickOffset: Float = 0f,
-    var ricochetBounces: Int? = null
-) {
-    val defaultColor: FloatArray = floatArrayOf(0.97f, 0.97f, 1f, 1f)
-    val trail: ArrayDeque<TrailPoint> = ArrayDeque()
-    var trailTimer: Float = 0f
-}
-
-data class Paddle(
-    var x: Float,
-    var y: Float,
-    var width: Float,
-    var height: Float,
-    var targetX: Float = x
-)
-
-data class Brick(
-    val gridX: Int,
-    val gridY: Int,
-    var x: Float,
-    var y: Float,
-    var width: Float,
-    var height: Float,
-    var baseX: Float = x,
-    var baseY: Float = y,
-    var hitPoints: Int,
-    val maxHitPoints: Int,
-    val type: BrickType,
-    var alive: Boolean = true
-) {
-    companion object {
-        internal val ROW_BANDS = arrayOf(
-            floatArrayOf(0.08f, -0.02f, -0.05f),
-            floatArrayOf(-0.03f, 0.06f, 0.02f),
-            floatArrayOf(0.02f, 0.04f, -0.06f),
-            floatArrayOf(-0.05f, -0.01f, 0.07f),
-            floatArrayOf(0.06f, -0.04f, 0.03f)
-        )
-        internal val COL_BANDS = arrayOf(
-            floatArrayOf(0.04f, 0.01f, -0.03f),
-            floatArrayOf(-0.02f, 0.05f, 0.02f),
-            floatArrayOf(0.03f, -0.04f, 0.04f),
-            floatArrayOf(-0.04f, -0.02f, 0.05f)
-        )
-        internal val COOL_VARIANTS = arrayOf(
-            floatArrayOf(0.32f, 0.84f, 0.98f),
-            floatArrayOf(0.45f, 0.75f, 0.99f),
-            floatArrayOf(0.46f, 0.88f, 0.76f),
-            floatArrayOf(0.62f, 0.64f, 0.98f),
-            floatArrayOf(0.86f, 0.62f, 0.95f),
-            floatArrayOf(0.95f, 0.7f, 0.45f),
-            floatArrayOf(0.56f, 0.94f, 0.5f),
-            floatArrayOf(0.94f, 0.58f, 0.78f)
-        )
-        internal val WARM_VARIANTS = arrayOf(
-            floatArrayOf(0.98f, 0.56f, 0.34f),
-            floatArrayOf(0.95f, 0.72f, 0.4f),
-            floatArrayOf(0.98f, 0.45f, 0.5f),
-            floatArrayOf(0.88f, 0.68f, 0.3f),
-            floatArrayOf(0.94f, 0.55f, 0.74f),
-            floatArrayOf(0.74f, 0.76f, 0.4f),
-            floatArrayOf(0.7f, 0.58f, 0.9f),
-            floatArrayOf(0.89f, 0.46f, 0.36f)
-        )
-        internal val BALANCED_VARIANTS = arrayOf(
-            floatArrayOf(0.54f, 0.84f, 0.97f),
-            floatArrayOf(0.91f, 0.64f, 0.42f),
-            floatArrayOf(0.45f, 0.9f, 0.65f),
-            floatArrayOf(0.89f, 0.56f, 0.84f),
-            floatArrayOf(0.96f, 0.79f, 0.38f),
-            floatArrayOf(0.59f, 0.63f, 0.99f),
-            floatArrayOf(0.94f, 0.5f, 0.56f),
-            floatArrayOf(0.7f, 0.88f, 0.5f)
-        )
-        internal val BIAS_NORMAL = floatArrayOf(0f, 0f, 0f)
-        internal val BIAS_REINFORCED = floatArrayOf(0.04f, -0.02f, 0.03f)
-        internal val BIAS_ARMORED = floatArrayOf(-0.02f, 0.04f, -0.01f)
-        internal val BIAS_EXPLOSIVE = floatArrayOf(0.12f, -0.08f, -0.07f)
-        internal val BIAS_UNBREAKABLE = floatArrayOf(-0.04f, -0.03f, 0.06f)
-        internal val BIAS_MOVING = floatArrayOf(-0.01f, 0.08f, 0.03f)
-        internal val BIAS_SPAWNING = floatArrayOf(0.03f, 0.01f, 0.08f)
-        internal val BIAS_PHASE = floatArrayOf(0.08f, 0.06f, -0.04f)
-        internal val BIAS_BOSS = floatArrayOf(0.12f, -0.07f, -0.05f)
-        internal val BIAS_INVADER = floatArrayOf(0.03f, 0.08f, 0.1f)
-    }
-
-    var hitFlash = 0f
-    // Dynamic brick properties
-    var vx: Float = 0f  // Horizontal velocity for moving bricks
-    var vy: Float = 0f  // Vertical velocity
-    var phase: Int = 0  // Current phase for phase bricks
-    var maxPhase: Int = 1  // Total phases for phase bricks
-    var spawnCount: Int = 0  // Number of spawns left for spawning bricks
-    var lastHitTime: Float = 0f  // Timestamp of last hit for special effects
-    var fireFlash: Float = 0f  // Invader firing glow
-    internal var cachedThemeName: String? = null
-    internal var cachedHitPoints: Int = -1
-    internal var cachedColor: FloatArray? = null
-    val scoreValue: Int = when (type) {
-        BrickType.NORMAL -> 50
-        BrickType.REINFORCED -> 80
-        BrickType.ARMORED -> 120
-        BrickType.EXPLOSIVE -> 150
-        BrickType.UNBREAKABLE -> 200
-        BrickType.MOVING -> 75
-        BrickType.SPAWNING -> 100
-        BrickType.PHASE -> 180
-        BrickType.BOSS -> 300
-        BrickType.INVADER -> 120
-    }
-
-    val centerX: Float
-        get() = x + width / 2f
-    val centerY: Float
-        get() = y + height / 2f
-
-    fun applyHit(forceBreak: Boolean): Boolean {
-        if (type == BrickType.UNBREAKABLE && !forceBreak) {
-            hitFlash = 0.2f
-            return false
-        }
-
-        val damage = if (forceBreak && type == BrickType.UNBREAKABLE) 2 else 1
-        hitPoints -= damage
-        hitFlash = 0.2f
-        lastHitTime = System.nanoTime() / 1_000_000_000f  // Current time in seconds
-
-        // Special brick behaviors
-        when (type) {
-            BrickType.PHASE -> {
-                if (hitPoints <= 0) {
-                    phase++
-                    if (phase >= maxPhase) {
-                        alive = false
-                        return true
-                    } else {
-                        // Reset hitpoints for next phase
-                        hitPoints = max(1, maxHitPoints / (phase + 1))
-                        hitFlash = 0.5f  // Longer flash for phase change
-                        return false
-                    }
-                }
-            }
-            BrickType.BOSS -> {
-                if (hitPoints <= 0) {
-                    phase++
-                    if (phase >= maxPhase) {
-                        alive = false
-                        return true
-                    } else {
-                        // Boss maintains strength across phases
-                        hitPoints = maxHitPoints
-                        hitFlash = 0.8f  // Dramatic flash for boss phase
-                        // Could add screen shake or special effects here
-                        return false
-                    }
-                }
-            }
-            BrickType.SPAWNING -> {
-                if (hitPoints <= 0) {
-                    alive = false
-                    // Spawning logic will be handled externally when brick is destroyed
-                    return true
-                }
-            }
-            else -> {
-                if (hitPoints <= 0) {
-                    alive = false
-                    return true
-                }
-            }
-        }
-        return false
-    }
-
-    fun currentColor(theme: LevelTheme): FloatArray {
-        if (hitFlash <= 0f && cachedThemeName == theme.name && cachedHitPoints == hitPoints) {
-            cachedColor?.let { return it }
-        }
-        val base = theme.brickPalette[type] ?: theme.accent
-        val durability = if (type == BrickType.UNBREAKABLE) {
-            1f
-        } else {
-            (hitPoints.toFloat() / maxHitPoints.toFloat()).coerceIn(0.35f, 1f)
-        }
-        val variants = variantsForTheme(theme.name)
-        val seed = (gridX * 73856093) xor (gridY * 19349663) xor (type.ordinal * 83492791) xor theme.name.hashCode()
-        val tint = variants[positiveMod(seed, variants.size)]
-        val typeBias = biasForType()
-        val tintMix = tintMixForType()
-        val diversity = diversityForType()
-        val rowBand = ROW_BANDS[positiveMod(gridY, ROW_BANDS.size)]
-        val colBand = COL_BANDS[positiveMod(gridX, COL_BANDS.size)]
-        val bandScale = when (type) {
-            BrickType.NORMAL -> 0.22f
-            BrickType.INVADER -> 0.2f
-            BrickType.BOSS -> 0.09f
-            else -> 0.14f
-        } * diversity
-        val brightness = 0.84f + durability * 0.24f
-        val damageWarmth = (1f - durability) * when (type) {
-            BrickType.EXPLOSIVE, BrickType.BOSS -> 0.12f
-            BrickType.PHASE -> 0.09f
-            else -> 0.06f
-        }
-        val mixR = mix(base[0], tint[0], tintMix)
-        val mixG = mix(base[1], tint[1], tintMix)
-        val mixB = mix(base[2], tint[2], tintMix)
-        val finalColor = floatArrayOf(
-            (mixR * brightness + typeBias[0] + (rowBand[0] + colBand[0]) * bandScale + damageWarmth).coerceIn(0.05f, 0.98f),
-            (mixG * brightness + typeBias[1] + (rowBand[1] + colBand[1]) * bandScale).coerceIn(0.05f, 0.98f),
-            (mixB * brightness + typeBias[2] + (rowBand[2] + colBand[2]) * bandScale - damageWarmth * 0.45f).coerceIn(0.05f, 0.98f),
-            1f
-        )
-
-        if (hitFlash <= 0f) {
-            cachedThemeName = theme.name
-            cachedHitPoints = hitPoints
-            cachedColor = finalColor
-            return finalColor
-        }
-        val flashBoost = (0.2f + hitFlash * 0.85f).coerceIn(0.2f, 0.52f)
-        return floatArrayOf(
-            min(1f, finalColor[0] + flashBoost),
-            min(1f, finalColor[1] + flashBoost),
-            min(1f, finalColor[2] + flashBoost),
-            1f
-        )
-    }
-
-    internal fun variantsForTheme(themeName: String): Array<FloatArray> {
-        return when (themeName) {
-            "Sunset", "Lava", "Ember" -> WARM_VARIANTS
-            "Neon", "Cobalt", "Circuit", "Invaders", "Vapor" -> COOL_VARIANTS
-            else -> BALANCED_VARIANTS
-        }
-    }
-
-
-
-    internal fun biasForType(): FloatArray {
-        return when (type) {
-            BrickType.NORMAL -> BIAS_NORMAL
-            BrickType.REINFORCED -> BIAS_REINFORCED
-            BrickType.ARMORED -> BIAS_ARMORED
-            BrickType.EXPLOSIVE -> BIAS_EXPLOSIVE
-            BrickType.UNBREAKABLE -> BIAS_UNBREAKABLE
-            BrickType.MOVING -> BIAS_MOVING
-            BrickType.SPAWNING -> BIAS_SPAWNING
-            BrickType.PHASE -> BIAS_PHASE
-            BrickType.BOSS -> BIAS_BOSS
-            BrickType.INVADER -> BIAS_INVADER
-        }
-    }
-
-    internal fun tintMixForType(): Float {
-        return when (type) {
-            BrickType.NORMAL -> 0.34f
-            BrickType.REINFORCED -> 0.24f
-            BrickType.ARMORED -> 0.21f
-            BrickType.EXPLOSIVE -> 0.28f
-            BrickType.UNBREAKABLE -> 0.12f
-            BrickType.MOVING -> 0.29f
-            BrickType.SPAWNING -> 0.28f
-            BrickType.PHASE -> 0.33f
-            BrickType.BOSS -> 0.2f
-            BrickType.INVADER -> 0.32f
-        }
-    }
-
-    internal fun diversityForType(): Float {
-        return when (type) {
-            BrickType.NORMAL -> 1f
-            BrickType.MOVING, BrickType.PHASE, BrickType.SPAWNING, BrickType.INVADER -> 0.9f
-            BrickType.BOSS -> 0.65f
-            BrickType.UNBREAKABLE -> 0.55f
-            else -> 0.75f
-        }
-    }
-
-    internal fun mix(start: Float, end: Float, t: Float): Float {
-        return start + (end - start) * t
-    }
-
-    internal fun positiveMod(value: Int, size: Int): Int {
-        val mod = value % size
-        return if (mod < 0) mod + size else mod
-    }
-
-    fun isNeighbor(other: Brick, radius: Int): Boolean {
-        return abs(gridX - other.gridX) <= radius && abs(gridY - other.gridY) <= radius
-    }
-}
-
-enum class BrickType { NORMAL, REINFORCED, ARMORED, EXPLOSIVE, UNBREAKABLE, MOVING, SPAWNING, PHASE, BOSS, INVADER }
-
-data class PowerUp(
-    var x: Float,
-    var y: Float,
-    val type: PowerUpType,
-    val speed: Float,
-    val size: Float = 3.2f
-)
-
-enum class PowerUpType(val displayName: String, val color: FloatArray) {
-    MULTI_BALL("Multi-ball", floatArrayOf(0.19f, 0.88f, 0.97f, 1f)),
-    LASER("Laser", floatArrayOf(1f, 0.31f, 0.84f, 1f)),
-    GUARDRAIL("Guardrail", floatArrayOf(1f, 0.78f, 0.34f, 1f)),
-    LIFE("Extra Life", floatArrayOf(0.14f, 0.92f, 0.64f, 1f)),
-    SHIELD("Shield", floatArrayOf(0.52f, 0.61f, 1f, 1f)),
-    WIDE_PADDLE("Wide Paddle", floatArrayOf(0.98f, 0.62f, 0.2f, 1f)),
-    SHRINK("Shrink", floatArrayOf(1f, 0.45f, 0.35f, 1f)),
-    SLOW("Slow", floatArrayOf(0.63f, 0.76f, 1f, 1f)),
-    OVERDRIVE("Overdrive", floatArrayOf(1f, 0.62f, 0.22f, 1f)),
-    FIREBALL("Fireball", floatArrayOf(1f, 0.36f, 0.27f, 1f)),
-    MAGNET("Magnet", floatArrayOf(0.8f, 0.4f, 1f, 1f)),
-    GRAVITY_WELL("Gravity Well", floatArrayOf(0.4f, 0.6f, 1f, 1f)),
-    BALL_SPLITTER("Ball Splitter", floatArrayOf(1f, 0.8f, 0.2f, 1f)),
-    FREEZE("Freeze", floatArrayOf(0.3f, 0.8f, 1f, 1f)),
-    PIERCE("Pierce", floatArrayOf(0.9f, 0.5f, 0.1f, 1f)),
-    RICOCHET("Ricochet", floatArrayOf(0.6f, 0.8f, 1f, 1f)),
-    TIME_WARP("Time Warp", floatArrayOf(0.4f, 0.9f, 0.7f, 1f)),
-    DOUBLE_SCORE("2x Score", floatArrayOf(1f, 0.8f, 0.3f, 1f))
-}
-
-data class Beam(
-    var x: Float,
-    var y: Float,
-    val width: Float,
-    val height: Float,
-    val speed: Float,
-    val color: FloatArray
-)
-
-data class EnemyShot(
-    var x: Float,
-    var y: Float,
-    val radius: Float,
-    val vx: Float,
-    val vy: Float,
-    val color: FloatArray,
-    val style: Int = 0,
-    val wiggle: Float = 0f,
-    val wobbleFreq: Float = 0f,
-    var age: Float = 0f
-)
-
-data class TrailPoint(
-    var x: Float,
-    var y: Float,
-    var radius: Float,
-    var life: Float,
-    val maxLife: Float
-)
-
-data class Particle(
-    var x: Float,
-    var y: Float,
-    val vx: Float,
-    val vy: Float,
-    val radius: Float,
-    var life: Float,
-    val color: FloatArray
-)
-
-data class ExplosionWave(
-    var x: Float,
-    var y: Float,
-    var radius: Float,
-    val color: FloatArray,
-    var life: Float,
-    val maxLife: Float,
-    val speed: Float,
-    val chainCount: Int = 1
-)

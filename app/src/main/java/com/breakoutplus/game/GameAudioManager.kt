@@ -12,7 +12,7 @@ import android.os.Vibrator
 import com.breakoutplus.R
 import com.breakoutplus.SettingsManager
 
-class GameAudioManager(private val context: Context, private var settings: SettingsManager.Settings) {
+class GameAudioManager(private val context: Context, private var settings: com.breakoutplus.game.GameSettings) {
     private val soundPool: SoundPool
     private val soundMap = mutableMapOf<GameSound, Int>()
     private var mediaPlayer: MediaPlayer? = null
@@ -128,7 +128,7 @@ class GameAudioManager(private val context: Context, private var settings: Setti
         soundPool.release()
     }
 
-    fun updateSettings(newSettings: SettingsManager.Settings) {
+    fun updateSettings(newSettings: com.breakoutplus.game.GameSettings) {
         settings = newSettings
         if (!settings.musicEnabled) {
             stopMusic()

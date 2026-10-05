@@ -47,7 +47,8 @@ echo "Checking connected device..."
 adb_cmd get-state >/dev/null
 
 echo "Installing debug build..."
-./gradlew installDebug >/dev/null
+./gradlew assembleDebug >/dev/null
+adb_cmd install -r app/build/outputs/apk/debug/app-debug.apk >/dev/null
 
 echo "Starting mode smoke pass on ${FULL_ACTIVITY} (auto_play=${AUTO_PLAY}, auto_play_seconds=${AUTO_PLAY_SECONDS})"
 failures=0

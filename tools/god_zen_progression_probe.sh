@@ -130,7 +130,8 @@ if ! wait_for_device_ready 12 5; then
 fi
 
 echo "Installing debug build..."
-./gradlew installDebug >/dev/null
+./gradlew assembleDebug >/dev/null
+adb_cmd install -r app/build/outputs/apk/debug/app-debug.apk >/dev/null
 
 echo "Running deterministic progression probe on ${FULL_ACTIVITY} (run_seconds=${RUN_SECONDS})"
 failures=0

@@ -1,85 +1,56 @@
+require_relative "release_contract"
+
 default_platform(:android)
 
 platform :android do
-  before_all do
-    json_key = ENV["GOOGLE_PLAY_JSON"] || ENV["PLAY_SERVICE_ACCOUNT_JSON"] || ENV["GOOGLE_PLAY_SERVICE_ACCOUNT_JSON"]
-    if json_key.to_s.strip.empty?
-      UI.user_error!("Missing service account JSON. Set GOOGLE_PLAY_JSON (preferred) to the absolute path.")
-    end
-    unless File.exist?(json_key)
-      UI.user_error!("Service account JSON not found at: #{json_key}")
-    end
-  end
-
-  desc "Build release AAB"
+  desc "Build signed release AAB locally (no Play credentials needed)"
   lane :build_release do
-    gradle(
-      task: "bundle",
-      build_type: "Release"
-    )
+    BreakoutRelease.require_signing!
+    gradle(task: "bundle", build_type: "Release")
   end
 
-  desc "Upload AAB and metadata/screenshots to Play (internal track)"
+  desc "Validate minified APK and AAB, debug signed with .compilecheck application ID"
+  lane :compile_check do
+    gradle(task: "assembleReleaseCheck bundleReleaseCheck")
+  end
+
+  desc "Build and upload signed AAB and metadata to the internal track as draft"
   lane :upload_internal do
-    supply(
-      aab: "app/build/outputs/bundle/release/app-release.aab",
-      track: "internal",
-      release_status: "draft",
-      skip_upload_apk: true,
-      skip_upload_aab: false,
-      skip_upload_metadata: false,
-      skip_upload_images: false,
-      skip_upload_screenshots: false
-    )
-  end
-
-  desc "Publish internal track release (AAB + metadata/screenshots)"
-  lane :publish_internal do
-    supply(
-      aab: "app/build/outputs/bundle/release/app-release.aab",
-      track: "internal",
-      release_status: "completed",
-      skip_upload_apk: true,
-      skip_upload_aab: false,
-      skip_upload_metadata: false,
-      skip_upload_images: false,
-      skip_upload_screenshots: false
-    )
-  end
-
-  desc "Publish existing internal release without uploading a new AAB"
-  lane :publish_internal_existing do
-    supply(
-      track: "internal",
-      release_status: "completed",
-      version_code: (ENV["BP_VERSION_CODE"] || "12").to_i,
-      skip_upload_apk: true,
-      skip_upload_aab: true,
-      skip_upload_metadata: false,
-      skip_upload_images: false,
-      skip_upload_screenshots: false
-    )
-  end
-
-  desc "Upload metadata/screenshots only (no AAB)"
-  lane :upload_metadata do
-    supply(
-      track: "internal",
-      release_status: "draft",
-      track_promote_release_status: "draft",
-      changes_not_sent_for_review: true,
-      version_code: (ENV["BP_VERSION_CODE"] || "12").to_i,
-      skip_upload_apk: true,
-      skip_upload_aab: true,
-      skip_upload_metadata: false,
-      skip_upload_images: false,
-      skip_upload_screenshots: false
-    )
-  end
-
-  desc "Build and upload AAB to Play (internal track)"
-  lane :build_and_upload_internal do
+    sh("python3", File.expand_path("../tools/check_store_assets.py", __dir__))
+    key = BreakoutRelease.require_play_key!
     build_release
+    supply(json_key: key, aab: BreakoutRelease.aab_path, track: "internal",
+           release_status: "draft", skip_upload_apk: true)
+  end
+
+  desc "Build and publish signed AAB to internal track"
+  lane :publish_internal do
+    sh("python3", File.expand_path("../tools/check_store_assets.py", __dir__))
+    key = BreakoutRelease.require_play_key!
+    build_release
+    supply(json_key: key, aab: BreakoutRelease.aab_path, track: "internal",
+           release_status: "completed", skip_upload_apk: true)
+  end
+
+  desc "Publish existing internal release for the authoritative version code"
+  lane :publish_internal_existing do
+    sh("python3", File.expand_path("../tools/check_store_assets.py", __dir__))
+    supply(json_key: BreakoutRelease.require_play_key!, track: "internal",
+           release_status: "completed", version_code: BreakoutRelease.version_code,
+           skip_upload_apk: true, skip_upload_aab: true)
+  end
+
+  desc "Upload metadata only (no signing or AAB needed)"
+  lane :upload_metadata do
+    sh("python3", File.expand_path("../tools/check_store_assets.py", __dir__))
+    supply(json_key: BreakoutRelease.require_play_key!, track: "internal",
+           release_status: "draft", changes_not_sent_for_review: true,
+           version_code: BreakoutRelease.version_code,
+           skip_upload_apk: true, skip_upload_aab: true)
+  end
+
+  desc "Build and upload signed AAB to internal track as draft"
+  lane :build_and_upload_internal do
     upload_internal
   end
 end

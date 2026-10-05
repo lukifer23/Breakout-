@@ -1,126 +1,94 @@
 # Breakout+
 
-Android-first brick breaker for phones, foldables, and slates.  
-The repository also includes an iOS port (`ios/`), but Android is the active release track.
+An Android-first, offline brick breaker with ten modes, eighteen powerups, ten
+brick types, local progression/unlocks, scoreboards, daily challenges and lifetime
+stats. Existing gameplay and native platform implementations are preserved.
 
-## Current Project State (As Of 2026-05-22)
+Android is the reference platform. The current release line remains **1.0.12
+(version code 12)**, defined in [version.properties](version.properties).
+The October 2026 maintenance changes are not a newly published store release.
+iOS is a substantial SwiftUI/SpriteKit port with known parity gaps; the macOS
+fork is archived/experimental.
 
-- Android **1.0.12** excellence pass — glass UI unified, Zen differentiated, performance hardened
-- **CI**: GitHub Actions runs unit tests, lint, debug assembly, and release assembly (CI debug signing)
-- **108+ JVM unit tests** passing; lint + assembleDebug + assembleRelease green (JDK 17 required locally)
-- Android feature-complete: 10 modes, 10 brick types, 18 powerups, progression, unlocks, scoreboards, daily challenges, lifetime stats
-- Extracted systems: `VolleyModeSystem`, `TunnelModeSystem`, `InvadersModeSystem`, `LevelAdvancePolicy`, `ModeAccent`, `GameHudController`
-- iOS parity backlog documented in [`Docs/PARITY.md`](Docs/PARITY.md) — execute after Android Play release sign-off
-- `BreakoutPlusMac` frozen (dev-only, unmaintained)
+## Current maintenance status — October 5, 2026
 
-### Remaining Before Play Store Ship
-- Device QA matrix (phone, fold, slate) — see [`Docs/TESTING.md`](Docs/TESTING.md)
-- Play Console setup, release signing, tablet screenshots — see [`Docs/RELEASE_CHECKLIST.md`](Docs/RELEASE_CHECKLIST.md)
-- Long-session device validation for Volley/Tunnel under heavy FX
+- Android compile/target API 36; minimum API 26; stable AGP 8.10.1,
+  Gradle 8.11.1, Kotlin 2.2.21 and JDK 17.
+- Seeded gameplay RNG, independent visual RNG and fixed 120 Hz simulation.
+- Platform-neutral input/settings/unlocks and queued audio/visual/diagnostic seams.
+- Correct daily progress semantics, date-based generation, durable reward receipts
+  and consumables reserved for the next scored run.
+- Atomic active-run checkpoints, restored paused after Activity/process recreation.
+- Real GLES batching and bounded background diagnostic writes.
+- 139 JVM tests passed locally; lint has no errors but warnings remain.
+- Android debug and distinct minified compile-check APK/AAB paths; publishing
+  requires actual release signing. Local builds need no Play credentials.
+- Locked Ruby tools updated and checked against the advisory database.
 
-### Recent 1.0.11 Highlights
-- Locked Volley starting ball count at 5 (`VolleyModeSystem.STARTING_BALL_COUNT`)
-- Unified mode accent colors; Survival uses distinct `bp_flame` vs Tunnel orange
-- Extracted `InvadersModeSystem`; expanded Volley/Tunnel regression tests
-- Added cross-platform parity matrix and Android hardening sign-off docs
+[Baseline](Docs/MODERNIZATION_BASELINE.md), [persistence limits](Docs/PERSISTENCE.md)
+and [measured performance](Docs/PERFORMANCE.md) contain the evidence and boundaries.
+API 36 emulator checks cover mode launch, six stress cases and one process-recovery
+case. They do not establish full device/foldable QA or iOS parity.
 
-Latest automated validation:
-```bash
-export JAVA_HOME=/path/to/jdk-17
-./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
-CI=true ./gradlew :app:assembleRelease
+## Build
+
+Install JDK 17, Android SDK platform 36 and build-tools 35.0.0, then:
+
+```sh
+gh repo clone lukifer23/Breakout- Breakout-
+cd Breakout-
+export JAVA_HOME=/absolute/path/to/jdk-17
+export ANDROID_HOME=/absolute/path/to/android-sdk
+./gradlew clean testDebugUnitTest lintDebug assembleDebug
+./gradlew assembleReleaseCheck bundleReleaseCheck
+adb -s <serial> install -r app/build/outputs/apk/debug/app-debug.apk
+adb -s <serial> shell am start -n com.breakoutplus.debug/com.breakoutplus.MainActivity
 ```
 
-## Active Engineering Goals
-1. Preserve all existing features and mode identities.
-2. Eliminate regressions while patching gameplay, visuals, and UX inconsistencies.
-3. Improve stability/performance under heavy gameplay (multi-ball, dense boards, high FX).
-4. Fix form-factor variance (folded/unfolded/slate) in HUD scaling and board density.
-5. Reduce complexity in large runtime files by extracting focused systems.
+Compile-check artifacts have a `.compilecheck` package and `-compilecheck` version
+suffix, use a debug key, and are never upload candidates. See [BUILD](Docs/BUILD.md)
+for real signing and Fastlane procedures.
 
-## Execution Constraints
-- No feature removals.
-- No placeholders, no stubbed behavior, no mock gameplay paths.
-- Ship real patches that compile, run, and pass validation.
+## Gameplay and architecture
 
-## Android Runtime Snapshot
-- OpenGL ES 2.0 renderer (`GLSurfaceView` + `Renderer2D`)
-- Choreographer frame pacing (`RENDERMODE_WHEN_DIRTY`)
-- Fixed-step-only simulation in `GameRenderer`
-- Core gameplay state machine in `GameEngine`
-- Extracted mode systems (`VolleyModeSystem`, `TunnelModeSystem`, `InvadersModeSystem`, `ModeLayoutPolicy`, `ModeBoardMetrics`, `LevelAdvancePolicy`, `ModeAccent`) to reduce monolith risk
-- Fold-aware and large-screen responsive HUD strategy managed by `GameHudController`
+Modes: Classic, Timed, Endless, God, Rush, Volley, Tunnel, Survival, Invaders and
+Zen. The existing OpenGL ES 2.0 gameplay surface is driven by Choreographer.
+The GL thread owns simulation; Android input becomes neutral commands, and UI
+callbacks/persistence consume copies. [ARCHITECTURE](Docs/ARCHITECTURE.md) describes
+the boundaries; [GAMEPLAY](Docs/GAMEPLAY.md) defines the rules.
 
-## Game Content
-### Modes (10)
-- `CLASSIC`, `TIMED`, `ENDLESS`, `GOD`, `RUSH`, `VOLLEY`, `TUNNEL`, `SURVIVAL`, `INVADERS`, `ZEN`
-
-### Brick Types (10)
-- `NORMAL`, `REINFORCED`, `ARMORED`, `EXPLOSIVE`, `UNBREAKABLE`, `MOVING`, `SPAWNING`, `PHASE`, `BOSS`, `INVADER`
-
-### Powerups (18)
-- `MULTI_BALL`, `LASER`, `GUARDRAIL`, `SHIELD`, `LIFE`, `WIDE_PADDLE`, `SHRINK`, `SLOW`, `OVERDRIVE`, `FIREBALL`, `MAGNET`, `GRAVITY_WELL`, `BALL_SPLITTER`, `FREEZE`, `PIERCE`, `RICOCHET`, `TIME_WARP`, `DOUBLE_SCORE`
-
-## Build & Validation (Android CLI)
-### Prereqs
-- JDK 17
-- Android SDK platform 35
-- `adb` on `PATH`
-
-### Build Debug
-```bash
-./gradlew :app:assembleDebug
-```
-
-### Install + Launch
-```bash
-adb devices
-adb install -r app/build/outputs/apk/debug/app-debug.apk
-adb shell am start -n com.breakoutplus.debug/com.breakoutplus.MainActivity
-```
-
-### Validation (local)
-```bash
-export JAVA_HOME=/path/to/jdk-17   # required; JDK 26 breaks Gradle in this project
-./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
-```
-
-### Mode Smoke Test
-```bash
-tools/mode_smoke_test.sh
-```
-
-### GOD/ZEN Progression Probe
-```bash
-tools/god_zen_progression_probe.sh
-```
-
-### All-Modes Progression Probe
-```bash
-tools/all_modes_progression_probe.sh
-```
-
-## Repository Structure
 ```text
-app/        Android app (active release track)
-ios/        iOS port
-Docs/       Product, architecture, build, testing, and roadmap docs
-tools/      Dev utilities (mode smoke tests + progression probes)
+app/           Android app and JVM tests
+Docs/          Current authoritative docs; Archive/ contains historical records
+ios/           iOS port; BreakoutPlusMac/ is archived, Archive/ is historical
+fastlane/      Ruby release tooling and Play metadata
+store_assets/  Canonical icon/feature assets; verified screenshots still pending
+tools/         Repository, release, stress and device utilities
 ```
+
+## Release readiness and remaining work
+
+This is a tested maintenance milestone, not a declaration that the full
+modernization or Play release is complete. Remaining priorities include HUD
+contrast, versioning/corruption handling for all older preference stores,
+cross-store crash side effects, physics and lifecycle/device qualification,
+LevelFactory extraction, accessibility/audio review, curated Challenge Journey,
+iOS XCTest/parity, and verified phone/large-screen store captures.
+
+Stale timestamp captures and mislabeled duplicate screenshots were removed.
+No screenshot is advertised here until its current screen has been captured and
+validated. Publishing remains gated on a complete screenshot set and operator
+review. See [ROADMAP](Docs/ROADMAP.md) and [RELEASE_CHECKLIST](Docs/RELEASE_CHECKLIST.md).
 
 ## Documentation
-- [`Docs/REQUIREMENTS.md`](Docs/REQUIREMENTS.md) — product and quality requirements
-- [`Docs/ARCHITECTURE.md`](Docs/ARCHITECTURE.md) — Android runtime architecture
-- [`Docs/GAMEPLAY.md`](Docs/GAMEPLAY.md) — mode rules, bricks, powerups
-- [`Docs/DESIGN.md`](Docs/DESIGN.md) — visual/HUD UX principles and mode accent tokens
-- [`Docs/BUILD.md`](Docs/BUILD.md) — build, install, release, Fastlane
-- [`Docs/TESTING.md`](Docs/TESTING.md) — unit tests, device probes, manual QA matrix
-- [`Docs/ROADMAP.md`](Docs/ROADMAP.md) — active engineering workstreams
-- [`Docs/PARITY.md`](Docs/PARITY.md) — Android vs iOS vs Mac parity matrix
-- [`Docs/HARDENING_SIGNOFF.md`](Docs/HARDENING_SIGNOFF.md) — Android 1.0.11 hardening exit criteria
-- [`Docs/RELEASE_CHECKLIST.md`](Docs/RELEASE_CHECKLIST.md) — Play Store release checklist
-- [`Docs/RELEASE_NOTES.md`](Docs/RELEASE_NOTES.md) — version history
-- [`ios/README.md`](ios/README.md) — iOS port status and build/run guide
 
-## License
-MIT (`LICENSE`)
+- [Build and release](Docs/BUILD.md) · [Testing](Docs/TESTING.md)
+- [Architecture](Docs/ARCHITECTURE.md) · [Persistence](Docs/PERSISTENCE.md)
+- [Gameplay](Docs/GAMEPLAY.md) · [Design](Docs/DESIGN.md) · [Assets](Docs/ASSETS.md)
+- [Privacy](Docs/PRIVACY_POLICY.md) · [Data safety](Docs/DATA_SAFETY.md)
+- [Security/tooling audit](Docs/TOOLING_SECURITY.md) · [Performance](Docs/PERFORMANCE.md)
+- [Platform parity](Docs/PARITY.md) · [iOS](ios/README.md)
+- [Release checklist](Docs/RELEASE_CHECKLIST.md) · [Release notes](Docs/RELEASE_NOTES.md)
+- [Roadmap](Docs/ROADMAP.md) · [Requirements](Docs/REQUIREMENTS.md)
+
+MIT — [LICENSE](LICENSE).

@@ -7,7 +7,7 @@
 - Reduce implementation complexity in core runtime code without removing functionality.
 
 ## Target Platform (Current)
-- Android (primary): minSdk 26, targetSdk 35
+- Android (primary): minSdk 26, targetSdk 36
 - Primary optimization target: Samsung Galaxy Z Fold class devices (folded + unfolded)
 
 ## Functional Requirements
@@ -53,4 +53,4 @@
 - Latest debug APK installs and launches on connected Android device.
 - All 10 modes are playable end-to-end with expected mode identity.
 - Folded/unfolded/slate form-factor matrix shows stable HUD scaling and readable gameplay surfaces.
-- Android 1.0.11 hardening criteria met — see [`HARDENING_SIGNOFF.md`](HARDENING_SIGNOFF.md).
+- Current release acceptance completed — see [RELEASE_CHECKLIST](RELEASE_CHECKLIST.md).

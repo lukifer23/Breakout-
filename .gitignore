@@ -1,5 +1,6 @@
 # Gradle
 .gradle/
+.kotlin/
 build/
 .bundle/
 vendor/bundle/
@@ -37,3 +38,22 @@ DerivedData/
 *.xcodeproj/xcuserdata/
 .swiftpm/
 .build/
+
+# Reproducible binary/release products
+*.apk
+*.aab
+*.ipa
+*.dSYM/
+*.xcarchive/
+*.pbxproj.backup*
+ios/test_ios_binary
+# Captures are staged/validated before promoting canonical store images.
+store_assets/screenshots/*/20*/
+
+# Apple publishing credentials
+private_keys/
+*.p8
+
+# Python tooling intermediates
+__pycache__/
+*.pyc

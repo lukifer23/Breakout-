@@ -5,6 +5,7 @@ package com.breakoutplus.game
  * Used by GameEngine to communicate state changes to UI layer.
  */
 interface GameEventListener {
+    fun onDailyChallengesUpdated(challenges: List<DailyChallenge>)
     fun onScoreUpdated(score: Int)
     fun onLivesUpdated(lives: Int)
     fun onTimeUpdated(secondsRemaining: Int)

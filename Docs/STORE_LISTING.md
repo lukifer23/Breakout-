@@ -7,7 +7,7 @@ Breakout+
 Neon brick-breaker with 10 modes, rich powerups, and foldable-ready play.
 
 ## Full Description
-Breakout+ is a modern arcade brick-breaker tuned for smooth high-refresh gameplay on phones and foldables. Build combos, route precision shots, and adapt to distinct game-mode rule sets.
+Breakout+ is a modern arcade brick-breaker with an optional high-refresh preference on phones and foldables. Build combos, route precision shots, and adapt to distinct game-mode rule sets.
 
 Modes:
 - Classic: balanced progression run.
@@ -51,8 +51,10 @@ Highlights:
 - Store assets root: `store_assets/`
 - Icon: `store_assets/icon/BreakoutPlus-icon-512.png`
 - Feature graphic: `store_assets/feature_graphic/BreakoutPlus-feature-1024x500.png`
-- Phone screenshots: `store_assets/screenshots/phone/`
-- Tablet screenshots: `store_assets/screenshots/tablet/`
+- Phone screenshots: `fastlane/metadata/android/en-US/images/phoneScreenshots/`
+- Tablet screenshots: `fastlane/metadata/android/en-US/images/tenInchScreenshots/`
 
 ## Fastlane Metadata
 - `fastlane/metadata/android/en-US/`
+
+Listing capture set is incomplete. See [ASSETS](ASSETS.md) and the strict validator; old duplicated captures are not current listing evidence.

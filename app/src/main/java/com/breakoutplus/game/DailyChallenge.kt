@@ -1,6 +1,8 @@
 package com.breakoutplus.game
 
-import java.util.*
+import java.time.LocalDate
+import java.time.ZoneOffset
+import java.util.Random
 
 /**
  * Daily Challenge system for added replayability and goals
@@ -19,15 +21,23 @@ data class DailyChallenge(
     val dateGenerated: Long = System.currentTimeMillis()
 )
 
-enum class ChallengeType {
-    BRICKS_DESTROYED,
-    SCORE_ACHIEVED,
-    COMBO_MULTIPLIER,
-    POWERUPS_COLLECTED,
-    PERFECT_LEVEL,
-    TIME_UNDER_LIMIT,
-    MULTI_BALL_ACTIVE,
-    LASER_FIRED
+enum class ChallengeProgress { ACCUMULATE, MAXIMUM, LEVEL_CONDITION }
+
+enum class ChallengeType(val semantics: ChallengeProgress) {
+    BRICKS_DESTROYED(ChallengeProgress.ACCUMULATE),
+    SCORE_ACHIEVED(ChallengeProgress.MAXIMUM),
+    COMBO_MULTIPLIER(ChallengeProgress.MAXIMUM),
+    POWERUPS_COLLECTED(ChallengeProgress.ACCUMULATE),
+    PERFECT_LEVEL(ChallengeProgress.LEVEL_CONDITION),
+    TIME_UNDER_LIMIT(ChallengeProgress.LEVEL_CONDITION),
+    // Counts collected MULTI_BALL activations, not balls or elapsed active ticks.
+    MULTI_BALL_ACTIVE(ChallengeProgress.ACCUMULATE),
+    LASER_FIRED(ChallengeProgress.ACCUMULATE)
+}
+
+sealed interface ChallengeEvent {
+    data class Metric(val type: ChallengeType, val value: Int = 1) : ChallengeEvent
+    data class LevelCompleted(val durationSeconds: Float, val lostLife: Boolean) : ChallengeEvent
 }
 
 enum class RewardType {
@@ -61,45 +71,73 @@ object DailyChallengeManager {
         { DailyChallenge("multiball_3", "Ball Party", "Activate multi-ball 3 times", ChallengeType.MULTI_BALL_ACTIVE, 3, RewardType.SCORE_MULTIPLIER, 8) }
     )
 
-    fun generateDailyChallenges(): List<DailyChallenge> {
-        val random = Random(System.currentTimeMillis())
-        val shuffled = challengeTemplates.shuffled(random)
-        return shuffled.take(3).map { it() } // Generate 3 random challenges per day
+    const val SCHEMA_VERSION = 2
+
+    fun generateDailyChallenges(
+        date: LocalDate = LocalDate.now(),
+        schemaVersion: Int = SCHEMA_VERSION
+    ): List<DailyChallenge> {
+        require(schemaVersion > 0)
+        val random = Random(date.toEpochDay() xor (schemaVersion.toLong() shl 32))
+        val timestamp = date.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+        return challengeTemplates.shuffled(random).take(3).map {
+            val challenge = it()
+            challenge.copy(id = "$date/v$schemaVersion/${challenge.id}", dateGenerated = timestamp)
+        }
     }
 
-    fun updateChallengeProgress(challenges: MutableList<DailyChallenge>, type: ChallengeType, value: Int = 1): List<DailyChallenge> {
-        val completed = mutableListOf<DailyChallenge>()
-        challenges.forEach { challenge ->
-            if (!challenge.completed && challenge.type == type) {
-                challenge.progress += value
-                if (challenge.progress >= challenge.targetValue) {
-                    challenge.completed = true
-                    challenge.rewardGranted = true
-                    completed.add(challenge)
+    fun updateChallengeProgress(challenges: MutableList<DailyChallenge>, type: ChallengeType, value: Int = 1): List<DailyChallenge> =
+        applyEvent(challenges, ChallengeEvent.Metric(type, value))
+
+    fun applyEvent(challenges: List<DailyChallenge>, event: ChallengeEvent): List<DailyChallenge> {
+        val newlyCompleted = mutableListOf<DailyChallenge>()
+        for (challenge in challenges) {
+            if (challenge.completed) continue
+            val target = challenge.targetValue.coerceAtLeast(1)
+            when (event) {
+                is ChallengeEvent.Metric -> {
+                    if (challenge.type != event.type || event.value < 0) continue
+                    challenge.progress = when (challenge.type.semantics) {
+                        ChallengeProgress.ACCUMULATE -> (challenge.progress.toLong().coerceAtLeast(0) + event.value)
+                            .coerceAtMost(target.toLong()).toInt()
+                        ChallengeProgress.MAXIMUM -> maxOf(challenge.progress, event.value).coerceIn(0, target)
+                        ChallengeProgress.LEVEL_CONDITION -> continue
+                    }
+                }
+                is ChallengeEvent.LevelCompleted -> {
+                    when (challenge.type) {
+                        ChallengeType.PERFECT_LEVEL -> {
+                            if (!event.lostLife) challenge.progress = (challenge.progress.toLong() + 1)
+                                .coerceIn(0, target.toLong()).toInt()
+                        }
+                        ChallengeType.TIME_UNDER_LIMIT -> {
+                            if (event.durationSeconds.isFinite() && event.durationSeconds >= 0f &&
+                                event.durationSeconds <= target.toFloat()) challenge.progress = target
+                        }
+                        else -> continue
+                    }
                 }
             }
+            if (challenge.progress >= target) {
+                challenge.completed = true
+                // The persistence transaction acknowledges rewards separately.
+                newlyCompleted.add(challenge)
+            }
         }
-        return completed
+        return newlyCompleted
     }
 
-    fun completeChallenge(challenge: DailyChallenge) {
-        if (!challenge.completed) {
-            challenge.progress = challenge.targetValue
-            challenge.completed = true
-            challenge.rewardGranted = true
-        }
-    }
-
-    fun getChallengeProgressText(challenge: DailyChallenge): String {
-        return "${challenge.progress}/${challenge.targetValue}"
-    }
+    fun getChallengeProgressText(challenge: DailyChallenge): String =
+        if (challenge.type == ChallengeType.TIME_UNDER_LIMIT) {
+            if (challenge.completed) "Completed" else "Clear in ${challenge.targetValue}s or less"
+        } else "${challenge.progress}/${challenge.targetValue}"
 
     fun getChallengeRewardDescription(challenge: DailyChallenge): String {
         return when (challenge.rewardType) {
             RewardType.COSMETIC_UNLOCK -> "Unlocks a cosmetic item"
             RewardType.THEME_UNLOCK -> "Unlocks a visual theme"
-            RewardType.STREAK_BONUS -> "Bonus points for next ${challenge.rewardValue} bricks"
-            RewardType.SCORE_MULTIPLIER -> "+${challenge.rewardValue}% score bonus"
+            RewardType.STREAK_BONUS -> "Queued: +20 points on ${challenge.rewardValue} bricks in your next scored run"
+            RewardType.SCORE_MULTIPLIER -> "Queued: +${challenge.rewardValue}% score in your next scored run"
         }
     }
 

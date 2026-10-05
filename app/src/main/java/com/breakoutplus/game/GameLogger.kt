@@ -5,23 +5,31 @@ import android.util.Log
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
-import java.io.FileWriter
-import java.text.SimpleDateFormat
 import java.util.*
 
 /**
- * Comprehensive game logging system for debugging, analytics, and AI training data.
+ * Comprehensive game logging system for opt-in local debugging.
  * Records game events, player actions, performance metrics, and game state snapshots.
  */
-class GameLogger(private val context: Context, enabled: Boolean = true) {
+class GameLogger(private val context: Context, enabled: Boolean = false) : GameDiagnostics {
 
     @Volatile
     private var enabled: Boolean = enabled
 
-    private val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.US)
     private val logBuffer = mutableListOf<GameEvent>()
     private var sessionStartTime = System.currentTimeMillis()
     private var sessionId = UUID.randomUUID().toString().substring(0, 8)
+
+    private val writerDelegate = lazy {
+        DiagnosticLogWriter<GameEvent>(File(context.filesDir, "game_logs"), "${sessionStartTime}_${sessionId}", encode = { event ->
+            JSONObject().apply {
+                put("timestamp", event.timestamp); put("type", event.type.name)
+                put("data", JSONObject(event.data))
+            }.toString()
+        })
+    }
+
+    private val writer by writerDelegate
 
     // Performance tracking
     private var frameCount = 0
@@ -45,11 +53,12 @@ class GameLogger(private val context: Context, enabled: Boolean = true) {
         this.enabled = enabled
     }
 
-    fun logSessionStart(mode: GameMode) {
+    override fun logSessionStart(mode: GameMode, seed: Long) {
         if (!enabled) return
         logEvent(EventType.SESSION_START, mapOf(
             "sessionId" to sessionId,
             "mode" to mode.displayName,
+            "seed" to seed,
             "timestamp" to System.currentTimeMillis()
         ))
     }
@@ -66,7 +75,7 @@ class GameLogger(private val context: Context, enabled: Boolean = true) {
         flushLogs()
     }
 
-    fun logLevelStart(levelIndex: Int, theme: String) {
+    override fun logLevelStart(levelIndex: Int, theme: String) {
         if (!enabled) return
         logEvent(EventType.LEVEL_START, mapOf(
             "levelIndex" to levelIndex,
@@ -75,7 +84,7 @@ class GameLogger(private val context: Context, enabled: Boolean = true) {
         ))
     }
 
-    fun logLevelComplete(levelIndex: Int, score: Int, timeTaken: Float, bricksRemaining: Int) {
+    override fun logLevelComplete(levelIndex: Int, score: Int, timeTaken: Float, bricksRemaining: Int) {
         if (!enabled) return
         logEvent(EventType.LEVEL_COMPLETE, mapOf(
             "levelIndex" to levelIndex,
@@ -85,7 +94,7 @@ class GameLogger(private val context: Context, enabled: Boolean = true) {
         ))
     }
 
-    fun logGameOver(finalScore: Int, levelReached: Int, reason: String) {
+    override fun logGameOver(finalScore: Int, levelReached: Int, reason: String) {
         if (!enabled) return
         logEvent(EventType.GAME_OVER, mapOf(
             "finalScore" to finalScore,
@@ -95,12 +104,12 @@ class GameLogger(private val context: Context, enabled: Boolean = true) {
         ))
     }
 
-    fun logError(message: String, extraData: Map<String, Any> = emptyMap()) {
+    override fun logError(message: String, extraData: Map<String, Any>) {
         if (!enabled) return
         logEvent(EventType.STATE_SNAPSHOT, mapOf("error" to message) + extraData)
     }
 
-    fun logLevelAdvance(newLevelIndex: Int) {
+    override fun logLevelAdvance(newLevelIndex: Int) {
         if (!enabled) return
         logEvent(EventType.LEVEL_START, mapOf(
             "levelIndex" to newLevelIndex,
@@ -109,7 +118,7 @@ class GameLogger(private val context: Context, enabled: Boolean = true) {
         ))
     }
 
-    fun logBrickDestroyed(brickType: BrickType, position: Pair<Float, Float>, comboCount: Int) {
+    override fun logBrickDestroyed(brickType: BrickType, position: Pair<Float, Float>, comboCount: Int) {
         if (!enabled) return
         logEvent(EventType.BRICK_DESTROYED, mapOf(
             "brickType" to brickType.name,
@@ -119,7 +128,7 @@ class GameLogger(private val context: Context, enabled: Boolean = true) {
         ))
     }
 
-    fun logPowerupCollected(powerupType: PowerUpType, position: Pair<Float, Float>) {
+    override fun logPowerupCollected(powerupType: PowerUpType, position: Pair<Float, Float>) {
         if (!enabled) return
         logEvent(EventType.POWERUP_COLLECTED, mapOf(
             "powerupType" to powerupType.name,
@@ -128,7 +137,7 @@ class GameLogger(private val context: Context, enabled: Boolean = true) {
         ))
     }
 
-    fun logBallLost(ballCount: Int, position: Pair<Float, Float>, livesRemaining: Int) {
+    override fun logBallLost(ballCount: Int, position: Pair<Float, Float>, livesRemaining: Int) {
         if (!enabled) return
         logEvent(EventType.BALL_LOST, mapOf(
             "ballCount" to ballCount,
@@ -138,7 +147,7 @@ class GameLogger(private val context: Context, enabled: Boolean = true) {
         ))
     }
 
-    fun logComboAchieved(comboCount: Int, multiplier: Float, scoreGained: Int) {
+    override fun logComboAchieved(comboCount: Int, multiplier: Float, scoreGained: Int) {
         if (!enabled) return
         logEvent(EventType.COMBO_ACHIEVED, mapOf(
             "comboCount" to comboCount,
@@ -147,7 +156,7 @@ class GameLogger(private val context: Context, enabled: Boolean = true) {
         ))
     }
 
-    fun logTouchInput(action: String, x: Float, y: Float, pressure: Float = 1f) {
+    override fun logTouchInput(action: String, x: Float, y: Float, pressure: Float) {
         if (!enabled) return
         logEvent(EventType.TOUCH_INPUT, mapOf(
             "action" to action,
@@ -194,67 +203,34 @@ class GameLogger(private val context: Context, enabled: Boolean = true) {
     private fun logEvent(type: EventType, data: Map<String, Any>) {
         if (!enabled) return
 
-        val event = GameEvent(System.currentTimeMillis(), type, data)
-        logBuffer.add(event)
-
-        // Keep buffer size reasonable
-        if (logBuffer.size > 1000) {
-            flushLogs()
+        synchronized(logBuffer) {
+            logBuffer.add(GameEvent(System.currentTimeMillis(), type, data.toMap()))
+            if (logBuffer.size >= 256) flushLogs()
         }
-
-        // Also log to Android logcat for immediate debugging
-        Log.d("BreakoutLogger", "${type.name}: ${data.toString().take(200)}")
     }
 
-    // Flush logs to file
     private fun flushLogs() {
-        if (!enabled || logBuffer.isEmpty()) return
-
-        try {
-            val logDir = File(context.filesDir, "game_logs")
-            if (!logDir.exists()) {
-                logDir.mkdirs()
-            }
-
-            val logFile = File(logDir, "session_${sessionId}_${dateFormat.format(Date(sessionStartTime))}.json")
-
-            FileWriter(logFile, true).use { writer ->
-                logBuffer.forEach { event ->
-                    val jsonEvent = JSONObject().apply {
-                        put("timestamp", event.timestamp)
-                        put("type", event.type.name)
-                        put("data", JSONObject(event.data.mapValues { value ->
-                            when (value.value) {
-                                is Pair<*, *> -> JSONArray().apply {
-                                    put((value.value as Pair<*, *>).first)
-                                    put((value.value as Pair<*, *>).second)
-                                }
-                                else -> value.value
-                            }
-                        }))
-                    }
-                    writer.write(jsonEvent.toString())
-                    writer.write("\n")
-                }
-            }
-
-            logBuffer.clear()
-        } catch (e: Exception) {
-            Log.e("GameLogger", "Failed to flush logs", e)
+        val batch = synchronized(logBuffer) {
+            if (logBuffer.isEmpty()) return
+            logBuffer.toList().also { logBuffer.clear() }
         }
+        writer.append(batch)
     }
 
-    // Export logs for external analysis
+    fun close() {
+        flushLogs() // enqueue only; Activity/GL teardown does not wait for disk.
+        if (writerDelegate.isInitialized()) writer.close()
+    }
+
+    // Export is an explicit diagnostic action, never a gameplay callback.
     fun exportLogs(): String? {
         flushLogs()
+        if (!writer.awaitIdle()) return null
         return try {
-            val logDir = File(context.filesDir, "game_logs")
-            val latestLog = logDir.listFiles()?.maxByOrNull { it.lastModified() }
-            latestLog?.readText()
-        } catch (e: Exception) {
-            Log.e("GameLogger", "Failed to export logs", e)
-            null
-        }
+            File(context.filesDir, "game_logs").listFiles()
+                ?.filter { it.name.startsWith("session_") }
+                ?.maxByOrNull { it.lastModified() }?.readText()
+        } catch (e: Exception) { Log.e("GameLogger", "Failed to export logs", e); null }
     }
 
     // Get performance summary

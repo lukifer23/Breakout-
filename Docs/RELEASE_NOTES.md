@@ -1,11 +1,37 @@
 # Release Notes
 
+## Unreleased maintenance — October 5, 2026
+
+Version remains 1.0.12 / code 12; no store upload was performed.
+- Removed tracked generated Swift/build binaries, APK dumps and invalid/mislabeled captures.
+- Target API 36; stable build toolchain; distinct minified APK/AAB compile checks.
+- Updated Fastlane/Ruby security graph; signing/publishing validation separated.
+- Disabled/excluded Android platform backup; disclosed separate iOS OS backup behavior.
+- Correct daily maximum/count/level conditions and date/schema-based generation.
+- Durable reward outbox/receipts and next-run consumable reservations.
+- Seeded simulation, neutral input/config/feedback seams and fixed 120Hz ticks.
+- Atomic active-run checkpoints and tested real-engine all-mode recovery.
+- GLES vertex batching, shader diagnostics and measured stress distributions.
+- Bounded/rotated background diagnostic files; 139 local JVM tests.
+- Docs synchronized; unresolved release/device/parity gaps remain explicit.
+
+## 1.0.12 — existing release line at baseline c1be9b6
+
+- Unified frosted/glass shell and gameplay overlays across layout buckets.
+- Differentiated Zen from God; retained ten modes, ten brick types and eighteen powerups.
+- Extracted scoring/level/powerup/collision helpers and reused effect buffers/counters.
+- Preserved fold/slate HUD/board policies and progression recovery.
+- The old batch APIs still drew per object, and the old CI release used a debug
+  signing fallback. Those historical mechanisms were replaced in maintenance.
+
+Older entries below are historical release records, not current instructions.
+
 ## 1.0.11 (2026-05-22)
 - Locked Volley starting ball count at 5 via `VolleyModeSystem.STARTING_BALL_COUNT`; synced `Docs/GAMEPLAY.md`.
 - Added `ModeAccent` for canonical mode accent colors; Survival now uses distinct `bp_flame` (#FF8A3D) vs Tunnel `bp_orange`.
 - Extracted `InvadersModeSystem` (formation offset, pacing, volley shot caps) from `GameEngine`.
 - Moved Volley ball-award logic into `VolleyModeSystem.shouldAwardBall`.
-- Added `Docs/PARITY.md` cross-platform matrix and `Docs/HARDENING_SIGNOFF.md` Android sign-off checklist.
+- Added `Docs/PARITY.md` cross-platform matrix and `Docs/Archive/HARDENING_SIGNOFF_1.0.11.md` Android sign-off checklist.
 - Synced stale `.github/README.md`; added GitHub Actions Android CI workflow.
 - Documented BreakoutPlusMac as frozen dev-only target.
 - Expanded regression tests: Volley turn flow, Tunnel gate partial clearance, Invaders pacing, ModeAccent.
