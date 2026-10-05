@@ -344,6 +344,7 @@ class GameRenderer(
     }
 
     fun release() {
+        logger.close()
         audioManager.release()
     }
 
