@@ -12,7 +12,9 @@ data class GameConfig(
     val rewardBonuses: RewardBonuses = RewardBonuses(),
     val initialState: RunSnapshot? = null,
     val restorePaused: Boolean = false,
-    val persistRun: Boolean = true
+    val persistRun: Boolean = true,
+    val debugPerformanceCapture: Boolean = false,
+    val debugStressScenario: String? = null
 )
 
 data class GameSummary(

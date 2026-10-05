@@ -90,7 +90,10 @@ class GameActivity : FoldAwareActivity(), GameEventListener {
             runId = identity?.runId ?: java.util.UUID.randomUUID().toString(),
             seed = identity?.seed ?: java.security.SecureRandom().nextLong(),
             challengeDate = identity?.date ?: java.time.LocalDate.now(),
-            initialState = snapshot, restorePaused = snapshot != null, persistRun = !debugAutomation)
+            initialState = snapshot, restorePaused = snapshot != null, persistRun = !debugAutomation,
+            debugPerformanceCapture = debugAutomation && intent.getBooleanExtra("extra_debug_perf", false),
+            debugStressScenario = if (debugAutomation) intent.getStringExtra("extra_debug_stress") else null)
+        if (debugAutomation && intent.hasExtra("extra_debug_seed")) config = config.copy(seed = intent.getLongExtra("extra_debug_seed", 1))
         // Persist run identity before assigning consumables so crash/re-entry finds the reservation.
         if (!debugAutomation) {
             ActiveRunRepository.begin(this, config)

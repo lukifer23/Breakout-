@@ -23,6 +23,7 @@ class GameRenderer(
     private val feedback = GameFeedbackQueue()
     private var engine = GameEngine(config, listener, feedback, logger, config.dailyChallenges, this)
     private var checkpointTimer = 0f
+    private var stressPrepared = false
     private var lastTimeNs: Long = 0L
     private var paused = false
     private var worldWidth = 100f
@@ -97,12 +98,18 @@ class GameRenderer(
         worldHeight = worldWidth * (height.toFloat() / width.toFloat())
         resetVisualEffects()
         engine.onResize(width, height)
+        if (!stressPrepared && config.debugStressScenario != null) {
+            engine.prepareStressScenario(config.debugStressScenario!!)
+            stressPrepared = true
+        }
     }
 
     override fun onDrawFrame(unused: javax.microedition.khronos.opengles.GL10?) {
         try {
             GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
 
+            renderer2D.beginFrame()
+            var simulationUpdates = 0
             val frameStart = System.nanoTime()
             val now = frameStart
             if (lastTimeNs == 0L) {
@@ -110,6 +117,7 @@ class GameRenderer(
             }
             var delta = (now - lastTimeNs) / 1_000_000_000f
             lastTimeNs = now
+            val intervalMs = delta * 1000f
             if (delta > 0.1f) delta = 0.1f
 
             // Update visual effects
@@ -132,7 +140,11 @@ class GameRenderer(
             if (!paused) {
                 rollingFrameMs = rollingFrameMs * 0.9f + delta * 1000f * 0.1f
                 engine.renderFrameStress = rollingFrameMs > 18f
-                repeat(simulationClock.advance(delta)) { engine.update(FixedStepClock.STEP) }
+                simulationUpdates = simulationClock.advance(delta)
+                repeat(simulationUpdates) {
+                    engine.update(FixedStepClock.STEP)
+                    engine.updateStressVisuals(FixedStepClock.STEP)
+                }
             }
 
             feedback.drain { event ->
@@ -165,6 +177,7 @@ class GameRenderer(
                 checkpointTimer = 0f
                 saveCheckpoint()
             }
+            engine.renderTimeSeconds = visualTimeSeconds
             engine.render(renderer2D)
 
             if (comboFlash.remainingTime > 0f) {
@@ -199,6 +212,11 @@ class GameRenderer(
                 }
             }
 
+            renderer2D.endFrame()
+            if (config.debugPerformanceCapture && !paused) {
+                val cpuMs = (System.nanoTime() - frameStart) / 1000000f
+                Log.i("BreakoutPerf", "mode=${config.mode.name} seed=${config.seed} cpu_ms=$cpuMs interval_ms=$intervalMs draws=${renderer2D.drawCalls} primitives=${renderer2D.primitiveCount} vertices=${renderer2D.vertexCount} objects=${engine.getObjectCount()} updates=$simulationUpdates")
+            }
             // Performance logging
             if (!paused) {
                 val frameTime = (System.nanoTime() - frameStart) / 1_000_000f // Convert to milliseconds

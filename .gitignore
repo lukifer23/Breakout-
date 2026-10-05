@@ -53,3 +53,7 @@ store_assets/screenshots/*/20*/
 # Apple publishing credentials
 private_keys/
 *.p8
+
+# Python tooling intermediates
+__pycache__/
+*.pyc
