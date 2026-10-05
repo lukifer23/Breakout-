@@ -1,13 +1,12 @@
 package com.breakoutplus.game
 
-import com.breakoutplus.SettingsManager
-import com.breakoutplus.UnlockManager
 
 data class GameConfig(
     val mode: GameMode,
-    val settings: SettingsManager.Settings,
+    val settings: GameSettings,
     val dailyChallenges: MutableList<DailyChallenge>? = null,
-    val unlocks: UnlockManager.UnlockState = UnlockManager.UnlockState(emptySet(), 0)
+    val unlocks: GameUnlocks = GameUnlocks(emptySet(), 0),
+    val seed: Long = java.security.SecureRandom().nextLong()
 )
 
 data class GameSummary(

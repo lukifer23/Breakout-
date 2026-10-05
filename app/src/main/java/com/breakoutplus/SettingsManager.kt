@@ -19,28 +19,12 @@ object SettingsManager {
     private const val KEY_SHOW_FPS_COUNTER = "show_fps_counter"
     private const val KEY_HIGH_REFRESH = "high_refresh_rate"
 
-    data class Settings(
-        val soundEnabled: Boolean,
-        val musicEnabled: Boolean,
-        val vibrationEnabled: Boolean,
-        val tipsEnabled: Boolean,
-        val leftHanded: Boolean,
-        val sensitivity: Float,
-        val masterVolume: Float = 1.0f,
-        val effectsVolume: Float = 0.8f,
-        val musicVolume: Float = 0.6f,
-        val loggingEnabled: Boolean = false,
-        val darkMode: Boolean = false,
-        val showFpsCounter: Boolean = false,
-        val highRefreshRate: Boolean = true
-    )
-
     private fun prefs(context: Context): SharedPreferences =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
-    fun load(context: Context): Settings {
+    fun load(context: Context): com.breakoutplus.game.GameSettings {
         val prefs = prefs(context)
-        return Settings(
+        return com.breakoutplus.game.GameSettings(
             soundEnabled = prefs.getBoolean(KEY_SOUND, true),
             musicEnabled = prefs.getBoolean(KEY_MUSIC, false), // Disable music by default to prevent background hum
             vibrationEnabled = prefs.getBoolean(KEY_VIBRATION, true),
@@ -57,7 +41,7 @@ object SettingsManager {
         )
     }
 
-    fun save(context: Context, settings: Settings) {
+    fun save(context: Context, settings: com.breakoutplus.game.GameSettings) {
         prefs(context).edit()
             .putBoolean(KEY_SOUND, settings.soundEnabled)
             .putBoolean(KEY_MUSIC, settings.musicEnabled)

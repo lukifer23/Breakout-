@@ -1,6 +1,5 @@
 package com.breakoutplus.game
 
-import android.view.MotionEvent
 import com.breakoutplus.game.LevelFactory.buildLevel
 import kotlin.math.max
 
@@ -67,7 +66,7 @@ internal fun GameEngine.resetLevel(first: Boolean) {
     aimNormalizedTarget = 0f
     aimAngle = Math.PI.toFloat() * 0.5f
     isDragging = false
-    activePointerId = MotionEvent.INVALID_POINTER_ID
+    activePointerId = PointerInput.INVALID_POINTER_ID
     lastTouchLogTimeMs = 0L
     lastTouchLogX = Float.NaN
     lastTouchLogY = Float.NaN

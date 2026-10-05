@@ -134,7 +134,7 @@ internal fun GameEngine.handleBrickDestroyedByBall(ball: Ball, brick: Brick) {
     val dynamicRate = BrickCollisionFeedback.dynamicBrickSoundRate(
         baseRate = baseRate,
         combo = combo,
-        randomUnit = random.nextFloat()
+        randomUnit = visualRandom.nextFloat()
     )
 
     audio.play(brickSound, 0.7f, dynamicRate)

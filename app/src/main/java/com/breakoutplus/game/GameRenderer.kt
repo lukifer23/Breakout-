@@ -4,7 +4,6 @@ import android.content.Context
 import android.opengl.GLES20
 import android.opengl.GLSurfaceView
 import android.util.Log
-import android.view.MotionEvent
 import com.breakoutplus.SettingsManager
 import kotlin.math.abs
 import kotlin.math.cos
@@ -16,12 +15,13 @@ class GameRenderer(
     private val context: Context,
     private var config: GameConfig,
     private val listener: GameEventListener
-) : GLSurfaceView.Renderer {
+) : GLSurfaceView.Renderer, GameVisualFeedback {
 
     private val renderer2D = Renderer2D()
     private val audioManager = GameAudioManager(context, config.settings)
     private val logger = GameLogger(context, config.settings.loggingEnabled)
-    private var engine = GameEngine(config, listener, audioManager, logger, config.dailyChallenges, this)
+    private val feedback = GameFeedbackQueue()
+    private var engine = GameEngine(config, listener, feedback, logger, config.dailyChallenges, this)
     private var lastTimeNs: Long = 0L
     private var paused = false
     private var worldWidth = 100f
@@ -40,8 +40,7 @@ class GameRenderer(
     private var volleyDangerTarget = 0f
     private var visualTimeSeconds = 0f
     private var musicWasPlaying = false
-    private var fixedStepSeconds = 1f / 120f
-    private var simulationAccumulator = 0f
+    private val simulationClock = FixedStepClock()
     private var rollingFrameMs = 16f
     private var debugAutoPlayEnabled = false
     private var debugProgressionProbeEnabled = false
@@ -62,7 +61,7 @@ class GameRenderer(
     private val impactFlashColor = floatArrayOf(1f, 1f, 1f, 0f)
     private val volleyDangerColor = floatArrayOf(1f, 0f, 0f, 0f)
 
-    fun triggerScreenShake(intensity: Float = 3f, duration: Float = 0.2f) {
+    override fun triggerScreenShake(intensity: Float, duration: Float) {
         val clampedIntensity = intensity.coerceIn(0f, maxShakeIntensity)
         val clampedDuration = duration.coerceIn(minShakeDuration, maxShakeDuration)
         shakeIntensity = max(shakeIntensity, clampedIntensity)
@@ -70,21 +69,16 @@ class GameRenderer(
         screenShake = max(screenShake, clampedDuration)
     }
 
-    fun triggerComboFlash() {
+    override fun triggerComboFlash() {
         comboFlash.trigger()
     }
 
-    fun triggerLevelClearFlash() {
+    override fun triggerLevelClearFlash() {
         levelClearFlash.trigger()
     }
 
-    fun triggerImpactFlash(intensity: Float) {
+    override fun triggerImpactFlash(intensity: Float) {
         impactFlash.trigger(intensity)
-    }
-
-    fun setTargetFrameRate(fps: Float) {
-        val normalized = if (fps.isFinite() && fps > 0f) fps.coerceIn(45f, 240f) else 120f
-        fixedStepSeconds = 1f / normalized
     }
 
     override fun onSurfaceCreated(unused: javax.microedition.khronos.opengles.GL10?, config: javax.microedition.khronos.egl.EGLConfig?) {
@@ -135,23 +129,19 @@ class GameRenderer(
             }
 
             if (!paused) {
-                val step = fixedStepSeconds.coerceIn(1f / 240f, 1f / 45f)
                 rollingFrameMs = rollingFrameMs * 0.9f + delta * 1000f * 0.1f
                 engine.renderFrameStress = rollingFrameMs > 18f
-                val maxSteps = when {
-                    rollingFrameMs > 22f -> 4
-                    rollingFrameMs > 18f -> 5
-                    else -> 6
-                }
-                simulationAccumulator = (simulationAccumulator + delta).coerceAtMost(step * maxSteps)
-                var updates = 0
-                while (simulationAccumulator >= step && updates < maxSteps) {
-                    engine.update(step)
-                    simulationAccumulator -= step
-                    updates += 1
-                }
+                repeat(simulationClock.advance(delta)) { engine.update(FixedStepClock.STEP) }
             }
 
+            feedback.drain { event ->
+                when (event) {
+                    is GameFeedback.Sound -> audioManager.play(event.sound, event.volume, event.rate)
+                    is GameFeedback.Haptic -> audioManager.haptic(event.type)
+                    GameFeedback.StopMusic -> audioManager.stopMusic()
+                    GameFeedback.StartMusic -> audioManager.startMusic()
+                }
+            }
             // Apply screen shake to renderer
             if (screenShake > 0f) {
                 val decay = if (screenShakeDuration > 0f) {
@@ -229,12 +219,12 @@ class GameRenderer(
         }
     }
 
-    fun setVolleyDanger(danger: Float) {
+    override fun setVolleyDanger(danger: Float) {
         volleyDangerTarget = danger.coerceIn(0f, 1f)
     }
 
-    fun handleTouch(event: MotionEvent, viewWidth: Float, viewHeight: Float) {
-        engine.handleTouch(event, viewWidth, viewHeight)
+    fun handleInput(input: GameInput) {
+        engine.handleInput(input)
     }
 
     fun fireLaser() {
@@ -273,20 +263,20 @@ class GameRenderer(
             audioManager.startMusic()
         }
         lastTimeNs = 0L
-        simulationAccumulator = 0f
+        simulationClock.reset()
         perfLogSampleTimer = 0f
         fpsUiSampleTimer = 0f
         lastReportedFps = 0
     }
 
     fun restart() {
-        engine = GameEngine(config, listener, audioManager, logger, config.dailyChallenges, this)
+        engine = GameEngine(config, listener, feedback, logger, config.dailyChallenges, this)
         engine.setDebugAutoPlay(debugAutoPlayEnabled)
         engine.setDebugProgressionProbe(debugProgressionProbeEnabled)
         reapplyViewportToEngine()
         resetVisualEffects()
         lastTimeNs = 0L
-        simulationAccumulator = 0f
+        simulationClock.reset()
         perfLogSampleTimer = 0f
         fpsUiSampleTimer = 0f
         lastReportedFps = 0
@@ -301,26 +291,26 @@ class GameRenderer(
         config = newConfig
         audioManager.updateSettings(newConfig.settings)
         logger.setEnabled(newConfig.settings.loggingEnabled)
-        engine = GameEngine(config, listener, audioManager, logger, config.dailyChallenges, this)
+        engine = GameEngine(config, listener, feedback, logger, config.dailyChallenges, this)
         engine.setDebugAutoPlay(debugAutoPlayEnabled)
         engine.setDebugProgressionProbe(debugProgressionProbeEnabled)
         reapplyViewportToEngine()
         resetVisualEffects()
-        simulationAccumulator = 0f
+        simulationClock.reset()
         perfLogSampleTimer = 0f
         fpsUiSampleTimer = 0f
         lastReportedFps = 0
         recoveryAttempts = 0
     }
 
-    fun updateSettings(settings: SettingsManager.Settings) {
+    fun updateSettings(settings: com.breakoutplus.game.GameSettings) {
         config = config.copy(settings = settings)
         engine.updateSettings(settings)
         audioManager.updateSettings(settings)
         logger.setEnabled(settings.loggingEnabled)
     }
 
-    fun updateUnlocks(unlocks: com.breakoutplus.UnlockManager.UnlockState) {
+    fun updateUnlocks(unlocks: com.breakoutplus.game.GameUnlocks) {
         config = config.copy(unlocks = unlocks)
         engine.updateUnlocks(unlocks)
     }
@@ -381,7 +371,7 @@ class GameRenderer(
         }
         recoveryAttempts += 1
         // Preserve in-flight run state: drop the bad frame and continue.
-        simulationAccumulator = 0f
+        simulationClock.reset()
         lastTimeNs = 0L
         resetVisualEffects()
     }

@@ -10,10 +10,10 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 /**
- * Comprehensive game logging system for debugging, analytics, and AI training data.
+ * Comprehensive game logging system for opt-in local debugging.
  * Records game events, player actions, performance metrics, and game state snapshots.
  */
-class GameLogger(private val context: Context, enabled: Boolean = true) {
+class GameLogger(private val context: Context, enabled: Boolean = false) : GameDiagnostics {
 
     @Volatile
     private var enabled: Boolean = enabled
@@ -45,11 +45,12 @@ class GameLogger(private val context: Context, enabled: Boolean = true) {
         this.enabled = enabled
     }
 
-    fun logSessionStart(mode: GameMode) {
+    override fun logSessionStart(mode: GameMode, seed: Long) {
         if (!enabled) return
         logEvent(EventType.SESSION_START, mapOf(
             "sessionId" to sessionId,
             "mode" to mode.displayName,
+            "seed" to seed,
             "timestamp" to System.currentTimeMillis()
         ))
     }
@@ -66,7 +67,7 @@ class GameLogger(private val context: Context, enabled: Boolean = true) {
         flushLogs()
     }
 
-    fun logLevelStart(levelIndex: Int, theme: String) {
+    override fun logLevelStart(levelIndex: Int, theme: String) {
         if (!enabled) return
         logEvent(EventType.LEVEL_START, mapOf(
             "levelIndex" to levelIndex,
@@ -75,7 +76,7 @@ class GameLogger(private val context: Context, enabled: Boolean = true) {
         ))
     }
 
-    fun logLevelComplete(levelIndex: Int, score: Int, timeTaken: Float, bricksRemaining: Int) {
+    override fun logLevelComplete(levelIndex: Int, score: Int, timeTaken: Float, bricksRemaining: Int) {
         if (!enabled) return
         logEvent(EventType.LEVEL_COMPLETE, mapOf(
             "levelIndex" to levelIndex,
@@ -85,7 +86,7 @@ class GameLogger(private val context: Context, enabled: Boolean = true) {
         ))
     }
 
-    fun logGameOver(finalScore: Int, levelReached: Int, reason: String) {
+    override fun logGameOver(finalScore: Int, levelReached: Int, reason: String) {
         if (!enabled) return
         logEvent(EventType.GAME_OVER, mapOf(
             "finalScore" to finalScore,
@@ -95,12 +96,12 @@ class GameLogger(private val context: Context, enabled: Boolean = true) {
         ))
     }
 
-    fun logError(message: String, extraData: Map<String, Any> = emptyMap()) {
+    override fun logError(message: String, extraData: Map<String, Any>) {
         if (!enabled) return
         logEvent(EventType.STATE_SNAPSHOT, mapOf("error" to message) + extraData)
     }
 
-    fun logLevelAdvance(newLevelIndex: Int) {
+    override fun logLevelAdvance(newLevelIndex: Int) {
         if (!enabled) return
         logEvent(EventType.LEVEL_START, mapOf(
             "levelIndex" to newLevelIndex,
@@ -109,7 +110,7 @@ class GameLogger(private val context: Context, enabled: Boolean = true) {
         ))
     }
 
-    fun logBrickDestroyed(brickType: BrickType, position: Pair<Float, Float>, comboCount: Int) {
+    override fun logBrickDestroyed(brickType: BrickType, position: Pair<Float, Float>, comboCount: Int) {
         if (!enabled) return
         logEvent(EventType.BRICK_DESTROYED, mapOf(
             "brickType" to brickType.name,
@@ -119,7 +120,7 @@ class GameLogger(private val context: Context, enabled: Boolean = true) {
         ))
     }
 
-    fun logPowerupCollected(powerupType: PowerUpType, position: Pair<Float, Float>) {
+    override fun logPowerupCollected(powerupType: PowerUpType, position: Pair<Float, Float>) {
         if (!enabled) return
         logEvent(EventType.POWERUP_COLLECTED, mapOf(
             "powerupType" to powerupType.name,
@@ -128,7 +129,7 @@ class GameLogger(private val context: Context, enabled: Boolean = true) {
         ))
     }
 
-    fun logBallLost(ballCount: Int, position: Pair<Float, Float>, livesRemaining: Int) {
+    override fun logBallLost(ballCount: Int, position: Pair<Float, Float>, livesRemaining: Int) {
         if (!enabled) return
         logEvent(EventType.BALL_LOST, mapOf(
             "ballCount" to ballCount,
@@ -138,7 +139,7 @@ class GameLogger(private val context: Context, enabled: Boolean = true) {
         ))
     }
 
-    fun logComboAchieved(comboCount: Int, multiplier: Float, scoreGained: Int) {
+    override fun logComboAchieved(comboCount: Int, multiplier: Float, scoreGained: Int) {
         if (!enabled) return
         logEvent(EventType.COMBO_ACHIEVED, mapOf(
             "comboCount" to comboCount,
@@ -147,7 +148,7 @@ class GameLogger(private val context: Context, enabled: Boolean = true) {
         ))
     }
 
-    fun logTouchInput(action: String, x: Float, y: Float, pressure: Float = 1f) {
+    override fun logTouchInput(action: String, x: Float, y: Float, pressure: Float) {
         if (!enabled) return
         logEvent(EventType.TOUCH_INPUT, mapOf(
             "action" to action,

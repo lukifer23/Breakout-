@@ -62,7 +62,6 @@ class GameGLSurfaceView @JvmOverloads constructor(
             queueRendererAction("reset") { it.reset(config) }
             framePacer.start()
         }
-        queueRendererAction("setTargetFrameRate") { it.setTargetFrameRate(targetFps) }
     }
 
     fun pauseGame() {
@@ -89,15 +88,14 @@ class GameGLSurfaceView @JvmOverloads constructor(
     fun setTargetFrameRate(fps: Float) {
         targetFps = if (fps.isFinite() && fps > 0f) fps else 0f
         framePacer.setTargetFps(targetFps)
-        queueRendererAction("setTargetFrameRate") { it.setTargetFrameRate(targetFps) }
         applySurfaceFrameRate()
     }
 
-    fun applySettings(settings: com.breakoutplus.SettingsManager.Settings) {
+    fun applySettings(settings: com.breakoutplus.game.GameSettings) {
         queueRendererAction("applySettings") { it.updateSettings(settings) }
     }
 
-    fun applyUnlocks(unlocks: com.breakoutplus.UnlockManager.UnlockState) {
+    fun applyUnlocks(unlocks: com.breakoutplus.game.GameUnlocks) {
         queueRendererAction("applyUnlocks") { it.updateUnlocks(unlocks) }
     }
 
@@ -139,17 +137,8 @@ class GameGLSurfaceView @JvmOverloads constructor(
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        if (rendererImpl != null) {
-            val copy = MotionEvent.obtain(event)
-            val viewWidth = width.toFloat()
-            val viewHeight = height.toFloat()
-            queueRendererAction("touch") { renderer ->
-                try {
-                    renderer.handleTouch(copy, viewWidth, viewHeight)
-                } finally {
-                    copy.recycle()
-                }
-            }
+        AndroidInputAdapter.translate(event, width, height)?.let { input ->
+            queueRendererAction("input") { it.handleInput(input) }
         }
         if (event.action == MotionEvent.ACTION_UP) {
             performClick()

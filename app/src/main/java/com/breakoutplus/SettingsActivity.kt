@@ -41,7 +41,7 @@ class SettingsActivity : FoldAwareActivity() {
         val saveSettings = {
             SettingsManager.save(
                 this,
-                SettingsManager.Settings(
+                com.breakoutplus.game.GameSettings(
                     soundEnabled = binding.switchSound.isChecked,
                     musicEnabled = binding.switchMusic.isChecked,
                     vibrationEnabled = binding.switchVibration.isChecked,
