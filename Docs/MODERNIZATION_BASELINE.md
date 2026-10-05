@@ -2,7 +2,9 @@
 
 Work starts from clean remote clone c1be9b6 (Android 1.0.12 / code 12),
 default branch main, on hardening/2026-10-modernization. The preexisting
-checkout was clean and remains untouched; this clone is its Breakout- subdirectory.
+checkout was clean and was preserved during implementation; a clean clone was
+created in its Breakout- subdirectory. At the stopping point the original checkout
+is fast-forwarded to remote main and the redundant task clone is removed.
 No Git history rewrite is authorized or performed.
 
 ## Baseline inventory
@@ -113,3 +115,19 @@ Historical objects still occupy roughly the original 177 MiB Git pack; ignored
 local builds add working-tree disk usage. No history rewrite/force push occurred.
 
 Latest lint: 73 warnings / zero errors; see TESTING.md for categories and limits.
+
+## Final milestone gates
+
+Clean testDebugUnitTest/lintDebug/assembleDebug/assembleReleaseCheck/bundleReleaseCheck
+passed together locally (97s), and again from an independent remote shallow clone
+(37s with warm dependency caches). 139 tests passed; 73 lint warnings, no errors.
+GitHub push CI 37388038939 and PR CI 37388128032 passed both Android and Ruby
+jobs. Signing-negative test rejected CI=true bundleRelease without BP_RELEASE_*;
+apksigner verified compile-check uses CN=Android Debug. Store validation accepted
+a real capture and rejected duplicate, zero-byte and truncated images; strict
+validation intentionally fails because the canonical capture set is missing.
+
+Merged PR #7 into main at b465390. Security alerts all fixed; superseded branches
+closed/deleted. The full modernization pauses here at the user's request, with
+remaining tasks recorded in ROADMAP.md. No Play/TestFlight upload, history rewrite
+or claim of full device/iOS qualification is made.

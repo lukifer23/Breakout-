@@ -10,8 +10,8 @@ jwt 3.3.0, faraday 2.14.4. Removed obsolete Faraday 1 adapter graph.
 `bundle exec bundler-audit check --update`: no vulnerabilities found against
 ruby-advisory-db commit 94dccfdbd4154b44d8a1c7ff7d13cc76727f87d6, 1,254 advisories.
 `bundle exec fastlane lanes` and `compile_check` ran successfully on Ruby 4.0.7
-with Play credential variables unset. CI also audits on Ruby 3.4; that runner
-has not yet executed. Credentials are only checked by uploading lanes.
+with Play credential variables unset. GitHub CI also passed its advisory/contract/lane checks on Ruby 3.4
+([run](https://github.com/lukifer23/Breakout-/actions/runs/37388038939)). Credentials are only checked by uploading lanes.
 Actual Play/TestFlight upload is not part of this validation.
 
 ## Android 16
@@ -61,3 +61,15 @@ jwt 3.3.0, faraday 2.14.4, excon 1.7.2 and rubyzip 3.7.0, beyond the respective
 patched ranges. Alerts are verified after this lock reaches default main; they
 are not dismissed to hide unresolved dependencies. Old PRs #4/#5/#6 are
 superseded by this complete compatible graph, rather than blindly merged.
+
+After merge b465390, GitHub marked all nine recorded alerts fixed, including
+all seven previously open alerts and the older faraday advisory. Superseded Ruby
+PRs #4/#5/#6 were closed and their branches removed. No advisory was dismissed
+as a substitute for remediation.
+
+CI pins checkout 7.0.1 and setup-java 6.0.1, whose exact upstream action manifests
+use Node 24. Both retain the inputs used here and target current ubuntu-latest.
+The old pinned actions emitted Node 20 deprecation warnings despite passing.
+Routine version PR creation is disabled to honor the single-main-branch workflow;
+Dependabot security alerts/updates remain enabled, and the Ruby advisory job also
+runs weekly. Compatibility upgrades are deliberate maintenance decisions.

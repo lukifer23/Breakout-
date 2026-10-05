@@ -15,7 +15,7 @@ under Archive do not check these items automatically.
 - [x] Updated locked Ruby graph passes advisory scan and release contract tests.
 - [ ] Remote main CI verified for the exact landed commit (record run URL).
 - [ ] All remaining lint warnings assessed/fixed or individually justified.
-- [ ] Fresh-clone full gate: clean/unit/lint/debug/releaseCheck APK/AAB.
+- [x] Fresh-clone full gate: clean/unit/lint/debug/releaseCheck APK/AAB.
 
 ## Product/device acceptance
 
