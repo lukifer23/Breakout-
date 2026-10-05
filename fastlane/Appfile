@@ -1,6 +1,2 @@
-json_key_file(
-  ENV["GOOGLE_PLAY_JSON"] ||
-  ENV["PLAY_SERVICE_ACCOUNT_JSON"] ||
-  ENV["GOOGLE_PLAY_SERVICE_ACCOUNT_JSON"]
-)
+# Credentials are resolved and validated only by uploading lanes.
 package_name("com.breakoutplus")

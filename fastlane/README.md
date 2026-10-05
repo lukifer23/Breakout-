@@ -21,7 +21,15 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 [bundle exec] fastlane android build_release
 ```
 
-Build release AAB
+Build signed release AAB locally (no Play credentials needed)
+
+### android compile_check
+
+```sh
+[bundle exec] fastlane android compile_check
+```
+
+Validate minified APK and AAB, debug signed with .compilecheck application ID
 
 ### android upload_internal
 
@@ -29,7 +37,7 @@ Build release AAB
 [bundle exec] fastlane android upload_internal
 ```
 
-Upload AAB and metadata/screenshots to Play (internal track)
+Build and upload signed AAB and metadata to the internal track as draft
 
 ### android publish_internal
 
@@ -37,7 +45,7 @@ Upload AAB and metadata/screenshots to Play (internal track)
 [bundle exec] fastlane android publish_internal
 ```
 
-Publish internal track release (AAB + metadata/screenshots)
+Build and publish signed AAB to internal track
 
 ### android publish_internal_existing
 
@@ -45,7 +53,7 @@ Publish internal track release (AAB + metadata/screenshots)
 [bundle exec] fastlane android publish_internal_existing
 ```
 
-Publish existing internal release without uploading a new AAB
+Publish existing internal release for the authoritative version code
 
 ### android upload_metadata
 
@@ -53,7 +61,7 @@ Publish existing internal release without uploading a new AAB
 [bundle exec] fastlane android upload_metadata
 ```
 
-Upload metadata/screenshots only (no AAB)
+Upload metadata only (no signing or AAB needed)
 
 ### android build_and_upload_internal
 
@@ -61,7 +69,7 @@ Upload metadata/screenshots only (no AAB)
 [bundle exec] fastlane android build_and_upload_internal
 ```
 
-Build and upload AAB to Play (internal track)
+Build and upload signed AAB to internal track as draft
 
 ----
 

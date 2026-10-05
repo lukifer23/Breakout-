@@ -48,3 +48,7 @@ DerivedData/
 ios/test_ios_binary
 # Captures are staged/validated before promoting canonical store images.
 store_assets/screenshots/*/20*/
+
+# Apple publishing credentials
+private_keys/
+*.p8

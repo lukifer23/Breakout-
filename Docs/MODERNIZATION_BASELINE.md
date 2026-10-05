@@ -84,3 +84,11 @@ adding this evidence and sanity script. Reproducible-output payload reduced by
 Gradle outputs subsequently add ignored working-tree data, so du of the entire
 checkout is not a like-for-like source metric. Historical pack bloat requires
 a separately authorized history rewrite; no rewrite is needed for this pass.
+
+Baseline completed: 111 tests, zero failures; lint 51 warnings/no errors.
+- testDebugUnitTest: exit 0, 42.41 seconds.
+- lintDebug: exit 0, 33.66 seconds.
+- assembleDebug: exit 0, 11.29 seconds.
+- assembleRelease: exit 0, 37.11 seconds.
+- bundleRelease: exit 0, 2.12 seconds.
+Release tasks used the preexisting CI=true debug-signing fallback, not production signing.
