@@ -71,3 +71,12 @@
 - Release/tap launch behavior from READY state.
 - Laser can be fired from the HUD `FIRE` button (or two-finger gesture path).
 - Aim guide updates continuously while dragging.
+
+## Daily objectives and rewards
+
+Brick/powerup/laser/multiball activation objectives accumulate. Score and combo
+track maximum achievement; a 3x multiplier requires the actual 3x threshold
+(seven hits), not accumulated combo values. Perfect/time goals evaluate that
+completed level's life-loss condition/duration. Themes/cosmetics persist; score
+and streak bonuses queue for the next scored run. Zen does not consume them.
+See [PERSISTENCE](PERSISTENCE.md) for migration and recovery limits.

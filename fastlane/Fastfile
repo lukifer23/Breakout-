@@ -16,6 +16,7 @@ platform :android do
 
   desc "Build and upload signed AAB and metadata to the internal track as draft"
   lane :upload_internal do
+    sh("python3", File.expand_path("../tools/check_store_assets.py", __dir__))
     key = BreakoutRelease.require_play_key!
     build_release
     supply(json_key: key, aab: BreakoutRelease.aab_path, track: "internal",
@@ -24,6 +25,7 @@ platform :android do
 
   desc "Build and publish signed AAB to internal track"
   lane :publish_internal do
+    sh("python3", File.expand_path("../tools/check_store_assets.py", __dir__))
     key = BreakoutRelease.require_play_key!
     build_release
     supply(json_key: key, aab: BreakoutRelease.aab_path, track: "internal",
@@ -32,6 +34,7 @@ platform :android do
 
   desc "Publish existing internal release for the authoritative version code"
   lane :publish_internal_existing do
+    sh("python3", File.expand_path("../tools/check_store_assets.py", __dir__))
     supply(json_key: BreakoutRelease.require_play_key!, track: "internal",
            release_status: "completed", version_code: BreakoutRelease.version_code,
            skip_upload_apk: true, skip_upload_aab: true)
@@ -39,6 +42,7 @@ platform :android do
 
   desc "Upload metadata only (no signing or AAB needed)"
   lane :upload_metadata do
+    sh("python3", File.expand_path("../tools/check_store_assets.py", __dir__))
     supply(json_key: BreakoutRelease.require_play_key!, track: "internal",
            release_status: "draft", changes_not_sent_for_review: true,
            version_code: BreakoutRelease.version_code,

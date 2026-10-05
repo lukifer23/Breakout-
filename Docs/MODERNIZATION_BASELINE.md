@@ -102,3 +102,14 @@ control live in separate files. Simulation ticks use 120 Hz regardless of displa
 refresh. Gameplay and visual RNG streams are separate and seeded/versioned.
 Current GameEngine length is 2,885 lines, versus 3,467 at baseline; responsibility
 reduction is incremental and mode coordination remains in the engine.
+
+## Stopping-point cleanup totals
+
+After current docs/scripts and removal of timestamp/mislabeled screenshot output,
+the source index has approximately 375 files / 11,626,340 bytes before final
+evidence edits, compared with 5,325 / 640,032,774 bytes initially. About 628 MB
+of reproducible/stale tracked payload is gone; authored code/assets remain.
+Historical objects still occupy roughly the original 177 MiB Git pack; ignored
+local builds add working-tree disk usage. No history rewrite/force push occurred.
+
+Latest lint: 73 warnings / zero errors; see TESTING.md for categories and limits.

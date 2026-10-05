@@ -1,3 +1,5 @@
+> Historical record. Not current build instructions or release evidence. See the root README and Docs/RELEASE_CHECKLIST.md.
+
 # Play Release Gaps (Android) - 2026-02-14
 
 > Historical snapshot: release-signing fallback behavior described below was hardened on 2026-02-26.

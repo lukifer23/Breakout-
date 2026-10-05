@@ -13,9 +13,10 @@ Breakout+ does not collect or transmit user data off-device.
 No data is shared with third parties. Gameplay logs (when enabled) are stored only on device and are never transmitted.
 
 ## Security
-All data remains local on the device. No accounts or network services are required.
+The app performs no data uploads. No accounts or network services are required.
+OS-managed backup behavior differs by platform as described below.
 
-Android backup and deletion
+## Android backup and deletion
 
 Android cloud backup and OS-managed device transfer of application data are
 disabled/excluded by the manifest and extraction rules. Uninstalling or clearing

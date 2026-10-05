@@ -1,3 +1,5 @@
+> Historical record. Not current build instructions or release evidence. See the root README and Docs/RELEASE_CHECKLIST.md.
+
 # Android Hardening Sign-Off
 
 Status: **Complete** (2026-05-22)  

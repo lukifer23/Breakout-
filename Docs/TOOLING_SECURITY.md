@@ -52,3 +52,12 @@ API-36 emulator smoke: emulator-5556, SDK 36, 1080x2400. All ten modes
 started and emitted autoplay session events, four seconds per mode, no logged
 fatal render/update errors. This does not establish lifecycle/fold/performance
 quality or completion of every mode. Physical hardware remains untouched.
+
+## Remote alert reconciliation at the stopping point
+
+GitHub reported open alerts #4/#5/#7/#9/#10/#11/#12 for json, addressable, jwt,
+faraday, excon and rubyzip. The resolved lock has json 2.21.2, addressable 2.9.0,
+jwt 3.3.0, faraday 2.14.4, excon 1.7.2 and rubyzip 3.7.0, beyond the respective
+patched ranges. Alerts are verified after this lock reaches default main; they
+are not dismissed to hide unresolved dependencies. Old PRs #4/#5/#6 are
+superseded by this complete compatible graph, rather than blindly merged.

@@ -1,46 +1,44 @@
-# Play Store Release Checklist
+# Release checklist
 
-## Build Artifacts
-- [ ] `./gradlew bundleRelease` produces `app/build/outputs/bundle/release/app-release.aab`
-- [x] Version code/name updated in `app/build.gradle.kts` (1.0.11 / versionCode 11)
-- [x] Android validation gates pass: `:app:testDebugUnitTest`, `:app:lintDebug`, `:app:assembleDebug`
-- [x] GitHub Actions CI workflow added (`.github/workflows/android.yml`)
-- [ ] Device smoke test passes across all modes (`tools/mode_smoke_test.sh`)
-- [ ] Deterministic progression probes pass (`tools/god_zen_progression_probe.sh` and `tools/all_modes_progression_probe.sh`)
-- [ ] If multiple devices are connected, `BP_SERIAL` is set for probe scripts
+Current release line: 1.0.12 / code 12. The maintenance milestone is not a
+published release. This is the authoritative checklist; historical sign-offs
+under Archive do not check these items automatically.
 
-## Play Console Setup
-- [ ] App created in Play Console
-- [ ] App signing by Google Play enabled
-- [ ] Service account JSON key stored locally (gitignored) for automated uploads
-- [ ] `GOOGLE_PLAY_JSON` (or equivalent) env var set before Fastlane uploads
-- [ ] Store listing completed (title, short/long description, category, contact email)
-- [ ] App icon uploaded (512x512 PNG, 32-bit, <= 1024 KB)
-- [ ] Feature graphic uploaded (1024x500)
-- [ ] Phone screenshots uploaded (2-8)
-- [ ] Tablet/Chromebook screenshots uploaded (4+ if targeting large screens)
-- [ ] Privacy policy URL set
-- [ ] Data Safety form completed (see `DATA_SAFETY.md`)
-- [ ] Content rating questionnaire completed
-- [ ] App access declaration completed
+## Source and automated checks
 
-## Release Track
-- [ ] Internal testing track created
-- [ ] AAB uploaded to internal track
-- [ ] Fastlane upload verified (AAB + metadata/screenshots)
-- [ ] Release notes added for current version
-- [ ] Pre-launch report reviewed
-- [ ] Closed or Open testing track ready (optional)
-- [ ] Production rollout configured
+- [x] Generated Swift/Gradle build products, test binary, project backup and old
+  APK dumps removed from tracking; no history rewrite.
+- [x] Compile/target API 36 with stable compatible build tools.
+- [x] Date-based daily semantics, durable reward receipts and seeded run recovery
+  have real JVM regression tests.
+- [x] Real GLES batching/shader checks and bounded background diagnostic writes.
+- [x] Updated locked Ruby graph passes advisory scan and release contract tests.
+- [ ] Remote main CI verified for the exact landed commit (record run URL).
+- [ ] All remaining lint warnings assessed/fixed or individually justified.
+- [ ] Fresh-clone full gate: clean/unit/lint/debug/releaseCheck APK/AAB.
 
-## Post-Release
-- [ ] Verify listing on Play Store
-- [ ] Monitor ANR/Crash reports
-- [ ] Review user feedback
+## Product/device acceptance
 
-## Documentation Sync
-- [x] `README.md` reflects latest Android runtime and validation state
-- [x] `Docs/PARITY.md` and `Docs/HARDENING_SIGNOFF.md` added
-- [x] `Docs/ARCHITECTURE.md`, `Docs/GAMEPLAY.md`, `Docs/DESIGN.md` updated for 1.0.11
-- [x] `Docs/TESTING.md` updated for 1.0.11 (CI, test count, Volley 5-ball checklist)
-- [ ] `Docs/TESTING.md` device matrix results recorded after manual QA pass
+- [ ] HUD contrast, TalkBack/text scaling/48dp controls, menus/insets verified.
+- [ ] Ten-mode objectives/end/HUD/score/restart flows fully playtested.
+- [ ] Phone/tablet/fold resizing, rotation, background and recreation verified.
+- [ ] Cross-store crash side effects and all legacy persistence migrations tested.
+- [ ] Full physics/high-speed/ball-count regression matrix completed.
+- [ ] Physical 60/high-refresh profiling and long-session audio/thermal checks.
+- [ ] iOS separately qualified; do not infer parity from Android results.
+
+## Publishable artifacts and store
+
+- [ ] Increment authoritative version.properties name/code above 12.
+- [ ] Release signing present; bundleRelease certificate matches Play upload key.
+- [ ] Strict `python3 tools/check_store_assets.py` passes phone/large-screen images.
+- [ ] Store metadata/screenshots/privacy URL and Data Safety reviewed together.
+- [ ] Target API / content rating / app access / testing requirements confirmed
+  in Play Console for the actual submission.
+- [ ] Explicit operator upload to internal track; review pre-launch report.
+- [ ] Release notes/changelog match the actual candidate.
+- [ ] Approve rollout, verify listing/install/update and monitor ANR/crash reports.
+
+Local compile_check has `.compilecheck` ID and debug signature; it is not a
+publishable release. Building never requires Play credentials; upload does.
+See [BUILD](BUILD.md), [TESTING](TESTING.md) and [privacy](PRIVACY_POLICY.md).

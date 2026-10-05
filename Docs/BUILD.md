@@ -62,7 +62,8 @@ remain supported). AAB upload lanes rebuild a signed release before upload,
 preventing accidental use of stale/debug-signed compilation outputs.
 `upload_internal` creates a draft; `publish_internal` completes the internal
 release. `upload_metadata` and `publish_internal_existing` use the version code
-from version.properties. Publishing is an explicit operator action.
+from version.properties. Publishing is an explicit operator action. Lanes uploading images/metadata also
+require the strict screenshot validator; the current capture set is incomplete.
 
 ## iOS
 

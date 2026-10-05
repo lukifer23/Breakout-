@@ -1,7 +1,9 @@
 # Breakout+ Design & UX
 
 ## Visual Direction
-- High-contrast neon-forward arcade styling.
+- Light porcelain/frosted Android shell with sky-blue accents; dark neon gameplay.
+- Dark mode is a native shell variant. Existing glossy icon remains an asset source,
+  not a reason to redesign gameplay. Store/brand export consolidation is unfinished.
 - Theme-driven palettes and animated backgrounds.
 - Crisp, readable HUD chips and labels across device classes.
 
@@ -30,16 +32,16 @@
 
 | Mode | Token | Hex |
 |------|-------|-----|
-| Classic | `bp_cyan` | #58E2FF |
-| Timed Challenge | `bp_gold` | #F6C45A |
-| Endless | `bp_green` | #48D894 |
-| God Mode | `bp_magenta` | #FF6EA3 |
-| Level Rush | `bp_red` | #FF6D61 |
-| Volley | `bp_azure` | #5EA8FF |
-| Tunnel Siege | `bp_orange` | #FFA453 |
-| Survival | `bp_flame` | #FF8A3D |
-| Invaders | `bp_violet` | #8B8EFF |
-| Zen Mode | `bp_gray` | #A6B3C9 |
+| Classic | `bp_cyan` | #22D3EE |
+| Timed Challenge | `bp_gold` | #FBBF24 |
+| Endless | `bp_green` | #34D399 |
+| God Mode | `bp_magenta` | #F472B6 |
+| Level Rush | `bp_red` | #F87171 |
+| Volley | `bp_azure` | #60A5FA |
+| Tunnel Siege | `bp_orange` | #FB923C |
+| Survival | `bp_flame` | #F97316 |
+| Invaders | `bp_violet` | #A78BFA |
+| Zen Mode | `bp_gray` | #64748B |
 
 Use `ModeAccent.colorRes(mode)` in Android UI code. Cross-platform parity matrix: `Docs/PARITY.md`.
 
@@ -48,7 +50,7 @@ Use `ModeAccent.colorRes(mode)` in Android UI code. Cross-platform parity matrix
 - Game overlays use `hud_glass_panel_elevated` on all form factors.
 - Mode select uses a 2-column card grid on tablet/slate.
 - Daily Challenges and Privacy use max-width tablet layouts at `sw600dp`.
-- `FoldAwareActivity` applies hinge/inset-safe padding.
+- `FoldAwareActivity` observes hinge padding; common menu system insets need further audit.
 - Handedness toggle keeps high-priority controls reachable.
 
 ## Glass Drawable Catalog
@@ -56,3 +58,16 @@ Use `ModeAccent.colorRes(mode)` in Android UI code. Cross-platform parity matrix
 - HUD overlays: `hud_glass_panel_elevated`, `hud_glass_button_icon`, `hud_chip`, `hud_banner`.
 - Buttons: `glass_button_primary|secondary|gold|green|teal|azure|danger|icon`.
 - Tokens: `bp_glass_fill*`, `bp_glass_stroke*`, `bp_hud_glass_*` in `colors_hud.xml`.
+
+## Source-of-truth tokens and observed gaps
+
+Android res/values/colors.xml defines light shell canvas #F0F4FA, surface #FAFCFF,
+primary text #1E293B and sky accent #38BDF8. values-night supplies native night
+variants. colors_hud.xml defines gameplay text/glass; dimens/styles/drawables
+define actual spacing, radius and sans-serif typography. UiMotion defines motion
+envelopes. ModeAccent maps mode tokens; gameplay LevelThemes is separate.
+
+The existing HUD uses pale text over a light shell area and was visibly low
+contrast in the API 36 capture. Fixing and validating that, text scaling, TalkBack
+and reduced motion/flashing controls remains prioritized work. This document
+records current tokens, not a claim that the visual/accessibility pass is complete.

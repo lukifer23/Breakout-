@@ -2,7 +2,7 @@
 
 Android is the authoritative gameplay implementation. iOS is an active parity port. **BreakoutPlusMac is frozen** — dev-only, not a release target.
 
-Last updated: 2026-05-22 (hardening initiative)
+Last reviewed: 2026-10-05; source inspection only. No full Xcode or iOS device verification in this milestone. Existing coverage labels below are implementation inventory, not runtime sign-off.
 
 ## Release Targets
 
@@ -47,7 +47,7 @@ Last updated: 2026-05-22 (hardening initiative)
 |---------|---------|-----|-----|
 | Challenge templates | 13 (3 random/day) | 5 fixed | N/A |
 | Progress tracking | Full | Partial | N/A |
-| Reward application | Wired in gameplay | `print()` only | N/A |
+| Reward application | Durable ledger/outbox and next-run reservation | `print()` only | N/A |
 
 ## UI / UX
 
@@ -69,16 +69,16 @@ Last updated: 2026-05-22 (hardening initiative)
 
 | Mode | Color token | Hex |
 |------|-------------|-----|
-| Classic | `bp_cyan` | #58E2FF |
-| Timed Challenge | `bp_gold` | #F6C45A |
-| Endless | `bp_green` | #48D894 |
-| God Mode | `bp_magenta` | #FF6EA3 |
-| Level Rush | `bp_red` | #FF6D61 |
-| Volley | `bp_azure` | #5EA8FF |
-| Tunnel Siege | `bp_orange` | #FFA453 |
-| Survival | `bp_flame` | #FF8A3D |
-| Invaders | `bp_violet` | #8B8EFF |
-| Zen Mode | `bp_gray` | #A6B3C9 |
+| Classic | `bp_cyan` | #22D3EE |
+| Timed Challenge | `bp_gold` | #FBBF24 |
+| Endless | `bp_green` | #34D399 |
+| God Mode | `bp_magenta` | #F472B6 |
+| Level Rush | `bp_red` | #F87171 |
+| Volley | `bp_azure` | #60A5FA |
+| Tunnel Siege | `bp_orange` | #FB923C |
+| Survival | `bp_flame` | #F97316 |
+| Invaders | `bp_violet` | #A78BFA |
+| Zen Mode | `bp_gray` | #64748B |
 
 ## iOS Parity Backlog (Post Android Sign-Off)
 
@@ -98,3 +98,5 @@ Execute only after Android hardening is signed off. No stubs — full ports requ
 ## Mac Target Policy
 
 **BreakoutPlusMac is frozen.** Do not extend or sync it with Android/iOS during hardening. It exists as an optional local dev CLI target only. See [ios/README.md](../ios/README.md).
+
+Android now has date/schema daily generation, neutral input/config, seeded 120Hz simulation and active-run schema 1. Equivalent iOS behavior fixtures/transactions are not implemented.

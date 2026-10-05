@@ -8,7 +8,7 @@ files = subprocess.check_output(["git", "ls-files", "-z"]).decode().split("\0")
 errors = []
 for name in filter(None, files):
     path = PurePosixPath(name)
-    if any(part in {".build", "build", "DerivedData"} for part in path.parts):
+    if any(part in {".build", "build", "DerivedData", ".kotlin", "__pycache__"} for part in path.parts):
         errors.append(name)
     elif path.suffix in {".apk", ".aab", ".ipa"} or name == "ios/test_ios_binary" or ".pbxproj.backup" in name:
         errors.append(name)

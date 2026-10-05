@@ -20,7 +20,10 @@ jobs:
           java-version: '17'
           cache: gradle
       - name: Check source artifacts
-        run: python3 tools/check_repository.py
+        run: |
+          python3 tools/check_repository.py
+          python3 tools/check_docs.py
+          python3 tools/check_store_assets.py --allow-missing
       - name: Clean build, tests, lint, debug, minified compile-check APK and AAB
         run: ./gradlew clean testDebugUnitTest lintDebug assembleDebug assembleReleaseCheck bundleReleaseCheck --no-daemon
   release-tooling:
