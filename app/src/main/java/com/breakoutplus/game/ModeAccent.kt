@@ -4,7 +4,7 @@ import com.breakoutplus.R
 
 /**
  * Canonical mode accent colors for UI surfaces (mode select, scoreboard, etc.).
- * Keep in sync with [Docs/PARITY.md] and [Docs/DESIGN.md].
+ * Keep in sync with [docs/PARITY.md] and [docs/DESIGN.md].
  */
 object ModeAccent {
     fun colorRes(mode: GameMode): Int = when (mode) {

@@ -1,4 +1,4 @@
-> Historical record. Not current build instructions or release evidence. See the root README and Docs/RELEASE_CHECKLIST.md.
+> Historical record. Not current build instructions or release evidence. See the root README and docs/RELEASE_CHECKLIST.md.
 
 # Technical Spike: Core Game Engine Port
 

@@ -43,5 +43,5 @@ Completed work/evidence: [README](../README.md), [baseline](MODERNIZATION_BASELI
 - Consolidate icon/store/shell/gameplay exports around the documented brand and
   add a controlled screenshot-state workflow; no generated variant pile.
 
-Historical investigations live under Docs/Archive and ios/Archive. They do not
+Historical investigations live under docs/Archive and ios/Archive. They do not
 supersede current build instructions or establish current release evidence.

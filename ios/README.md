@@ -17,8 +17,8 @@ xcodebuild -project ios/BreakoutPlus/BreakoutPlus.xcodeproj \
   -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
 ```
 
-See [build instructions](../Docs/BUILD.md), [parity gaps](../Docs/PARITY.md),
-[remaining work](../Docs/ROADMAP.md) and [privacy](../Docs/PRIVACY_POLICY.md).
+See [build instructions](../docs/BUILD.md), [parity gaps](../docs/PARITY.md),
+[remaining work](../docs/ROADMAP.md) and [privacy](../docs/PRIVACY_POLICY.md).
 Daily reward application, high-speed collision, Volley/Tunnel recovery, Magnet,
 HUD/level advance and deterministic fixture parity require substantive work.
 UserDefaults may participate in Apple-managed backup; no app telemetry backend

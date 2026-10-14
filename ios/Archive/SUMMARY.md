@@ -1,4 +1,4 @@
-> Historical record. Not current build instructions or release evidence. See the root README and Docs/RELEASE_CHECKLIST.md.
+> Historical record. Not current build instructions or release evidence. See the root README and docs/RELEASE_CHECKLIST.md.
 
 # Breakout+ iOS Summary
 
@@ -6,7 +6,7 @@
 
 iOS is actively maintained for gameplay parity with Android. The app builds and runs via simulator CLI workflows, and the iOS codebase includes all 10 Android-standard game modes and 18 powerups.
 
-**Android 1.0.11** is the authoritative gameplay reference. Full cross-platform gaps are tracked in [`Docs/PARITY.md`](../Docs/PARITY.md).
+**Android 1.0.11** is the authoritative gameplay reference. Full cross-platform gaps are tracked in [`Docs/PARITY.md`](../../docs/PARITY.md).
 
 `BreakoutPlusMac` is **frozen** (dev-only, 5-mode stale fork) — not a release target.
 
@@ -19,7 +19,7 @@ iOS is actively maintained for gameplay parity with Android. The app builds and 
 
 ## Known Parity Gaps (vs Android 1.0.11)
 
-See [`Docs/PARITY.md`](../Docs/PARITY.md) for the full matrix. Highest-impact engine gaps:
+See [`Docs/PARITY.md`](../../docs/PARITY.md) for the full matrix. Highest-impact engine gaps:
 
 - `TunnelModeSystem` — no supply readiness / pity-drop runtime
 - `VolleyModeSystem` — turn stall detection and nudge not ported
@@ -62,4 +62,4 @@ xcodebuild -project ios/BreakoutPlus/BreakoutPlus.xcodeproj \
 - [`ios/README.md`](README.md) — build/run and regression pass
 - [`ios/ARCHITECTURE.md`](ARCHITECTURE.md) — SpriteKit port architecture
 - [`ios/ROADMAP.md`](ROADMAP.md) — iOS polish priorities
-- [`Docs/PARITY.md`](../Docs/PARITY.md) — authoritative gap matrix
+- [`Docs/PARITY.md`](../../docs/PARITY.md) — authoritative gap matrix

@@ -6,5 +6,5 @@ and do not share the Android simulation. This inspection does not establish
 runtime parity or a current Xcode build.
 
 Android's new seeded RNG, daily transaction and active-run schemas have not been
-ported. See [platform parity](../Docs/PARITY.md) and [Android architecture](../Docs/ARCHITECTURE.md).
+ported. See [platform parity](../docs/PARITY.md) and [Android architecture](../docs/ARCHITECTURE.md).
 The macOS fork is archived/experimental. Historic design spikes are under Archive.

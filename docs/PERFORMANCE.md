@@ -64,7 +64,7 @@ python3 tools/profile_stress.py --serial emulator-5556 --output /tmp/breakout-pe
 ```
 
 Use `--adb /absolute/path/to/adb` if needed. Capture logs/summary outside source;
-only reviewed measurement summaries belong in Docs/evidence. The script fails
+only reviewed measurement summaries belong in docs/evidence. The script fails
 on launch errors, fatal crashes and insufficient samples. It does not fabricate
 missing measurements. Allocation profiling, GPU timelines, battery/thermal
 behavior and physical 90/120Hz frame pacing are not measured by this script.

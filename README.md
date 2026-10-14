@@ -25,8 +25,8 @@ fork is archived/experimental.
   requires actual release signing. Local builds need no Play credentials.
 - Locked Ruby tools updated and checked against the advisory database.
 
-[Baseline](Docs/MODERNIZATION_BASELINE.md), [persistence limits](Docs/PERSISTENCE.md)
-and [measured performance](Docs/PERFORMANCE.md) contain the evidence and boundaries.
+[Baseline](docs/MODERNIZATION_BASELINE.md), [persistence limits](docs/PERSISTENCE.md)
+and [measured performance](docs/PERFORMANCE.md) contain the evidence and boundaries.
 API 36 emulator checks cover mode launch, six stress cases and one process-recovery
 case. They do not establish full device/foldable QA or iOS parity.
 
@@ -46,7 +46,7 @@ adb -s <serial> shell am start -n com.breakoutplus.debug/com.breakoutplus.MainAc
 ```
 
 Compile-check artifacts have a `.compilecheck` package and `-compilecheck` version
-suffix, use a debug key, and are never upload candidates. See [BUILD](Docs/BUILD.md)
+suffix, use a debug key, and are never upload candidates. See [BUILD](docs/BUILD.md)
 for real signing and Fastlane procedures.
 
 ## Gameplay and architecture
@@ -54,12 +54,12 @@ for real signing and Fastlane procedures.
 Modes: Classic, Timed, Endless, God, Rush, Volley, Tunnel, Survival, Invaders and
 Zen. The existing OpenGL ES 2.0 gameplay surface is driven by Choreographer.
 The GL thread owns simulation; Android input becomes neutral commands, and UI
-callbacks/persistence consume copies. [ARCHITECTURE](Docs/ARCHITECTURE.md) describes
-the boundaries; [GAMEPLAY](Docs/GAMEPLAY.md) defines the rules.
+callbacks/persistence consume copies. [ARCHITECTURE](docs/ARCHITECTURE.md) describes
+the boundaries; [GAMEPLAY](docs/GAMEPLAY.md) defines the rules.
 
 ```text
 app/           Android app and JVM tests
-Docs/          Current authoritative docs; Archive/ contains historical records
+docs/          Current authoritative docs; Archive/ contains historical records
 ios/           iOS port; BreakoutPlusMac/ is archived, Archive/ is historical
 fastlane/      Ruby release tooling and Play metadata
 store_assets/  Canonical icon/feature assets; verified screenshots still pending
@@ -78,17 +78,17 @@ iOS XCTest/parity, and verified phone/large-screen store captures.
 Stale timestamp captures and mislabeled duplicate screenshots were removed.
 No screenshot is advertised here until its current screen has been captured and
 validated. Publishing remains gated on a complete screenshot set and operator
-review. See [ROADMAP](Docs/ROADMAP.md) and [RELEASE_CHECKLIST](Docs/RELEASE_CHECKLIST.md).
+review. See [ROADMAP](docs/ROADMAP.md) and [RELEASE_CHECKLIST](docs/RELEASE_CHECKLIST.md).
 
 ## Documentation
 
-- [Build and release](Docs/BUILD.md) · [Testing](Docs/TESTING.md)
-- [Architecture](Docs/ARCHITECTURE.md) · [Persistence](Docs/PERSISTENCE.md)
-- [Gameplay](Docs/GAMEPLAY.md) · [Design](Docs/DESIGN.md) · [Assets](Docs/ASSETS.md)
-- [Privacy](Docs/PRIVACY_POLICY.md) · [Data safety](Docs/DATA_SAFETY.md)
-- [Security/tooling audit](Docs/TOOLING_SECURITY.md) · [Performance](Docs/PERFORMANCE.md)
-- [Platform parity](Docs/PARITY.md) · [iOS](ios/README.md)
-- [Release checklist](Docs/RELEASE_CHECKLIST.md) · [Release notes](Docs/RELEASE_NOTES.md)
-- [Roadmap](Docs/ROADMAP.md) · [Requirements](Docs/REQUIREMENTS.md)
+- [Build and release](docs/BUILD.md) · [Testing](docs/TESTING.md)
+- [Architecture](docs/ARCHITECTURE.md) · [Persistence](docs/PERSISTENCE.md)
+- [Gameplay](docs/GAMEPLAY.md) · [Design](docs/DESIGN.md) · [Assets](docs/ASSETS.md)
+- [Privacy](docs/PRIVACY_POLICY.md) · [Data safety](docs/DATA_SAFETY.md)
+- [Security/tooling audit](docs/TOOLING_SECURITY.md) · [Performance](docs/PERFORMANCE.md)
+- [Platform parity](docs/PARITY.md) · [iOS](ios/README.md)
+- [Release checklist](docs/RELEASE_CHECKLIST.md) · [Release notes](docs/RELEASE_NOTES.md)
+- [Roadmap](docs/ROADMAP.md) · [Requirements](docs/REQUIREMENTS.md)
 
 MIT — [LICENSE](LICENSE).

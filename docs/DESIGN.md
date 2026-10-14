@@ -43,7 +43,7 @@
 | Invaders | `bp_violet` | #A78BFA |
 | Zen Mode | `bp_gray` | #64748B |
 
-Use `ModeAccent.colorRes(mode)` in Android UI code. Cross-platform parity matrix: `Docs/PARITY.md`.
+Use `ModeAccent.colorRes(mode)` in Android UI code. Cross-platform parity matrix: `docs/PARITY.md`.
 
 ## Foldable / Large Screen
 - `sw600dp` and `sw720dp` layout variants for larger displays.
